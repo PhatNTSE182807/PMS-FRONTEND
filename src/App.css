@@ -1,0 +1,33 @@
+.welcome {
+  width: min(100% - 3rem, 46rem);
+  margin: 0 auto;
+  padding: clamp(5rem, 16vh, 10rem) 0;
+}
+
+.welcome__eyebrow {
+  margin: 0 0 1rem;
+  color: #33775b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.welcome h1 {
+  margin: 0;
+  color: #18241f;
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  line-height: 1.05;
+}
+
+.welcome__copy {
+  max-width: 34rem;
+  margin: 1.25rem 0 0;
+  color: #596761;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.welcome code {
+  color: #245c45;
+}
