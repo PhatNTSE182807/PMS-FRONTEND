@@ -1,14 +1,105 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import ParkingLogo from './ParkingLogo';
 import { authService } from '../services/authService';
+
+const CheckInQrMark = memo(function CheckInQrMark({ size = 110, onClick }) {
+  return (
+    <div
+      className="qr-code-box"
+      onClick={onClick}
+      title="Click to enlarge QR Code"
+    >
+      <svg width={size} height={size} viewBox="0 0 110 110" fill="none">
+        <rect width="110" height="110" rx="8" fill="#ffffff" />
+        <rect x="12" y="12" width="28" height="28" fill="#000" />
+        <rect x="16" y="16" width="20" height="20" fill="#fff" />
+        <rect x="20" y="20" width="12" height="12" fill="#000" />
+        <rect x="70" y="12" width="28" height="28" fill="#000" />
+        <rect x="74" y="16" width="20" height="20" fill="#fff" />
+        <rect x="78" y="20" width="12" height="12" fill="#000" />
+        <rect x="12" y="70" width="28" height="28" fill="#000" />
+        <rect x="16" y="74" width="20" height="20" fill="#fff" />
+        <rect x="20" y="78" width="12" height="12" fill="#000" />
+        <rect x="46" y="14" width="6" height="6" fill="#000" />
+        <rect x="56" y="14" width="6" height="6" fill="#000" />
+        <rect x="46" y="26" width="6" height="6" fill="#000" />
+        <rect x="56" y="32" width="6" height="6" fill="#000" />
+        <rect x="46" y="46" width="18" height="18" fill="#00e5ff" rx="2" />
+        <rect x="14" y="46" width="6" height="6" fill="#000" />
+        <rect x="26" y="46" width="6" height="6" fill="#000" />
+        <rect x="34" y="56" width="6" height="6" fill="#000" />
+        <rect x="72" y="48" width="6" height="6" fill="#000" />
+        <rect x="84" y="56" width="6" height="6" fill="#000" />
+        <rect x="52" y="74" width="6" height="6" fill="#000" />
+        <rect x="64" y="74" width="6" height="6" fill="#000" />
+        <rect x="52" y="86" width="6" height="6" fill="#000" />
+        <rect x="80" y="80" width="6" height="6" fill="#000" />
+        <rect x="88" y="90" width="6" height="6" fill="#000" />
+      </svg>
+    </div>
+  );
+});
+
+function LiveParkingMetrics() {
+  const [parkingSeconds, setParkingSeconds] = useState(6300);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setParkingSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const hours = Math.floor(parkingSeconds / 3600);
+  const minutes = Math.floor((parkingSeconds % 3600) / 60);
+  const seconds = parkingSeconds % 60;
+  const timeLabel = `${hours}h ${minutes}m ${seconds < 10 ? '0' : ''}${seconds}s`;
+  const rawFee = 30000 + Math.floor((parkingSeconds / 3600) * 14285);
+  const feeLabel = `${(Math.round(rawFee / 1000) * 1000).toLocaleString('en-US')} VND`;
+
+  return (
+    <>
+      <div className="active-metric-row">
+        <span className="active-metric-label">Time:</span>
+        <span className="active-metric-value">{timeLabel}</span>
+      </div>
+      <div className="active-metric-row">
+        <span className="active-metric-label">Current Fee:</span>
+        <span className="active-metric-value active-metric-value--fee">{feeLabel}</span>
+      </div>
+      <div className="active-metric-subtext">(updating in real-time)</div>
+    </>
+  );
+}
+
+const ActiveParkingCard = memo(function ActiveParkingCard({ onPayNow, onQrZoom }) {
+  return (
+    <div className="active-parking-card">
+      <div className="active-parking-card__header">
+        <h3>Active Parking - P5 (Level 2)</h3>
+      </div>
+      <div className="active-parking-card__body">
+        <LiveParkingMetrics />
+        <div className="qr-code-section">
+          <div className="qr-code-label">QR Check-in Code</div>
+          <CheckInQrMark onClick={onQrZoom} />
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary-cyan btn-full btn-pay-now"
+          onClick={onPayNow}
+        >
+          Pay Now
+        </button>
+      </div>
+    </div>
+  );
+});
 
 export default function UserScreen({ user, onLogout }) {
   // Navigation tabs: 'map' | 'reservations' | 'vehicles' | 'profile'
   const [activeTab, setActiveTab] = useState('map');
 
-  // Real-time ticking timer for Active Parking
-  // Default starts around 1h 45m 00s (6300 seconds)
-  const [parkingSeconds, setParkingSeconds] = useState(6300);
   const [isCentered, setIsCentered] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
@@ -37,29 +128,9 @@ export default function UserScreen({ user, onLogout }) {
     { id: 'res-102', slot: 'A12 (Level 1)', time: 'Tomorrow, 09:00', status: 'Upcoming', fee: 'Est. 40,000 VND' },
   ]);
 
-  // Real-time second counter
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setParkingSeconds((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Format elapsed time: e.g. "1h 45m 23s"
-  const formatTime = (totalSec) => {
-    const hours = Math.floor(totalSec / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    const seconds = totalSec % 60;
-    return `${hours}h ${minutes}m ${seconds < 10 ? '0' : ''}${seconds}s`;
-  };
-
-  // Dynamic fee calculation: 30,000 VND base + 25,000 VND per extra hour prorated
-  const calculateFee = (totalSec) => {
-    const hoursFraction = totalSec / 3600;
-    const rawFee = 30000 + Math.floor(hoursFraction * 14285);
-    const rounded = Math.round(rawFee / 1000) * 1000;
-    return `${rounded.toLocaleString('en-US')} VND`;
-  };
+  // Stable callbacks for ActiveParkingTimer
+  const handlePayNow = useCallback(() => setIsPayModalOpen(true), []);
+  const handleQrZoom = useCallback(() => setIsQrZoomOpen(true), []);
 
   // Center on my vehicle effect
   const handleCenterOnVehicle = () => {
@@ -539,11 +610,6 @@ export default function UserScreen({ user, onLogout }) {
                 <stop offset="100%" stopColor="#0099ff" />
               </linearGradient>
 
-              {/* Glow filter */}
-              <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="6" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
             </defs>
 
             {/* Isometric Ground Baseplate */}
@@ -676,16 +742,11 @@ export default function UserScreen({ user, onLogout }) {
               <polygon
                 points="450,180 525,148 565,166 490,198"
                 fill="url(#slot-blue)"
-                filter="url(#cyan-glow)"
                 stroke="#00f2fe"
                 strokeWidth="2.5"
               />
 
-              {/* Pulsing ring indicator */}
-              <ellipse cx="507" cy="173" rx="42" ry="20" fill="none" stroke="#00f2fe" strokeWidth="1.5" opacity="0.6">
-                <animate attributeName="rx" values="36;48;36" dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite" />
-              </ellipse>
+              <ellipse cx="507" cy="173" rx="42" ry="20" fill="none" stroke="#00f2fe" strokeWidth="1.5" opacity="0.45" />
 
               {/* Futuristic Isometric Car Silhouette */}
               <g transform="translate(485, 155)">
@@ -698,7 +759,7 @@ export default function UserScreen({ user, onLogout }) {
 
               {/* Pin Icon Label */}
               <g transform="translate(470, 125)">
-                <circle cx="16" cy="16" r="14" fill="#00e5ff" filter="url(#cyan-glow)" />
+                <circle cx="16" cy="16" r="14" fill="#00e5ff" />
                 <circle cx="16" cy="16" r="12" fill="#0a192f" />
                 <path
                   d="M11 15L12 12C12.3 11 13 10.5 14 10.5H18C19 10.5 19.7 11 20 12L21 15"
@@ -765,78 +826,7 @@ export default function UserScreen({ user, onLogout }) {
         )}
 
         {/* FLOATING TOP-RIGHT CARD: Active Parking - P5 (Level 2) */}
-        <div className="active-parking-card">
-          <div className="active-parking-card__header">
-            <h3>Active Parking - P5 (Level 2)</h3>
-          </div>
-
-          <div className="active-parking-card__body">
-            <div className="active-metric-row">
-              <span className="active-metric-label">Time:</span>
-              <span className="active-metric-value">{formatTime(parkingSeconds)}</span>
-            </div>
-
-            <div className="active-metric-row">
-              <span className="active-metric-label">Current Fee:</span>
-              <span className="active-metric-value active-metric-value--fee">
-                {calculateFee(parkingSeconds)}
-              </span>
-            </div>
-            <div className="active-metric-subtext">(updating in real-time)</div>
-
-            {/* QR Check-in Code Box */}
-            <div className="qr-code-section">
-              <div className="qr-code-label">QR Check-in Code</div>
-              <div
-                className="qr-code-box"
-                onClick={() => setIsQrZoomOpen(true)}
-                title="Click to enlarge QR Code"
-              >
-                {/* High quality Scalable SVG QR Code */}
-                <svg width="110" height="110" viewBox="0 0 110 110" fill="none">
-                  <rect width="110" height="110" rx="8" fill="#ffffff" />
-                  {/* Outer corner 1 */}
-                  <rect x="12" y="12" width="28" height="28" fill="#000" />
-                  <rect x="16" y="16" width="20" height="20" fill="#fff" />
-                  <rect x="20" y="20" width="12" height="12" fill="#000" />
-                  {/* Outer corner 2 */}
-                  <rect x="70" y="12" width="28" height="28" fill="#000" />
-                  <rect x="74" y="16" width="20" height="20" fill="#fff" />
-                  <rect x="78" y="20" width="12" height="12" fill="#000" />
-                  {/* Outer corner 3 */}
-                  <rect x="12" y="70" width="28" height="28" fill="#000" />
-                  <rect x="16" y="74" width="20" height="20" fill="#fff" />
-                  <rect x="20" y="78" width="12" height="12" fill="#000" />
-                  {/* Random QR bit patterns */}
-                  <rect x="46" y="14" width="6" height="6" fill="#000" />
-                  <rect x="56" y="14" width="6" height="6" fill="#000" />
-                  <rect x="46" y="26" width="6" height="6" fill="#000" />
-                  <rect x="56" y="32" width="6" height="6" fill="#000" />
-                  <rect x="46" y="46" width="18" height="18" fill="#00e5ff" rx="2" />
-                  <rect x="14" y="46" width="6" height="6" fill="#000" />
-                  <rect x="26" y="46" width="6" height="6" fill="#000" />
-                  <rect x="34" y="56" width="6" height="6" fill="#000" />
-                  <rect x="72" y="48" width="6" height="6" fill="#000" />
-                  <rect x="84" y="56" width="6" height="6" fill="#000" />
-                  <rect x="52" y="74" width="6" height="6" fill="#000" />
-                  <rect x="64" y="74" width="6" height="6" fill="#000" />
-                  <rect x="52" y="86" width="6" height="6" fill="#000" />
-                  <rect x="80" y="80" width="6" height="6" fill="#000" />
-                  <rect x="88" y="90" width="6" height="6" fill="#000" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Pay Now Button */}
-            <button
-              type="button"
-              className="btn btn-primary-cyan btn-full btn-pay-now"
-              onClick={() => setIsPayModalOpen(true)}
-            >
-              Pay Now
-            </button>
-          </div>
-        </div>
+        <ActiveParkingCard onPayNow={handlePayNow} onQrZoom={handleQrZoom} />
 
         {/* BOTTOM WIDGETS DOCK (Quick Reservation & Registered Vehicles) */}
         <div className="bottom-widgets-dock">
@@ -1018,11 +1008,11 @@ export default function UserScreen({ user, onLogout }) {
                 </div>
                 <div className="checkout-row">
                   <span>Total Duration:</span>
-                  <strong>{formatTime(parkingSeconds)}</strong>
+                  <strong>~1h 45m</strong>
                 </div>
                 <div className="checkout-row checkout-row--total">
                   <span>Total Due:</span>
-                  <strong className="text-cyan">{calculateFee(parkingSeconds)}</strong>
+                  <strong className="text-cyan">55,000 VND</strong>
                 </div>
               </div>
 

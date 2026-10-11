@@ -14,27 +14,27 @@
   overflow-x: hidden;
 }
 
-/* Cyber ambient glows */
+/* Cyber ambient glows — radial-gradient instead of blur() (blur 120px is a GPU tax) */
 .cyber-glow {
   position: fixed;
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(120px);
   z-index: 0;
+  contain: strict;
 }
 .cyber-glow--cyan-top {
   top: -150px;
   right: 15%;
   width: 500px;
   height: 500px;
-  background: rgba(0, 242, 254, 0.12);
+  background: radial-gradient(circle, rgba(0, 242, 254, 0.16) 0%, rgba(0, 242, 254, 0.05) 40%, transparent 70%);
 }
 .cyber-glow--blue-bottom {
   bottom: -150px;
   left: 10%;
   width: 600px;
   height: 600px;
-  background: rgba(14, 116, 144, 0.15);
+  background: radial-gradient(circle, rgba(14, 116, 144, 0.18) 0%, rgba(14, 116, 144, 0.06) 42%, transparent 70%);
 }
 
 /* Background blueprint grid overlay */
@@ -60,8 +60,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 2rem;
-  background: rgba(10, 15, 29, 0.85);
-  backdrop-filter: blur(16px);
+  background: rgba(10, 15, 29, 0.94);
   border-bottom: 1px solid rgba(0, 229, 255, 0.15);
 }
 
@@ -155,7 +154,6 @@
 .parking-logo__svg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4));
 }
 
 .parking-logo__text {
@@ -210,24 +208,10 @@
 
 .auth-supercar-bg__img {
   position: absolute;
-  inset: -20px;
+  inset: 0;
   background-size: cover;
   background-position: center 62%;
   background-repeat: no-repeat;
-  filter: brightness(0.68) contrast(1.15) saturate(1.1);
-  animation: supercarPan 24s ease-in-out infinite alternate;
-}
-
-@keyframes supercarPan {
-  0% {
-    transform: scale(1.02) translateY(0);
-  }
-  50% {
-    transform: scale(1.05) translateY(-6px);
-  }
-  100% {
-    transform: scale(1.03) translateY(4px);
-  }
 }
 
 /* Dark gradient overlay layers ensuring text clarity */
@@ -271,9 +255,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(10, 16, 30, 0.75);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(10, 16, 30, 0.92);
   border: 1px solid rgba(0, 229, 255, 0.25);
   padding: 6px 18px;
   border-radius: 999px;
@@ -332,9 +314,7 @@
 
 .mockup-window {
   width: 100%;
-  background: rgba(11, 17, 32, 0.82);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: rgba(11, 17, 32, 0.94);
   border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 16px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(0, 229, 255, 0.12);
@@ -404,8 +384,7 @@
 ========================================================= */
 .glass-card {
   width: 100%;
-  background: rgba(18, 26, 44, 0.65);
-  backdrop-filter: blur(16px);
+  background: rgba(18, 26, 44, 0.88);
   border-radius: 14px;
   padding: 1.2rem 1.35rem;
   display: flex;
@@ -649,7 +628,6 @@
 }
 
 .btn-primary-cyan:hover:not(:disabled) {
-  filter: brightness(1.1);
   box-shadow: 0 6px 20px rgba(0, 242, 254, 0.45);
   transform: translateY(-1px);
 }
@@ -1162,8 +1140,8 @@
   width: 100%;
   max-width: 960px;
   height: 100%;
-  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.7));
   transition: transform 0.4s ease;
+  contain: layout style paint;
 }
 
 .isometric-svg--pulsing {
@@ -1172,12 +1150,11 @@
 
 .interactive-slot {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .interactive-slot:hover {
   opacity: 1 !important;
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
 }
 
 .my-vehicle-slot {
@@ -1192,8 +1169,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.94);
   border: 1px solid rgba(0, 229, 255, 0.3);
   color: #f1f5f9;
   font-size: 0.85rem;
@@ -1271,13 +1247,13 @@
   top: 24px;
   right: 24px;
   width: 290px;
-  background: rgba(14, 23, 42, 0.8);
-  backdrop-filter: blur(16px);
+  background: rgba(14, 23, 42, 0.94);
   border: 1.5px solid var(--cyan-primary);
   border-radius: 18px;
   box-shadow: 0 0 25px rgba(0, 242, 254, 0.2), 0 20px 40px rgba(0, 0, 0, 0.6);
   padding: 1.25rem;
   z-index: 25;
+  contain: layout style paint;
 }
 
 .active-parking-card__header h3 {
@@ -1366,11 +1342,11 @@
 }
 
 .widget-card {
-  background: rgba(14, 23, 42, 0.85);
-  backdrop-filter: blur(14px);
+  background: rgba(14, 23, 42, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 1.25rem;
+  contain: layout style;
 }
 
 .widget-card__title {
@@ -1554,8 +1530,7 @@
 .api-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(4, 8, 18, 0.8);
-  backdrop-filter: blur(8px);
+  background: rgba(4, 8, 18, 0.86);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2134,4 +2109,13 @@
   background: rgba(16, 185, 129, 0.15);
   border: 1px solid rgba(16, 185, 129, 0.4);
   color: #6ee7b7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

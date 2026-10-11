@@ -24,7 +24,7 @@ export default function ApiStatusBadge() {
 
   useEffect(() => {
     checkStatus();
-    const interval = setInterval(checkStatus, 30000);
+    const interval = setInterval(checkStatus, 60000);
     return () => clearInterval(interval);
   }, []);
 

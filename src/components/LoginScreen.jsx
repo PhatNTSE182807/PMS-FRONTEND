@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ParkingLogo from './ParkingLogo';
 import { authService } from '../services/authService';
 
@@ -22,6 +22,11 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const otpTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (otpTimerRef.current) clearInterval(otpTimerRef.current);
+  }, []);
 
   // Handle standard password login
   const handlePasswordLogin = async (e) => {
@@ -87,10 +92,12 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     setOtpCode('123456'); // Pre-fill sample OTP for ease of test
     setInfoMsg(res.message);
 
-    const timerInterval = setInterval(() => {
+    if (otpTimerRef.current) clearInterval(otpTimerRef.current);
+    otpTimerRef.current = setInterval(() => {
       setOtpTimer((prev) => {
         if (prev <= 1) {
-          clearInterval(timerInterval);
+          clearInterval(otpTimerRef.current);
+          otpTimerRef.current = null;
           return 0;
         }
         return prev - 1;
