@@ -1,22 +1,65 @@
 :root {
-  font-family: "Segoe UI", sans-serif;
-  color: #18241f;
-  background: #f4f7f5;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Cyber Blueprint Theme Palette */
+  --bg-deep: #060913;
+  --bg-dark: #0a0f1d;
+  --bg-surface: #0f172a;
+  --bg-card: rgba(13, 22, 40, 0.75);
+  --bg-card-hover: rgba(18, 30, 54, 0.85);
+
+  /* Neon Accents */
+  --cyan-primary: #00f2fe;
+  --cyan-bright: #00e5ff;
+  --cyan-dark: #00b4d8;
+  --cyan-glow: rgba(0, 242, 254, 0.35);
+
+  /* Status Colors */
+  --status-available: #00e676;
+  --status-reserved: #ffb703;
+  --status-active: #00f2fe;
+  --status-error: #ef4444;
+
+  /* Typography */
+  --text-white: #ffffff;
+  --text-slate: #cbd5e1;
+  --text-muted: #8492a6;
+
+  /* UI Tokens */
+  --border-glass: rgba(0, 229, 255, 0.18);
+  --border-cyan-glow: #00f2fe;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  
+  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  font-family: var(--font-family);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  font-optical-sizing: auto;
-  font-weight: 400;
 }
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-deep);
+  color: var(--text-white);
+  overflow-x: hidden;
+}
+
+button, input, select {
+  font-family: inherit;
+  outline: none;
 }
