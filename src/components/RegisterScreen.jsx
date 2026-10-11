@@ -123,8 +123,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
 
           {/* Main Glowing Cyan Card */}
           <div className="glass-card register-glass-card">
-            <h1 className="register-heading">Join Parking Management System - OJT</h1>
-
             {errorMsg && (
               <div className="auth-alert auth-alert--error" role="alert">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

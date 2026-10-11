@@ -1,10 +1,46 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
 import RegisterScreen from './components/RegisterScreen';
 import UserScreen from './components/UserScreen';
 import ApiStatusBadge from './components/ApiStatusBadge';
 import { authService } from './services/authService';
 import './App.css';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: '#f1f5f9', minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <h2 style={{ color: '#00f2fe', marginBottom: '0.75rem' }}>An error occurred</h2>
+          <p style={{ color: '#94a3b8', maxWidth: '500px', marginBottom: '1.5rem' }}>
+            {this.state.error?.message || 'Something went wrong.'}
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary-cyan"
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+          >
+            Reload Application
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   // Navigation mode: 'login' | 'register' | 'user'
@@ -90,7 +126,7 @@ export default function App() {
                     fullName: 'Alex Rivers',
                     email: 'alex.rivers@pms-ojt.vn',
                     phoneNumber: '+84 988 123 456',
-                    role: 'VIP Member',
+                    role: 'User',
                   };
                   setCurrentUser(demoUser);
                 }
@@ -139,52 +175,54 @@ export default function App() {
       )}
 
       {/* Main Single Screen Viewport */}
-      <main className={`pms-main-viewport ${currentView !== 'user' ? 'pms-main-viewport--auth' : ''}`}>
-        {/* Luxury Lamborghini Supercar Background for Login & Register */}
-        {currentView !== 'user' && (
-          <div className="auth-supercar-bg" aria-hidden="true">
-            <div className="auth-supercar-bg__img" style={{ backgroundImage: `url('/lamborghini.jpg')` }} />
-            <div className="auth-supercar-bg__overlay" />
-            <div className="auth-supercar-bg__vignette" />
-            <div className="auth-supercar-bg__ambient-bar">
-              <span className="car-badge">
-                <span className="car-badge__glow-dot"></span>
-                Lamborghini Supercar Fleet • Smart Valet Infrastructure
-              </span>
+      <ErrorBoundary>
+        <main className={`pms-main-viewport ${currentView !== 'user' ? 'pms-main-viewport--auth' : ''}`}>
+          {/* Luxury Lamborghini Supercar Background for Login & Register */}
+          {currentView !== 'user' && (
+            <div className="auth-supercar-bg" aria-hidden="true">
+              <div className="auth-supercar-bg__img" style={{ backgroundImage: `url('/lamborghini.jpg')` }} />
+              <div className="auth-supercar-bg__overlay" />
+              <div className="auth-supercar-bg__vignette" />
+              <div className="auth-supercar-bg__ambient-bar">
+                <span className="car-badge">
+                  <span className="car-badge__glow-dot"></span>
+                  Lamborghini Supercar Fleet • Smart Valet Infrastructure
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* VIEW 1: Login Screen */}
-        {currentView === 'login' && (
-          <div className="screens-single-layout">
-            <LoginScreen
-              onLoginSuccess={handleLoginSuccess}
-              onNavigateToRegister={() => setCurrentView('register')}
-            />
-          </div>
-        )}
+          {/* VIEW 1: Login Screen */}
+          {currentView === 'login' && (
+            <div className="screens-single-layout">
+              <LoginScreen
+                onLoginSuccess={handleLoginSuccess}
+                onNavigateToRegister={() => setCurrentView('register')}
+              />
+            </div>
+          )}
 
-        {/* VIEW 2: Register Screen */}
-        {currentView === 'register' && (
-          <div className="screens-single-layout">
-            <RegisterScreen
-              onNavigateToLogin={() => setCurrentView('login')}
-              onRegisterSuccess={handleRegisterSuccess}
-            />
-          </div>
-        )}
+          {/* VIEW 2: Register Screen */}
+          {currentView === 'register' && (
+            <div className="screens-single-layout">
+              <RegisterScreen
+                onNavigateToLogin={() => setCurrentView('login')}
+                onRegisterSuccess={handleRegisterSuccess}
+              />
+            </div>
+          )}
 
-        {/* VIEW 3: User Screen (Image 2 Dashboard) */}
-        {currentView === 'user' && (
-          <div className="screen-user-layout">
-            <UserScreen
-              user={currentUser}
-              onLogout={handleLogout}
-            />
-          </div>
-        )}
-      </main>
+          {/* VIEW 3: User Screen (Image 2 Dashboard) */}
+          {currentView === 'user' && (
+            <div className="screen-user-layout">
+              <UserScreen
+                user={currentUser}
+                onLogout={handleLogout}
+              />
+            </div>
+          )}
+        </main>
+      </ErrorBoundary>
     </div>
   );
 }

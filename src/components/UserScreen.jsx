@@ -31,19 +31,8 @@ export default function UserScreen({ user, onLogout }) {
     { id: 2, title: 'Live Rate Alert', desc: 'Standard daytime rate: 30,000 VND / hour', time: '2h ago', read: true },
   ]);
 
-  // Vehicles list (defaults based on mockup, extensible via modal)
-  const [vehicles, setVehicles] = useState([
-    { id: 'v1', brand: 'Toyota', model: 'Camry', plate: '30E-123.45', color: 'White' },
-    { id: 'v2', brand: 'Honda', model: 'CRV', plate: '29A-678.90', color: 'Red' },
-  ]);
-
-  // New vehicle form inputs
-  const [newBrand, setNewBrand] = useState('Mazda');
-  const [newModel, setNewModel] = useState('CX-5');
-  const [newPlate, setNewPlate] = useState('51F-999.88');
-
   // Reservations list
-  const [reservations, setReservations] = useState([
+  const [reservations] = useState([
     { id: 'res-101', slot: 'P5 (Level 2)', time: 'Today, 18:30', status: 'Active', fee: '55,000 VND' },
     { id: 'res-102', slot: 'A12 (Level 1)', time: 'Tomorrow, 09:00', status: 'Upcoming', fee: 'Est. 40,000 VND' },
   ]);
@@ -56,7 +45,7 @@ export default function UserScreen({ user, onLogout }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Format elapsed time: e.g. "1h 45m" or "1h 45m 23s"
+  // Format elapsed time: e.g. "1h 45m 23s"
   const formatTime = (totalSec) => {
     const hours = Math.floor(totalSec / 3600);
     const minutes = Math.floor((totalSec % 3600) / 60);
@@ -68,7 +57,6 @@ export default function UserScreen({ user, onLogout }) {
   const calculateFee = (totalSec) => {
     const hoursFraction = totalSec / 3600;
     const rawFee = 30000 + Math.floor(hoursFraction * 14285);
-    // Round to clean thousands for VND format
     const rounded = Math.round(rawFee / 1000) * 1000;
     return `${rounded.toLocaleString('en-US')} VND`;
   };
@@ -85,29 +73,291 @@ export default function UserScreen({ user, onLogout }) {
     setReservationFeedback(`Found 8 available slots at ${selectedLocation}! Select a slot below to confirm.`);
   };
 
-  // Handle adding new vehicle
-  const handleAddVehicle = async (e) => {
-    e.preventDefault();
-    if (!newPlate.trim()) return;
+  // Live User Profile state
+  const [currentUserProfile, setCurrentUserProfile] = useState(user);
 
-    const newVehicleObj = {
-      id: `v-${Date.now()}`,
-      brand: newBrand.trim(),
-      model: newModel.trim(),
-      plate: newPlate.trim().toUpperCase(),
-      color: 'Black',
-    };
+  // Vehicles list
+  const [vehicles, setVehicles] = useState([
+    { id: 'v1', vehicleId: 'v1', brand: 'Toyota', model: 'Camry', plate: '30E-123.45', licensePlate: '30E-123.45', color: 'White', isDefault: true, vehicleTypeId: 1, vehicleType: 'Sedan' },
+    { id: 'v2', vehicleId: 'v2', brand: 'Honda', model: 'CRV', plate: '29A-678.90', licensePlate: '29A-678.90', color: 'Red', isDefault: false, vehicleTypeId: 2, vehicleType: 'SUV' },
+  ]);
 
-    setVehicles([...vehicles, newVehicleObj]);
+  // Vehicle Types list from backend
+  const [vehicleTypes, setVehicleTypes] = useState([
+    { id: 1, name: 'Sedan / Hatchback (Car)', code: 'CAR' },
+    { id: 2, name: 'SUV / Crossover / 7-Seater', code: 'SUV' },
+    { id: 3, name: 'Motorbike / Scooter', code: 'MOTO' },
+    { id: 4, name: 'Electric Vehicle (EV)', code: 'EV' },
+  ]);
 
-    // Also call backend API if token is active
-    await authService.addVehicle({
-      licensePlate: newPlate.trim().toUpperCase(),
-      brand: newBrand.trim(),
-      model: newModel.trim(),
+  // Vehicle Add / Edit Modal state
+  const [vehicleModalMode, setVehicleModalMode] = useState('add'); // 'add' | 'edit'
+  const [selectedVehicleForEdit, setSelectedVehicleForEdit] = useState(null);
+  const [vehicleFormData, setVehicleFormData] = useState({
+    brand: 'Toyota',
+    model: 'Camry',
+    licensePlate: '',
+    color: 'White',
+    vehicleTypeId: 1,
+    isDefault: false,
+  });
+  const [vehicleModalError, setVehicleModalError] = useState('');
+  const [vehicleModalLoading, setVehicleModalLoading] = useState(false);
+
+  // Edit Profile Modal state
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    avatarUrl: '',
+  });
+  const [profileFeedback, setProfileFeedback] = useState({ type: '', text: '' });
+  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+
+  // Change Password Modal state
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [passwordFormData, setPasswordFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showPasswordVisibility, setShowPasswordVisibility] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [passwordFeedback, setPasswordFeedback] = useState({ type: '', text: '' });
+  const [isPasswordChanging, setIsPasswordChanging] = useState(false);
+
+  // Refresh live vehicles from backend
+  const refreshVehicles = async () => {
+    const list = await authService.fetchVehicles();
+    if (list && Array.isArray(list)) {
+      setVehicles(list.map(v => ({
+        id: v.vehicleId || v.id,
+        vehicleId: v.vehicleId || v.id,
+        brand: v.brand || 'Vehicle',
+        model: v.model || '',
+        plate: v.licensePlate || v.plateNumber || '',
+        licensePlate: v.licensePlate || v.plateNumber || '',
+        color: v.color || 'Black',
+        vehicleTypeId: v.vehicleTypeId || 1,
+        vehicleType: v.vehicleType || (v.vehicleTypeId === 2 ? 'SUV' : 'Car'),
+        isDefault: Boolean(v.isDefault),
+        isActive: v.isActive !== false,
+      })));
+    }
+  };
+
+  // Refresh live profile from backend
+  const refreshProfile = async () => {
+    const profile = await authService.fetchProfile();
+    if (profile) {
+      setCurrentUserProfile(prev => ({
+        ...prev,
+        ...profile,
+      }));
+    }
+  };
+
+  // On Mount: load profile, vehicles, and vehicle-types
+  useEffect(() => {
+    refreshVehicles();
+    refreshProfile();
+    authService.fetchVehicleTypes().then(types => {
+      if (types && Array.isArray(types) && types.length > 0) {
+        setVehicleTypes(types);
+      }
     });
+  }, []);
 
-    setIsAddVehicleModalOpen(false);
+  // Open Add Vehicle Modal
+  const openAddVehicleModal = () => {
+    setVehicleModalMode('add');
+    setSelectedVehicleForEdit(null);
+    setVehicleFormData({
+      brand: 'Toyota',
+      model: 'Camry',
+      licensePlate: '',
+      color: 'White',
+      vehicleTypeId: vehicleTypes[0]?.id || 1,
+      isDefault: vehicles.length === 0,
+    });
+    setVehicleModalError('');
+    setIsAddVehicleModalOpen(true);
+  };
+
+  // Open Edit Vehicle Modal
+  const openEditVehicleModal = (veh) => {
+    setVehicleModalMode('edit');
+    setSelectedVehicleForEdit(veh);
+    setVehicleFormData({
+      brand: veh.brand || '',
+      model: veh.model || '',
+      licensePlate: veh.licensePlate || veh.plate || '',
+      color: veh.color || 'Black',
+      vehicleTypeId: veh.vehicleTypeId || 1,
+      isDefault: Boolean(veh.isDefault),
+    });
+    setVehicleModalError('');
+    setIsAddVehicleModalOpen(true);
+  };
+
+  // Save Vehicle (POST or PUT)
+  const handleSaveVehicle = async (e) => {
+    e.preventDefault();
+    if (!vehicleFormData.licensePlate.trim()) {
+      setVehicleModalError('Please enter license plate number.');
+      return;
+    }
+    setVehicleModalLoading(true);
+    setVehicleModalError('');
+
+    if (vehicleModalMode === 'add') {
+      const res = await authService.addVehicle(vehicleFormData);
+      setVehicleModalLoading(false);
+      if (res.success) {
+        await refreshVehicles();
+        setIsAddVehicleModalOpen(false);
+      } else {
+        // Fallback local update for demo
+        const newLocal = {
+          id: `v-${Date.now()}`,
+          vehicleId: `v-${Date.now()}`,
+          brand: vehicleFormData.brand,
+          model: vehicleFormData.model,
+          plate: vehicleFormData.licensePlate.toUpperCase(),
+          licensePlate: vehicleFormData.licensePlate.toUpperCase(),
+          color: vehicleFormData.color,
+          vehicleTypeId: vehicleFormData.vehicleTypeId,
+          vehicleType: vehicleTypes.find(t => t.id === Number(vehicleFormData.vehicleTypeId))?.name || 'Car',
+          isDefault: vehicleFormData.isDefault,
+        };
+        setVehicles(prev => [...prev, newLocal]);
+        setIsAddVehicleModalOpen(false);
+      }
+    } else {
+      // Edit mode
+      const vId = selectedVehicleForEdit?.vehicleId || selectedVehicleForEdit?.id;
+      const res = await authService.updateVehicle(vId, vehicleFormData);
+      setVehicleModalLoading(false);
+      if (res.success) {
+        await refreshVehicles();
+        setIsAddVehicleModalOpen(false);
+      } else {
+        // Fallback local update
+        setVehicles(prev => prev.map(item => (item.id === vId || item.vehicleId === vId) ? {
+          ...item,
+          ...vehicleFormData,
+          plate: vehicleFormData.licensePlate.toUpperCase(),
+          licensePlate: vehicleFormData.licensePlate.toUpperCase(),
+        } : item));
+        setIsAddVehicleModalOpen(false);
+      }
+    }
+  };
+
+  // Delete Vehicle (DELETE)
+  const handleDeleteVehicle = async (veh) => {
+    if (!window.confirm(`Are you sure you want to delete vehicle ${veh.plate || veh.licensePlate}?`)) return;
+    const vId = veh.vehicleId || veh.id;
+    const res = await authService.deleteVehicle(vId);
+    if (res.success) {
+      await refreshVehicles();
+    } else {
+      // Fallback local delete
+      setVehicles(prev => prev.filter(item => item.id !== vId && item.vehicleId !== vId));
+    }
+  };
+
+  // Set Default Vehicle (PATCH)
+  const handleSetDefaultVehicle = async (veh) => {
+    const vId = veh.vehicleId || veh.id;
+    const res = await authService.setDefaultVehicle(vId);
+    if (res.success) {
+      await refreshVehicles();
+    } else {
+      // Fallback local set default
+      setVehicles(prev => prev.map(item => ({
+        ...item,
+        isDefault: item.id === vId || item.vehicleId === vId,
+      })));
+    }
+  };
+
+  // Edit Profile
+  const openEditProfile = () => {
+    setProfileFormData({
+      fullName: currentUserProfile?.fullName || user?.fullName || '',
+      email: currentUserProfile?.email || user?.email || '',
+      phoneNumber: currentUserProfile?.phoneNumber || user?.phoneNumber || '',
+      avatarUrl: currentUserProfile?.avatarUrl || user?.avatarUrl || '',
+    });
+    setProfileFeedback({ type: '', text: '' });
+    setIsEditProfileOpen(true);
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setIsProfileUpdating(true);
+    setProfileFeedback({ type: '', text: '' });
+
+    const res = await authService.updateProfile(profileFormData);
+    setIsProfileUpdating(false);
+
+    if (res.success) {
+      setCurrentUserProfile(prev => ({
+        ...prev,
+        ...profileFormData,
+      }));
+      setProfileFeedback({ type: 'success', text: 'Profile updated successfully!' });
+      setTimeout(() => {
+        setIsEditProfileOpen(false);
+        setProfileFeedback({ type: '', text: '' });
+      }, 1200);
+    } else {
+      setProfileFeedback({ type: 'error', text: res.message || 'Failed to update profile.' });
+    }
+  };
+
+  // Change Password
+  const openChangePassword = () => {
+    setPasswordFormData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+    setPasswordFeedback({ type: '', text: '' });
+    setIsChangePasswordOpen(true);
+  };
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault();
+    if (passwordFormData.newPassword.length < 6) {
+      setPasswordFeedback({ type: 'error', text: 'New password must be at least 6 characters.' });
+      return;
+    }
+    if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+      setPasswordFeedback({ type: 'error', text: 'New password and confirmation do not match.' });
+      return;
+    }
+
+    setIsPasswordChanging(true);
+    setPasswordFeedback({ type: '', text: '' });
+
+    const res = await authService.changePassword(passwordFormData);
+    setIsPasswordChanging(false);
+
+    if (res.success) {
+      setPasswordFeedback({ type: 'success', text: 'Password changed successfully!' });
+      setTimeout(() => {
+        setIsChangePasswordOpen(false);
+        setPasswordFeedback({ type: '', text: '' });
+      }, 1500);
+    } else {
+      setPasswordFeedback({ type: 'error', text: res.message || 'Failed to change password. Please verify your current password.' });
+    }
   };
 
   // Handle Bottom Nav click
@@ -140,8 +390,8 @@ export default function UserScreen({ user, onLogout }) {
               <span className="online-indicator"></span>
             </div>
             <div className="user-avatar-meta">
-              <span className="user-avatar-name">{user?.fullName || user?.username || 'Alex Rivers'}</span>
-              <span className="user-avatar-role">VIP Member</span>
+              <span className="user-avatar-name">{currentUserProfile?.fullName || currentUserProfile?.username || user?.fullName || 'Alex Rivers'}</span>
+              <span className="user-avatar-role">{currentUserProfile?.role || user?.role || 'User'}</span>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
@@ -152,8 +402,8 @@ export default function UserScreen({ user, onLogout }) {
           {isUserMenuOpen && (
             <div className="user-dropdown-menu">
               <div className="user-dropdown-header">
-                <strong>{user?.fullName || 'Alex Rivers'}</strong>
-                <span>{user?.email || 'alex.rivers@pms-ojt.vn'}</span>
+                <strong>{currentUserProfile?.fullName || user?.fullName || 'Alex Rivers'}</strong>
+                <span>{currentUserProfile?.email || user?.email || 'alex.rivers@pms-ojt.vn'}</span>
               </div>
               <button
                 type="button"
@@ -631,10 +881,20 @@ export default function UserScreen({ user, onLogout }) {
 
           {/* Card 2: Registered Vehicles */}
           <div className="widget-card registered-vehicles-card">
-            <h4 className="widget-card__title">Registered Vehicles</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+              <h4 className="widget-card__title" style={{ margin: 0 }}>Registered Vehicles ({vehicles.length})</h4>
+              <button
+                type="button"
+                className="btn-add-vehicle-outline"
+                style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                onClick={openAddVehicleModal}
+              >
+                + Add Vehicle
+              </button>
+            </div>
             <div className="registered-vehicles-list">
               {vehicles.map((v) => (
-                <div key={v.id} className="vehicle-pill-item">
+                <div key={v.id || v.vehicleId} className="vehicle-pill-item">
                   <div className="vehicle-car-thumb">
                     {/* Car icon */}
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="1.8">
@@ -644,19 +904,32 @@ export default function UserScreen({ user, onLogout }) {
                     </svg>
                   </div>
                   <div className="vehicle-meta">
-                    <span className="vehicle-name">{v.brand} {v.model}</span>
-                    <span className="vehicle-plate">{v.plate}</span>
+                    <span className="vehicle-name">
+                      {v.brand} {v.model}
+                      {v.isDefault && <span className="badge-primary-default" style={{ marginLeft: '6px' }}>Default</span>}
+                    </span>
+                    <span className="vehicle-plate">{v.plate || v.licensePlate}</span>
+                  </div>
+                  <div className="vehicle-actions-group">
+                    <button
+                      type="button"
+                      className="btn-icon-action"
+                      onClick={() => openEditVehicleModal(v)}
+                      title="Edit vehicle"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-icon-action btn-icon-action--delete"
+                      onClick={() => handleDeleteVehicle(v)}
+                      title="Delete vehicle"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
               ))}
-
-              <button
-                type="button"
-                className="btn-add-vehicle-outline"
-                onClick={() => setIsAddVehicleModalOpen(true)}
-              >
-                Add New Vehicle
-              </button>
             </div>
           </div>
         </div>
@@ -787,56 +1060,99 @@ export default function UserScreen({ user, onLogout }) {
         </div>
       )}
 
-      {/* MODAL 2: Add New Vehicle */}
+      {/* MODAL 2: Add or Edit Vehicle */}
       {isAddVehicleModalOpen && (
         <div className="api-modal-backdrop" onClick={() => setIsAddVehicleModalOpen(false)}>
           <div className="api-modal" onClick={(e) => e.stopPropagation()}>
             <div className="api-modal__header">
-              <h3>Register New Vehicle</h3>
+              <h3>{vehicleModalMode === 'add' ? 'Register New Vehicle' : 'Edit Vehicle Details'}</h3>
               <button type="button" className="api-modal__close" onClick={() => setIsAddVehicleModalOpen(false)}>✕</button>
             </div>
-            <form onSubmit={handleAddVehicle}>
+            <form onSubmit={handleSaveVehicle}>
               <div className="api-modal__body">
-                <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Brand</label>
-                  <input
-                    type="text"
-                    className="cyber-input"
-                    value={newBrand}
-                    onChange={(e) => setNewBrand(e.target.value)}
-                    placeholder="e.g. Toyota, Honda, Porsche"
-                    required
-                  />
+                {vehicleModalError && (
+                  <div className="modal-alert modal-alert--error">{vehicleModalError}</div>
+                )}
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Brand</label>
+                    <input
+                      type="text"
+                      className="cyber-input"
+                      value={vehicleFormData.brand}
+                      onChange={(e) => setVehicleFormData({ ...vehicleFormData, brand: e.target.value })}
+                      placeholder="e.g. Toyota, Honda, Porsche"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Model</label>
+                    <input
+                      type="text"
+                      className="cyber-input"
+                      value={vehicleFormData.model}
+                      onChange={(e) => setVehicleFormData({ ...vehicleFormData, model: e.target.value })}
+                      placeholder="e.g. Camry, Civic, Taycan"
+                      required
+                    />
+                  </div>
                 </div>
+
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Model</label>
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>License Plate (VN Standard)</label>
                   <input
                     type="text"
                     className="cyber-input"
-                    value={newModel}
-                    onChange={(e) => setNewModel(e.target.value)}
-                    placeholder="e.g. Camry, Civic, Taycan"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>License Plate (Vietnamese standard format)</label>
-                  <input
-                    type="text"
-                    className="cyber-input"
-                    value={newPlate}
-                    onChange={(e) => setNewPlate(e.target.value)}
+                    value={vehicleFormData.licensePlate}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, licensePlate: e.target.value })}
                     placeholder="e.g. 51F-999.88 or 30E-123.45"
                     required
                   />
                 </div>
+
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Vehicle Type</label>
+                    <select
+                      className="cyber-select"
+                      style={{ width: '100%' }}
+                      value={vehicleFormData.vehicleTypeId}
+                      onChange={(e) => setVehicleFormData({ ...vehicleFormData, vehicleTypeId: Number(e.target.value) })}
+                    >
+                      {vehicleTypes.map((vt) => (
+                        <option key={vt.id} value={vt.id}>
+                          {vt.name || vt.description || vt.code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Color</label>
+                    <input
+                      type="text"
+                      className="cyber-input"
+                      value={vehicleFormData.color}
+                      onChange={(e) => setVehicleFormData({ ...vehicleFormData, color: e.target.value })}
+                      placeholder="e.g. White, Black, Red"
+                    />
+                  </div>
+                </div>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={vehicleFormData.isDefault}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, isDefault: e.target.checked })}
+                  />
+                  <span>Set as primary default vehicle for quick parking reservations</span>
+                </label>
               </div>
               <div className="api-modal__footer">
                 <button type="button" className="btn btn-outline-cyan" onClick={() => setIsAddVehicleModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary-cyan">
-                  Save Vehicle
+                <button type="submit" className="btn btn-primary-cyan" disabled={vehicleModalLoading}>
+                  {vehicleModalLoading ? 'Saving...' : (vehicleModalMode === 'add' ? 'Save Vehicle' : 'Update Vehicle')}
                 </button>
               </div>
             </form>
@@ -928,22 +1244,64 @@ export default function UserScreen({ user, onLogout }) {
 
               {activeSubModal === 'vehicles' && (
                 <div className="vehicles-modal-content">
-                  {vehicles.map((v) => (
-                    <div key={v.id} className="vehicle-list-card">
-                      <div>
-                        <strong>{v.brand} {v.model}</strong>
-                        <div style={{ color: '#00e5ff', fontSize: '0.9rem', marginTop: '2px' }}>{v.plate}</div>
-                      </div>
-                      <span className="badge-default">Primary</span>
+                  {vehicles.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
+                      No registered vehicles found. Add one below!
                     </div>
-                  ))}
+                  ) : (
+                    vehicles.map((v) => (
+                      <div key={v.id || v.vehicleId} className="vehicle-list-card-full">
+                        <div className="vehicle-card-details">
+                          <div className="vehicle-card-title">
+                            <span>{v.brand} {v.model}</span>
+                            {v.isDefault ? (
+                              <span className="badge-primary-default">★ Primary Default</span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn-set-default"
+                                onClick={() => handleSetDefaultVehicle(v)}
+                                title="Set as primary default vehicle"
+                              >
+                                Set Default
+                              </button>
+                            )}
+                          </div>
+                          <div className="vehicle-card-sub">
+                            <span className="badge-plate">{v.plate || v.licensePlate}</span>
+                            <span>{v.color || 'Standard'}</span>
+                            <span>• {v.vehicleType || 'Vehicle'}</span>
+                          </div>
+                        </div>
+
+                        <div className="vehicle-actions-group">
+                          <button
+                            type="button"
+                            className="btn-icon-action"
+                            onClick={() => openEditVehicleModal(v)}
+                            title="Edit vehicle details"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-icon-action btn-icon-action--delete"
+                            onClick={() => handleDeleteVehicle(v)}
+                            title="Delete vehicle"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                   <button
                     type="button"
                     className="btn btn-outline-cyan btn-full"
                     style={{ marginTop: '1rem' }}
-                    onClick={() => setIsAddVehicleModalOpen(true)}
+                    onClick={openAddVehicleModal}
                   >
-                    + Add Another Vehicle
+                    + Register Another Vehicle
                   </button>
                 </div>
               )}
@@ -952,40 +1310,52 @@ export default function UserScreen({ user, onLogout }) {
                 <div className="profile-modal-content">
                   <div className="profile-info-row">
                     <span className="profile-label">Full Name:</span>
-                    <strong>{user?.fullName || 'Alex Rivers'}</strong>
+                    <strong>{currentUserProfile?.fullName || user?.fullName || 'Alex Rivers'}</strong>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Username:</span>
-                    <strong>{user?.username || 'alex.rivers'}</strong>
+                    <strong>{currentUserProfile?.username || user?.username || 'alex.rivers'}</strong>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Email:</span>
-                    <strong>{user?.email || 'alex.rivers@pms-ojt.vn'}</strong>
+                    <strong>{currentUserProfile?.email || user?.email || 'alex.rivers@pms-ojt.vn'}</strong>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Phone:</span>
-                    <strong>{user?.phoneNumber || '+84 988 123 456'}</strong>
+                    <strong>{currentUserProfile?.phoneNumber || user?.phoneNumber || '+84 988 123 456'}</strong>
                   </div>
                   <div className="profile-info-row">
-                    <span className="profile-label">Membership:</span>
-                    <strong className="text-cyan">{user?.role || 'VIP Member'}</strong>
+                    <span className="profile-label">Role:</span>
+                    <strong className="text-cyan">{currentUserProfile?.role || user?.role || 'User'}</strong>
+                  </div>
+                  <div className="profile-info-row">
+                    <span className="profile-label">Status:</span>
+                    <span className="status-pill status-pill--success">{currentUserProfile?.status || 'Active'}</span>
                   </div>
 
                   <div className="profile-actions" style={{ marginTop: '1.5rem' }}>
                     <button
                       type="button"
-                      className="btn btn-outline-cyan btn-full"
-                      onClick={() => alert('Change password email sent!')}
+                      className="btn btn-primary-cyan btn-full"
+                      onClick={openEditProfile}
                     >
-                      Change Password
+                      ✏️ Edit Profile
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-cyan btn-full"
+                      style={{ marginTop: '0.65rem' }}
+                      onClick={openChangePassword}
+                    >
+                      🔑 Change Password
                     </button>
                     <button
                       type="button"
                       className="btn btn-danger-outline btn-full"
-                      style={{ marginTop: '0.75rem' }}
+                      style={{ marginTop: '0.65rem' }}
                       onClick={onLogout}
                     >
-                      Log Out of Session
+                      🚪 Log Out of Session
                     </button>
                   </div>
                 </div>
@@ -1001,6 +1371,167 @@ export default function UserScreen({ user, onLogout }) {
                 Back to Map
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: Edit Profile Modal */}
+      {isEditProfileOpen && (
+        <div className="api-modal-backdrop" onClick={() => setIsEditProfileOpen(false)}>
+          <div className="api-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="api-modal__header">
+              <h3>Edit Account Profile</h3>
+              <button type="button" className="api-modal__close" onClick={() => setIsEditProfileOpen(false)}>✕</button>
+            </div>
+            <form onSubmit={handleSaveProfile}>
+              <div className="api-modal__body">
+                {profileFeedback.text && (
+                  <div className={`modal-alert modal-alert--${profileFeedback.type}`}>
+                    {profileFeedback.text}
+                  </div>
+                )}
+                <div className="form-group">
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Full Name</label>
+                  <input
+                    type="text"
+                    className="cyber-input"
+                    value={profileFormData.fullName}
+                    onChange={(e) => setProfileFormData({ ...profileFormData, fullName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Email Address</label>
+                  <input
+                    type="email"
+                    className="cyber-input"
+                    value={profileFormData.email}
+                    onChange={(e) => setProfileFormData({ ...profileFormData, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Phone Number</label>
+                  <input
+                    type="text"
+                    className="cyber-input"
+                    value={profileFormData.phoneNumber}
+                    onChange={(e) => setProfileFormData({ ...profileFormData, phoneNumber: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Avatar Image URL (Optional)</label>
+                  <input
+                    type="url"
+                    className="cyber-input"
+                    value={profileFormData.avatarUrl}
+                    onChange={(e) => setProfileFormData({ ...profileFormData, avatarUrl: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+              <div className="api-modal__footer">
+                <button type="button" className="btn btn-outline-cyan" onClick={() => setIsEditProfileOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary-cyan" disabled={isProfileUpdating}>
+                  {isProfileUpdating ? 'Updating...' : 'Save Profile Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: Change Password Modal (Authenticated PUT /api/Users/profile/change-password) */}
+      {isChangePasswordOpen && (
+        <div className="api-modal-backdrop" onClick={() => setIsChangePasswordOpen(false)}>
+          <div className="api-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="api-modal__header">
+              <h3>Change Password</h3>
+              <button type="button" className="api-modal__close" onClick={() => setIsChangePasswordOpen(false)}>✕</button>
+            </div>
+            <form onSubmit={handleSavePassword}>
+              <div className="api-modal__body">
+                {passwordFeedback.text && (
+                  <div className={`modal-alert modal-alert--${passwordFeedback.type}`}>
+                    {passwordFeedback.text}
+                  </div>
+                )}
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
+                  Authenticated password change directly via backend API. No email token required.
+                </p>
+
+                <div className="form-group">
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Current Password</label>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPasswordVisibility.current ? 'text' : 'password'}
+                      className="cyber-input"
+                      value={passwordFormData.currentPassword}
+                      onChange={(e) => setPasswordFormData({ ...passwordFormData, currentPassword: e.target.value })}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-eye-toggle"
+                      onClick={() => setShowPasswordVisibility(p => ({ ...p, current: !p.current }))}
+                    >
+                      {showPasswordVisibility.current ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>New Password (min. 6 characters)</label>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPasswordVisibility.new ? 'text' : 'password'}
+                      className="cyber-input"
+                      value={passwordFormData.newPassword}
+                      onChange={(e) => setPasswordFormData({ ...passwordFormData, newPassword: e.target.value })}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-eye-toggle"
+                      onClick={() => setShowPasswordVisibility(p => ({ ...p, new: !p.new }))}
+                    >
+                      {showPasswordVisibility.new ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Confirm New Password</label>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPasswordVisibility.confirm ? 'text' : 'password'}
+                      className="cyber-input"
+                      value={passwordFormData.confirmPassword}
+                      onChange={(e) => setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value })}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-eye-toggle"
+                      onClick={() => setShowPasswordVisibility(p => ({ ...p, confirm: !p.confirm }))}
+                    >
+                      {showPasswordVisibility.confirm ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="api-modal__footer">
+                <button type="button" className="btn btn-outline-cyan" onClick={() => setIsChangePasswordOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary-cyan" disabled={isPasswordChanging}>
+                  {isPasswordChanging ? 'Changing...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

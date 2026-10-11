@@ -30,7 +30,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     setInfoMsg('');
 
     if (!identifier.trim()) {
-      setErrorMsg('Please enter your Email, Phone number, or Username!');
+      setErrorMsg('Please enter your username!');
       return;
     }
     if (!password) {
@@ -65,7 +65,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
       fullName: 'Alex Rivers',
       email: 'alex.rivers@pms-ojt.vn',
       phoneNumber: '+84 988 123 456',
-      role: 'VIP Member',
+      role: 'User',
     };
     localStorage.setItem('pms_token', 'demo_active_token_user');
     localStorage.setItem('pms_user', JSON.stringify(demoUser));
@@ -157,7 +157,6 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
           {/* Logo */}
           <div className="auth-brand-center">
             <ParkingLogo />
-            <h1 className="auth-heading">Parking Management System - OJT</h1>
           </div>
 
           {/* Main Glass Card */}
@@ -219,7 +218,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
                     id="login-identifier"
                     type="text"
                     className="cyber-input"
-                    placeholder="Email/Phone"
+                    placeholder="Username"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     autoComplete="username"

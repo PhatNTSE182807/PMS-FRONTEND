@@ -256,8 +256,24 @@ export const authService = {
   },
 
   /**
+   * Helper to format error responses
+   */
+  _extractErrorMessage(data, fallback = 'Operation failed') {
+    if (!data) return fallback;
+    if (Array.isArray(data.errors) && data.errors.length > 0) {
+      return data.errors.join('; ');
+    }
+    if (data.errors && typeof data.errors === 'object') {
+      const msgs = Object.values(data.errors).flat();
+      if (msgs.length > 0) return msgs.join('; ');
+    }
+    if (data.message) return data.message;
+    return fallback;
+  },
+
+  /**
    * Fetch live user profile from backend
-   * Endpoint: GET /api/users/profile
+   * Endpoint: GET /api/Users/profile
    */
   async fetchProfile() {
     const baseUrl = getApiBaseUrl();
@@ -265,7 +281,7 @@ export const authService = {
     if (!token) return null;
 
     try {
-      const response = await fetch(`${baseUrl}/users/profile`, {
+      const response = await fetch(`${baseUrl}/Users/profile`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -275,15 +291,87 @@ export const authService = {
 
       if (!response.ok) return null;
       const data = await response.json();
-      return data?.result || data;
-    } catch {
+      const profile = data?.result || data?.data || data;
+
+      // Update cached user in storage
+      if (profile) {
+        const currentUser = this.getCurrentUser() || {};
+        const updatedUser = {
+          ...currentUser,
+          userId: profile.userId || currentUser.userId,
+          fullName: profile.fullName || currentUser.fullName,
+          email: profile.email || currentUser.email,
+          phoneNumber: profile.phoneNumber || currentUser.phoneNumber,
+          role: profile.role || currentUser.role || 'User',
+          avatarUrl: profile.avatarUrl || currentUser.avatarUrl,
+        };
+        const storage = localStorage.getItem('pms_token') ? localStorage : sessionStorage;
+        storage.setItem('pms_user', JSON.stringify(updatedUser));
+      }
+
+      return profile;
+    } catch (err) {
+      console.warn('fetchProfile error:', err);
       return null;
     }
   },
 
   /**
+   * Update User Profile
+   * Endpoint: PUT /api/Users/profile
+   */
+  async updateProfile(profileData) {
+    const baseUrl = getApiBaseUrl();
+    const token = this.getToken();
+
+    try {
+      const response = await fetch(`${baseUrl}/Users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fullName: profileData.fullName?.trim(),
+          email: profileData.email?.trim(),
+          phoneNumber: profileData.phoneNumber?.trim(),
+          avatarUrl: profileData.avatarUrl || '',
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        return {
+          success: false,
+          message: this._extractErrorMessage(data, `Failed to update profile (${response.status})`),
+        };
+      }
+
+      const updated = data?.result || data?.data || data;
+      // Update local storage
+      const currentUser = this.getCurrentUser() || {};
+      const updatedUser = {
+        ...currentUser,
+        fullName: updated.fullName || profileData.fullName,
+        email: updated.email || profileData.email,
+        phoneNumber: updated.phoneNumber || profileData.phoneNumber,
+        avatarUrl: updated.avatarUrl || profileData.avatarUrl,
+        role: updated.role || currentUser.role || 'User',
+      };
+      const storage = localStorage.getItem('pms_token') ? localStorage : sessionStorage;
+      storage.setItem('pms_user', JSON.stringify(updatedUser));
+
+      return { success: true, data: updated, user: updatedUser, message: 'Profile updated successfully!' };
+    } catch (err) {
+      console.warn('updateProfile error:', err);
+      return { success: false, message: 'Network error updating profile. Please check backend connection.' };
+    }
+  },
+
+  /**
    * Fetch registered vehicles from backend
-   * Endpoint: GET /api/users/profile/vehicles
+   * Endpoint: GET /api/Users/profile/vehicles
    */
   async fetchVehicles() {
     const baseUrl = getApiBaseUrl();
@@ -291,7 +379,7 @@ export const authService = {
     if (!token) return null;
 
     try {
-      const response = await fetch(`${baseUrl}/users/profile/vehicles`, {
+      const response = await fetch(`${baseUrl}/Users/profile/vehicles`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -301,38 +389,215 @@ export const authService = {
 
       if (!response.ok) return null;
       const data = await response.json();
-      return data?.result || data;
-    } catch {
+      return data?.result || data?.data || (Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn('fetchVehicles error:', err);
       return null;
     }
   },
 
   /**
+   * Fetch Vehicle Types catalog
+   * Endpoint: GET /api/Users/profile/vehicle-types
+   */
+  async fetchVehicleTypes() {
+    const baseUrl = getApiBaseUrl();
+    const token = this.getToken();
+
+    try {
+      const response = await fetch(`${baseUrl}/Users/profile/vehicle-types`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data?.result || data?.data || (Array.isArray(data) ? data : []);
+    } catch {
+      return [];
+    }
+  },
+
+  /**
    * Add new vehicle
-   * Endpoint: POST /api/users/profile/vehicles
+   * Endpoint: POST /api/Users/profile/vehicles
    */
   async addVehicle(vehicleData) {
     const baseUrl = getApiBaseUrl();
     const token = this.getToken();
 
     try {
-      const response = await fetch(`${baseUrl}/users/profile/vehicles`, {
+      const response = await fetch(`${baseUrl}/Users/profile/vehicles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(vehicleData),
+        body: JSON.stringify({
+          licensePlate: vehicleData.licensePlate?.trim(),
+          vehicleTypeId: Number(vehicleData.vehicleTypeId) || 1,
+          brand: vehicleData.brand?.trim(),
+          model: vehicleData.model?.trim(),
+          color: vehicleData.color?.trim() || 'Black',
+          isDefault: Boolean(vehicleData.isDefault),
+        }),
       });
 
       const data = await response.json().catch(() => null);
       if (!response.ok) {
-        return { success: false, message: data?.errors?.join(', ') || 'Failed to add vehicle' };
+        return {
+          success: false,
+          message: this._extractErrorMessage(data, 'Failed to add vehicle'),
+        };
       }
-      return { success: true, data: data?.result || data };
-    } catch {
-      return { success: false, message: 'Network error adding vehicle' };
+      return { success: true, data: data?.result || data, message: 'Vehicle added successfully!' };
+    } catch (err) {
+      console.warn('addVehicle error:', err);
+      return { success: false, message: 'Network error adding vehicle.' };
+    }
+  },
+
+  /**
+   * Update an existing vehicle
+   * Endpoint: PUT /api/Users/profile/vehicles/{vehicleId}
+   */
+  async updateVehicle(vehicleId, vehicleData) {
+    const baseUrl = getApiBaseUrl();
+    const token = this.getToken();
+
+    try {
+      const response = await fetch(`${baseUrl}/Users/profile/vehicles/${vehicleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          licensePlate: vehicleData.licensePlate?.trim(),
+          vehicleTypeId: Number(vehicleData.vehicleTypeId) || 1,
+          brand: vehicleData.brand?.trim(),
+          model: vehicleData.model?.trim(),
+          color: vehicleData.color?.trim() || 'Black',
+          isDefault: Boolean(vehicleData.isDefault),
+          isActive: vehicleData.isActive !== false,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        return {
+          success: false,
+          message: this._extractErrorMessage(data, 'Failed to update vehicle'),
+        };
+      }
+      return { success: true, data: data?.result || data, message: 'Vehicle updated successfully!' };
+    } catch (err) {
+      console.warn('updateVehicle error:', err);
+      return { success: false, message: 'Network error updating vehicle.' };
+    }
+  },
+
+  /**
+   * Delete vehicle
+   * Endpoint: DELETE /api/Users/profile/vehicles/{vehicleId}
+   */
+  async deleteVehicle(vehicleId) {
+    const baseUrl = getApiBaseUrl();
+    const token = this.getToken();
+
+    try {
+      const response = await fetch(`${baseUrl}/Users/profile/vehicles/${vehicleId}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        return {
+          success: false,
+          message: this._extractErrorMessage(data, 'Failed to delete vehicle'),
+        };
+      }
+      return { success: true, message: 'Vehicle deleted successfully!' };
+    } catch (err) {
+      console.warn('deleteVehicle error:', err);
+      return { success: false, message: 'Network error deleting vehicle.' };
+    }
+  },
+
+  /**
+   * Set vehicle as default / primary
+   * Endpoint: PATCH /api/Users/profile/vehicles/{vehicleId}/default
+   */
+  async setDefaultVehicle(vehicleId) {
+    const baseUrl = getApiBaseUrl();
+    const token = this.getToken();
+
+    try {
+      const response = await fetch(`${baseUrl}/Users/profile/vehicles/${vehicleId}/default`, {
+        method: 'PATCH',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        return {
+          success: false,
+          message: this._extractErrorMessage(data, 'Failed to set default vehicle'),
+        };
+      }
+      return { success: true, data: data?.result || data, message: 'Vehicle marked as primary default!' };
+    } catch (err) {
+      console.warn('setDefaultVehicle error:', err);
+      return { success: false, message: 'Network error setting default vehicle.' };
+    }
+  },
+
+  /**
+   * Change Password
+   * Endpoint: PUT /api/Users/profile/change-password
+   */
+  async changePassword({ currentPassword, newPassword, confirmPassword }) {
+    const baseUrl = getApiBaseUrl();
+    const token = this.getToken();
+
+    try {
+      const response = await fetch(`${baseUrl}/Users/profile/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        return {
+          success: false,
+          message: this._extractErrorMessage(data, 'Failed to change password. Please verify current password.'),
+        };
+      }
+      return { success: true, message: 'Password changed successfully!' };
+    } catch (err) {
+      console.warn('changePassword error:', err);
+      return { success: false, message: 'Network error changing password.' };
     }
   },
 
