@@ -96,12 +96,13 @@ const ActiveParkingCard = memo(function ActiveParkingCard({ onPayNow, onQrZoom }
   );
 });
 
-export default function UserScreen({ user, onLogout }) {
+export default function UserScreen({ user, isGuest = false, onLogout, onRequireLogin }) {
   // Navigation tabs: 'map' | 'reservations' | 'vehicles' | 'profile'
   const [activeTab, setActiveTab] = useState('map');
 
   const [isCentered, setIsCentered] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [guestPromptReason, setGuestPromptReason] = useState('');
 
   // Quick Reservation inputs
   const [selectedLocation, setSelectedLocation] = useState('Level 2 - Zone P5');
@@ -129,7 +130,13 @@ export default function UserScreen({ user, onLogout }) {
   ]);
 
   // Stable callbacks for ActiveParkingTimer
-  const handlePayNow = useCallback(() => setIsPayModalOpen(true), []);
+  const handlePayNow = useCallback(() => {
+    if (isGuest) {
+      setGuestPromptReason('Thanh toán phí đỗ xe');
+      return;
+    }
+    setIsPayModalOpen(true);
+  }, [isGuest]);
   const handleQrZoom = useCallback(() => setIsQrZoomOpen(true), []);
 
   // Center on my vehicle effect
@@ -139,19 +146,43 @@ export default function UserScreen({ user, onLogout }) {
     setTimeout(() => setIsCentered(false), 2500);
   };
 
-  // Handle Find Slots
+  // Handle Find Slots / Book Slot (Requires Login if in Guest Mode)
   const handleFindSlots = () => {
+    if (isGuest) {
+      setGuestPromptReason(`Đặt chỗ tại ${selectedLocation}`);
+      return;
+    }
     setReservationFeedback(`Found 8 available slots at ${selectedLocation}! Select a slot below to confirm.`);
   };
 
   // Live User Profile state
   const [currentUserProfile, setCurrentUserProfile] = useState(user);
 
-  // Vehicles list
-  const [vehicles, setVehicles] = useState([
-    { id: 'v1', vehicleId: 'v1', brand: 'Toyota', model: 'Camry', plate: '30E-123.45', licensePlate: '30E-123.45', color: 'White', isDefault: true, vehicleTypeId: 1, vehicleType: 'Sedan' },
-    { id: 'v2', vehicleId: 'v2', brand: 'Honda', model: 'CRV', plate: '29A-678.90', licensePlate: '29A-678.90', color: 'Red', isDefault: false, vehicleTypeId: 2, vehicleType: 'SUV' },
-  ]);
+  // Vehicles list (include onboarding vehicle if added during registration)
+  const [vehicles, setVehicles] = useState(() => {
+    const base = [
+      { id: 'v1', vehicleId: 'v1', brand: 'Toyota', model: 'Camry', plate: '30E-123.45', licensePlate: '30E-123.45', color: 'White', isDefault: !user?.onboardingVehicle, vehicleTypeId: 1, vehicleType: 'Sedan' },
+      { id: 'v2', vehicleId: 'v2', brand: 'Honda', model: 'CRV', plate: '29A-678.90', licensePlate: '29A-678.90', color: 'Red', isDefault: false, vehicleTypeId: 2, vehicleType: 'SUV' },
+    ];
+    if (user?.onboardingVehicle?.licensePlate) {
+      return [
+        {
+          id: 'v-onboard',
+          vehicleId: 'v-onboard',
+          brand: user.onboardingVehicle.brand || 'VinFast',
+          model: user.onboardingVehicle.vehicleType?.toUpperCase() || 'EV',
+          plate: user.onboardingVehicle.licensePlate,
+          licensePlate: user.onboardingVehicle.licensePlate,
+          color: 'White',
+          isDefault: true,
+          vehicleTypeId: 1,
+          vehicleType: user.onboardingVehicle.vehicleType || 'Car',
+        },
+        ...base,
+      ];
+    }
+    return base;
+  });
 
   // Vehicle Types list from backend
   const [vehicleTypes, setVehicleTypes] = useState([
@@ -461,8 +492,12 @@ export default function UserScreen({ user, onLogout }) {
               <span className="online-indicator"></span>
             </div>
             <div className="user-avatar-meta">
-              <span className="user-avatar-name">{currentUserProfile?.fullName || currentUserProfile?.username || user?.fullName || 'Alex Rivers'}</span>
-              <span className="user-avatar-role">{currentUserProfile?.role || user?.role || 'User'}</span>
+              <span className="user-avatar-name">
+                {isGuest ? 'Khách xem trước (Guest)' : (currentUserProfile?.fullName || currentUserProfile?.username || user?.fullName || 'Alex Rivers')}
+              </span>
+              <span className="user-avatar-role">
+                {isGuest ? 'Xem Bãi / Giá / 3D' : (currentUserProfile?.role || user?.role || 'User')}
+              </span>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
@@ -473,35 +508,39 @@ export default function UserScreen({ user, onLogout }) {
           {isUserMenuOpen && (
             <div className="user-dropdown-menu">
               <div className="user-dropdown-header">
-                <strong>{currentUserProfile?.fullName || user?.fullName || 'Alex Rivers'}</strong>
-                <span>{currentUserProfile?.email || user?.email || 'alex.rivers@pms-ojt.vn'}</span>
+                <strong>{isGuest ? 'Chế độ Khách (Guest)' : (currentUserProfile?.fullName || user?.fullName || 'Alex Rivers')}</strong>
+                <span>{isGuest ? 'Chỉ cần đăng nhập khi bấm Đặt chỗ' : (currentUserProfile?.email || user?.email || 'alex.rivers@pms-ojt.vn')}</span>
               </div>
-              <button
-                type="button"
-                className="user-dropdown-item"
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  setActiveSubModal('profile');
-                }}
-              >
-                <span>👤</span> Account Profile
-              </button>
-              <button
-                type="button"
-                className="user-dropdown-item"
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  setActiveSubModal('vehicles');
-                }}
-              >
-                <span>🚗</span> My Vehicles
-              </button>
+              {!isGuest && (
+                <>
+                  <button
+                    type="button"
+                    className="user-dropdown-item"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setActiveSubModal('profile');
+                    }}
+                  >
+                    <span>👤</span> Account Profile
+                  </button>
+                  <button
+                    type="button"
+                    className="user-dropdown-item"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setActiveSubModal('vehicles');
+                    }}
+                  >
+                    <span>🚗</span> My Vehicles
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 className="user-dropdown-item user-dropdown-item--logout"
-                onClick={onLogout}
+                onClick={isGuest ? onRequireLogin : onLogout}
               >
-                <span>🚪</span> Logout
+                <span>{isGuest ? '🔑' : '🚪'}</span> {isGuest ? 'Đăng nhập / Đăng ký' : 'Logout'}
               </button>
             </div>
           )}
@@ -512,19 +551,21 @@ export default function UserScreen({ user, onLogout }) {
           <ParkingLogo size="medium" />
         </div>
 
-        {/* Right: Profile, Notification Bell, Logout button */}
+        {/* Right: Profile, Notification Bell, Logout / Guest Login button */}
         <div className="user-top-bar__right">
-          <button
-            type="button"
-            className="top-action-btn"
-            onClick={() => setActiveSubModal('profile')}
-            title="User Profile"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </button>
+          {!isGuest && (
+            <button
+              type="button"
+              className="top-action-btn"
+              onClick={() => setActiveSubModal('profile')}
+              title="User Profile"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </button>
+          )}
 
           <div className="notifications-wrapper">
             <button
@@ -559,19 +600,19 @@ export default function UserScreen({ user, onLogout }) {
             )}
           </div>
 
-          {/* Explicit Logout Button */}
+          {/* Explicit Logout or Guest Login Button */}
           <button
             type="button"
             className="top-action-btn top-action-btn--logout"
-            onClick={onLogout}
-            title="Log out of Parking Management System - OJT"
+            onClick={isGuest ? onRequireLogin : onLogout}
+            title={isGuest ? 'Đăng nhập để Đặt chỗ' : 'Log out'}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            <span className="logout-text">Logout</span>
+            <span className="logout-text">{isGuest ? 'Đăng nhập' : 'Logout'}</span>
           </button>
         </div>
       </header>
@@ -814,11 +855,15 @@ export default function UserScreen({ user, onLogout }) {
                   className="btn btn-primary-cyan btn-sm"
                   style={{ marginTop: '0.5rem', width: '100%' }}
                   onClick={() => {
+                    if (isGuest) {
+                      setGuestPromptReason(`Đặt chỗ vị trí ${selectedSlot.id} (${selectedSlot.fee})`);
+                      return;
+                    }
                     setReservationFeedback(`Successfully reserved Slot ${selectedSlot.id}!`);
                     setSelectedSlot(null);
                   }}
                 >
-                  Reserve This Slot
+                  Đặt chỗ (Reserve Slot)
                 </button>
               )}
             </div>
@@ -832,7 +877,7 @@ export default function UserScreen({ user, onLogout }) {
         <div className="bottom-widgets-dock">
           {/* Card 1: Quick Reservation */}
           <div className="widget-card quick-reservation-card">
-            <h4 className="widget-card__title">Quick Reservation</h4>
+            <h4 className="widget-card__title">Quick Reservation (Đặt chỗ nhanh)</h4>
             <div className="quick-reservation-form">
               <div className="widget-select-wrap">
                 <select
@@ -861,7 +906,7 @@ export default function UserScreen({ user, onLogout }) {
                 className="btn btn-primary-cyan btn-find-slots"
                 onClick={handleFindSlots}
               >
-                Find Slots
+                Đặt chỗ / Find Slots
               </button>
             </div>
             {reservationFeedback && (
@@ -1522,6 +1567,41 @@ export default function UserScreen({ user, onLogout }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* GUEST MODE: Require Login Only When Clicking Book/Reserve Slot */}
+      {guestPromptReason && (
+        <div className="api-modal-backdrop" onClick={() => setGuestPromptReason('')}>
+          <div className="api-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="api-modal__header">
+              <h3>Cần đăng nhập để Đặt chỗ</h3>
+              <button type="button" className="api-modal__close" onClick={() => setGuestPromptReason('')}>✕</button>
+            </div>
+            <div className="api-modal__body">
+              <div style={{ background: 'rgba(255, 92, 0, 0.12)', border: '1px solid rgba(255, 92, 0, 0.4)', borderRadius: '10px', padding: '0.85rem 1rem', marginBottom: '1rem', color: '#f8fafc', fontSize: '0.88rem' }}>
+                <strong>Yêu cầu:</strong> {guestPromptReason}
+              </div>
+              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.55' }}>
+                Bạn đang xem sơ đồ bãi 3D và bảng giá ở <strong>Chế độ Khách</strong>. Để giữ chỗ và nhận mã QR vào bãi, vui lòng đăng nhập nhanh bằng SĐT/OTP (chỉ mất 10 giây).
+              </p>
+            </div>
+            <div className="api-modal__footer">
+              <button type="button" className="btn btn-outline-cyan" onClick={() => setGuestPromptReason('')}>
+                Tiếp tục xem 3D
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary-cyan"
+                onClick={() => {
+                  setGuestPromptReason('');
+                  if (onRequireLogin) onRequireLogin();
+                }}
+              >
+                Đăng nhập / Đăng ký ngay →
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
 import RegisterScreen from './components/RegisterScreen';
 import UserScreen from './components/UserScreen';
+import RelayTabletMockup from './components/RelayTabletMockup';
 import ApiStatusBadge from './components/ApiStatusBadge';
 import { authService } from './services/authService';
+import { authTranslations } from './i18n/authTranslations';
 import './App.css';
 
 class ErrorBoundary extends React.Component {
@@ -20,14 +22,14 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: '#f1f5f9', minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <h2 style={{ color: '#00f2fe', marginBottom: '0.75rem' }}>An error occurred</h2>
-          <p style={{ color: '#94a3b8', maxWidth: '500px', marginBottom: '1.5rem' }}>
+        <div style={{ padding: '3rem 1.5rem', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <h2 style={{ marginBottom: '0.75rem' }}>An error occurred</h2>
+          <p style={{ maxWidth: '500px', marginBottom: '1.5rem' }}>
             {this.state.error?.message || 'Something went wrong.'}
           </p>
           <button
             type="button"
-            className="btn btn-primary-cyan"
+            className="relay-btn relay-btn--black"
             onClick={() => {
               this.setState({ hasError: false, error: null });
               window.location.reload();
@@ -43,129 +45,149 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
-  // Navigation mode: 'login' | 'register' | 'user'
+  // Primary View: 'login' | 'register' | 'user'
   const [currentView, setCurrentView] = useState('login');
+  // Sub-view inside 'login': 'customer-login' | 'staff-login' | 'staff-activate'
+  const [authSubView, setAuthSubView] = useState('customer-login');
+
   const [currentUser, setCurrentUser] = useState(null);
+  const [isGuestMode, setIsGuestMode] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Check saved session on mount
+  // Theme ('light' | 'dark')
+  const [theme, setTheme] = useState(() => localStorage.getItem('relay_theme') || 'light');
+  // Language ('vi' | 'en')
+  const [lang, setLang] = useState(() => localStorage.getItem('relay_lang') || 'vi');
+
+  // Notification Icon Auto Pop-up State (FR-LOT-04 & FR-SYS-06)
+  const [activeNotifIdx, setActiveNotifIdx] = useState(0);
+  const [isNotifPopVisible, setIsNotifPopVisible] = useState(true);
+  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
+
+  const t = authTranslations[lang] || authTranslations.vi;
+  const notifications = t.notifications || [];
+
   useEffect(() => {
+    localStorage.setItem('relay_theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('relay_lang', lang);
+  }, [lang]);
+
+  // Auto cycle pop-up from the notification bell icon every few seconds
+  useEffect(() => {
+    if (currentView === 'user' || isNotifMenuOpen || notifications.length === 0) return;
+
+    const cycleInterval = setInterval(() => {
+      // Fade out current pop-up briefly, then pop up the next notification
+      setIsNotifPopVisible(false);
+      setTimeout(() => {
+        setActiveNotifIdx((prev) => (prev + 1) % notifications.length);
+        setIsNotifPopVisible(true);
+      }, 450);
+    }, 4500);
+
+    return () => clearInterval(cycleInterval);
+  }, [currentView, isNotifMenuOpen, notifications.length]);
+
+  // Check URL for staff activation link (?activate=staff or #activate-staff) or saved session
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('activate') === 'staff' || window.location.hash === '#activate-staff') {
+      setCurrentView('login');
+      setAuthSubView('staff-activate');
+      return;
+    }
+
     const savedUser = authService.getCurrentUser();
     const token = authService.getToken();
     if (savedUser && token) {
       setCurrentUser(savedUser);
+      setIsGuestMode(false);
       setCurrentView('user');
     }
   }, []);
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
+    setTimeout(() => setToastMessage(''), 3200);
   };
 
-  // Handle successful login
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
+    setIsGuestMode(false);
     setCurrentView('user');
-    showToast(`Welcome back, ${user.fullName || user.username}! Login successful.`);
+    showToast(
+      lang === 'vi'
+        ? `Xin chào, ${user.fullName || user.username}!`
+        : `Welcome, ${user.fullName || user.username}!`
+    );
   };
 
-  // Handle successful registration
-  const handleRegisterSuccess = (info) => {
-    showToast(`Account registered successfully for ${info.fullName}! Please log in.`);
-    setCurrentView('login');
+  const handleRegisterSuccess = (newUser) => {
+    setCurrentUser(newUser);
+    setIsGuestMode(false);
+    setCurrentView('user');
+    showToast(
+      lang === 'vi'
+        ? `Đã tạo tài khoản ${newUser.fullName}!`
+        : `Account created for ${newUser.fullName}!`
+    );
   };
 
-  // Handle logout
+  const handleContinueAsGuest = () => {
+    setCurrentUser(null);
+    setIsGuestMode(true);
+    setCurrentView('user');
+    showToast(
+      lang === 'vi'
+        ? 'Chế độ Khách: Chỉ cần đăng nhập khi bấm Đặt chỗ.'
+        : 'Guest Mode: Sign in only when you book a slot.'
+    );
+  };
+
   const handleLogout = () => {
     authService.logout();
     setCurrentUser(null);
+    setIsGuestMode(false);
+    setAuthSubView('customer-login');
     setCurrentView('login');
-    showToast('Logged out successfully. See you again!');
   };
 
-  return (
-    <div className="pms-app">
-      {/* Dynamic Cyber Ambient Lighting */}
-      <div className="cyber-glow cyber-glow--cyan-top"></div>
-      <div className="cyber-glow cyber-glow--blue-bottom"></div>
-      <div className="cyber-grid-overlay"></div>
-
-      {/* Global Navigation Bar / Control Header */}
-      <nav className="global-header">
-        <div className="global-header__left">
-          <div className="brand-pill" onClick={() => setCurrentView('login')} style={{ cursor: 'pointer' }}>
-            <span className="brand-dot"></span>
-            <span className="brand-text">PARKING MANAGEMENT SYSTEM - OJT</span>
+  if (currentView === 'user') {
+    return (
+      <div className="pms-app">
+        {toastMessage && (
+          <div className="pms-toast" role="status">
+            <span className="pms-toast__icon">✓</span>
+            <span className="pms-toast__text">{toastMessage}</span>
+            <button type="button" className="pms-toast__close" onClick={() => setToastMessage('')}>✕</button>
           </div>
-
-          {/* Quick Screen Switcher Tabs */}
-          <div className="screen-nav-tabs">
-            <button
-              type="button"
-              className={`nav-btn ${currentView === 'login' ? 'nav-btn--active' : ''}`}
-              onClick={() => setCurrentView('login')}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              className={`nav-btn ${currentView === 'register' ? 'nav-btn--active' : ''}`}
-              onClick={() => setCurrentView('register')}
-            >
-              Register
-            </button>
-            <button
-              type="button"
-              className={`nav-btn ${currentView === 'user' ? 'nav-btn--active' : ''}`}
-              onClick={() => {
-                if (!currentUser) {
-                  const demoUser = {
-                    userId: 'u-alex-rivers',
-                    username: 'alex.rivers',
-                    fullName: 'Alex Rivers',
-                    email: 'alex.rivers@pms-ojt.vn',
-                    phoneNumber: '+84 988 123 456',
-                    role: 'User',
-                  };
-                  setCurrentUser(demoUser);
-                }
-                setCurrentView('user');
+        )}
+        <ErrorBoundary>
+          <div className="screen-user-layout">
+            <UserScreen
+              user={currentUser}
+              isGuest={isGuestMode}
+              onLogout={handleLogout}
+              onRequireLogin={() => {
+                setIsGuestMode(false);
+                setAuthSubView('customer-login');
+                setCurrentView('login');
               }}
-            >
-              User Dashboard
-            </button>
+            />
           </div>
-        </div>
+        </ErrorBoundary>
+      </div>
+    );
+  }
 
-        <div className="global-header__right">
-          {/* Backend Connection Indicator Badge */}
-          <ApiStatusBadge />
+  const currentNotif = notifications[activeNotifIdx] || notifications[0];
 
-          {currentUser && currentView !== 'user' && (
-            <button
-              type="button"
-              className="btn btn-outline-cyan btn-sm"
-              onClick={() => setCurrentView('user')}
-            >
-              Dashboard ({currentUser.username})
-            </button>
-          )}
-
-          {currentUser && (
-            <button
-              type="button"
-              className="btn btn-danger-sm"
-              onClick={handleLogout}
-              title="Logout current session"
-            >
-              Logout
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* Toast Notification */}
+  return (
+    <div className={`relay-canvas relay-canvas--${theme}`}>
       {toastMessage && (
         <div className="pms-toast" role="status">
           <span className="pms-toast__icon">✓</span>
@@ -174,55 +196,166 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Single Screen Viewport */}
+      {/* Main Split-Hero Container */}
       <ErrorBoundary>
-        <main className={`pms-main-viewport ${currentView !== 'user' ? 'pms-main-viewport--auth' : ''}`}>
-          {/* Luxury Lamborghini Supercar Background for Login & Register */}
-          {currentView !== 'user' && (
-            <div className="auth-supercar-bg" aria-hidden="true">
-              <div className="auth-supercar-bg__img" style={{ backgroundImage: `url('/lamborghini.jpg')` }} />
-              <div className="auth-supercar-bg__overlay" />
-              <div className="auth-supercar-bg__vignette" />
-              <div className="auth-supercar-bg__ambient-bar">
-                <span className="car-badge">
-                  <span className="car-badge__glow-dot"></span>
-                  Lamborghini Supercar Fleet • Smart Valet Infrastructure
+        <main className="relay-split-hero">
+          {/* LEFT COLUMN: Brand Header + Auth Stack */}
+          <div className="relay-hero-left">
+            {/* Minimal Brand & Utility Row */}
+            <div className="relay-brand-bar">
+              <div
+                className="relay-brand-logo"
+                onClick={() => {
+                  setCurrentView('login');
+                  setAuthSubView('customer-login');
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setCurrentView('login');
+                    setAuthSubView('customer-login');
+                  }
+                }}
+              >
+                <span className="relay-logo-mark" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="2" width="20" height="20" rx="6" fill="#FF5C00" />
+                    <path
+                      d="M8 17V7h5.2c2.1 0 3.5 1.2 3.5 3.1 0 1.9-1.4 3.1-3.5 3.1H10.5V17H8zm2.5-5.8h2.4c.8 0 1.3-.4 1.3-1.1 0-.7-.5-1.1-1.3-1.1h-2.4v2.2z"
+                      fill="#FFFFFF"
+                    />
+                  </svg>
                 </span>
+                <div className="relay-brand-titles">
+                  <span className="relay-brand-name">{t.brandName}</span>
+                  <span className="relay-brand-tag">{t.brandTag}</span>
+                </div>
+              </div>
+
+              {/* Utility Controls: Notification Bell Pop-up + Language + Theme */}
+              <div className="relay-utility-controls">
+                {/* Notification Icon with Auto-Cycling Pop-up */}
+                <div className="relay-notif-anchor">
+                  <button
+                    type="button"
+                    className={`relay-notif-btn ${isNotifMenuOpen ? 'relay-notif-btn--active' : ''}`}
+                    onClick={() => setIsNotifMenuOpen((prev) => !prev)}
+                    title={t.notifHeader}
+                    aria-label={t.notifHeader}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                    <span className="relay-notif-badge">{notifications.length}</span>
+                  </button>
+
+                  {/* Auto-cycling single pop-up bubble from the bell icon */}
+                  {!isNotifMenuOpen && currentNotif && (
+                    <div
+                      className={`relay-notif-popup ${
+                        isNotifPopVisible ? 'relay-notif-popup--visible' : 'relay-notif-popup--hidden'
+                      }`}
+                      onClick={() => setIsNotifMenuOpen(true)}
+                      role="status"
+                    >
+                      <div className="relay-notif-popup__arrow" />
+                      <span className={`relay-notif-tag relay-notif-tag--${currentNotif.type}`}>
+                        {currentNotif.code}
+                      </span>
+                      <div className="relay-notif-popup__content">
+                        <strong>{currentNotif.title}</strong>
+                        <span>{currentNotif.desc}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Full dropdown list if user clicks the bell icon */}
+                  {isNotifMenuOpen && (
+                    <div className="relay-notif-dropdown">
+                      <div className="relay-notif-dropdown__head">
+                        <span>{t.notifHeader}</span>
+                        <button type="button" onClick={() => setIsNotifMenuOpen(false)}>✕</button>
+                      </div>
+                      {notifications.map((item) => (
+                        <div key={item.id} className="relay-notif-dropdown__item">
+                          <span className={`relay-notif-tag relay-notif-tag--${item.type}`}>
+                            {item.code}
+                          </span>
+                          <div>
+                            <strong>{item.title}</strong>
+                            <p>{item.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="relay-util-pill"
+                  onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}
+                  title="Switch Language (Việt / Anh)"
+                >
+                  <strong>{lang === 'vi' ? 'VI' : 'EN'}</strong>
+                </button>
+
+                <button
+                  type="button"
+                  className="relay-util-pill"
+                  onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                  title="Toggle Dark / Light Mode"
+                >
+                  <span>{theme === 'light' ? '🌙' : '☀️'}</span>
+                </button>
               </div>
             </div>
-          )}
 
-          {/* VIEW 1: Login Screen */}
-          {currentView === 'login' && (
-            <div className="screens-single-layout">
+            {/* Auth Form Stack */}
+            {currentView === 'login' ? (
               <LoginScreen
-                onLoginSuccess={handleLoginSuccess}
+                t={t}
+                authSubView={authSubView}
+                onChangeSubView={setAuthSubView}
                 onNavigateToRegister={() => setCurrentView('register')}
+                onLoginSuccess={handleLoginSuccess}
+                onContinueAsGuest={handleContinueAsGuest}
               />
-            </div>
-          )}
-
-          {/* VIEW 2: Register Screen */}
-          {currentView === 'register' && (
-            <div className="screens-single-layout">
+            ) : (
               <RegisterScreen
-                onNavigateToLogin={() => setCurrentView('login')}
+                t={t}
+                onNavigateToLogin={() => {
+                  setAuthSubView('customer-login');
+                  setCurrentView('login');
+                }}
                 onRegisterSuccess={handleRegisterSuccess}
               />
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* VIEW 3: User Screen (Image 2 Dashboard) */}
-          {currentView === 'user' && (
-            <div className="screen-user-layout">
-              <UserScreen
-                user={currentUser}
-                onLogout={handleLogout}
-              />
-            </div>
-          )}
+          {/* RIGHT COLUMN: Floating Angled Dark Tablet Mockup */}
+          <RelayTabletMockup
+            t={t}
+            onContinueAsGuest={handleContinueAsGuest}
+          />
         </main>
       </ErrorBoundary>
+
+      {/* Compact Dark Footer Bar */}
+      <footer className="relay-dark-footer">
+        <div className="relay-dark-footer__left">
+          <span className="relay-footer-dot"></span>
+          <span>{t.footer.securityNote}</span>
+          <span className="relay-footer-sep">•</span>
+          <span>{t.footer.statusNormal}</span>
+        </div>
+
+        <div className="relay-dark-footer__right">
+          <ApiStatusBadge />
+        </div>
+      </footer>
     </div>
   );
 }
