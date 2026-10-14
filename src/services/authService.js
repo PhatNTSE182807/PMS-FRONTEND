@@ -201,42 +201,6 @@ export const authService = {
   },
 
   /**
-   * Request OTP (for 2FA tab)
-   * @param {string} destination (email or phone)
-   */
-  async requestOtp(destination) {
-    await new Promise(r => setTimeout(r, 600));
-    return {
-      success: true,
-      message: `Verification OTP has been sent to ${destination}. (Demo code: 123456)`,
-    };
-  },
-
-  /**
-   * Verify OTP & Login
-   * @param {string} destination 
-   * @param {string} otp 
-   */
-  async verifyOtpAndLogin(destination, otp, rememberMe = false) {
-    await new Promise(r => setTimeout(r, 600));
-    if (otp === '123456' || otp.length === 6) {
-      const user = {
-        userId: 'u-otp-01',
-        username: destination.split('@')[0] || 'User',
-        fullName: 'PMS OJT User',
-        email: destination.includes('@') ? destination : `${destination}@pms-ojt.vn`,
-        phoneNumber: destination.includes('@') ? '0912 345 678' : destination,
-        role: 'User',
-      };
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem('pms_token', 'demo_otp_token_2fa');
-      storage.setItem('pms_user', JSON.stringify(user));
-      return { success: true, user, message: '2FA OTP verification successful!' };
-    }
-    return { success: false, message: 'Invalid or expired OTP code (Test code is 123456).' };
-  },
-
-  /**
    * Get active JWT token
    */
   getToken() {

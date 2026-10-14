@@ -1,32 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import ParkingLogo from './ParkingLogo';
 import { authService } from '../services/authService';
 
 export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
-  const [activeTab, setActiveTab] = useState('password'); // 'password' | 'otp'
-  
-  // Password tab state
+  // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-
-  // OTP tab state
-  const [otpIdentifier, setOtpIdentifier] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpTimer, setOtpTimer] = useState(0);
 
   // Status & loading
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const otpTimerRef = useRef(null);
-
-  useEffect(() => () => {
-    if (otpTimerRef.current) clearInterval(otpTimerRef.current);
-  }, []);
 
   // Handle standard password login
   const handlePasswordLogin = async (e) => {
@@ -81,60 +68,6 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     onLoginSuccess(demoUser);
   };
 
-  // Handle Request OTP
-  const handleRequestOtp = async () => {
-    if (!otpIdentifier.trim()) {
-      setErrorMsg('Please enter your Email or Phone number to receive OTP!');
-      return;
-    }
-    setErrorMsg('');
-    setIsLoading(true);
-    const res = await authService.requestOtp(otpIdentifier);
-    setIsLoading(false);
-    setOtpSent(true);
-    setOtpTimer(60);
-    setOtpCode('123456'); // Pre-fill sample OTP for ease of test
-    setInfoMsg(res.message);
-
-    if (otpTimerRef.current) clearInterval(otpTimerRef.current);
-    otpTimerRef.current = setInterval(() => {
-      setOtpTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(otpTimerRef.current);
-          otpTimerRef.current = null;
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  // Handle OTP Verify & Login
-  const handleOtpLogin = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setInfoMsg('');
-
-    if (!otpIdentifier.trim()) {
-      setErrorMsg('Please enter your Email or Phone number!');
-      return;
-    }
-    if (!otpCode.trim()) {
-      setErrorMsg('Please enter the 6-digit OTP code!');
-      return;
-    }
-
-    setIsLoading(true);
-    const res = await authService.verifyOtpAndLogin(otpIdentifier, otpCode, rememberMe);
-    setIsLoading(false);
-
-    if (res.success) {
-      onLoginSuccess(res.user);
-    } else {
-      setErrorMsg(res.message);
-    }
-  };
-
   // Handle SSO mock login
   const handleSsoLogin = (provider) => {
     const ssoUser = {
@@ -172,32 +105,6 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
 
           {/* Main Glass Card */}
           <div className="glass-card login-glass-card">
-            {/* Tabs Header */}
-            <div className="auth-tabs">
-              <button
-                type="button"
-                className={`auth-tab ${activeTab === 'password' ? 'auth-tab--active' : ''}`}
-                onClick={() => {
-                  setActiveTab('password');
-                  setErrorMsg('');
-                  setInfoMsg('');
-                }}
-              >
-                Password
-              </button>
-              <button
-                type="button"
-                className={`auth-tab ${activeTab === 'otp' ? 'auth-tab--active' : ''}`}
-                onClick={() => {
-                  setActiveTab('otp');
-                  setErrorMsg('');
-                  setInfoMsg('');
-                }}
-              >
-                OTP / 2FA
-              </button>
-            </div>
-
             {/* Notification messages */}
             {errorMsg && (
               <div className="auth-alert auth-alert--error" role="alert">
@@ -221,136 +128,79 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
               </div>
             )}
 
-            {/* TAB 1: Password Form */}
-            {activeTab === 'password' && (
-              <form className="auth-form" onSubmit={handlePasswordLogin} noValidate>
-                <div className="form-group">
+            {/* Login Form */}
+            <form className="auth-form" onSubmit={handlePasswordLogin} noValidate>
+              <div className="form-group">
+                <input
+                  id="login-email"
+                  type="email"
+                  className="cyber-input"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="form-group form-group--relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="cyber-input"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="eye-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex="-1"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              <div className="auth-form-row">
+                <label className="cyber-checkbox-label">
                   <input
-                    id="login-email"
-                    type="email"
-                    className="cyber-input"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="cyber-checkbox"
                   />
-                </div>
-
-                <div className="form-group form-group--relative">
-                  <input
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    className="cyber-input"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    className="eye-toggle-btn"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex="-1"
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-
-                <div className="auth-form-row">
-                  <label className="cyber-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="cyber-checkbox"
-                    />
-                    <span>Remember Me</span>
-                  </label>
-
-                  <button
-                    type="button"
-                    className="auth-link-btn"
-                    onClick={() => setIsForgotPasswordOpen(true)}
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
+                  <span>Remember Me</span>
+                </label>
 
                 <button
-                  type="submit"
-                  className="btn btn-primary-cyan btn-full"
-                  disabled={isLoading}
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={() => setIsForgotPasswordOpen(true)}
                 >
-                  {isLoading ? 'Authenticating...' : 'Login'}
+                  Forgot Password?
                 </button>
-              </form>
-            )}
+              </div>
 
-            {/* TAB 2: OTP / 2FA Form */}
-            {activeTab === 'otp' && (
-              <form className="auth-form" onSubmit={handleOtpLogin}>
-                <div className="form-group">
-                  <input
-                    id="otp-identifier"
-                    type="text"
-                    className="cyber-input"
-                    placeholder="Email/Phone"
-                    value={otpIdentifier}
-                    onChange={(e) => setOtpIdentifier(e.target.value)}
-                  />
-                </div>
-
-                <div className="otp-request-row">
-                  <button
-                    type="button"
-                    className="btn btn-primary-cyan btn-full"
-                    onClick={handleRequestOtp}
-                    disabled={isLoading || otpTimer > 0}
-                  >
-                    {otpTimer > 0 ? `Resend OTP (${otpTimer}s)` : 'Request OTP'}
-                  </button>
-                </div>
-
-                <div className="form-group form-group--relative">
-                  <input
-                    id="otp-code-input"
-                    type="text"
-                    maxLength={6}
-                    className="cyber-input cyber-input--otp"
-                    placeholder="6-digit"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                  />
-                </div>
-
-                <div className="twofa-status-badge">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <path d="m9 12 2 2 4-4" />
-                  </svg>
-                  <span>2FA Active</span>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary-cyan btn-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Verifying...' : 'Verify & Login'}
-                </button>
-              </form>
-            )}
+              <button
+                type="submit"
+                className="btn btn-primary-cyan btn-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Authenticating...' : 'Login'}
+              </button>
+            </form>
 
             {/* Quick Demo Assist */}
             <div className="demo-helper-bar">
