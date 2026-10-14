@@ -6,7 +6,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
   const [activeTab, setActiveTab] = useState('password'); // 'password' | 'otp'
   
   // Password tab state
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -34,8 +34,12 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     setErrorMsg('');
     setInfoMsg('');
 
-    if (!identifier.trim()) {
-      setErrorMsg('Please enter your username!');
+    if (!email.trim()) {
+      setErrorMsg('Please enter your email!');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setErrorMsg('Please enter a valid email address!');
       return;
     }
     if (!password) {
@@ -44,7 +48,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     }
 
     setIsLoading(true);
-    const res = await authService.login(identifier, password, rememberMe);
+    const res = await authService.login(email, password, rememberMe);
     setIsLoading(false);
 
     if (res.success) {
@@ -57,8 +61,8 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
 
   // Demo auto-fill
   const fillDemoAccount = () => {
-    setIdentifier('admin');
-    setPassword('SmartPark@2026');
+    setEmail('admin@admin.com');
+    setPassword('Admin123.?');
     setErrorMsg('');
     setInfoMsg('Filled demo credentials! Click Login or use instant demo below.');
   };
@@ -219,16 +223,16 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
 
             {/* TAB 1: Password Form */}
             {activeTab === 'password' && (
-              <form className="auth-form" onSubmit={handlePasswordLogin}>
+              <form className="auth-form" onSubmit={handlePasswordLogin} noValidate>
                 <div className="form-group">
                   <input
-                    id="login-identifier"
-                    type="text"
+                    id="login-email"
+                    type="email"
                     className="cyber-input"
-                    placeholder="Username"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    autoComplete="username"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
                   />
                 </div>
 
@@ -354,7 +358,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
                 type="button"
                 className="demo-helper-btn"
                 onClick={fillDemoAccount}
-                title="Fill demo username and password"
+                title="Fill demo email and password"
               >
                 Auto-fill Demo
               </button>
@@ -450,7 +454,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
                 type="text"
                 placeholder="Email or Phone Number"
                 className="cyber-input"
-                defaultValue={identifier}
+                defaultValue={email}
               />
             </div>
             <div className="api-modal__footer">

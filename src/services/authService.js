@@ -64,16 +64,16 @@ export const authService = {
   /**
    * Submit login request to Backend
    * Endpoint: POST /api/users/authenticate
-   * @param {string} username (or email/phone)
-   * @param {string} password 
-   * @param {boolean} rememberMe 
+   * @param {string} email
+   * @param {string} password
+   * @param {boolean} rememberMe
    * @returns {Promise<{success: boolean, data?: any, user?: any, message?: string, isNetworkError?: boolean}>}
    */
-  async login(username, password, rememberMe = false) {
+  async login(email, password, rememberMe = false) {
     const baseUrl = getApiBaseUrl();
     try {
       const payload = {
-        username: username.trim(),
+        email: email.trim(),
         password: password,
       };
 
@@ -119,9 +119,9 @@ export const authService = {
       const token = resData?.token || resData?.accessToken;
       const user = {
         userId: resData?.userId || 'u-demo-1',
-        username: resData?.username || username.trim(),
-        fullName: resData?.fullName || username.trim(),
-        email: resData?.email || `${username.trim()}@pms-ojt.vn`,
+        username: resData?.username || email.trim().split('@')[0],
+        fullName: resData?.fullName || resData?.username || email.trim(),
+        email: resData?.email || email.trim(),
         phoneNumber: resData?.phoneNumber || '0988 123 456',
         role: resData?.role || 'User',
       };

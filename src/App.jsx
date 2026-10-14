@@ -183,12 +183,6 @@ export default function App() {
               <div className="auth-supercar-bg__img" style={{ backgroundImage: `url('/lamborghini.jpg')` }} />
               <div className="auth-supercar-bg__overlay" />
               <div className="auth-supercar-bg__vignette" />
-              <div className="auth-supercar-bg__ambient-bar">
-                <span className="car-badge">
-                  <span className="car-badge__glow-dot"></span>
-                  Lamborghini Supercar Fleet • Smart Valet Infrastructure
-                </span>
-              </div>
             </div>
           )}
 
