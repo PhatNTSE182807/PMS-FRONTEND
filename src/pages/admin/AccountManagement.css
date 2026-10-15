@@ -1,0 +1,122 @@
+/* Account Management - uses design tokens from index.css */
+.acc-page {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  color: var(--text-white);
+}
+
+.acc-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.acc-title { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.01em; }
+.acc-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+/* Table */
+.acc-table-wrap {
+  overflow-x: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px);
+}
+
+.acc-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.acc-table th {
+  text-align: left;
+  padding: 0.9rem 1.1rem;
+  color: var(--cyan-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border-glass);
+  white-space: nowrap;
+}
+.acc-table td {
+  padding: 0.85rem 1.1rem;
+  color: var(--text-slate);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.07);
+}
+.acc-table tbody tr { transition: var(--transition-fast); }
+.acc-table tbody tr:hover { background: var(--bg-card-hover); }
+.acc-table tbody tr:last-child td { border-bottom: none; }
+
+.acc-name { color: var(--text-white); font-weight: 600; }
+.acc-sub { color: var(--text-muted); font-size: 0.78rem; }
+
+.acc-state {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px dashed var(--border-glass);
+  border-radius: var(--radius-lg);
+}
+
+/* Role badges */
+.role-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+.role-badge--admin { color: #f472b6; background: rgba(244, 114, 182, 0.1); }
+.role-badge--manager { color: var(--status-reserved); background: rgba(255, 183, 3, 0.1); }
+.role-badge--staff { color: var(--cyan-primary); background: rgba(0, 242, 254, 0.1); }
+.role-badge--user { color: var(--status-available); background: rgba(0, 230, 118, 0.1); }
+
+/* Alerts inside the page */
+.acc-page .auth-alert { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
+.acc-dismiss { background: none; border: none; color: inherit; cursor: pointer; font-size: 0.9rem; }
+
+/* Modal */
+.acc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(3, 6, 14, 0.75);
+  backdrop-filter: blur(4px);
+  animation: acc-fade 0.18s ease-out;
+}
+.acc-modal {
+  width: 100%;
+  max-width: 600px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 1.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 0 40px var(--cyan-glow);
+  animation: acc-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.acc-modal__title { font-size: 1.25rem; margin-bottom: 1rem; }
+
+.acc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem 1rem; }
+.acc-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.acc-label { font-size: 0.8rem; color: var(--text-slate); }
+.acc-error { color: var(--status-error); font-size: 0.75rem; }
+.acc-hint { margin-top: 1rem; color: var(--text-muted); font-size: 0.8rem; }
+.acc-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+
+@media (max-width: 560px) {
+  .acc-grid { grid-template-columns: 1fr; }
+}
+
+@keyframes acc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes acc-pop { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }

@@ -1,8 +1,15 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ParkingLogo from './ParkingLogo';
 import { authService } from '../services/authService';
 
-export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
+// Admin/Manager go to the back-office; everyone else lands on the user dashboard.
+const getHomePath = (role) => (role === 'Admin' || role === 'Manager' ? '/admin/accounts' : '/user-dashboard');
+
+export default function LoginScreen() {
+  const navigate = useNavigate();
+  const finishLogin = (user) => navigate(getHomePath(user?.role), { replace: true });
+
   // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +46,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     setIsLoading(false);
 
     if (res.success) {
-      onLoginSuccess(res.user);
+      finishLogin(res.user);
     } else {
       // If network error, provide option to use demo mode
       setErrorMsg(res.message);
@@ -65,7 +72,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     };
     localStorage.setItem('pms_token', 'demo_active_token_user');
     localStorage.setItem('pms_user', JSON.stringify(demoUser));
-    onLoginSuccess(demoUser);
+    finishLogin(demoUser);
   };
 
   // Handle SSO mock login
@@ -80,7 +87,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     };
     localStorage.setItem('pms_token', `sso_${provider}_token`);
     localStorage.setItem('pms_user', JSON.stringify(ssoUser));
-    onLoginSuccess(ssoUser);
+    finishLogin(ssoUser);
   };
 
   return (
@@ -279,7 +286,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
               <button
                 type="button"
                 className="auth-link-highlight"
-                onClick={onNavigateToRegister}
+                onClick={() => navigate('/register')}
               >
                 Register Now
               </button>
