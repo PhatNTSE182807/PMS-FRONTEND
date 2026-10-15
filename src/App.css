@@ -720,6 +720,113 @@
 }
 
 /* =========================================================
+   EMAIL CODE (OTP) SIGN-IN
+========================================================= */
+.otp-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 0.95rem;
+}
+
+.otp-heading__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--cyan-primary);
+  background: rgba(0, 242, 254, 0.1);
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
+  margin-bottom: 0.6rem;
+}
+
+.otp-heading__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.otp-heading__subtitle {
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  overflow-wrap: anywhere;
+}
+
+.otp-heading__subtitle strong {
+  color: var(--cyan-primary);
+  font-weight: 600;
+}
+
+.otp-code-inputs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.otp-digit {
+  width: 100%;
+  aspect-ratio: 1 / 1.15;
+  max-height: 56px;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #f8fafc;
+  background: rgba(9, 14, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  caret-color: var(--cyan-primary);
+  transition: var(--transition-fast);
+}
+
+.otp-digit:focus {
+  border-color: var(--cyan-primary);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+  background: rgba(12, 19, 36, 0.95);
+}
+
+.otp-digit--filled {
+  border-color: rgba(0, 242, 254, 0.45);
+  color: var(--cyan-primary);
+}
+
+.otp-digit:read-only {
+  opacity: 0.6;
+}
+
+.otp-resend {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.otp-resend strong {
+  color: var(--text-slate);
+  font-variant-numeric: tabular-nums;
+}
+
+.otp-resend .auth-link-btn {
+  font-size: 0.8rem;
+}
+
+.otp-resend .auth-link-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-card-footer--tight {
+  margin-top: 0;
+}
+
+.auth-alt-login-btn {
+  margin-top: 0.1rem;
+}
+
+/* =========================================================
    USER SCREEN (Image 2 Mockup Dashboard)
 ========================================================= */
 .screen-user-layout {

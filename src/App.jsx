@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import LoginScreen from './components/LoginScreen';
+import OtpLoginScreen from './components/OtpLoginScreen';
 import RegisterScreen from './components/RegisterScreen';
 import UserScreen from './components/UserScreen';
 import ApiStatusBadge from './components/ApiStatusBadge';
@@ -83,7 +84,7 @@ function AppShell() {
   const location = useLocation();
   // Re-read on every navigation so the header reflects login/logout.
   const currentUser = authService.getCurrentUser();
-  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
+  const isAuthRoute = ['/login', '/login-otp', '/register'].includes(location.pathname);
 
   const handleLogout = () => {
     authService.logout();
@@ -129,6 +130,7 @@ function AppShell() {
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<div className="screens-single-layout"><LoginScreen /></div>} />
+            <Route path="/login-otp" element={<div className="screens-single-layout"><OtpLoginScreen /></div>} />
             <Route path="/register" element={<div className="screens-single-layout"><RegisterRoute /></div>} />
             <Route path="/user-dashboard" element={<div className="screen-user-layout"><UserDashboardRoute /></div>} />
             <Route path="/admin/accounts" element={<AccountManagement currentUserRole={currentUserRole} />} />
