@@ -421,7 +421,7 @@ export const authService = {
       return { success: true, data: data?.result || data, message: 'Vehicle added successfully!' };
     } catch (err) {
       console.warn('addVehicle error:', err);
-      return { success: false, message: 'Network error adding vehicle.' };
+      return { success: false, isNetworkError: true, message: 'Network error adding vehicle.' };
     }
   },
 
@@ -462,7 +462,7 @@ export const authService = {
       return { success: true, data: data?.result || data, message: 'Vehicle updated successfully!' };
     } catch (err) {
       console.warn('updateVehicle error:', err);
-      return { success: false, message: 'Network error updating vehicle.' };
+      return { success: false, isNetworkError: true, message: 'Network error updating vehicle.' };
     }
   },
 

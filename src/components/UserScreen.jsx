@@ -291,8 +291,11 @@ export default function UserScreen({ user, onLogout }) {
       if (res.success) {
         await refreshVehicles();
         setIsAddVehicleModalOpen(false);
+      } else if (!res.isNetworkError) {
+        // Backend rejected the data (e.g. invalid license plate): keep the form open and show why
+        setVehicleModalError(res.message);
       } else {
-        // Fallback local update for demo
+        // Fallback local update for demo when the backend is unreachable
         const newLocal = {
           id: `v-${Date.now()}`,
           vehicleId: `v-${Date.now()}`,
@@ -316,8 +319,10 @@ export default function UserScreen({ user, onLogout }) {
       if (res.success) {
         await refreshVehicles();
         setIsAddVehicleModalOpen(false);
+      } else if (!res.isNetworkError) {
+        setVehicleModalError(res.message);
       } else {
-        // Fallback local update
+        // Fallback local update when the backend is unreachable
         setVehicles(prev => prev.map(item => (item.id === vId || item.vehicleId === vId) ? {
           ...item,
           ...vehicleFormData,
