@@ -1,33 +1,42 @@
 :root {
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
-  /* Cyber Blueprint Theme Palette */
-  --bg-deep: #060913;
-  --bg-dark: #0a0f1d;
-  --bg-surface: #0f172a;
-  --bg-card: rgba(13, 22, 40, 0.75);
-  --bg-card-hover: rgba(18, 30, 54, 0.85);
+  /* "Minimal Yet Warm" palette: #EAE7DC #D8C3A5 #8E8D8A #E98074 #E85A4F */
+  --palette-sand: #EAE7DC;
+  --palette-tan: #D8C3A5;
+  --palette-stone: #8E8D8A;
+  --palette-salmon: #E98074;
+  --palette-coral: #E85A4F;
 
-  /* Neon Accents */
-  --cyan-primary: #00f2fe;
-  --cyan-bright: #00e5ff;
-  --cyan-dark: #00b4d8;
-  --cyan-glow: rgba(0, 242, 254, 0.35);
+  /* Surfaces */
+  --bg-deep: #EAE7DC;
+  --bg-dark: #E3DFD2;
+  --bg-surface: #F4F1EA;
+  --bg-card: rgba(250, 248, 243, 0.92);
+  --bg-card-hover: rgba(216, 195, 165, 0.22);
+
+  /* Accents (primary = coral, secondary = salmon, tertiary = tan) */
+  --color-primary: #E85A4F;
+  --color-primary-hover: #D94C41;
+  --color-primary-strong: #C2453B;
+  --color-primary-glow: rgba(232, 90, 79, 0.28);
+  --color-secondary: #E98074;
+  --color-tan: #D8C3A5;
+  --on-primary: #FFFFFF;
 
   /* Status Colors */
-  --status-available: #00e676;
-  --status-reserved: #ffb703;
-  --status-active: #00f2fe;
-  --status-error: #ef4444;
+  --status-available: #4F8A5B;
+  --status-reserved: #C28A2C;
+  --status-active: #E85A4F;
+  --status-error: #B8433A;
 
   /* Typography */
-  --text-white: #ffffff;
-  --text-slate: #cbd5e1;
-  --text-muted: #8492a6;
+  --text-strong: #3B3632;
+  --text-body: #57524C;
+  --text-muted: #6F6A64;
 
   /* UI Tokens */
-  --border-glass: rgba(0, 229, 255, 0.18);
-  --border-cyan-glow: #00f2fe;
+  --border-soft: rgba(142, 141, 138, 0.32);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -55,7 +64,7 @@ body {
   margin: 0;
   font-family: var(--font-family);
   background-color: var(--bg-deep);
-  color: var(--text-white);
+  color: var(--text-strong);
   overflow-x: hidden;
 }
 
