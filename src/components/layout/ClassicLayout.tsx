@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import ApiStatusBadge from '@/components/ApiStatusBadge'
+import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { homePathFor, useAuth } from '@/hooks/useAuth'
 import { DEMO_DRIVER } from '@/mocks/auth.mock'
@@ -55,7 +56,7 @@ export function ClassicLayout() {
       <nav className="global-header">
         <div className="global-header__left">
           <div className="brand-pill" onClick={() => navigate('/login')} style={{ cursor: 'pointer' }}>
-            <span className="brand-dot"></span>
+            <img src={LOGO_SRC} alt="" className="brand-logo" />
             <span className="brand-text">XXIV PARKING</span>
           </div>
 

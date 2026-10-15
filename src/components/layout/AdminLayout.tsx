@@ -1,7 +1,8 @@
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ChevronRight, LogOut, Menu, SquareParking } from 'lucide-react'
+import { ChevronRight, LogOut, Menu } from 'lucide-react'
+import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,9 +21,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full w-full flex-col bg-slate-950 text-slate-300">
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
-        <div className="grid size-9 place-items-center rounded-lg bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">
-          <SquareParking className="size-5" aria-hidden />
-        </div>
+        <img src={LOGO_SRC} alt="" className="h-10 w-auto shrink-0 drop-shadow" />
         <div className="leading-tight">
           <p className="text-sm font-semibold text-white">XXIV Parking</p>
           <p className="text-xs text-slate-400">Admin console</p>
