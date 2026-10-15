@@ -147,10 +147,10 @@ function RevenueChart({ data, type }) {
   const common = { data, margin: { top: 10, right: 12, left: 0, bottom: 0 } };
   const shared = (
     <>
-      <CartesianGrid stroke="rgba(0, 229, 255, 0.08)" strokeDasharray="3 5" vertical={false} />
-      <XAxis dataKey="date" stroke="rgba(0, 229, 255, 0.18)" tickLine={false} minTickGap={12} />
+      <CartesianGrid stroke="rgba(232, 90, 79, 0.08)" strokeDasharray="3 5" vertical={false} />
+      <XAxis dataKey="date" stroke="rgba(232, 90, 79, 0.18)" tickLine={false} minTickGap={12} />
       <YAxis tickFormatter={compactVnd} width={48} axisLine={false} tickLine={false} />
-      <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0, 242, 254, 0.07)', stroke: 'rgba(0, 242, 254, 0.3)' }} />
+      <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(232, 90, 79, 0.07)', stroke: 'rgba(232, 90, 79, 0.3)' }} />
     </>
   );
 
@@ -160,8 +160,8 @@ function RevenueChart({ data, type }) {
         <BarChart {...common}>
           <defs>
             <linearGradient id="db-bar-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#00f2fe" stopOpacity={0.95} />
-              <stop offset="100%" stopColor="#0077b6" stopOpacity={0.55} />
+              <stop offset="0%" stopColor="#E85A4F" stopOpacity={0.95} />
+              <stop offset="100%" stopColor="#E98074" stopOpacity={0.35} />
             </linearGradient>
           </defs>
           {shared}
@@ -173,10 +173,10 @@ function RevenueChart({ data, type }) {
           <Line
             type="monotone"
             dataKey="revenue"
-            stroke="#00f2fe"
+            stroke="#E85A4F"
             strokeWidth={3}
-            dot={data.length > 31 ? false : { r: 4, fill: '#060913', stroke: '#00f2fe', strokeWidth: 2 }}
-            activeDot={{ r: 6, fill: '#00f2fe', stroke: '#ffffff', strokeWidth: 2 }}
+            dot={data.length > 31 ? false : { r: 4, fill: '#EAE7DC', stroke: '#E85A4F', strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: '#E85A4F', stroke: '#3B3632', strokeWidth: 2 }}
             animationDuration={700}
           />
         </LineChart>

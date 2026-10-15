@@ -10,21 +10,21 @@ const CheckInQrMark = memo(function CheckInQrMark({ size = 110, onClick }) {
       title="Click to enlarge QR Code"
     >
       <svg width={size} height={size} viewBox="0 0 110 110" fill="none">
-        <rect width="110" height="110" rx="8" fill="#ffffff" />
+        <rect width="110" height="110" rx="8" fill="#FFFFFF" />
         <rect x="12" y="12" width="28" height="28" fill="#000" />
-        <rect x="16" y="16" width="20" height="20" fill="#fff" />
+        <rect x="16" y="16" width="20" height="20" fill="#FFFFFF" />
         <rect x="20" y="20" width="12" height="12" fill="#000" />
         <rect x="70" y="12" width="28" height="28" fill="#000" />
-        <rect x="74" y="16" width="20" height="20" fill="#fff" />
+        <rect x="74" y="16" width="20" height="20" fill="#FFFFFF" />
         <rect x="78" y="20" width="12" height="12" fill="#000" />
         <rect x="12" y="70" width="28" height="28" fill="#000" />
-        <rect x="16" y="74" width="20" height="20" fill="#fff" />
+        <rect x="16" y="74" width="20" height="20" fill="#FFFFFF" />
         <rect x="20" y="78" width="12" height="12" fill="#000" />
         <rect x="46" y="14" width="6" height="6" fill="#000" />
         <rect x="56" y="14" width="6" height="6" fill="#000" />
         <rect x="46" y="26" width="6" height="6" fill="#000" />
         <rect x="56" y="32" width="6" height="6" fill="#000" />
-        <rect x="46" y="46" width="18" height="18" fill="#00e5ff" rx="2" />
+        <rect x="46" y="46" width="18" height="18" fill="#E98074" rx="2" />
         <rect x="14" y="46" width="6" height="6" fill="#000" />
         <rect x="26" y="46" width="6" height="6" fill="#000" />
         <rect x="34" y="56" width="6" height="6" fill="#000" />
@@ -590,24 +590,24 @@ export default function UserScreen({ user, onLogout }) {
           >
             <defs>
               <linearGradient id="parking-ground-grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#0b1324" />
-                <stop offset="100%" stopColor="#060c18" />
+                <stop offset="0%" stopColor="#F6F2EA" />
+                <stop offset="100%" stopColor="#E4DCCB" />
               </linearGradient>
 
               {/* Slot gradients */}
               <linearGradient id="slot-green" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#00e676" />
-                <stop offset="100%" stopColor="#00c853" />
+                <stop offset="0%" stopColor="#4F8A5B" />
+                <stop offset="100%" stopColor="#6FA67A" />
               </linearGradient>
 
               <linearGradient id="slot-yellow" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#ffb703" />
-                <stop offset="100%" stopColor="#fb8500" />
+                <stop offset="0%" stopColor="#C28A2C" />
+                <stop offset="100%" stopColor="#D8A55A" />
               </linearGradient>
 
               <linearGradient id="slot-blue" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#00f2fe" />
-                <stop offset="100%" stopColor="#0099ff" />
+                <stop offset="0%" stopColor="#E85A4F" />
+                <stop offset="100%" stopColor="#E98074" />
               </linearGradient>
 
             </defs>
@@ -616,7 +616,7 @@ export default function UserScreen({ user, onLogout }) {
             <polygon
               points="500,60 920,240 500,520 80,340"
               fill="url(#parking-ground-grad)"
-              stroke="#1e293b"
+              stroke="#D8C3A5"
               strokeWidth="2.5"
             />
 
@@ -624,7 +624,7 @@ export default function UserScreen({ user, onLogout }) {
             <polygon
               points="500,80 890,245 500,495 110,335"
               fill="none"
-              stroke="#334155"
+              stroke="#C9B497"
               strokeWidth="1.5"
               strokeDasharray="6 6"
             />
@@ -685,8 +685,8 @@ export default function UserScreen({ user, onLogout }) {
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R1', status: 'Reserved', fee: 'Reserved (15:00 - 19:00)' })}
               />
-              <circle cx="525" cy="162" r="7" fill="#1e1e1e" opacity="0.6" />
-              <text x="525" y="165" fontSize="9" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="525" cy="162" r="7" fill="#3B3632" opacity="0.45" />
+              <text x="525" y="165" fontSize="9" textAnchor="middle" fill="#3B3632">🕒</text>
 
               {/* Reserved Slot 2 */}
               <polygon
@@ -695,8 +695,8 @@ export default function UserScreen({ user, onLogout }) {
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R2', status: 'Reserved', fee: 'Reserved (16:30 - 20:30)' })}
               />
-              <circle cx="575" cy="184" r="7" fill="#1e1e1e" opacity="0.6" />
-              <text x="575" y="187" fontSize="9" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="575" cy="184" r="7" fill="#3B3632" opacity="0.45" />
+              <text x="575" y="187" fontSize="9" textAnchor="middle" fill="#3B3632">🕒</text>
             </g>
 
             {/* Bottom Row: Yellow Reserved Cluster */}
@@ -707,8 +707,8 @@ export default function UserScreen({ user, onLogout }) {
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R3', status: 'Reserved', fee: 'Reserved' })}
               />
-              <circle cx="483" cy="164" r="6" fill="#1e1e1e" opacity="0.6" />
-              <text x="483" y="167" fontSize="8" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="483" cy="164" r="6" fill="#3B3632" opacity="0.45" />
+              <text x="483" y="167" fontSize="8" textAnchor="middle" fill="#3B3632">🕒</text>
 
               <polygon
                 points="480,192 550,162 590,179 520,210"
@@ -716,8 +716,8 @@ export default function UserScreen({ user, onLogout }) {
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R4', status: 'Reserved', fee: 'Reserved' })}
               />
-              <circle cx="533" cy="186" r="6" fill="#1e1e1e" opacity="0.6" />
-              <text x="533" y="189" fontSize="8" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="533" cy="186" r="6" fill="#3B3632" opacity="0.45" />
+              <text x="533" y="189" fontSize="8" textAnchor="middle" fill="#3B3632">🕒</text>
             </g>
 
             {/* Right Row: Green Slots */}
@@ -742,43 +742,43 @@ export default function UserScreen({ user, onLogout }) {
               <polygon
                 points="450,180 525,148 565,166 490,198"
                 fill="url(#slot-blue)"
-                stroke="#00f2fe"
+                stroke="#E85A4F"
                 strokeWidth="2.5"
               />
 
-              <ellipse cx="507" cy="173" rx="42" ry="20" fill="none" stroke="#00f2fe" strokeWidth="1.5" opacity="0.45" />
+              <ellipse cx="507" cy="173" rx="42" ry="20" fill="none" stroke="#E85A4F" strokeWidth="1.5" opacity="0.45" />
 
               {/* Futuristic Isometric Car Silhouette */}
               <g transform="translate(485, 155)">
                 {/* Car roof & body isometric */}
-                <polygon points="20,5 38,-3 46,2 28,10" fill="#ffffff" />
-                <polygon points="12,12 36,1 48,7 24,18" fill="#00e5ff" />
-                <polygon points="12,12 24,18 24,24 12,18" fill="#0284c7" />
-                <polygon points="24,18 48,7 48,13 24,24" fill="#0369a1" />
+                <polygon points="20,5 38,-3 46,2 28,10" fill="#3B3632" />
+                <polygon points="12,12 36,1 48,7 24,18" fill="#E98074" />
+                <polygon points="12,12 24,18 24,24 12,18" fill="#C2453B" />
+                <polygon points="24,18 48,7 48,13 24,24" fill="#A63C33" />
               </g>
 
               {/* Pin Icon Label */}
               <g transform="translate(470, 125)">
-                <circle cx="16" cy="16" r="14" fill="#00e5ff" />
-                <circle cx="16" cy="16" r="12" fill="#0a192f" />
+                <circle cx="16" cy="16" r="14" fill="#E98074" />
+                <circle cx="16" cy="16" r="12" fill="#FFFFFF" />
                 <path
                   d="M11 15L12 12C12.3 11 13 10.5 14 10.5H18C19 10.5 19.7 11 20 12L21 15"
-                  stroke="#00e5ff"
+                  stroke="#E98074"
                   strokeWidth="1.5"
                 />
-                <circle cx="13" cy="17" r="1" fill="#00e5ff" />
-                <circle cx="19" cy="17" r="1" fill="#00e5ff" />
+                <circle cx="13" cy="17" r="1" fill="#E98074" />
+                <circle cx="19" cy="17" r="1" fill="#E98074" />
               </g>
             </g>
 
             {/* Other Parked Cars Outline silhouettes for realism */}
             <g transform="translate(320, 260)" opacity="0.3">
-              <polygon points="20,5 38,-3 46,2 28,10" fill="#94a3b8" />
-              <polygon points="12,12 36,1 48,7 24,18" fill="#64748b" />
+              <polygon points="20,5 38,-3 46,2 28,10" fill="#6F6A64" />
+              <polygon points="12,12 36,1 48,7 24,18" fill="#8E8D8A" />
             </g>
             <g transform="translate(490, 310)" opacity="0.3">
-              <polygon points="20,5 38,-3 46,2 28,10" fill="#94a3b8" />
-              <polygon points="12,12 36,1 48,7 24,18" fill="#64748b" />
+              <polygon points="20,5 38,-3 46,2 28,10" fill="#6F6A64" />
+              <polygon points="12,12 36,1 48,7 24,18" fill="#8E8D8A" />
             </g>
           </svg>
 
@@ -887,7 +887,7 @@ export default function UserScreen({ user, onLogout }) {
                 <div key={v.id || v.vehicleId} className="vehicle-pill-item">
                   <div className="vehicle-car-thumb">
                     {/* Car icon */}
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="1.8">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E98074" strokeWidth="1.8">
                       <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H7c-.7 0-1.4.3-1.8.8C4.3 8.7 3 10 3 10S1.5 10.6.5 11.1C-.2 11.3-.5 12.1-.5 13v3c0 .6.4 1 1 1h2" />
                       <circle cx="7" cy="17" r="2" />
                       <circle cx="17" cy="17" r="2" />
@@ -1065,7 +1065,7 @@ export default function UserScreen({ user, onLogout }) {
                 )}
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Brand</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Brand</label>
                     <input
                       type="text"
                       className="cyber-input"
@@ -1076,7 +1076,7 @@ export default function UserScreen({ user, onLogout }) {
                     />
                   </div>
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Model</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Model</label>
                     <input
                       type="text"
                       className="cyber-input"
@@ -1089,7 +1089,7 @@ export default function UserScreen({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>License Plate (VN Standard)</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>License Plate (VN Standard)</label>
                   <input
                     type="text"
                     className="cyber-input"
@@ -1102,7 +1102,7 @@ export default function UserScreen({ user, onLogout }) {
 
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Vehicle Type</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Vehicle Type</label>
                     <select
                       className="cyber-select"
                       style={{ width: '100%' }}
@@ -1117,7 +1117,7 @@ export default function UserScreen({ user, onLogout }) {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Color</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Color</label>
                     <input
                       type="text"
                       className="cyber-input"
@@ -1159,28 +1159,28 @@ export default function UserScreen({ user, onLogout }) {
               <button type="button" className="api-modal__close" onClick={() => setIsQrZoomOpen(false)}>✕</button>
             </div>
             <div className="api-modal__body text-center" style={{ textAlign: 'center', padding: '1.5rem' }}>
-              <div style={{ background: '#ffffff', display: 'inline-block', padding: '16px', borderRadius: '12px' }}>
+              <div style={{ background: '#FFFFFF', display: 'inline-block', padding: '16px', borderRadius: '12px' }}>
                 <svg width="220" height="220" viewBox="0 0 110 110" fill="none">
-                  <rect width="110" height="110" rx="4" fill="#ffffff" />
+                  <rect width="110" height="110" rx="4" fill="#FFFFFF" />
                   <rect x="12" y="12" width="28" height="28" fill="#000" />
-                  <rect x="16" y="16" width="20" height="20" fill="#fff" />
+                  <rect x="16" y="16" width="20" height="20" fill="#FFFFFF" />
                   <rect x="20" y="20" width="12" height="12" fill="#000" />
                   <rect x="70" y="12" width="28" height="28" fill="#000" />
-                  <rect x="74" y="16" width="20" height="20" fill="#fff" />
+                  <rect x="74" y="16" width="20" height="20" fill="#FFFFFF" />
                   <rect x="78" y="20" width="12" height="12" fill="#000" />
                   <rect x="12" y="70" width="28" height="28" fill="#000" />
-                  <rect x="16" y="74" width="20" height="20" fill="#fff" />
+                  <rect x="16" y="74" width="20" height="20" fill="#FFFFFF" />
                   <rect x="20" y="78" width="12" height="12" fill="#000" />
                   <rect x="46" y="14" width="6" height="6" fill="#000" />
                   <rect x="56" y="14" width="6" height="6" fill="#000" />
                   <rect x="46" y="26" width="6" height="6" fill="#000" />
-                  <rect x="46" y="46" width="18" height="18" fill="#00e5ff" rx="2" />
+                  <rect x="46" y="46" width="18" height="18" fill="#E98074" rx="2" />
                   <rect x="72" y="48" width="6" height="6" fill="#000" />
                   <rect x="52" y="74" width="6" height="6" fill="#000" />
                   <rect x="80" y="80" width="6" height="6" fill="#000" />
                 </svg>
               </div>
-              <p style={{ marginTop: '1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+              <p style={{ marginTop: '1rem', color: '#6F6A64', fontSize: '0.9rem' }}>
                 Hold near scanner at Gate Barrier 2 for automated entry & exit.
               </p>
             </div>
@@ -1235,7 +1235,7 @@ export default function UserScreen({ user, onLogout }) {
               {activeSubModal === 'vehicles' && (
                 <div className="vehicles-modal-content">
                   {vehicles.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#8E8D8A' }}>
                       No registered vehicles found. Add one below!
                     </div>
                   ) : (
@@ -1381,7 +1381,7 @@ export default function UserScreen({ user, onLogout }) {
                   </div>
                 )}
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Full Name</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Full Name</label>
                   <input
                     type="text"
                     className="cyber-input"
@@ -1391,7 +1391,7 @@ export default function UserScreen({ user, onLogout }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Email Address</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Email Address</label>
                   <input
                     type="email"
                     className="cyber-input"
@@ -1401,7 +1401,7 @@ export default function UserScreen({ user, onLogout }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Phone Number</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Phone Number</label>
                   <input
                     type="text"
                     className="cyber-input"
@@ -1411,7 +1411,7 @@ export default function UserScreen({ user, onLogout }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Avatar Image URL (Optional)</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Avatar Image URL (Optional)</label>
                   <input
                     type="url"
                     className="cyber-input"
@@ -1449,12 +1449,12 @@ export default function UserScreen({ user, onLogout }) {
                     {passwordFeedback.text}
                   </div>
                 )}
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
+                <p style={{ color: '#6F6A64', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
                   Authenticated password change directly via backend API. No email token required.
                 </p>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Current Password</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Current Password</label>
                   <div className="password-input-wrapper">
                     <input
                       type={showPasswordVisibility.current ? 'text' : 'password'}
@@ -1474,7 +1474,7 @@ export default function UserScreen({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>New Password (min. 6 characters)</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>New Password (min. 6 characters)</label>
                   <div className="password-input-wrapper">
                     <input
                       type={showPasswordVisibility.new ? 'text' : 'password'}
@@ -1494,7 +1494,7 @@ export default function UserScreen({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Confirm New Password</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Confirm New Password</label>
                   <div className="password-input-wrapper">
                     <input
                       type={showPasswordVisibility.confirm ? 'text' : 'password'}

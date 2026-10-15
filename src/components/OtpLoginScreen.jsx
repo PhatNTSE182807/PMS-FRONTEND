@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ParkingLogo from './ParkingLogo';
+import AuthSplitLayout from './AuthSplitLayout';
 import { authService } from '../services/authService';
 
 const CODE_LENGTH = 6;
@@ -145,165 +145,148 @@ export default function OtpLoginScreen() {
   };
 
   return (
-    <div className="screen-wrapper">
-      <div className="mockup-window">
-        {/* Window Chrome Titlebar */}
-        <div className="mockup-window__header">
-          <div className="window-dots">
-            <span className="dot dot-close"></span>
-            <span className="dot dot-min"></span>
-            <span className="dot dot-max"></span>
+    <>
+      <AuthSplitLayout>
+        <div className="glass-card login-glass-card">
+          <div className="otp-heading">
+            <span className="otp-heading__icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-10 6L2 7" />
+              </svg>
+            </span>
+            <h2 className="otp-heading__title">
+              {step === 'email' ? 'Sign in with email code' : 'Check your inbox'}
+            </h2>
+            <p className="otp-heading__subtitle">
+              {step === 'email' ? (
+                'We will email you a 6-digit code. No password needed.'
+              ) : (
+                <>
+                  Enter the code sent to <strong>{email.trim()}</strong>
+                </>
+              )}
+            </p>
           </div>
-          <div className="window-title">Parking Management System - OJT - Email Code Sign-in</div>
-        </div>
 
-        {/* Window Content */}
-        <div className="mockup-window__body auth-screen-body">
-          <div className="auth-brand-center">
-            <ParkingLogo />
-          </div>
+          {errorMsg && (
+            <div className="auth-alert auth-alert--error" role="alert">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{errorMsg}</span>
+            </div>
+          )}
 
-          <div className="glass-card login-glass-card">
-            <div className="otp-heading">
-              <span className="otp-heading__icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="m22 7-10 6L2 7" />
-                </svg>
-              </span>
-              <h2 className="otp-heading__title">
-                {step === 'email' ? 'Sign in with email code' : 'Check your inbox'}
-              </h2>
-              <p className="otp-heading__subtitle">
-                {step === 'email' ? (
-                  'We will email you a 6-digit code. No password needed.'
+          {infoMsg && (
+            <div className="auth-alert auth-alert--info" role="status">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+              <span>{infoMsg}</span>
+            </div>
+          )}
+
+          {step === 'email' ? (
+            <form className="auth-form" onSubmit={handleEmailSubmit} noValidate>
+              <div className="form-group">
+                <input
+                  id="otp-email"
+                  type="email"
+                  className="cyber-input"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  autoFocus
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary-cyan btn-full" disabled={isLoading}>
+                {isLoading ? 'Sending code...' : 'Send login code'}
+              </button>
+            </form>
+          ) : (
+            <form className="auth-form" onSubmit={handleCodeSubmit} noValidate>
+              <div className="otp-code-inputs" role="group" aria-label="6-digit login code">
+                {digits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => {
+                      digitRefs.current[index] = el;
+                    }}
+                    className={`otp-digit ${digit ? 'otp-digit--filled' : ''}`}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    maxLength={CODE_LENGTH}
+                    value={digit}
+                    aria-label={`Digit ${index + 1}`}
+                    // readOnly instead of disabled so focus can move back to the first box after a failed attempt
+                    readOnly={isLoading}
+                    onChange={(e) => handleDigitChange(index, e.target.value)}
+                    onKeyDown={(e) => handleDigitKeyDown(index, e)}
+                    onPaste={(e) => handlePaste(index, e)}
+                    onFocus={(e) => e.target.select()}
+                  />
+                ))}
+              </div>
+
+              <div className="auth-form-row">
+                <label className="cyber-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="cyber-checkbox"
+                  />
+                  <span>Remember Me</span>
+                </label>
+
+                <button type="button" className="auth-link-btn" onClick={changeEmail}>
+                  Change email
+                </button>
+              </div>
+
+              <button type="submit" className="btn btn-primary-cyan btn-full" disabled={isLoading}>
+                {isLoading ? 'Verifying...' : 'Verify & Login'}
+              </button>
+
+              <div className="otp-resend">
+                {cooldown > 0 ? (
+                  <span>
+                    Resend code in <strong>{cooldown}s</strong>
+                  </span>
                 ) : (
                   <>
-                    Enter the code sent to <strong>{email.trim()}</strong>
+                    <span>Didn&apos;t get the email? </span>
+                    <button type="button" className="auth-link-btn" onClick={sendCode} disabled={isLoading}>
+                      Resend code
+                    </button>
                   </>
                 )}
-              </p>
-            </div>
-
-            {errorMsg && (
-              <div className="auth-alert auth-alert--error" role="alert">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <span>{errorMsg}</span>
               </div>
-            )}
+            </form>
+          )}
 
-            {infoMsg && (
-              <div className="auth-alert auth-alert--info" role="status">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4" />
-                  <path d="M12 8h.01" />
-                </svg>
-                <span>{infoMsg}</span>
-              </div>
-            )}
-
-            {step === 'email' ? (
-              <form className="auth-form" onSubmit={handleEmailSubmit} noValidate>
-                <div className="form-group">
-                  <input
-                    id="otp-email"
-                    type="email"
-                    className="cyber-input"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    autoFocus
-                  />
-                </div>
-
-                <button type="submit" className="btn btn-primary-cyan btn-full" disabled={isLoading}>
-                  {isLoading ? 'Sending code...' : 'Send login code'}
-                </button>
-              </form>
-            ) : (
-              <form className="auth-form" onSubmit={handleCodeSubmit} noValidate>
-                <div className="otp-code-inputs" role="group" aria-label="6-digit login code">
-                  {digits.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => {
-                        digitRefs.current[index] = el;
-                      }}
-                      className={`otp-digit ${digit ? 'otp-digit--filled' : ''}`}
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete={index === 0 ? 'one-time-code' : 'off'}
-                      maxLength={CODE_LENGTH}
-                      value={digit}
-                      aria-label={`Digit ${index + 1}`}
-                      // readOnly instead of disabled so focus can move back to the first box after a failed attempt
-                      readOnly={isLoading}
-                      onChange={(e) => handleDigitChange(index, e.target.value)}
-                      onKeyDown={(e) => handleDigitKeyDown(index, e)}
-                      onPaste={(e) => handlePaste(index, e)}
-                      onFocus={(e) => e.target.select()}
-                    />
-                  ))}
-                </div>
-
-                <div className="auth-form-row">
-                  <label className="cyber-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="cyber-checkbox"
-                    />
-                    <span>Remember Me</span>
-                  </label>
-
-                  <button type="button" className="auth-link-btn" onClick={changeEmail}>
-                    Change email
-                  </button>
-                </div>
-
-                <button type="submit" className="btn btn-primary-cyan btn-full" disabled={isLoading}>
-                  {isLoading ? 'Verifying...' : 'Verify & Login'}
-                </button>
-
-                <div className="otp-resend">
-                  {cooldown > 0 ? (
-                    <span>
-                      Resend code in <strong>{cooldown}s</strong>
-                    </span>
-                  ) : (
-                    <>
-                      <span>Didn&apos;t get the email? </span>
-                      <button type="button" className="auth-link-btn" onClick={sendCode} disabled={isLoading}>
-                        Resend code
-                      </button>
-                    </>
-                  )}
-                </div>
-              </form>
-            )}
-
-            <div className="sso-section">
-              <div className="sso-divider">
-                <span>or</span>
-              </div>
-            </div>
-
-            <div className="auth-card-footer auth-card-footer--tight">
-              <span>Prefer your password? </span>
-              <button type="button" className="auth-link-highlight" onClick={() => navigate('/login')}>
-                Back to Login
-              </button>
+          <div className="sso-section">
+            <div className="sso-divider">
+              <span>or</span>
             </div>
           </div>
+
+          <div className="auth-card-footer auth-card-footer--tight">
+            <span>Prefer your password? </span>
+            <button type="button" className="auth-link-highlight" onClick={() => navigate('/login')}>
+              Back to Login
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </AuthSplitLayout>
+    </>
   );
 }

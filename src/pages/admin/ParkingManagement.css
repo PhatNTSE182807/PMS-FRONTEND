@@ -11,7 +11,7 @@
 /* Shared card look */
 .pm-panel {
   background: var(--bg-card);
-  border: 1px solid var(--border-glass);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
   backdrop-filter: blur(12px);
   padding: 1.1rem;
@@ -34,23 +34,23 @@
   width: 100%;
   text-align: left;
   font: inherit;
-  color: var(--text-slate);
+  color: var(--text-body);
   cursor: pointer;
   padding: 0.8rem 0.9rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-glass);
+  background: rgba(59, 54, 50, 0.02);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-md, 12px);
   transition: var(--transition-fast);
 }
 .pm-lot-item:hover { background: var(--bg-card-hover); transform: translateX(2px); }
-.pm-lot-item:focus-visible { outline: 2px solid var(--cyan-primary); outline-offset: 2px; }
+.pm-lot-item:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .pm-lot-item--active {
-  border-color: var(--cyan-primary);
-  background: rgba(0, 242, 254, 0.08);
-  box-shadow: 0 0 18px var(--cyan-glow);
+  border-color: var(--color-primary);
+  background: rgba(232, 90, 79, 0.08);
+  box-shadow: 0 0 18px var(--color-primary-glow);
 }
 .pm-lot-item__top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.pm-lot-item__name { color: var(--text-white); font-weight: 600; }
+.pm-lot-item__name { color: var(--text-strong); font-weight: 600; }
 .pm-lot-item__meta { margin-top: 0.3rem; color: var(--text-muted); font-size: 0.78rem; }
 
 /* Status + type badges (same shape as .role-badge) */
@@ -63,11 +63,11 @@
   white-space: nowrap;
   border: 1px solid currentColor;
 }
-.pm-badge--active { color: var(--status-available); background: rgba(0, 230, 118, 0.1); }
-.pm-badge--inactive { color: var(--status-error); background: rgba(255, 82, 82, 0.1); }
-.pm-badge--car { color: var(--cyan-primary); background: rgba(0, 242, 254, 0.1); }
-.pm-badge--motorbike { color: var(--status-reserved); background: rgba(255, 183, 3, 0.1); }
-.pm-badge--bicycle { color: var(--status-available); background: rgba(0, 230, 118, 0.1); }
+.pm-badge--active { color: var(--status-available); background: rgba(79, 138, 91, 0.1); }
+.pm-badge--inactive { color: var(--status-error); background: rgba(184, 67, 58, 0.1); }
+.pm-badge--car { color: var(--color-primary); background: rgba(232, 90, 79, 0.1); }
+.pm-badge--motorbike { color: var(--status-reserved); background: rgba(194, 138, 44, 0.1); }
+.pm-badge--bicycle { color: var(--status-available); background: rgba(79, 138, 91, 0.1); }
 
 /* Detail */
 .pm-detail { display: flex; flex-direction: column; gap: 1.25rem; }
@@ -77,13 +77,13 @@
   gap: 0.9rem 1.25rem;
 }
 .pm-info__label {
-  color: var(--cyan-primary);
+  color: var(--color-primary);
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.pm-info__value { margin-top: 0.2rem; color: var(--text-white); }
+.pm-info__value { margin-top: 0.2rem; color: var(--text-strong); }
 .pm-info--wide { grid-column: 1 / -1; }
 
 .pm-zones .acc-table-wrap { background: transparent; border: none; backdrop-filter: none; }
@@ -91,7 +91,7 @@
 
 /* Forms */
 .acc-field--full { grid-column: 1 / -1; }
-.pm-check__label { display: flex; align-items: center; gap: 0.5rem; color: var(--text-slate); font-size: 0.9rem; min-height: 2.5rem; }
+.pm-check__label { display: flex; align-items: center; gap: 0.5rem; color: var(--text-body); font-size: 0.9rem; min-height: 2.5rem; }
 .pm-modal--narrow { max-width: 440px; }
 .pm-modal__sub { margin: -0.5rem 0 1rem; }
 .pm-grid--single { grid-template-columns: 1fr; }
