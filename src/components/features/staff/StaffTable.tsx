@@ -1,4 +1,4 @@
-import { KeyRound, Lock, LockOpen, Pencil } from 'lucide-react'
+import { KeyRound, Pencil, UserCheck, UserX } from 'lucide-react'
 import { Badge, StatusDot } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -133,7 +133,7 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                       className={isLocked ? 'text-emerald-600 hover:text-emerald-700' : 'text-rose-600 hover:text-rose-700'}
                       onClick={() => onToggleLock(user)}
                     >
-                      {isLocked ? <LockOpen /> : <Lock />}
+                      {isLocked ? <UserCheck /> : <UserX />}
                     </Button>
                     <Button
                       variant="ghost"

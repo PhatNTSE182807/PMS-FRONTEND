@@ -1,10 +1,13 @@
 import { isMockService, SERVICE_PATHS } from '@/config/env'
 import type { SessionUser } from '@/lib/session'
 import { authMock } from '@/mocks/auth.mock'
+import { customersMock, toCustomerPage } from '@/mocks/customers.mock'
 import { staffMock } from '@/mocks/users.mock'
 import type { PaginatedResponse } from '@/types/common.dto'
 import type {
   AccountRole,
+  CustomerAccountDTO,
+  CustomerListQuery,
   CreateUserCommand,
   LoginCommand,
   LoginResponseDTO,
@@ -44,6 +47,18 @@ export const identityService = {
   register(command: RegisterCommand): Promise<RegisterResponseDTO> {
     if (isMockService('auth')) return authMock.register(command)
     return http.post<RegisterResponseDTO>(`${SERVICE_PATHS.auth}/register`, command)
+  },
+
+  /* Customer accounts (Admin, view only) ----------------------------- */
+
+  /**
+   * GET /Users returns every account; customers are the "User" role. The endpoint has no
+   * paging yet, so search and paging happen here until the backend supports them.
+   */
+  async getCustomers(query: CustomerListQuery): Promise<PaginatedResponse<CustomerAccountDTO>> {
+    if (isMockService('auth')) return customersMock.list(query)
+    const accounts = await http.get<CustomerAccountDTO[]>(SERVICE_PATHS.auth)
+    return toCustomerPage(accounts, query)
   },
 
   /* Staff accounts (Admin only) ------------------------------------- */

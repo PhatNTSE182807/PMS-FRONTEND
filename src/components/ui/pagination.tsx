@@ -31,7 +31,7 @@ export function Pagination({ pageNumber, pageSize, totalCount, totalPages, onPag
     >
       <p>
         Showing <span className="font-medium text-slate-900">{formatNumber(from)}</span>–
-        <span className="font-medium text-slate-900">{formatNumber(to)}</span> trong{' '}
+        <span className="font-medium text-slate-900">{formatNumber(to)}</span> of{' '}
         <span className="font-medium text-slate-900">{formatNumber(totalCount)}</span> results
       </p>
       <div className="flex items-center gap-1">

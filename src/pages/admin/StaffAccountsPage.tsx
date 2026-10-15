@@ -54,7 +54,7 @@ function useStaffFilters() {
   return { filters, update, clear: () => setParams({}, { replace: true }) }
 }
 
-export default function UserManagementPage() {
+export default function StaffAccountsPage() {
   const { filters, update, clear } = useStaffFilters()
   const [searchInput, setSearchInput] = useState(filters.search)
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)

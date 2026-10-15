@@ -71,6 +71,23 @@ export interface UserDTO {
   createdAt: string
 }
 
+/**
+ * Customer (driver) account as returned by GET /Users
+ * (PMS.Application.Models.User.UserResponseModel).
+ */
+export interface CustomerAccountDTO {
+  id: string
+  userName: string
+  email: string
+  phoneNumber: string
+  role: string
+}
+
+export interface CustomerListQuery extends PageQuery {
+  /** Matches username, email or phone number. */
+  search?: string
+}
+
 export interface StaffListQuery extends PageQuery {
   /** Matches name, email, employee code or phone number. */
   search?: string
