@@ -7,9 +7,7 @@
  * matching the convention used in authService.
  */
 import axios from 'axios';
-
-// Hardcoded on purpose: no longer depends on authService's base URL (https://localhost:44391/api).
-const BASE_URL = 'http://localhost:5000';
+import { getApiBaseUrl } from './authService';
 
 const MOCK_DELAY_MS = 1000;
 
@@ -77,7 +75,7 @@ export const userService = {
    */
   async getUsers() {
     try {
-      const response = await axios.get(`${BASE_URL}/api/users`, {
+      const response = await axios.get(`${getApiBaseUrl()}/users`, {
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${getAuthToken()}`,
