@@ -685,30 +685,8 @@
   padding: 0 10px;
 }
 
-.sso-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
 
-.sso-btn {
-  background: rgba(59, 54, 50, 0.06);
-  border: 1px solid rgba(59, 54, 50, 0.12);
-  border-radius: 8px;
-  width: 44px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
 
-.sso-btn:hover {
-  background: rgba(59, 54, 50, 0.12);
-  border-color: rgba(59, 54, 50, 0.3);
-  transform: translateY(-1px);
-}
 
 /* Footer card navigation */
 .auth-card-footer {

@@ -75,21 +75,6 @@ export default function LoginScreen() {
     finishLogin(demoUser);
   };
 
-  // Handle SSO mock login
-  const handleSsoLogin = (provider) => {
-    const ssoUser = {
-      userId: `u-sso-${provider.toLowerCase()}`,
-      username: `user_${provider.toLowerCase()}`,
-      fullName: `${provider} User`,
-      email: `user@${provider.toLowerCase()}.com`,
-      phoneNumber: '+84 912 345 678',
-      role: 'User',
-    };
-    localStorage.setItem('pms_token', `sso_${provider}_token`);
-    localStorage.setItem('pms_user', JSON.stringify(ssoUser));
-    finishLogin(ssoUser);
-  };
-
   return (
     <>
       <AuthSplitLayout title="Welcome back" subtitle="Sign in to manage your parking.">
@@ -195,9 +180,23 @@ export default function LoginScreen() {
               className="btn btn-outline-cyan btn-full auth-alt-login-btn"
               onClick={() => navigate('/login-otp')}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="m22 7-10 6L2 7" />
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#EA4335"
+                  d="M12 5c1.7 0 3 .7 3.7 1.3l2.8-2.8C16.8 2 14.6 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.3 2.6C6 7.2 8.7 5 12 5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.2 14.7c-.2-.7-.4-1.5-.4-2.7 0-1.1.2-1.9.4-2.7L1.9 6.7C.7 9.1 0 10.5 0 12s.7 2.9 1.9 5.3l3.3-2.6z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.3 0-6-2.2-6.8-4.9L1.9 16C3.7 19.7 7.5 23 12 23z"
+                />
               </svg>
               Sign in with email code
             </button>
@@ -221,57 +220,6 @@ export default function LoginScreen() {
             >
               Instant Access Demo →
             </button>
-          </div>
-
-          {/* SSO Section */}
-          <div className="sso-section">
-            <div className="sso-divider">
-              <span>Sign in with SSO</span>
-            </div>
-
-            <div className="sso-buttons">
-              {/* Google */}
-              <button
-                type="button"
-                className="sso-btn"
-                onClick={() => handleSsoLogin('Google')}
-                title="Sign in with Google"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <path
-                    fill="#EA4335"
-                    d="M12 5c1.7 0 3 .7 3.7 1.3l2.8-2.8C16.8 2 14.6 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.3 2.6C6 7.2 8.7 5 12 5z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.2 14.7c-.2-.7-.4-1.5-.4-2.7 0-1.1.2-1.9.4-2.7L1.9 6.7C.7 9.1 0 10.5 0 12s.7 2.9 1.9 5.3l3.3-2.6z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.3 0-6-2.2-6.8-4.9L1.9 16C3.7 19.7 7.5 23 12 23z"
-                  />
-                </svg>
-              </button>
-
-              {/* Microsoft */}
-              <button
-                type="button"
-                className="sso-btn"
-                onClick={() => handleSsoLogin('Microsoft')}
-                title="Sign in with Microsoft"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <rect x="1" y="1" width="10" height="10" fill="#F25022" />
-                  <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
-                  <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
-                  <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
-                </svg>
-              </button>
-            </div>
           </div>
 
           {/* Footer Navigation */}
