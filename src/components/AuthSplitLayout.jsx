@@ -1,4 +1,4 @@
-import ParkingLogo from './ParkingLogo';
+import { LOGO_SRC } from './ParkingLogo';
 
 /**
  * Two-column shell shared by Login, Email-code Login and Register:
@@ -12,10 +12,7 @@ export default function AuthSplitLayout({ title, subtitle, children }) {
         <div className="auth-split__tint" aria-hidden="true" />
 
         <div className="auth-split__brand-content">
-          <span className="auth-split__badge">
-            <ParkingLogo size="small" className="parking-logo--icon-only" />
-            Parking platform
-          </span>
+          <img src={LOGO_SRC} alt="XXIV Parking logo" className="auth-split__logo" />
 
           <h1 className="auth-split__title">
             XXIV
