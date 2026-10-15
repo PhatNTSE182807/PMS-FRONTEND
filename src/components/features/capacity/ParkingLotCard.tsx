@@ -10,9 +10,9 @@ import { OccupancyBar, OccupancyGauge } from './OccupancyGauge'
 import { LOT_STATUS_STYLES } from './occupancyStyles'
 
 const VEHICLE_ROWS: Record<CapacityVehicleType, { label: string; icon: LucideIcon }> = {
-  CAR: { label: 'Khu vực Ô tô', icon: Car },
-  MOTORBIKE: { label: 'Khu vực Xe máy', icon: Bike },
-  EV_CHARGING: { label: 'Trạm sạc xe điện', icon: Zap },
+  CAR: { label: 'Car zone', icon: Car },
+  MOTORBIKE: { label: 'Motorbike zone', icon: Bike },
+  EV_CHARGING: { label: 'EV charging', icon: Zap },
 }
 
 function CapacityRow({ detail }: { detail: VehicleCapacityDetail }) {
@@ -28,17 +28,17 @@ function CapacityRow({ detail }: { detail: VehicleCapacityDetail }) {
           {label}
         </span>
         <span className="text-slate-900 tabular-nums">
-          {formatNumber(detail.occupiedSlots)} / {formatNumber(detail.totalSlots)} {isCharger ? 'trụ' : 'chỗ'}
+          {formatNumber(detail.occupiedSlots)} / {formatNumber(detail.totalSlots)} {isCharger ? 'chargers' : 'slots'}
         </span>
       </div>
       <OccupancyBar percentage={rate} />
       <p className="text-xs text-slate-500">
         {isCharger ? (
-          <>{formatNumber(detail.occupiedSlots)} trụ đang sạc · còn {formatNumber(detail.availableSlots)} trụ trống</>
+          <>{formatNumber(detail.occupiedSlots)} chargers in use · {formatNumber(detail.availableSlots)} free</>
         ) : (
           <>
-            Còn <span className="font-medium text-slate-700">{formatNumber(detail.availableSlots)}</span> chỗ
-            {detail.maintenanceSlots > 0 && ` · ${formatNumber(detail.maintenanceSlots)} chỗ bảo trì`}
+            <span className="font-medium text-slate-700">{formatNumber(detail.availableSlots)}</span> slots free
+            {detail.maintenanceSlots > 0 && ` · ${formatNumber(detail.maintenanceSlots)} under maintenance`}
           </>
         )}
       </p>
@@ -69,7 +69,7 @@ export function ParkingLotCard({ lot, onShowZones }: ParkingLotCardProps) {
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
             <UserRound className="size-3.5 shrink-0" aria-hidden />
-            Quản lý ca: <span className="font-medium text-slate-700">{lot.managerOnDuty}</span>
+            Shift manager: <span className="font-medium text-slate-700">{lot.managerOnDuty}</span>
           </p>
         </div>
         <span className="shrink-0 font-mono text-[11px] text-slate-400">{lot.code}</span>
@@ -87,7 +87,7 @@ export function ParkingLotCard({ lot, onShowZones }: ParkingLotCardProps) {
       <div className="border-t border-slate-100 px-5 py-3">
         <Button variant="ghost" size="sm" className="-ml-2 text-indigo-600 hover:text-indigo-700" onClick={() => onShowZones(lot)}>
           <Layers />
-          Xem chi tiết phân khu (Zones)
+          View zone details
         </Button>
       </div>
     </Card>

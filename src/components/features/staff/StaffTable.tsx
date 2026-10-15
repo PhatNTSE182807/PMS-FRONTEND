@@ -20,7 +20,7 @@ const AVATAR_COLORS = [
 const avatarColor = (id: string) =>
   AVATAR_COLORS[[...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_COLORS.length]
 
-const COLUMNS = ['Mã NV', 'Họ và tên', 'Email & SĐT', 'Vai trò', 'Bãi xe được gán', 'Ngày tạo', 'Trạng thái', 'Hành động']
+const COLUMNS = ['Employee code', 'Full name', 'Email & phone', 'Role', 'Assigned lots', 'Created', 'Status', 'Actions']
 const MAX_LOT_CHIPS = 2
 /** Actions stay visible while the table scrolls horizontally on narrower screens. */
 const STICKY_ACTIONS = 'sticky right-0 shadow-[-12px_0_12px_-12px_rgb(15_23_42/0.15)]'
@@ -59,7 +59,7 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map((column) => (
-            <TableHead key={column} className={column === 'Hành động' ? `${STICKY_ACTIONS} bg-slate-50 text-right` : undefined}>
+            <TableHead key={column} className={column === 'Actions' ? `${STICKY_ACTIONS} bg-slate-50 text-right` : undefined}>
               {column}
             </TableHead>
           ))}
@@ -103,7 +103,7 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                   <div className="flex max-w-xs flex-wrap gap-1">
                     {user.assignedParkingLots.slice(0, MAX_LOT_CHIPS).map((lot) => (
                       <Badge key={lot.id} className="max-w-[12rem] truncate" title={lot.name}>
-                        {lot.name.replace(/^Bãi xe /, '')}
+                        {lot.name.replace(/ Parking$/, '')}
                       </Badge>
                     ))}
                     {extraLots > 0 && (
@@ -122,14 +122,14 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                 </TableCell>
                 <TableCell className={`${STICKY_ACTIONS} bg-white group-hover:bg-slate-50`}>
                   <div className="flex justify-end gap-0.5">
-                    <Button variant="ghost" size="icon" title="Sửa" aria-label={`Sửa ${user.fullName}`} onClick={() => onEdit(user)}>
+                    <Button variant="ghost" size="icon" title="Edit" aria-label={`Edit ${user.fullName}`} onClick={() => onEdit(user)}>
                       <Pencil />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      title={isLocked ? 'Mở khóa' : 'Khóa'}
-                      aria-label={`${isLocked ? 'Mở khóa' : 'Khóa'} ${user.fullName}`}
+                      title={isLocked ? 'Activate' : 'Deactivate'}
+                      aria-label={`${isLocked ? 'Activate' : 'Deactivate'} ${user.fullName}`}
                       className={isLocked ? 'text-emerald-600 hover:text-emerald-700' : 'text-rose-600 hover:text-rose-700'}
                       onClick={() => onToggleLock(user)}
                     >
@@ -138,8 +138,8 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Reset mật khẩu"
-                      aria-label={`Reset mật khẩu ${user.fullName}`}
+                      title="Reset password"
+                      aria-label={`Reset password for ${user.fullName}`}
                       onClick={() => onResetPassword(user)}
                     >
                       <KeyRound />

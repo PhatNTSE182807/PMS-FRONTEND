@@ -20,7 +20,7 @@ export function OccupancyGauge({ percentage, isFull }: { percentage: number; isF
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(clamped)}
-      aria-label={`Tỷ lệ lấp đầy ${clamped.toFixed(1)}% — ${style.label}`}
+      aria-label={`Occupancy ${clamped.toFixed(1)}% — ${style.label}`}
       className={cn('relative shrink-0', isFull && 'animate-pulse-soft')}
       style={{ width: SIZE, height: SIZE }}
     >

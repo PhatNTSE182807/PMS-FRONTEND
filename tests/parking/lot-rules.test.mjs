@@ -24,8 +24,8 @@ const zone = {
 const lot = {
   id: 'lot1',
   code: 'L1',
-  name: 'Bãi 1',
-  address: 'Thủ Đức',
+  name: 'Lot 1',
+  address: 'Thu Duc',
   capacity: 20,
   latitude: null,
   longitude: null,
@@ -38,32 +38,32 @@ test('accept valid lot and zone', () => {
   validateZone(zone, lot, zone)
 })
 test('reject duplicate code case-insensitively', () =>
-  assert.throws(() => validateLot({ ...lot, code: 'l1' }, [lot]), /Mã bãi/))
+  assert.throws(() => validateLot({ ...lot, code: 'l1' }, [lot]), /Lot code/))
 test('reject shrinking a lot below its zones', () =>
   assert.throws(
     () => validateLot({ ...lot, capacity: 5 }, [lot], lot),
-    /tổng sức chứa/,
+    /total zone capacity/,
   ))
 test('GPS must be a valid pair', () =>
   assert.throws(
     () => validateLot({ ...lot, latitude: 10 }, [lot], lot),
-    /cả vĩ độ/,
+    /both latitude/,
   ))
 test('zone capacity cannot exceed lot capacity', () =>
   assert.throws(
     () =>
       validateZone({ ...zone, id: undefined, code: 'B', capacity: 30 }, lot),
-    /vượt/,
+    /exceeds/,
   ))
 test('vehicle capacities must equal zone capacity', () =>
   assert.throws(
     () => validateZone({ ...zone, vehicleCapacities: { CAR_4: 2 } }, lot, zone),
-    /theo loại xe/,
+    /per vehicle type/,
   ))
 test('reservation quota cannot exceed capacity', () =>
   assert.throws(
     () => validateZone({ ...zone, reservationLimit: 11 }, lot, zone),
-    /Hạn mức/,
+    /Reservation limit/,
   ))
 test('quota cannot shrink below configured slots', () =>
   assert.throws(
@@ -98,7 +98,7 @@ test('quota cannot shrink below configured slots', () =>
           ],
         },
       ),
-    /Hạn mức/,
+    /Reservation limit/,
   ))
 test('do not allow manual occupied state from config', () =>
   assert.throws(
@@ -107,7 +107,7 @@ test('do not allow manual occupied state from config', () =>
         { code: 'A01', vehicleTypeId: 'CAR_4', status: 'Occupied' },
         zone,
       ),
-    /vận hành/,
+    /operations/,
   ))
 test('protect reserved slot from editing', () =>
   assert.throws(
@@ -127,7 +127,7 @@ test('protect reserved slot from editing', () =>
         },
         's',
       ),
-    /không được sửa/,
+    /cannot be edited/,
   ))
 test('reject exceeding quota or per-type capacity', () => {
   assert.throws(
@@ -136,7 +136,7 @@ test('reject exceeding quota or per-type capacity', () => {
         { code: 'A01', vehicleTypeId: 'CAR_4', status: 'Available' },
         { ...zone, reservationLimit: 0 },
       ),
-    /hạn mức/,
+    /reservation limit/,
   )
   assert.throws(
     () =>
@@ -144,7 +144,7 @@ test('reject exceeding quota or per-type capacity', () => {
         { code: 'A01', vehicleTypeId: 'BICYCLE', status: 'Available' },
         zone,
       ),
-    /loại xe/,
+    /vehicle type/,
   )
 })
 test('allow Available to Maintenance on an unused slot', () =>

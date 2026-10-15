@@ -36,11 +36,11 @@ export function ErrorState({ message, onRetry, className }: ErrorStateProps) {
       <div className="mb-3 rounded-full bg-rose-50 p-3 text-rose-500">
         <AlertTriangle className="size-6" aria-hidden />
       </div>
-      <h3 className="text-sm font-semibold text-slate-900">Không tải được dữ liệu</h3>
+      <h3 className="text-sm font-semibold text-slate-900">Could not load data</h3>
       <p className="mt-1 max-w-md text-sm text-slate-500">{message}</p>
       {onRetry && (
         <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>
-          Thử lại
+          Retry
         </Button>
       )}
     </div>
@@ -51,7 +51,7 @@ export function Spinner({ className }: { className?: string }) {
   return (
     <span
       role="status"
-      aria-label="Đang xử lý"
+      aria-label="Processing"
       className={cn('inline-block size-4 animate-spin rounded-full border-2 border-current/30 border-t-current', className)}
     />
   )

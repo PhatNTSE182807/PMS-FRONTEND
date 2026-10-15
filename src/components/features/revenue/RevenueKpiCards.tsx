@@ -22,7 +22,7 @@ function Delta({ value }: { value: number }) {
         <Icon className="size-3.5" aria-hidden />
         {formatPercent(value)}
       </span>
-      so với kỳ trước
+      vs previous period
     </p>
   )
 }
@@ -65,24 +65,24 @@ export function RevenueKpiCards({ data, isLoading }: { data?: RevenueKpiSummaryD
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <KpiCard label="Tổng doanh thu" icon={<Banknote />}>
+      <KpiCard label="Total revenue" icon={<Banknote />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(data.totalRevenue)}</p>
         <Delta value={data.revenueGrowthPercent} />
       </KpiCard>
 
-      <KpiCard label="Tổng lượt xe vào/ra" icon={<Car />}>
+      <KpiCard label="Total entries and exits" icon={<Car />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
-          {formatNumber(data.totalTransactions)} <span className="text-base font-medium text-slate-500">lượt</span>
+          {formatNumber(data.totalTransactions)} <span className="text-base font-medium text-slate-500">entries</span>
         </p>
         <Delta value={data.transactionGrowthPercent} />
       </KpiCard>
 
-      <KpiCard label="Vé tháng vs Vé lượt" icon={<Ticket />}>
+      <KpiCard label="Monthly passes vs single tickets" icon={<Ticket />}>
         <div className="mt-3 space-y-2">
           <div
             className="flex h-2 gap-0.5 overflow-hidden rounded-full"
             role="img"
-            aria-label={`Vé tháng ${subscriptionShare.toFixed(0)}%, vé lượt ${(100 - subscriptionShare).toFixed(0)}%`}
+            aria-label={`Monthly passes ${subscriptionShare.toFixed(0)}%, single tickets ${(100 - subscriptionShare).toFixed(0)}%`}
           >
             <div className="rounded-l-full" style={{ width: `${subscriptionShare}%`, backgroundColor: SERIES_COLORS.blue }} />
             <div className="flex-1 rounded-r-full" style={{ backgroundColor: SERIES_COLORS.orange }} />
@@ -91,14 +91,14 @@ export function RevenueKpiCards({ data, isLoading }: { data?: RevenueKpiSummaryD
             <div>
               <dt className="flex items-center gap-1.5 text-slate-500">
                 <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: SERIES_COLORS.blue }} />
-                Vé tháng
+                Monthly passes
               </dt>
               <dd className="mt-0.5 text-sm font-semibold text-slate-900">{formatVnd(data.subscriptionRevenue)}</dd>
             </div>
             <div>
               <dt className="flex items-center gap-1.5 text-slate-500">
                 <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: SERIES_COLORS.orange }} />
-                Vé lượt
+                Single tickets
               </dt>
               <dd className="mt-0.5 text-sm font-semibold text-slate-900">{formatVnd(data.walkInRevenue)}</dd>
             </div>
@@ -106,9 +106,9 @@ export function RevenueKpiCards({ data, isLoading }: { data?: RevenueKpiSummaryD
         </div>
       </KpiCard>
 
-      <KpiCard label="Giá trị trung bình / giao dịch" icon={<Receipt />}>
+      <KpiCard label="Average value per transaction" icon={<Receipt />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(Math.round(average))}</p>
-        <p className="mt-2 text-xs text-slate-500">Tổng doanh thu ÷ tổng số giao dịch</p>
+        <p className="mt-2 text-xs text-slate-500">Total revenue ÷ number of transactions</p>
       </KpiCard>
     </div>
   )

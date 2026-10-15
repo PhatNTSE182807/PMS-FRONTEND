@@ -37,7 +37,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: Rev
   return (
     <Card className="space-y-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="Khoảng thời gian nhanh" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+        <div role="group" aria-label="Quick date range" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
           {DATE_PRESETS.map((preset) => (
             <button
               key={preset.value}
@@ -60,7 +60,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: Rev
           <CalendarRange className="size-4 text-slate-400" aria-hidden />
           <Input
             type="date"
-            aria-label="Từ ngày"
+            aria-label="From date"
             value={value.startDate}
             max={today}
             onChange={(e) => setCustomDate('startDate', e.target.value)}
@@ -69,7 +69,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: Rev
           <span className="text-slate-400">–</span>
           <Input
             type="date"
-            aria-label="Đến ngày"
+            aria-label="To date"
             value={value.endDate}
             max={today}
             onChange={(e) => setCustomDate('endDate', e.target.value)}
@@ -81,11 +81,11 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: Rev
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-full sm:w-64">
           <NativeSelect
-            aria-label="Bãi xe"
+            aria-label="Parking lot"
             value={value.parkingLotId ?? ''}
             onChange={(e) => onChange({ ...value, parkingLotId: e.target.value || undefined })}
           >
-            <option value="">Tất cả bãi xe</option>
+            <option value="">All parking lots</option>
             {parkingLots.map((lot) => (
               <option key={lot.id} value={lot.id}>
                 {lot.name}
@@ -95,7 +95,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: Rev
         </div>
         <div className="w-full sm:w-52">
           <NativeSelect
-            aria-label="Loại phương tiện"
+            aria-label="Vehicle type"
             value={value.vehicleType ?? 'ALL'}
             onChange={(e) => onChange({ ...value, vehicleType: e.target.value as ReportVehicleType })}
           >
@@ -110,11 +110,11 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: Rev
         <div className="flex gap-2 sm:ml-auto">
           <Button variant="outline" onClick={() => onExport('excel')}>
             <FileSpreadsheet className="text-emerald-600" />
-            Xuất Excel
+            Export Excel
           </Button>
           <Button variant="outline" onClick={() => onExport('pdf')}>
             <FileText className="text-rose-600" />
-            Xuất PDF
+            Export PDF
           </Button>
         </div>
       </div>

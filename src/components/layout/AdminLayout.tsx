@@ -29,8 +29,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <nav aria-label="Điều hướng quản trị" className="flex-1 space-y-1 px-3 py-5">
-        <p className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Quản trị</p>
+      <nav aria-label="Admin navigation" className="flex-1 space-y-1 px-3 py-5">
+        <p className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Administration</p>
         {navigation.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -61,7 +61,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 function PageSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Đang tải trang">
+    <div className="space-y-6" aria-busy="true" aria-label="Loading page">
       <div className="space-y-2">
         <Skeleton className="h-7 w-56" />
         <Skeleton className="h-4 w-80" />
@@ -101,27 +101,27 @@ export function AdminLayout() {
       {/* Mobile navigation drawer */}
       <Dialog open={isNavOpen} onOpenChange={setIsNavOpen}>
         <NavDrawerContent aria-describedby={undefined}>
-          <DialogTitle className="sr-only">Menu quản trị</DialogTitle>
+          <DialogTitle className="sr-only">Admin menu</DialogTitle>
           <SidebarContent onNavigate={() => setIsNavOpen(false)} />
         </NavDrawerContent>
       </Dialog>
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/85 px-4 backdrop-blur sm:px-6 lg:px-8">
-          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Mở menu" onClick={() => setIsNavOpen(true)}>
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu" onClick={() => setIsNavOpen(true)}>
             <Menu />
           </Button>
 
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
-            <span className="hidden text-slate-500 sm:inline">Quản trị</span>
+            <span className="hidden text-slate-500 sm:inline">Administration</span>
             <ChevronRight className="hidden size-4 text-slate-300 sm:inline" aria-hidden />
-            <span className="truncate font-medium text-slate-900">{current?.label ?? 'Tổng quan'}</span>
+            <span className="truncate font-medium text-slate-900">{current?.label ?? 'Overview'}</span>
           </nav>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {usesMockData && (
-              <Badge tone="amber" title="Một số dịch vụ đang dùng dữ liệu mẫu (mock) thay cho API thật.">
-                Dữ liệu mẫu
+              <Badge tone="amber" title="Some services are using mock data instead of the real API.">
+                Sample data
               </Badge>
             )}
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
@@ -132,7 +132,7 @@ export function AdminLayout() {
                 <p className="text-sm font-medium text-slate-900">{user?.fullName}</p>
                 <p className="text-xs text-slate-500">{roleLabel(user?.role)}</p>
               </div>
-              <Button variant="ghost" size="icon" aria-label="Đăng xuất" title="Đăng xuất" onClick={handleLogout}>
+              <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={handleLogout}>
                 <LogOut />
               </Button>
             </div>

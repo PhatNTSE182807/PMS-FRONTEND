@@ -55,19 +55,19 @@ export default function RevenueReportPage() {
 
   const handleExport = (format: 'excel' | 'pdf') => {
     // TODO: call the Report service export endpoint once it exists; for now this is a mock.
-    const fileName = `bao-cao-doanh-thu_${filters.startDate}_${filters.endDate}.${format === 'excel' ? 'xlsx' : 'pdf'}`
+    const fileName = `revenue-report_${filters.startDate}_${filters.endDate}.${format === 'excel' ? 'xlsx' : 'pdf'}`
     toast.promise(new Promise((resolve) => setTimeout(resolve, 1200)), {
-      loading: `Đang xuất báo cáo ${format === 'excel' ? 'Excel' : 'PDF'}…`,
-      success: `Đã xuất ${fileName}`,
-      error: 'Xuất báo cáo thất bại',
+      loading: `Exporting ${format === 'excel' ? 'Excel' : 'PDF'} report…`,
+      success: `Exported ${fileName}`,
+      error: 'Export failed',
     })
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Báo cáo Doanh thu"
-        description="Theo dõi dòng tiền và hiệu quả kinh doanh theo thời gian, bãi xe và loại phương tiện."
+        title="Revenue Report"
+        description="Track cash flow and business performance over time, by parking lot and vehicle type."
       />
 
       <RevenueFilterBar

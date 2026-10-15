@@ -21,25 +21,25 @@ export function RevenueBreakdownTable({ data, isLoading, onPageChange }: Revenue
     <Card>
       <CardHeader className="pb-4">
         <div>
-          <CardTitle>Chi tiết doanh thu theo ngày / bãi</CardTitle>
-          <CardDescription>Mới nhất trước. Hôm nay tính tới thời điểm hiện tại.</CardDescription>
+          <CardTitle>Revenue by day and lot</CardTitle>
+          <CardDescription>Newest first. Today is counted up to now.</CardDescription>
         </div>
       </CardHeader>
 
       {!isLoading && data?.totalCount === 0 ? (
-        <EmptyState title="Không có dữ liệu" description="Không có giao dịch nào khớp bộ lọc." />
+        <EmptyState title="No data" description="No transactions match the filters." />
       ) : (
         <>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Ngày</TableHead>
-                <TableHead>Bãi xe</TableHead>
-                <TableHead className={NUMERIC}>Lượt xe máy</TableHead>
-                <TableHead className={NUMERIC}>Lượt ô tô</TableHead>
-                <TableHead className={NUMERIC}>DT vé lượt</TableHead>
-                <TableHead className={NUMERIC}>DT vé tháng</TableHead>
-                <TableHead className={NUMERIC}>Tổng cộng</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Parking lot</TableHead>
+                <TableHead className={NUMERIC}>Motorbike entries</TableHead>
+                <TableHead className={NUMERIC}>Car entries</TableHead>
+                <TableHead className={NUMERIC}>Single-ticket revenue</TableHead>
+                <TableHead className={NUMERIC}>Monthly-pass revenue</TableHead>
+                <TableHead className={NUMERIC}>Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

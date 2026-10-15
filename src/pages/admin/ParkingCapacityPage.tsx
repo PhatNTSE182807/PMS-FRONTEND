@@ -45,15 +45,15 @@ function SystemBanner({ lots }: { lots: ParkingLotCapacityDTO[] }) {
 
   return (
     <Card className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4 xl:divide-x">
-      <SystemStat icon={Building2} label="Bãi đang hoạt động" value={`${active.length} / ${lots.length}`} />
-      <SystemStat icon={SquareParking} label="Tổng sức chứa" value={formatNumber(totals.total)} />
-      <SystemStat icon={CircleParking} label="Đang sử dụng" value={formatNumber(totals.occupied)}>
+      <SystemStat icon={Building2} label="Active lots" value={`${active.length} / ${lots.length}`} />
+      <SystemStat icon={SquareParking} label="Total capacity" value={formatNumber(totals.total)} />
+      <SystemStat icon={CircleParking} label="In use" value={formatNumber(totals.occupied)}>
         <div className="mt-2 flex items-center gap-2">
           <OccupancyBar percentage={rate} className="flex-1" />
           <span className="text-xs font-medium text-slate-600 tabular-nums">{rate.toFixed(1).replace('.', ',')}%</span>
         </div>
       </SystemStat>
-      <SystemStat icon={ParkingMeter} label="Còn trống" value={formatNumber(totals.available)} />
+      <SystemStat icon={ParkingMeter} label="Available" value={formatNumber(totals.available)} />
     </Card>
   )
 }
@@ -96,12 +96,12 @@ export default function ParkingCapacityPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Công suất Bãi gửi xe"
-        description="Giám sát tỷ lệ lấp đầy của từng bãi và phân khu theo thời gian thực."
+        title="Parking Lot Capacity"
+        description="Monitor the real-time occupancy of every lot and zone."
         actions={
           <Button variant="outline" onClick={() => capacity.refetch()} disabled={capacity.isFetching}>
             <RefreshCw className={cn(capacity.isFetching && 'animate-spin')} />
-            Làm mới
+            Refresh
           </Button>
         }
       />
@@ -114,10 +114,10 @@ export default function ParkingCapacityPage() {
             <span className={cn('relative inline-flex size-2.5 rounded-full', isLive ? 'bg-emerald-500' : 'bg-rose-500')} />
           </span>
           <div className="text-sm" aria-live="polite">
-            <span className="font-medium text-slate-900">{isLive ? 'Live Updates' : 'Mất kết nối'}</span>
+            <span className="font-medium text-slate-900">{isLive ? 'Live Updates' : 'Disconnected'}</span>
             <span className="text-slate-500">
               {' · '}
-              {capacity.dataUpdatedAt ? `Cập nhật ${formatRelativeTime(capacity.dataUpdatedAt, now)}` : 'Đang tải…'}
+              {capacity.dataUpdatedAt ? `Updated ${formatRelativeTime(capacity.dataUpdatedAt, now)}` : 'Loading…'}
             </span>
           </div>
           {!isLive && <WifiOff className="size-4 text-rose-500" aria-hidden />}
@@ -140,11 +140,11 @@ export default function ParkingCapacityPage() {
               />
             </button>
             <Activity className={cn('size-4', isSimulating ? 'text-indigo-600' : 'text-slate-400')} aria-hidden />
-            Giả lập xe ra/vào ({SIMULATION_TICK_MS / 1000}s)
+            Simulate traffic ({SIMULATION_TICK_MS / 1000}s)
           </label>
         )}
 
-        <div role="group" aria-label="Lọc theo mức lấp đầy" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 lg:ml-auto">
+        <div role="group" aria-label="Filter by occupancy" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 lg:ml-auto">
           {CAPACITY_FILTERS.map((option) => (
             <button
               key={option.value}
@@ -177,11 +177,11 @@ export default function ParkingCapacityPage() {
             <Card>
               <EmptyState
                 icon={Gauge}
-                title="Không có bãi xe nào ở mức này"
-                description="Chọn mức lấp đầy khác hoặc xem tất cả bãi xe."
+                title="No parking lots at this level"
+                description="Pick another occupancy level or show all lots."
                 action={
                   <Button variant="outline" onClick={() => setFilter('ALL')}>
-                    Xem tất cả
+                    Show all
                   </Button>
                 }
               />

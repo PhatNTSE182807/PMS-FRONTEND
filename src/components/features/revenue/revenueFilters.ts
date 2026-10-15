@@ -4,11 +4,11 @@ import type { PaymentMethod, ReportVehicleType } from '@/types/report.dto'
 export type DatePreset = 'today' | 'last7' | 'thisMonth' | 'thisQuarter' | 'thisYear' | 'custom'
 
 export const DATE_PRESETS: { value: Exclude<DatePreset, 'custom'>; label: string }[] = [
-  { value: 'today', label: 'Hôm nay' },
-  { value: 'last7', label: '7 ngày qua' },
-  { value: 'thisMonth', label: 'Tháng này' },
-  { value: 'thisQuarter', label: 'Quý này' },
-  { value: 'thisYear', label: 'Năm nay' },
+  { value: 'today', label: 'Today' },
+  { value: 'last7', label: 'Last 7 days' },
+  { value: 'thisMonth', label: 'This month' },
+  { value: 'thisQuarter', label: 'This quarter' },
+  { value: 'thisYear', label: 'This year' },
 ]
 
 /** Inclusive date range for a preset, ending today (local calendar). */
@@ -26,14 +26,14 @@ export function presetRange(preset: Exclude<DatePreset, 'custom'>, today = new D
 }
 
 export const VEHICLE_TYPE_OPTIONS: { value: ReportVehicleType; label: string }[] = [
-  { value: 'ALL', label: 'Tất cả phương tiện' },
-  { value: 'CAR', label: 'Ô tô' },
-  { value: 'MOTORBIKE', label: 'Xe máy' },
-  { value: 'BICYCLE', label: 'Xe đạp / Xe điện' },
+  { value: 'ALL', label: 'All vehicles' },
+  { value: 'CAR', label: 'Car' },
+  { value: 'MOTORBIKE', label: 'Motorbike' },
+  { value: 'BICYCLE', label: 'Bicycle / E-bike' },
 ]
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  QR_BANKING: 'QR Pay / Chuyển khoản',
-  RFID_WALLET: 'Ví điện tử / Thẻ từ',
-  CASH: 'Tiền mặt',
+  QR_BANKING: 'QR Pay / Bank transfer',
+  RFID_WALLET: 'E-wallet / RFID card',
+  CASH: 'Cash',
 }

@@ -71,7 +71,7 @@ export function Editor({
               onClose()
             } catch (e) {
               setError(
-                e instanceof Error ? e.message : 'Không lưu được dữ liệu.',
+                e instanceof Error ? e.message : 'Could not save the data.',
               )
             } finally {
               setBusy(false)
@@ -92,10 +92,10 @@ export function Editor({
           )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" disabled={busy} onClick={onClose}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={busy}>
-              {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
+              {busy ? 'Saving…' : 'Save changes'}
             </Button>
           </div>
         </form>
@@ -137,15 +137,15 @@ export function LotForm({
   const patch = (p: Partial<LotInput>) => set({ ...v, ...p })
   return (
     <Editor
-      title={lot ? 'Sửa thông tin bãi' : 'Tạo bãi đỗ xe'}
-      description="Admin thiết lập thông tin bãi và phân công Manager. Bãi mới mặc định ngừng hoạt động để hoàn tất cấu hình."
+      title={lot ? 'Edit parking lot' : 'Create parking lot'}
+      description="Admins set up the lot and assign its Manager. New lots start inactive until their configuration is complete."
       onClose={onClose}
       onSave={async () => {
         await service.saveLot(v, lot?.id)
         await onSaved()
       }}
     >
-      <Field label="Mã bãi *">
+      <Field label="Lot code *">
         <Input
           required
           maxLength={30}
@@ -153,7 +153,7 @@ export function LotForm({
           onChange={(e) => patch({ code: e.target.value })}
         />
       </Field>
-      <Field label="Tên bãi *">
+      <Field label="Lot name *">
         <Input
           required
           maxLength={200}
@@ -162,7 +162,7 @@ export function LotForm({
         />
       </Field>
       <div className="sm:col-span-2">
-        <Field label="Địa chỉ *">
+        <Field label="Address *">
           <Input
             required
             maxLength={500}
@@ -171,7 +171,7 @@ export function LotForm({
           />
         </Field>
       </div>
-      <Field label="Sức chứa tối đa *">
+      <Field label="Maximum capacity *">
         <Input
           required
           type="number"
@@ -181,12 +181,12 @@ export function LotForm({
           onChange={(e) => patch({ capacity: Number(e.target.value) })}
         />
       </Field>
-      <Field label="Manager phụ trách">
+      <Field label="Assigned Manager">
         <NativeSelect
           value={v.managerUserId}
           onChange={(e) => patch({ managerUserId: e.target.value })}
         >
-          <option value="">Chưa phân công</option>
+          <option value="">Unassigned</option>
           {managers.map((m) => (
             <option key={m.id} value={m.id}>
               {m.fullName}
@@ -194,7 +194,7 @@ export function LotForm({
           ))}
         </NativeSelect>
       </Field>
-      <Field label="Vĩ độ">
+      <Field label="Latitude">
         <Input
           type="number"
           step="any"
@@ -208,7 +208,7 @@ export function LotForm({
           }
         />
       </Field>
-      <Field label="Kinh độ">
+      <Field label="Longitude">
         <Input
           type="number"
           step="any"
@@ -227,11 +227,11 @@ export function LotForm({
           checked={v.is24Hours}
           onChange={(e) => patch({ is24Hours: e.target.checked })}
         />
-        Hoạt động 24 giờ
+        Open 24 hours
       </label>
       {!v.is24Hours && (
         <>
-          <Field label="Giờ mở cửa">
+          <Field label="Opening time">
             <Input
               type="time"
               required
@@ -239,7 +239,7 @@ export function LotForm({
               onChange={(e) => patch({ openTime: e.target.value })}
             />
           </Field>
-          <Field label="Giờ đóng cửa">
+          <Field label="Closing time">
             <Input
               type="time"
               required
@@ -248,12 +248,12 @@ export function LotForm({
             />
           </Field>
           <p className="text-xs text-slate-500 sm:col-span-2">
-            Giờ đóng trước giờ mở được hiểu là qua đêm.
+            A closing time before the opening time means the lot is open overnight.
           </p>
         </>
       )}
       <div className="sm:col-span-2">
-        <Field label="URL hình ảnh">
+        <Field label="Image URL">
           <Input
             type="url"
             maxLength={500}
@@ -263,7 +263,7 @@ export function LotForm({
         </Field>
       </div>
       <div className="sm:col-span-2">
-        <Field label="Mô tả">
+        <Field label="Description">
           <Input
             maxLength={1000}
             value={v.description}
@@ -300,15 +300,15 @@ export function ZoneForm({
   const patch = (p: Partial<ZoneInput>) => set({ ...v, ...p })
   return (
     <Editor
-      title={zone ? 'Sửa phân khu' : 'Thêm phân khu'}
-      description="Sức chứa gồm chỗ đặt trước và xe vãng lai. Chỉ tạo slot cụ thể cho phần đặt trước."
+      title={zone ? 'Edit zone' : 'Add zone'}
+      description="Capacity covers reservable and walk-in spaces. Only create individual slots for the reservable part."
       onClose={onClose}
       onSave={async () => {
         await service.saveZone(lot.id, v, zone?.id)
         await onSaved()
       }}
     >
-      <Field label="Mã zone *">
+      <Field label="Zone code *">
         <Input
           required
           maxLength={30}
@@ -316,7 +316,7 @@ export function ZoneForm({
           onChange={(e) => patch({ code: e.target.value })}
         />
       </Field>
-      <Field label="Tên zone *">
+      <Field label="Zone name *">
         <Input
           required
           maxLength={200}
@@ -324,19 +324,19 @@ export function ZoneForm({
           onChange={(e) => patch({ name: e.target.value })}
         />
       </Field>
-      <Field label="Loại phân khu">
+      <Field label="Zone type">
         <NativeSelect
           value={v.zoneType}
           onChange={(e) =>
             patch({ zoneType: e.target.value as ZoneInput['zoneType'] })
           }
         >
-          <option value="Area">Khu vực</option>
-          <option value="Floor">Tầng</option>
-          <option value="Row">Dãy</option>
+          <option value="Area">Area</option>
+          <option value="Floor">Floor</option>
+          <option value="Row">Row</option>
         </NativeSelect>
       </Field>
-      <Field label="Số tầng">
+      <Field label="Floor number">
         <Input
           type="number"
           step={1}
@@ -349,7 +349,7 @@ export function ZoneForm({
           }
         />
       </Field>
-      <Field label="Sức chứa zone *">
+      <Field label="Zone capacity *">
         <Input
           type="number"
           required
@@ -359,7 +359,7 @@ export function ZoneForm({
           onChange={(e) => patch({ capacity: Number(e.target.value) })}
         />
       </Field>
-      <Field label="Hạn mức chỗ đặt trước *">
+      <Field label="Reservation limit *">
         <Input
           type="number"
           required
@@ -372,7 +372,7 @@ export function ZoneForm({
       </Field>
       <div className="sm:col-span-2">
         <p className="mb-2 text-sm font-medium text-slate-700">
-          Sức chứa theo loại xe (tổng phải bằng sức chứa zone)
+          Capacity per vehicle type (must add up to the zone capacity)
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {VEHICLE_TYPES.map((t) => (
@@ -397,16 +397,16 @@ export function ZoneForm({
         </div>
       </div>
       <p className="rounded-lg bg-slate-50 p-3 text-sm sm:col-span-2">
-        Phần dành cho xe vãng lai:{' '}
-        <strong>{Math.max(0, v.capacity - v.reservationLimit)} chỗ</strong>. Xe
-        vãng lai không gán slot riêng.
+        Reserved for walk-in vehicles:{' '}
+        <strong>{Math.max(0, v.capacity - v.reservationLimit)} spaces</strong>. Walk-in
+        vehicles are not assigned their own slot.
       </p>
       <label className="flex items-center gap-2">
         <Checkbox
           checked={v.isActive}
           onChange={(e) => patch({ isActive: e.target.checked })}
         />
-        Zone hoạt động
+        Zone active
       </label>
     </Editor>
   )
@@ -429,15 +429,15 @@ export function SlotForm({
   )
   return (
     <Editor
-      title={slot ? 'Sửa chỗ đỗ' : 'Thêm chỗ đỗ đặt trước'}
-      description="Giữ chỗ và Đang đỗ do luồng đặt chỗ/check-in cập nhật, không đặt thủ công tại đây."
+      title={slot ? 'Edit slot' : 'Add reservable slot'}
+      description="Reserved and Occupied are set by the booking and check-in flow, not manually here."
       onClose={onClose}
       onSave={async () => {
         await service.saveSlot(lot.id, zone.id, v, slot?.id)
         await onSaved()
       }}
     >
-      <Field label="Mã slot *">
+      <Field label="Slot code *">
         <Input
           required
           maxLength={30}
@@ -445,7 +445,7 @@ export function SlotForm({
           onChange={(e) => set({ ...v, code: e.target.value })}
         />
       </Field>
-      <Field label="Loại xe">
+      <Field label="Vehicle type">
         <NativeSelect
           value={v.vehicleTypeId}
           onChange={(e) => set({ ...v, vehicleTypeId: e.target.value })}
@@ -457,15 +457,15 @@ export function SlotForm({
           ))}
         </NativeSelect>
       </Field>
-      <Field label="Trạng thái cấu hình">
+      <Field label="Configured status">
         <NativeSelect
           value={v.status}
           onChange={(e) =>
             set({ ...v, status: e.target.value as SlotInput['status'] })
           }
         >
-          <option value="Available">Trống</option>
-          <option value="Maintenance">Bảo trì</option>
+          <option value="Available">Available</option>
+          <option value="Maintenance">Maintenance</option>
         </NativeSelect>
       </Field>
     </Editor>
@@ -489,15 +489,15 @@ export function OperationForm({
   })
   return (
     <Editor
-      title="Trạng thái hoạt động"
-      description="Manager quản lý bãi được giao. Bản demo chỉ kiểm tra slot; API thật phải kiểm tra session và lịch đặt chỗ."
+      title="Operating status"
+      description="Managers run their assigned lots. The demo only checks slots; the real API must also check sessions and bookings."
       onClose={onClose}
       onSave={async () => {
         await service.setOperation(lot.id, v)
         await onSaved()
       }}
     >
-      <Field label="Trạng thái">
+      <Field label="Status">
         <NativeSelect
           value={v.status}
           onChange={(e) =>
@@ -511,7 +511,7 @@ export function OperationForm({
           ))}
         </NativeSelect>
       </Field>
-      <Field label="Lý do đóng/bảo trì">
+      <Field label="Closure or maintenance reason">
         <Input
           maxLength={500}
           required={['TemporarilyClosed', 'Maintenance'].includes(v.status)}
@@ -521,7 +521,7 @@ export function OperationForm({
       </Field>
       {v.status === 'TemporarilyClosed' && (
         <>
-          <Field label="Đóng từ">
+          <Field label="Closed from">
             <Input
               required
               type="datetime-local"
@@ -529,7 +529,7 @@ export function OperationForm({
               onChange={(e) => set({ ...v, closedFrom: e.target.value })}
             />
           </Field>
-          <Field label="Mở lại lúc">
+          <Field label="Reopens at">
             <Input
               required
               type="datetime-local"
@@ -540,7 +540,7 @@ export function OperationForm({
         </>
       )}
       <div className="sm:col-span-2">
-        <Field label="Thông báo bảo trì">
+        <Field label="Maintenance notice">
           <Input
             maxLength={1000}
             value={v.maintenanceNotice}

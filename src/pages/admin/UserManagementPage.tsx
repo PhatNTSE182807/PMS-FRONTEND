@@ -91,12 +91,12 @@ export default function UserManagementPage() {
       { id: user.id, status: nextStatus },
       {
         onSuccess: (updated) => {
-          toast.success(nextStatus === 'ACTIVE' ? 'Đã mở khóa tài khoản' : 'Đã khóa tài khoản', {
+          toast.success(nextStatus === 'ACTIVE' ? 'Account activated' : 'Account deactivated', {
             description: `${updated.fullName} (${updated.employeeCode})`,
           })
           setPendingAction(null)
         },
-        onError: (error) => toast.error('Không cập nhật được trạng thái', { description: getErrorMessage(error) }),
+        onError: (error) => toast.error('Could not update the account status', { description: getErrorMessage(error) }),
       },
     )
   }
@@ -107,7 +107,7 @@ export default function UserManagementPage() {
         setPendingAction(null)
         setTemporaryPassword({ user, password })
       },
-      onError: (error) => toast.error('Không reset được mật khẩu', { description: getErrorMessage(error) }),
+      onError: (error) => toast.error('Could not reset the password', { description: getErrorMessage(error) }),
     })
   }
 
@@ -119,12 +119,12 @@ export default function UserManagementPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Quản lý Nhân sự"
-        description="Tạo và quản lý tài khoản quản lý bãi (Manager) và nhân viên trực chốt (Staff)."
+        title="Staff Accounts"
+        description="Create and manage parking lot Manager and gate Staff accounts. Deactivated accounts cannot sign in."
         actions={
           <Button onClick={() => setFormState({ open: true })}>
             <Plus />
-            Tạo tài khoản mới
+            New staff account
           </Button>
         }
       />
@@ -138,29 +138,29 @@ export default function UserManagementPage() {
               type="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Tìm theo tên, email, mã nhân viên, số điện thoại…"
-              aria-label="Tìm kiếm nhân sự"
+              placeholder="Search by name, email, employee code or phone…"
+              aria-label="Search staff"
               className="pl-9"
             />
           </div>
-          <NativeSelect aria-label="Lọc theo vai trò" value={filters.role ?? ''} onChange={(e) => update({ role: e.target.value })}>
-            <option value="">Tất cả vai trò</option>
+          <NativeSelect aria-label="Filter by role" value={filters.role ?? ''} onChange={(e) => update({ role: e.target.value })}>
+            <option value="">All roles</option>
             {ROLE_OPTIONS.map((role) => (
               <option key={role.value} value={role.value}>
                 {role.label}
               </option>
             ))}
           </NativeSelect>
-          <NativeSelect aria-label="Lọc theo bãi xe" value={filters.parkingLotId ?? ''} onChange={(e) => update({ lot: e.target.value })}>
-            <option value="">Tất cả bãi xe</option>
+          <NativeSelect aria-label="Filter by parking lot" value={filters.parkingLotId ?? ''} onChange={(e) => update({ lot: e.target.value })}>
+            <option value="">All parking lots</option>
             {parkingLots.data?.map((lot) => (
               <option key={lot.id} value={lot.id}>
                 {lot.name}
               </option>
             ))}
           </NativeSelect>
-          <NativeSelect aria-label="Lọc theo trạng thái" value={filters.status ?? ''} onChange={(e) => update({ status: e.target.value })}>
-            <option value="">Tất cả trạng thái</option>
+          <NativeSelect aria-label="Filter by status" value={filters.status ?? ''} onChange={(e) => update({ status: e.target.value })}>
+            <option value="">All statuses</option>
             {STATUS_OPTIONS.map((status) => (
               <option key={status.value} value={status.value}>
                 {status.label}
@@ -169,7 +169,7 @@ export default function UserManagementPage() {
           </NativeSelect>
           <Button variant="ghost" onClick={clearFilters} disabled={!hasFilters && !searchInput}>
             <X />
-            Xóa lọc
+            Clear
           </Button>
         </div>
 
@@ -178,21 +178,21 @@ export default function UserManagementPage() {
         ) : !staff.isPending && staff.data.items.length === 0 ? (
           <EmptyState
             icon={UserX}
-            title={hasFilters ? 'Không tìm thấy nhân sự phù hợp' : 'Chưa có tài khoản nhân sự'}
+            title={hasFilters ? 'No matching staff accounts' : 'No staff accounts yet'}
             description={
               hasFilters
-                ? 'Thử đổi từ khóa tìm kiếm hoặc bỏ bớt bộ lọc.'
-                : 'Tạo tài khoản đầu tiên cho quản lý bãi hoặc nhân viên trực chốt.'
+                ? 'Try another search term or remove some filters.'
+                : 'Create the first account for a parking lot Manager or gate Staff.'
             }
             action={
               hasFilters ? (
                 <Button variant="outline" onClick={clearFilters}>
-                  Xóa bộ lọc
+                  Clear filters
                 </Button>
               ) : (
                 <Button onClick={() => setFormState({ open: true })}>
                   <Plus />
-                  Tạo tài khoản mới
+                  New staff account
                 </Button>
               )
             }
@@ -231,20 +231,20 @@ export default function UserManagementPage() {
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setPendingAction(null)}
-          title={pendingAction.user.status === 'ACTIVE' ? 'Khóa tài khoản?' : 'Mở khóa tài khoản?'}
+          title={pendingAction.user.status === 'ACTIVE' ? 'Deactivate account?' : 'Activate account?'}
           description={
             pendingAction.user.status === 'ACTIVE' ? (
               <>
-                <strong className="text-slate-900">{pendingAction.user.fullName}</strong> sẽ không thể đăng nhập cho tới khi được mở
-                khóa.
+                <strong className="text-slate-900">{pendingAction.user.fullName}</strong> will not be able to sign in until the account is
+                activated again.
               </>
             ) : (
               <>
-                <strong className="text-slate-900">{pendingAction.user.fullName}</strong> sẽ có thể đăng nhập lại ngay.
+                <strong className="text-slate-900">{pendingAction.user.fullName}</strong> will be able to sign in again right away.
               </>
             )
           }
-          confirmLabel={pendingAction.user.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa'}
+          confirmLabel={pendingAction.user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
           tone={pendingAction.user.status === 'ACTIVE' ? 'destructive' : 'default'}
           pending={setStatus.isPending}
           onConfirm={() => confirmLockToggle(pendingAction.user)}
@@ -255,14 +255,14 @@ export default function UserManagementPage() {
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setPendingAction(null)}
-          title="Reset mật khẩu?"
+          title="Reset password?"
           description={
             <>
-              Mật khẩu hiện tại của <strong className="text-slate-900">{pendingAction.user.fullName}</strong> sẽ bị vô hiệu và được
-              thay bằng một mật khẩu tạm thời.
+              The current password of <strong className="text-slate-900">{pendingAction.user.fullName}</strong> will stop working and be
+              replaced with a temporary password.
             </>
           }
-          confirmLabel="Reset mật khẩu"
+          confirmLabel="Reset password"
           pending={resetPassword.isPending}
           onConfirm={() => confirmResetPassword(pendingAction.user)}
         />
@@ -271,15 +271,15 @@ export default function UserManagementPage() {
       <Dialog open={temporaryPassword !== null} onOpenChange={(open) => !open && setTemporaryPassword(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Mật khẩu tạm thời</DialogTitle>
+            <DialogTitle>Temporary password</DialogTitle>
             <DialogDescription>
-              Gửi mật khẩu này cho {temporaryPassword?.user.fullName} qua kênh an toàn. Nhân viên nên đổi mật khẩu ở lần đăng nhập đầu
-              tiên. Mật khẩu sẽ không được hiển thị lại.
+              Send this password to {temporaryPassword?.user.fullName} through a secure channel. They should change it the first time they
+              sign in. It will not be shown again.
             </DialogDescription>
           </DialogHeader>
-          {temporaryPassword && <CopyField value={temporaryPassword.password} label="mật khẩu tạm thời" />}
+          {temporaryPassword && <CopyField value={temporaryPassword.password} label="temporary password" />}
           <DialogFooter>
-            <Button onClick={() => setTemporaryPassword(null)}>Đã lưu mật khẩu</Button>
+            <Button onClick={() => setTemporaryPassword(null)}>I've saved the password</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

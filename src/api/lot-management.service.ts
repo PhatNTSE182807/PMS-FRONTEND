@@ -26,7 +26,7 @@ function read(): ManagedLot[] {
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed))
       throw new Error(
-        'Dữ liệu demo không hợp lệ. Không tự ghi đè dữ liệu đã lưu.',
+        'Demo data is invalid. Saved data was not overwritten.',
       )
     memory = parsed as ManagedLot[]
     return structuredClone(memory)
@@ -62,29 +62,29 @@ function actor() {
   // No guessed live endpoints: this FE deliverable intentionally runs on demo data only.
   if (!isMockService('parking'))
     throw new Error(
-      'API quản lý bãi chưa được tích hợp. Bật mock parking để dùng bản FE demo.',
+      'The parking lot management API is not integrated yet. Enable the parking mock to use the frontend demo.',
     )
   const user = session.getUser()
   if (!user || !['ADMIN', 'MANAGER'].includes(user.role))
-    throw new Error('Bạn không có quyền quản lý bãi.')
+    throw new Error('You do not have permission to manage parking lots.')
   return user
 }
 function getLot(lots: ManagedLot[], id: string) {
   const user = actor()
   const lot = lots.find((l) => l.id === id)
   if (!lot || (user.role === 'MANAGER' && lot.managerUserId !== user.userId))
-    throw new Error('Không tìm thấy bãi trong phạm vi được giao.')
+    throw new Error('Parking lot not found in your assigned scope.')
   return lot
 }
 function requireAdmin() {
   if (actor().role !== 'ADMIN')
-    throw new Error('Chỉ Admin được thay đổi thông tin bãi và gán Manager.')
+    throw new Error('Only an Admin can change parking lot details and assign a Manager.')
 }
 function requireManager(lot: ManagedLot) {
   const user = actor()
   if (user.role !== 'MANAGER' || user.userId !== lot.managerUserId)
     throw new Error(
-      'Chỉ Manager được giao bãi có quyền cấu hình zone/slot và trạng thái vận hành.',
+      'Only the Manager assigned to this lot can configure its zones, slots and operating status.',
     )
 }
 export const lotManagementService = {
@@ -114,7 +114,7 @@ export const lotManagementService = {
       input.managerUserId &&
       !(await this.managers()).some((m) => m.id === input.managerUserId)
     )
-      throw new Error('Manager không tồn tại hoặc không hoạt động.')
+      throw new Error('The Manager does not exist or is inactive.')
     // Status is not an editable admin field; it is managed through the separate operational command.
     const next: ManagedLot = {
       ...input,
@@ -136,7 +136,7 @@ export const lotManagementService = {
     const lot = getLot(lots, id)
     if (lot.status === 'Active' || lot.zones.length)
       throw new Error(
-        'Chỉ xóa bãi ngừng hoạt động và chưa có zone. Bãi đã vận hành cần lưu lịch sử ở BE.',
+        'Only inactive lots without zones can be deleted. Lots that have operated must keep their history in the backend.',
       )
     save(lots.filter((l) => l.id !== id))
   },
@@ -145,7 +145,7 @@ export const lotManagementService = {
     const lot = getLot(lots, lotId)
     requireManager(lot)
     const current = id ? lot.zones.find((z) => z.id === id) : undefined
-    if (id && !current) throw new Error('Zone không còn tồn tại.')
+    if (id && !current) throw new Error('The zone no longer exists.')
     validateZone(input, lot, current)
     const next = {
       ...input,
@@ -164,7 +164,7 @@ export const lotManagementService = {
     requireManager(lot)
     const zone = lot.zones.find((z) => z.id === id)
     if (!zone || zone.slots.length)
-      throw new Error('Chỉ xóa zone chưa có slot; không xóa dữ liệu vận hành.')
+      throw new Error('Only zones without slots can be deleted; operational data is never removed.')
     lot.zones = lot.zones.filter((z) => z.id !== id)
     save(lots)
   },
@@ -173,12 +173,12 @@ export const lotManagementService = {
     const lot = getLot(lots, lotId)
     requireManager(lot)
     const zone = lot.zones.find((z) => z.id === zoneId)
-    if (!zone) throw new Error('Không tìm thấy zone.')
-    if (!zone.isActive) throw new Error('Cần bật zone trước khi cấu hình slot.')
+    if (!zone) throw new Error('Zone not found.')
+    if (!zone.isActive) throw new Error('Activate the zone before configuring slots.')
     if (id && !zone.slots.some((s) => s.id === id))
-      throw new Error('Slot không còn tồn tại.')
+      throw new Error('The slot no longer exists.')
     if (!VEHICLE_TYPES.some((t) => t.id === input.vehicleTypeId))
-      throw new Error('Loại xe không hợp lệ.')
+      throw new Error('Invalid vehicle type.')
     validateSlot(input, zone, id)
     const next = { ...input, code: input.code.trim(), id: id ?? newId() }
     if (id) zone.slots[zone.slots.findIndex((s) => s.id === id)] = next
@@ -192,7 +192,7 @@ export const lotManagementService = {
     const zone = lot.zones.find((z) => z.id === zoneId)
     const slot = zone?.slots.find((s) => s.id === id)
     if (!zone || !slot || ['Reserved', 'Occupied'].includes(slot.status))
-      throw new Error('Không thể xóa slot đang giữ/đang đỗ hoặc không tồn tại.')
+      throw new Error('Cannot delete a slot that is reserved, occupied or no longer exists.')
     zone.slots = zone.slots.filter((s) => s.id !== id)
     save(lots)
   },
@@ -212,20 +212,20 @@ export const lotManagementService = {
     requireManager(lot)
     if (patch.status !== 'Active' && lot.zones.some(protectedSlot))
       throw new Error(
-        'Không đóng bãi khi còn slot đang giữ/đang đỗ. BE cần kiểm tra cả session vãng lai.',
+        'Cannot close a lot while slots are reserved or occupied. The backend must also check walk-in sessions.',
       )
     if (
       ['TemporarilyClosed', 'Maintenance'].includes(patch.status) &&
       !patch.closureReason.trim()
     )
-      throw new Error('Nhập lý do đóng/bảo trì.')
+      throw new Error('Enter the closure or maintenance reason.')
     if (
       patch.status === 'TemporarilyClosed' &&
       (!patch.closedFrom ||
         !patch.closedUntil ||
         new Date(patch.closedUntil) <= new Date(patch.closedFrom))
     )
-      throw new Error('Nhập thời gian đóng và mở lại hợp lệ.')
+      throw new Error('Enter a valid closing and reopening time.')
     Object.assign(lot, patch)
     save(lots)
   },

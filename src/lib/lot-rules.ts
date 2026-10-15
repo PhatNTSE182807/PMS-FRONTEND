@@ -18,15 +18,15 @@ export function validateLot(
 ) {
   check(
     input.code.trim().length > 0 && input.code.length <= 30,
-    'Mã bãi bắt buộc, tối đa 30 ký tự.',
+    'Lot code is required (max 30 characters).',
   )
   check(
     input.name.trim().length > 0 && input.name.length <= 200,
-    'Tên bãi bắt buộc, tối đa 200 ký tự.',
+    'Lot name is required (max 200 characters).',
   )
   check(
     input.address.trim().length > 0 && input.address.length <= 500,
-    'Địa chỉ bắt buộc, tối đa 500 ký tự.',
+    'Address is required (max 500 characters).',
   )
   check(
     !lots.some(
@@ -34,46 +34,46 @@ export function validateLot(
         l.id !== current?.id &&
         l.code.toLowerCase() === input.code.trim().toLowerCase(),
     ),
-    'Mã bãi đã tồn tại.',
+    'Lot code already exists.',
   )
   check(
     integer(input.capacity) && input.capacity > 0,
-    'Sức chứa phải là số nguyên dương.',
+    'Capacity must be a positive integer.',
   )
   check(
     input.capacity >= (current?.zones.reduce((n, z) => n + z.capacity, 0) ?? 0),
-    'Sức chứa bãi không được nhỏ hơn tổng sức chứa zone.',
+    'Lot capacity cannot be less than the total zone capacity.',
   )
   check(
     input.latitude === null ||
       (Number.isFinite(input.latitude) && Math.abs(input.latitude) <= 90),
-    'Vĩ độ phải từ -90 đến 90.',
+    'Latitude must be between -90 and 90.',
   )
   check(
     input.longitude === null ||
       (Number.isFinite(input.longitude) && Math.abs(input.longitude) <= 180),
-    'Kinh độ phải từ -180 đến 180.',
+    'Longitude must be between -180 and 180.',
   )
   check(
     (input.latitude === null) === (input.longitude === null),
-    'Nhập đủ cả vĩ độ và kinh độ hoặc để trống cả hai.',
+    'Enter both latitude and longitude, or leave both empty.',
   )
   check(
     input.is24Hours ||
       (/^\d{2}:\d{2}$/.test(input.openTime) &&
         /^\d{2}:\d{2}$/.test(input.closeTime) &&
         input.openTime !== input.closeTime),
-    'Nhập giờ mở/đóng khác nhau hoặc chọn hoạt động 24 giờ.',
+    'Opening and closing times must differ, or choose 24-hour operation.',
   )
   if (input.imageUrl) {
     try {
       const u = new URL(input.imageUrl)
       check(
         ['http:', 'https:'].includes(u.protocol),
-        'Ảnh phải là URL HTTP/HTTPS.',
+        'The image must be an HTTP/HTTPS URL.',
       )
     } catch {
-      throw new Error('Ảnh phải là URL HTTP/HTTPS hợp lệ.')
+      throw new Error('The image must be a valid HTTP/HTTPS URL.')
     }
   }
 }
@@ -87,7 +87,7 @@ export function validateZone(
       input.code.length <= 30 &&
       input.name.trim().length > 0 &&
       input.name.length <= 200,
-    'Nhập mã zone (≤30) và tên zone (≤200).',
+    'Enter a zone code (≤30) and zone name (≤200).',
   )
   check(
     !lot.zones.some(
@@ -95,11 +95,11 @@ export function validateZone(
         z.id !== current?.id &&
         z.code.toLowerCase() === input.code.trim().toLowerCase(),
     ),
-    'Mã zone đã tồn tại trong bãi.',
+    'Zone code already exists in this lot.',
   )
   check(
     integer(input.capacity) && input.capacity > 0,
-    'Sức chứa zone phải là số nguyên dương.',
+    'Zone capacity must be a positive integer.',
   )
   check(
     input.capacity +
@@ -107,13 +107,13 @@ export function validateZone(
         .filter((z) => z.id !== current?.id)
         .reduce((n, z) => n + z.capacity, 0) <=
       lot.capacity,
-    'Tổng sức chứa zone vượt sức chứa bãi.',
+    'Total zone capacity exceeds the lot capacity.',
   )
   check(
     Object.values(input.vehicleCapacities).every(integer) &&
       Object.values(input.vehicleCapacities).reduce((a, b) => a + b, 0) ===
         input.capacity,
-    'Tổng sức chứa theo loại xe phải bằng sức chứa zone.',
+    'Capacity per vehicle type must add up to the zone capacity.',
   )
   check(
     (current?.slots ?? []).every(
@@ -121,24 +121,24 @@ export function validateZone(
         (current?.slots.filter((x) => x.vehicleTypeId === s.vehicleTypeId)
           .length ?? 0) <= (input.vehicleCapacities[s.vehicleTypeId] ?? 0),
     ),
-    'Sức chứa loại xe không được nhỏ hơn số slot đã tạo.',
+    'Vehicle type capacity cannot be less than the slots already created.',
   )
   check(
     integer(input.reservationLimit) && input.reservationLimit <= input.capacity,
-    'Hạn mức đặt chỗ phải từ 0 đến sức chứa zone.',
+    'Reservation limit must be between 0 and the zone capacity.',
   )
   check(
     (current?.slots.length ?? 0) <= input.reservationLimit,
-    'Hạn mức không được nhỏ hơn số slot đặt chỗ đã cấu hình.',
+    'Reservation limit cannot be less than the reservable slots already configured.',
   )
   check(
     input.zoneType !== 'Floor' ||
       (input.floorNo !== null && Number.isSafeInteger(input.floorNo)),
-    'Zone loại tầng cần số tầng nguyên (âm cho tầng hầm).',
+    'Floor zones need an integer floor number (negative for basements).',
   )
   check(
     input.isActive || !current || !protectedSlot(current),
-    'Không tắt zone có slot đang giữ hoặc đang đỗ.',
+    'Cannot deactivate a zone with reserved or occupied slots.',
   )
 }
 export function validateSlot(
@@ -148,7 +148,7 @@ export function validateSlot(
 ) {
   check(
     input.code.trim().length > 0 && input.code.length <= 30,
-    'Mã slot bắt buộc, tối đa 30 ký tự.',
+    'Slot code is required (max 30 characters).',
   )
   check(
     !zone.slots.some(
@@ -156,26 +156,26 @@ export function validateSlot(
         s.id !== currentId &&
         s.code.toLowerCase() === input.code.trim().toLowerCase(),
     ),
-    'Mã slot đã tồn tại trong zone.',
+    'Slot code already exists in this zone.',
   )
   check(
     Boolean(currentId) || zone.slots.length < zone.reservationLimit,
-    'Đã đạt hạn mức slot đặt chỗ của zone.',
+    'The reservation limit for slots in this zone has been reached.',
   )
   const sameTypeCount = zone.slots.filter(
     (s) => s.id !== currentId && s.vehicleTypeId === input.vehicleTypeId,
   ).length
   check(
     sameTypeCount < (zone.vehicleCapacities[input.vehicleTypeId] ?? 0),
-    'Đã đạt sức chứa của loại xe này trong zone.',
+    'The capacity for this vehicle type in the zone has been reached.',
   )
   const current = zone.slots.find((s) => s.id === currentId)
   check(
     !current || !['Reserved', 'Occupied'].includes(current.status),
-    'Slot đang giữ/đang đỗ không được sửa bằng màn cấu hình.',
+    'Reserved or occupied slots cannot be edited from the configuration screen.',
   )
   check(
     ['Available', 'Maintenance'].includes(input.status),
-    'Màn cấu hình chỉ chuyển Trống ↔ Bảo trì; giữ chỗ/đang đỗ do luồng vận hành xử lý.',
+    'The configuration screen only switches Available ↔ Maintenance; Reserved/Occupied come from operations.',
   )
 }
