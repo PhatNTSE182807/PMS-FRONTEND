@@ -1,10 +1,15 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { lazy } from 'react'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ClassicLayout } from '@/components/layout/ClassicLayout'
 import { HomeRedirect } from '@/components/layout/HomeRedirect'
 import { RequireAuth } from '@/components/layout/RequireAuth'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import UserDashboardPage from '@/pages/UserDashboardPage'
+
+// Admin pages are code-split: drivers never download the dashboard (or its chart library).
+const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +25,18 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
+    ],
+  },
+  {
+    path: '/admin',
+    element: (
+      <RequireAuth roles={['ADMIN']}>
+        <AdminLayout />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <Navigate to="staff" replace /> },
+      { path: 'staff', element: <UserManagementPage /> },
     ],
   },
   { path: '*', element: <HomeRedirect /> },

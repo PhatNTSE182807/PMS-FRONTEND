@@ -10,8 +10,11 @@ export default function LoginPage() {
   const { showToast } = useOutletContext<ClassicOutletContext>()
 
   const handleLoginSuccess = (user: SessionUser) => {
+    // Return to the page that required login, but only within this role's own area
+    // (the redirect state may come from another account's session).
+    const home = homePathFor(user.role)
     const from = (location.state as { from?: string } | null)?.from
-    navigate(from ?? homePathFor(user.role), { replace: true })
+    navigate(from?.startsWith(home) ? from : home, { replace: true })
     showToast(`Welcome back, ${user.fullName || user.username}! Login successful.`)
   }
 

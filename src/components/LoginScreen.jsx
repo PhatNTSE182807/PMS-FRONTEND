@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ParkingLogo from './ParkingLogo';
 import { getErrorMessage } from '../api/apiError';
 import { useAuth, useLogin } from '../hooks/useAuth';
-import { DEMO_DRIVER } from '../mocks/auth.mock';
+import { DEMO_ADMIN, DEMO_DRIVER } from '../mocks/auth.mock';
 
 export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
   const { startDemo } = useAuth();
@@ -63,6 +63,10 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
   // Demo sessions run on mock data, so they work without the backend.
   const handleInstantDemoLogin = () => {
     onLoginSuccess(startDemo(DEMO_DRIVER));
+  };
+
+  const handleAdminDemoLogin = () => {
+    onLoginSuccess(startDemo(DEMO_ADMIN));
   };
 
   // Handle SSO mock login (no SSO provider is integrated yet)
@@ -214,6 +218,14 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
                 title="Directly enter dashboard with VIP Demo account"
               >
                 Instant Access Demo →
+              </button>
+              <button
+                type="button"
+                className="demo-helper-btn demo-helper-btn--instant"
+                onClick={handleAdminDemoLogin}
+                title="Open the admin dashboard with mock data"
+              >
+                Admin Demo →
               </button>
             </div>
 

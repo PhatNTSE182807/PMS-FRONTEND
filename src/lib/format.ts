@@ -44,6 +44,15 @@ export function formatRelativeTime(from: number, now: number = Date.now()): stri
   return `${Math.round(minutes / 60)} giờ trước`
 }
 
+/** "0901234567" → "0901 234 567"; other formats are returned unchanged. */
+export function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 10 && digits.startsWith('0')) {
+    return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`
+  }
+  return phone
+}
+
 /** Avatar initials from a Vietnamese full name: "Nguyễn Văn An" → "VA". */
 export function initials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/)
