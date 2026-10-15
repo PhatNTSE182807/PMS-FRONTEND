@@ -5,7 +5,6 @@ export default function ApiStatusBadge() {
   const [isOpen, setIsOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [apiUrl, setApiUrl] = useState(getApiBaseUrl());
   const [inputUrl, setInputUrl] = useState(getApiBaseUrl());
   const [statusMessage, setStatusMessage] = useState('');
 
@@ -30,14 +29,12 @@ export default function ApiStatusBadge() {
 
   const handleSaveUrl = () => {
     setCustomApiUrl(inputUrl);
-    setApiUrl(inputUrl);
     checkStatus();
   };
 
   const handleQuickPreset = (presetUrl) => {
     setInputUrl(presetUrl);
     setCustomApiUrl(presetUrl);
-    setApiUrl(presetUrl);
     setTimeout(checkStatus, 100);
   };
 

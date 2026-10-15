@@ -4,7 +4,6 @@ import RegisterScreen from './components/RegisterScreen';
 import UserScreen from './components/UserScreen';
 import ApiStatusBadge from './components/ApiStatusBadge';
 import { authService } from './services/authService';
-import './App.css';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
