@@ -7,6 +7,17 @@ The spec (`c_t_k_thu_t_frontend_admin_dashboard.md`) describes an **Admin Dashbo
 
 The goal is to work out what has to change so the admin dashboard can be built now against mocks, run on today's monolith, and later move to microservices without rewriting the UI.
 
+> **Status (branch `feature/admin-dashboard`):**
+> - **Phase A (frontend foundation) — done.**
+> - **Phase B (admin dashboard on mocks) — done.**
+>
+> Deferred:
+> - Decomposing the 1,500-line `UserScreen.jsx` into components. Its data access already moved to hooks.
+> - Phase C (backend endpoints in the `parking-management-system` repo).
+> - Phase D (microservice readiness).
+>
+> Section 1 below describes the codebase *before* this branch.
+
 ---
 
 ## 1. What exists today
