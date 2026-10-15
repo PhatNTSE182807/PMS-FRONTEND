@@ -147,6 +147,84 @@ export const authService = {
   },
 
   /**
+   * Ask the backend to email a 6-digit login code
+   * Endpoint: POST /api/users/login-otp/request
+   * The backend answers the same way whether or not the email is registered.
+   */
+  async requestLoginOtp(email) {
+    const baseUrl = getApiBaseUrl();
+    try {
+      const response = await fetch(`${baseUrl}/users/login-otp/request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        return { success: false, message: this._extractErrorMessage(result, 'Could not send the login code.') };
+      }
+      return { success: true, message: result?.result || 'If the email is registered, a login code has been sent to it.' };
+    } catch (error) {
+      console.warn('API Login OTP Request Network Error:', error);
+      return {
+        success: false,
+        isNetworkError: true,
+        message: `Could not connect to Backend at ${baseUrl}.`,
+      };
+    }
+  },
+
+  /**
+   * Sign in with the emailed code
+   * Endpoint: POST /api/users/login-otp/verify -> same LoginResponseModel as /users/authenticate
+   */
+  async verifyLoginOtp(email, code, rememberMe = false) {
+    const baseUrl = getApiBaseUrl();
+    try {
+      const response = await fetch(`${baseUrl}/users/login-otp/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        return { success: false, message: this._extractErrorMessage(result, 'Login code is invalid or has expired.') };
+      }
+
+      const resData = result?.result || result;
+      const user = {
+        userId: resData?.userId,
+        username: resData?.username || email.trim().split('@')[0],
+        fullName: resData?.fullName || resData?.username || email.trim(),
+        email: resData?.email || email.trim(),
+        phoneNumber: resData?.phoneNumber || '',
+        role: resData?.role || 'User',
+      };
+
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('pms_token', resData?.token);
+      storage.setItem('pms_user', JSON.stringify(user));
+
+      return { success: true, data: resData, user, message: 'Login successful!' };
+    } catch (error) {
+      console.warn('API Login OTP Verify Network Error:', error);
+      return {
+        success: false,
+        isNetworkError: true,
+        message: `Could not connect to Backend at ${baseUrl}.`,
+      };
+    }
+  },
+
+  /**
    * Register new user account with Backend
    * Endpoint: POST /api/users/register
    * @param {{ userName: string, fullName: string, email: string, password: string, phoneNumber: string }} data
