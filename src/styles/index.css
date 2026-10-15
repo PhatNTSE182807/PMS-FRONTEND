@@ -1,0 +1,23 @@
+/*
+ * Stylesheet entry point.
+ *
+ * The original cyber theme (index.css / App.css) is unlayered CSS with a global
+ * `* { margin: 0; padding: 0 }` reset. Unlayered rules beat every layered rule, so it
+ * is wrapped in a low-priority `legacy` layer: the auth/driver screens look the
+ * same, and Tailwind utilities used by the admin dashboard are not overridden.
+ *
+ * The `theme` layer sits below `legacy` because both define --radius-* on :root; the
+ * legacy values win globally and admin.css restores Tailwind's radii inside .admin-root.
+ *
+ * Tailwind's global preflight is intentionally not loaded (it would restyle the legacy
+ * screens). A preflight scoped to `.admin-root` lives in admin.css instead.
+ */
+@layer theme, legacy, base, components, utilities;
+
+@import "../index.css" layer(legacy);
+@import "../App.css" layer(legacy);
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "./admin.css";

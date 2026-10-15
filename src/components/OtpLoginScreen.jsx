@@ -1,17 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AuthSplitLayout from './AuthSplitLayout';
-import { authService } from '../services/authService';
+import { getErrorMessage } from '../api/apiError';
+import { useOtpLogin, useRequestLoginOtp } from '../hooks/useAuth';
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Admin/Manager go to the back-office; everyone else lands on the user dashboard.
-const getHomePath = (role) => (role === 'Admin' || role === 'Manager' ? '/admin/accounts' : '/user-dashboard');
-
-export default function OtpLoginScreen() {
-  const navigate = useNavigate();
+export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
+  const requestCodeMutation = useRequestLoginOtp();
+  const otpLoginMutation = useOtpLogin();
 
   // 'email' -> enter address, 'code' -> enter the 6 digits from the inbox
   const [step, setStep] = useState('email');
@@ -19,7 +17,7 @@ export default function OtpLoginScreen() {
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(''));
   const [rememberMe, setRememberMe] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = requestCodeMutation.isPending || otpLoginMutation.isPending;
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
   const [cooldown, setCooldown] = useState(0);
@@ -49,17 +47,16 @@ export default function OtpLoginScreen() {
       return;
     }
 
-    setIsLoading(true);
-    const res = await authService.requestLoginOtp(email);
-    setIsLoading(false);
-
-    if (!res.success) {
-      setErrorMsg(res.message);
+    let message;
+    try {
+      message = await requestCodeMutation.mutateAsync({ email: email.trim() });
+    } catch (error) {
+      setErrorMsg(getErrorMessage(error, 'Could not send the login code.'));
       return;
     }
 
     setDigits(Array(CODE_LENGTH).fill(''));
-    setInfoMsg(res.message);
+    setInfoMsg(message || 'If the email is registered, a login code has been sent to it.');
     setCooldown(RESEND_COOLDOWN_SECONDS);
     setStep('code');
   };
@@ -71,17 +68,14 @@ export default function OtpLoginScreen() {
 
   const verifyCode = async (code) => {
     setErrorMsg('');
-    setIsLoading(true);
-    const res = await authService.verifyLoginOtp(email, code, rememberMe);
-    setIsLoading(false);
-
-    if (res.success) {
-      navigate(getHomePath(res.user?.role), { replace: true });
+    try {
+      const user = await otpLoginMutation.mutateAsync({ email: email.trim(), code, rememberMe });
+      onLoginSuccess(user);
       return;
+    } catch (error) {
+      setInfoMsg('');
+      setErrorMsg(getErrorMessage(error, 'Login code is invalid or has expired.'));
     }
-
-    setInfoMsg('');
-    setErrorMsg(res.message);
     setDigits(Array(CODE_LENGTH).fill(''));
     digitRefs.current[0]?.focus();
   };
@@ -281,7 +275,7 @@ export default function OtpLoginScreen() {
 
           <div className="auth-card-footer auth-card-footer--tight">
             <span>Prefer your password? </span>
-            <button type="button" className="auth-link-highlight" onClick={() => navigate('/login')}>
+            <button type="button" className="auth-link-highlight" onClick={onNavigateToLogin}>
               Back to Login
             </button>
           </div>

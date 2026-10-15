@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AuthSplitLayout from './AuthSplitLayout';
-import { authService } from '../services/authService';
+import { getErrorMessage } from '../api/apiError';
+import { useAuth, useLogin } from '../hooks/useAuth';
+import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER } from '../mocks/auth.mock';
 
-// Admin/Manager go to the back-office; everyone else lands on the user dashboard.
-const getHomePath = (role) => (role === 'Admin' || role === 'Manager' ? '/admin/accounts' : '/user-dashboard');
-
-export default function LoginScreen() {
-  const navigate = useNavigate();
-  const finishLogin = (user) => navigate(getHomePath(user?.role), { replace: true });
+export default function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateToOtpLogin }) {
+  const { startDemo } = useAuth();
+  const loginMutation = useLogin();
 
   // Login form state
   const [email, setEmail] = useState('');
@@ -17,13 +15,13 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
 
   // Status & loading
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = loginMutation.isPending;
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   // Handle standard password login
-  const handlePasswordLogin = async (e) => {
+  const handlePasswordLogin = (e) => {
     e.preventDefault();
     setErrorMsg('');
     setInfoMsg('');
@@ -41,16 +39,17 @@ export default function LoginScreen() {
       return;
     }
 
-    setIsLoading(true);
-    const res = await authService.login(email, password, rememberMe);
-    setIsLoading(false);
-
-    if (res.success) {
-      finishLogin(res.user);
-    } else {
-      // If network error, provide option to use demo mode
-      setErrorMsg(res.message);
-    }
+    loginMutation.mutate(
+      { email: email.trim(), password, rememberMe },
+      {
+        onSuccess: (user) => onLoginSuccess(user),
+        onError: (error) => {
+          const message = getErrorMessage(error, 'Login failed. Please check your credentials.');
+          // Without a backend, point the user to the demo modes below.
+          setErrorMsg(error.isNetworkError ? `${message} Start the .NET backend or use a demo account below.` : message);
+        },
+      },
+    );
   };
 
   // Demo auto-fill
@@ -61,18 +60,13 @@ export default function LoginScreen() {
     setInfoMsg('Filled demo credentials! Click Login or use instant demo below.');
   };
 
+  // Demo sessions run on mock data, so they work without the backend.
   const handleInstantDemoLogin = () => {
-    const demoUser = {
-      userId: 'u-demo-vip',
-      username: 'alex.rivers',
-      fullName: 'Alex Rivers',
-      email: 'alex.rivers@pms-ojt.vn',
-      phoneNumber: '+84 988 123 456',
-      role: 'User',
-    };
-    localStorage.setItem('pms_token', 'demo_active_token_user');
-    localStorage.setItem('pms_user', JSON.stringify(demoUser));
-    finishLogin(demoUser);
+    onLoginSuccess(startDemo(DEMO_DRIVER));
+  };
+
+  const handleAdminDemoLogin = () => {
+    onLoginSuccess(startDemo(DEMO_ADMIN));
   };
 
   return (
@@ -178,7 +172,7 @@ export default function LoginScreen() {
             <button
               type="button"
               className="btn btn-outline-cyan btn-full auth-alt-login-btn"
-              onClick={() => navigate('/login-otp')}
+              onClick={onNavigateToOtpLogin}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -220,6 +214,15 @@ export default function LoginScreen() {
             >
               Instant Access Demo →
             </button>
+            <button
+              type="button"
+              className="demo-helper-btn demo-helper-btn--instant"
+              onClick={handleAdminDemoLogin}
+              title="Open the admin dashboard with mock data"
+            >
+              Admin Demo →
+            </button>
+            {import.meta.env.DEV && <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_MANAGER))} className="demo-helper-btn demo-helper-btn--instant">Manager Demo →</button>}
           </div>
 
           {/* Footer Navigation */}
@@ -228,7 +231,7 @@ export default function LoginScreen() {
             <button
               type="button"
               className="auth-link-highlight"
-              onClick={() => navigate('/register')}
+              onClick={onNavigateToRegister}
             >
               Register Now
             </button>

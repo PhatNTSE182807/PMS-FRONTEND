@@ -1,6 +1,18 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import ParkingLogo from './ParkingLogo';
-import { authService } from '../services/authService';
+import { getErrorMessage } from '../api/apiError';
+import { roleLabel } from '../hooks/useAuth';
+import {
+  useAddVehicle,
+  useChangePassword,
+  useDeleteVehicle,
+  useProfile,
+  useSetDefaultVehicle,
+  useUpdateProfile,
+  useUpdateVehicle,
+  useVehicles,
+  useVehicleTypes,
+} from '../hooks/useProfile';
 
 const CheckInQrMark = memo(function CheckInQrMark({ size = 110, onClick }) {
   return (
@@ -96,6 +108,36 @@ const ActiveParkingCard = memo(function ActiveParkingCard({ onPayNow, onQrZoom }
   );
 });
 
+// Shown until the vehicle-types catalog has loaded (or if it fails).
+const FALLBACK_VEHICLE_TYPES = [
+  { id: 1, name: 'Sedan / Hatchback (Car)', code: 'CAR' },
+  { id: 2, name: 'SUV / Crossover / 7-Seater', code: 'SUV' },
+  { id: 3, name: 'Motorbike / Scooter', code: 'MOTO' },
+  { id: 4, name: 'Electric Vehicle (EV)', code: 'EV' },
+];
+
+// Maps a VehicleDTO to the shape the vehicle cards render.
+const toVehicleView = (v) => ({
+  id: v.vehicleId,
+  vehicleId: v.vehicleId,
+  brand: v.brand || 'Vehicle',
+  model: v.model || '',
+  plate: v.licensePlate || '',
+  licensePlate: v.licensePlate || '',
+  color: v.color || 'Black',
+  vehicleTypeId: v.vehicleTypeId || 1,
+  vehicleType: v.vehicleType || 'Car',
+  isDefault: Boolean(v.isDefault),
+  isActive: v.isActive !== false,
+});
+
+// Session user enriched with the live profile (profile fields win when present).
+const withProfile = (user, profile) => {
+  if (!profile) return user;
+  const defined = Object.fromEntries(Object.entries(profile).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+  return { ...user, ...defined };
+};
+
 export default function UserScreen({ user, onLogout }) {
   // Navigation tabs: 'map' | 'reservations' | 'vehicles' | 'profile'
   const [activeTab, setActiveTab] = useState('map');
@@ -144,22 +186,22 @@ export default function UserScreen({ user, onLogout }) {
     setReservationFeedback(`Found 8 available slots at ${selectedLocation}! Select a slot below to confirm.`);
   };
 
-  // Live User Profile state
-  const [currentUserProfile, setCurrentUserProfile] = useState(user);
+  // Live profile & vehicles (React Query; demo sessions are served from mock data)
+  const { data: profile } = useProfile();
+  const currentUserProfile = useMemo(() => withProfile(user, profile), [user, profile]);
 
-  // Vehicles list
-  const [vehicles, setVehicles] = useState([
-    { id: 'v1', vehicleId: 'v1', brand: 'Toyota', model: 'Camry', plate: '30E-123.45', licensePlate: '30E-123.45', color: 'White', isDefault: true, vehicleTypeId: 1, vehicleType: 'Sedan' },
-    { id: 'v2', vehicleId: 'v2', brand: 'Honda', model: 'CRV', plate: '29A-678.90', licensePlate: '29A-678.90', color: 'Red', isDefault: false, vehicleTypeId: 2, vehicleType: 'SUV' },
-  ]);
+  const { data: vehicleDtos } = useVehicles();
+  const vehicles = useMemo(() => (vehicleDtos ?? []).map(toVehicleView), [vehicleDtos]);
 
-  // Vehicle Types list from backend
-  const [vehicleTypes, setVehicleTypes] = useState([
-    { id: 1, name: 'Sedan / Hatchback (Car)', code: 'CAR' },
-    { id: 2, name: 'SUV / Crossover / 7-Seater', code: 'SUV' },
-    { id: 3, name: 'Motorbike / Scooter', code: 'MOTO' },
-    { id: 4, name: 'Electric Vehicle (EV)', code: 'EV' },
-  ]);
+  const { data: vehicleTypesData } = useVehicleTypes();
+  const vehicleTypes = vehicleTypesData?.length ? vehicleTypesData : FALLBACK_VEHICLE_TYPES;
+
+  const addVehicle = useAddVehicle();
+  const updateVehicle = useUpdateVehicle();
+  const deleteVehicle = useDeleteVehicle();
+  const setDefaultVehicle = useSetDefaultVehicle();
+  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
 
   // Vehicle Add / Edit Modal state
   const [vehicleModalMode, setVehicleModalMode] = useState('add'); // 'add' | 'edit'
@@ -173,7 +215,7 @@ export default function UserScreen({ user, onLogout }) {
     isDefault: false,
   });
   const [vehicleModalError, setVehicleModalError] = useState('');
-  const [vehicleModalLoading, setVehicleModalLoading] = useState(false);
+  const vehicleModalLoading = addVehicle.isPending || updateVehicle.isPending;
 
   // Edit Profile Modal state
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -184,7 +226,7 @@ export default function UserScreen({ user, onLogout }) {
     avatarUrl: '',
   });
   const [profileFeedback, setProfileFeedback] = useState({ type: '', text: '' });
-  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+  const isProfileUpdating = updateProfile.isPending;
 
   // Change Password Modal state
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -199,49 +241,7 @@ export default function UserScreen({ user, onLogout }) {
     confirm: false,
   });
   const [passwordFeedback, setPasswordFeedback] = useState({ type: '', text: '' });
-  const [isPasswordChanging, setIsPasswordChanging] = useState(false);
-
-  // Refresh live vehicles from backend
-  const refreshVehicles = async () => {
-    const list = await authService.fetchVehicles();
-    if (list && Array.isArray(list)) {
-      setVehicles(list.map(v => ({
-        id: v.vehicleId || v.id,
-        vehicleId: v.vehicleId || v.id,
-        brand: v.brand || 'Vehicle',
-        model: v.model || '',
-        plate: v.licensePlate || v.plateNumber || '',
-        licensePlate: v.licensePlate || v.plateNumber || '',
-        color: v.color || 'Black',
-        vehicleTypeId: v.vehicleTypeId || 1,
-        vehicleType: v.vehicleType || (v.vehicleTypeId === 2 ? 'SUV' : 'Car'),
-        isDefault: Boolean(v.isDefault),
-        isActive: v.isActive !== false,
-      })));
-    }
-  };
-
-  // Refresh live profile from backend
-  const refreshProfile = async () => {
-    const profile = await authService.fetchProfile();
-    if (profile) {
-      setCurrentUserProfile(prev => ({
-        ...prev,
-        ...profile,
-      }));
-    }
-  };
-
-  // On Mount: load profile, vehicles, and vehicle-types
-  useEffect(() => {
-    refreshVehicles();
-    refreshProfile();
-    authService.fetchVehicleTypes().then(types => {
-      if (types && Array.isArray(types) && types.length > 0) {
-        setVehicleTypes(types);
-      }
-    });
-  }, []);
+  const isPasswordChanging = changePassword.isPending;
 
   // Open Add Vehicle Modal
   const openAddVehicleModal = () => {
@@ -282,119 +282,83 @@ export default function UserScreen({ user, onLogout }) {
       setVehicleModalError('Please enter license plate number.');
       return;
     }
-    setVehicleModalLoading(true);
     setVehicleModalError('');
 
-    if (vehicleModalMode === 'add') {
-      const res = await authService.addVehicle(vehicleFormData);
-      setVehicleModalLoading(false);
-      if (res.success) {
-        await refreshVehicles();
-        setIsAddVehicleModalOpen(false);
-      } else if (!res.isNetworkError) {
-        // Backend rejected the data (e.g. invalid license plate): keep the form open and show why
-        setVehicleModalError(res.message);
+    const command = {
+      licensePlate: vehicleFormData.licensePlate.trim(),
+      vehicleTypeId: Number(vehicleFormData.vehicleTypeId) || 1,
+      brand: vehicleFormData.brand?.trim(),
+      model: vehicleFormData.model?.trim(),
+      color: vehicleFormData.color?.trim() || 'Black',
+      isDefault: Boolean(vehicleFormData.isDefault),
+    };
+
+    try {
+      if (vehicleModalMode === 'add') {
+        await addVehicle.mutateAsync(command);
       } else {
-        // Fallback local update for demo when the backend is unreachable
-        const newLocal = {
-          id: `v-${Date.now()}`,
-          vehicleId: `v-${Date.now()}`,
-          brand: vehicleFormData.brand,
-          model: vehicleFormData.model,
-          plate: vehicleFormData.licensePlate.toUpperCase(),
-          licensePlate: vehicleFormData.licensePlate.toUpperCase(),
-          color: vehicleFormData.color,
-          vehicleTypeId: vehicleFormData.vehicleTypeId,
-          vehicleType: vehicleTypes.find(t => t.id === Number(vehicleFormData.vehicleTypeId))?.name || 'Car',
-          isDefault: vehicleFormData.isDefault,
-        };
-        setVehicles(prev => [...prev, newLocal]);
-        setIsAddVehicleModalOpen(false);
+        await updateVehicle.mutateAsync({
+          vehicleId: selectedVehicleForEdit.vehicleId,
+          command: { ...command, isActive: selectedVehicleForEdit.isActive !== false },
+        });
       }
-    } else {
-      // Edit mode
-      const vId = selectedVehicleForEdit?.vehicleId || selectedVehicleForEdit?.id;
-      const res = await authService.updateVehicle(vId, vehicleFormData);
-      setVehicleModalLoading(false);
-      if (res.success) {
-        await refreshVehicles();
-        setIsAddVehicleModalOpen(false);
-      } else if (!res.isNetworkError) {
-        setVehicleModalError(res.message);
-      } else {
-        // Fallback local update when the backend is unreachable
-        setVehicles(prev => prev.map(item => (item.id === vId || item.vehicleId === vId) ? {
-          ...item,
-          ...vehicleFormData,
-          plate: vehicleFormData.licensePlate.toUpperCase(),
-          licensePlate: vehicleFormData.licensePlate.toUpperCase(),
-        } : item));
-        setIsAddVehicleModalOpen(false);
-      }
+      setIsAddVehicleModalOpen(false);
+    } catch (error) {
+      setVehicleModalError(getErrorMessage(error, 'Failed to save vehicle.'));
     }
   };
 
   // Delete Vehicle (DELETE)
-  const handleDeleteVehicle = async (veh) => {
+  const handleDeleteVehicle = (veh) => {
     if (!window.confirm(`Are you sure you want to delete vehicle ${veh.plate || veh.licensePlate}?`)) return;
-    const vId = veh.vehicleId || veh.id;
-    const res = await authService.deleteVehicle(vId);
-    if (res.success) {
-      await refreshVehicles();
-    } else {
-      // Fallback local delete
-      setVehicles(prev => prev.filter(item => item.id !== vId && item.vehicleId !== vId));
-    }
+    deleteVehicle.mutate(veh.vehicleId, {
+      onError: (error) => window.alert(getErrorMessage(error, 'Failed to delete vehicle.')),
+    });
   };
 
   // Set Default Vehicle (PATCH)
-  const handleSetDefaultVehicle = async (veh) => {
-    const vId = veh.vehicleId || veh.id;
-    const res = await authService.setDefaultVehicle(vId);
-    if (res.success) {
-      await refreshVehicles();
-    } else {
-      // Fallback local set default
-      setVehicles(prev => prev.map(item => ({
-        ...item,
-        isDefault: item.id === vId || item.vehicleId === vId,
-      })));
-    }
+  const handleSetDefaultVehicle = (veh) => {
+    setDefaultVehicle.mutate(veh.vehicleId, {
+      onError: (error) => window.alert(getErrorMessage(error, 'Failed to set default vehicle.')),
+    });
   };
 
   // Edit Profile
   const openEditProfile = () => {
     setProfileFormData({
-      fullName: currentUserProfile?.fullName || user?.fullName || '',
-      email: currentUserProfile?.email || user?.email || '',
-      phoneNumber: currentUserProfile?.phoneNumber || user?.phoneNumber || '',
-      avatarUrl: currentUserProfile?.avatarUrl || user?.avatarUrl || '',
+      fullName: currentUserProfile?.fullName || '',
+      email: currentUserProfile?.email || '',
+      phoneNumber: currentUserProfile?.phoneNumber || '',
+      avatarUrl: currentUserProfile?.avatarUrl || '',
     });
     setProfileFeedback({ type: '', text: '' });
     setIsEditProfileOpen(true);
   };
 
-  const handleSaveProfile = async (e) => {
+  const handleSaveProfile = (e) => {
     e.preventDefault();
-    setIsProfileUpdating(true);
     setProfileFeedback({ type: '', text: '' });
 
-    const res = await authService.updateProfile(profileFormData);
-    setIsProfileUpdating(false);
-
-    if (res.success) {
-      setCurrentUserProfile(prev => ({
-        ...prev,
-        ...profileFormData,
-      }));
-      setProfileFeedback({ type: 'success', text: 'Profile updated successfully!' });
-      setTimeout(() => {
-        setIsEditProfileOpen(false);
-        setProfileFeedback({ type: '', text: '' });
-      }, 1200);
-    } else {
-      setProfileFeedback({ type: 'error', text: res.message || 'Failed to update profile.' });
-    }
+    updateProfile.mutate(
+      {
+        fullName: profileFormData.fullName?.trim(),
+        email: profileFormData.email?.trim(),
+        phoneNumber: profileFormData.phoneNumber?.trim(),
+        avatarUrl: profileFormData.avatarUrl || '',
+      },
+      {
+        onSuccess: () => {
+          setProfileFeedback({ type: 'success', text: 'Profile updated successfully!' });
+          setTimeout(() => {
+            setIsEditProfileOpen(false);
+            setProfileFeedback({ type: '', text: '' });
+          }, 1200);
+        },
+        onError: (error) => {
+          setProfileFeedback({ type: 'error', text: getErrorMessage(error, 'Failed to update profile.') });
+        },
+      },
+    );
   };
 
   // Change Password
@@ -408,7 +372,7 @@ export default function UserScreen({ user, onLogout }) {
     setIsChangePasswordOpen(true);
   };
 
-  const handleSavePassword = async (e) => {
+  const handleSavePassword = (e) => {
     e.preventDefault();
     if (passwordFormData.newPassword.length < 6) {
       setPasswordFeedback({ type: 'error', text: 'New password must be at least 6 characters.' });
@@ -419,21 +383,23 @@ export default function UserScreen({ user, onLogout }) {
       return;
     }
 
-    setIsPasswordChanging(true);
     setPasswordFeedback({ type: '', text: '' });
 
-    const res = await authService.changePassword(passwordFormData);
-    setIsPasswordChanging(false);
-
-    if (res.success) {
-      setPasswordFeedback({ type: 'success', text: 'Password changed successfully!' });
-      setTimeout(() => {
-        setIsChangePasswordOpen(false);
-        setPasswordFeedback({ type: '', text: '' });
-      }, 1500);
-    } else {
-      setPasswordFeedback({ type: 'error', text: res.message || 'Failed to change password. Please verify your current password.' });
-    }
+    changePassword.mutate(passwordFormData, {
+      onSuccess: () => {
+        setPasswordFeedback({ type: 'success', text: 'Password changed successfully!' });
+        setTimeout(() => {
+          setIsChangePasswordOpen(false);
+          setPasswordFeedback({ type: '', text: '' });
+        }, 1500);
+      },
+      onError: (error) => {
+        setPasswordFeedback({
+          type: 'error',
+          text: getErrorMessage(error, 'Failed to change password. Please verify your current password.'),
+        });
+      },
+    });
   };
 
   // Handle Bottom Nav click
@@ -467,7 +433,7 @@ export default function UserScreen({ user, onLogout }) {
             </div>
             <div className="user-avatar-meta">
               <span className="user-avatar-name">{currentUserProfile?.fullName || currentUserProfile?.username || user?.fullName || 'Alex Rivers'}</span>
-              <span className="user-avatar-role">{currentUserProfile?.role || user?.role || 'User'}</span>
+              <span className="user-avatar-role">{roleLabel(currentUserProfile?.role)}</span>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
@@ -1321,7 +1287,7 @@ export default function UserScreen({ user, onLogout }) {
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Role:</span>
-                    <strong className="text-cyan">{currentUserProfile?.role || user?.role || 'User'}</strong>
+                    <strong className="text-cyan">{roleLabel(currentUserProfile?.role)}</strong>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Status:</span>

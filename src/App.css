@@ -630,12 +630,14 @@
 /* Demo helper bar */
 .demo-helper-bar {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: center;
   margin-top: 0.65rem;
   gap: 8px;
 }
 
 .demo-helper-btn {
+  white-space: nowrap;
   background: rgba(59, 54, 50, 0.05);
   border: 1px dashed rgba(59, 54, 50, 0.2);
   color: #6F6A64;

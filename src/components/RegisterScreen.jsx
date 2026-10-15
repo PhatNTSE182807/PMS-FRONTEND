@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import AuthSplitLayout from './AuthSplitLayout';
-import { authService } from '../services/authService';
+import { getErrorMessage } from '../api/apiError';
+import { useRegister } from '../hooks/useAuth';
 
 export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }) {
+  const registerMutation = useRegister();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -11,7 +13,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = registerMutation.isPending;
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isTermsOpen, setIsTermsOpen] = useState(false);
@@ -30,7 +32,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
 
   const strength = calculateStrength(password);
 
-  const handleRegister = async (e) => {
+  const handleRegister = (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
@@ -61,33 +63,31 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
       return;
     }
 
-    setIsLoading(true);
+    // Derive username from email prefix or sanitized name (backend allows 5-20 characters)
+    const userName = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'user_' + Date.now().toString().slice(-4);
 
-    // Derive username from email prefix or sanitized name
-    const userName = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || 'user_' + Date.now().toString().slice(-4);
-
-    const res = await authService.register({
-      userName: userName.length < 5 ? `${userName}123` : userName,
-      fullName: fullName.trim(),
-      email: email.trim(),
-      password: password,
-      phoneNumber: phoneNumber.trim(),
-    });
-
-    setIsLoading(false);
-
-    if (res.success) {
-      setSuccessMsg('Account created successfully! Redirecting to login...');
-      setTimeout(() => {
-        if (onRegisterSuccess) {
-          onRegisterSuccess({ email, fullName });
-        } else {
-          onNavigateToLogin();
-        }
-      }, 1500);
-    } else {
-      setErrorMsg(res.message);
-    }
+    registerMutation.mutate(
+      {
+        userName: userName.length < 5 ? `${userName}123` : userName,
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password: password,
+        phoneNumber: phoneNumber.trim(),
+      },
+      {
+        onSuccess: () => {
+          setSuccessMsg('Account created successfully! Redirecting to login...');
+          setTimeout(() => {
+            if (onRegisterSuccess) {
+              onRegisterSuccess({ email, fullName });
+            } else {
+              onNavigateToLogin();
+            }
+          }, 1500);
+        },
+        onError: (error) => setErrorMsg(getErrorMessage(error, 'Registration failed.')),
+      },
+    );
   };
 
   // Auto-fill demo info

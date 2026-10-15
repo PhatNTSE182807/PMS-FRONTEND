@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
-import { authService, getApiBaseUrl, setCustomApiUrl } from '../services/authService';
+import { systemService } from '../api/system.service';
+import { getApiBaseUrl, setApiBaseUrlOverride } from '../config/env';
+
+// The runtime URL override is a development aid; production builds use VITE_API_BASE_URL.
+const canConfigureUrl = import.meta.env.DEV;
 
 export default function ApiStatusBadge() {
   const [isOpen, setIsOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [apiUrl, setApiUrl] = useState(getApiBaseUrl());
   const [inputUrl, setInputUrl] = useState(getApiBaseUrl());
   const [statusMessage, setStatusMessage] = useState('');
 
   const checkStatus = async () => {
     setIsChecking(true);
     setStatusMessage('Checking connection to Backend...');
-    const result = await authService.checkConnection();
+    const result = await systemService.ping();
     setIsOnline(result.online);
     setIsChecking(false);
     if (result.online) {
@@ -29,15 +32,13 @@ export default function ApiStatusBadge() {
   }, []);
 
   const handleSaveUrl = () => {
-    setCustomApiUrl(inputUrl);
-    setApiUrl(inputUrl);
+    setApiBaseUrlOverride(inputUrl);
     checkStatus();
   };
 
   const handleQuickPreset = (presetUrl) => {
     setInputUrl(presetUrl);
-    setCustomApiUrl(presetUrl);
-    setApiUrl(presetUrl);
+    setApiBaseUrlOverride(presetUrl);
     setTimeout(checkStatus, 100);
   };
 
@@ -78,53 +79,57 @@ export default function ApiStatusBadge() {
                 <p className="api-modal__status-msg">{statusMessage}</p>
               </div>
 
-              <div className="api-modal__form-group">
-                <label>Backend API Base URL (.NET Web API):</label>
-                <div className="api-modal__input-row">
-                  <input
-                    type="text"
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    placeholder="https://localhost:44391/api"
-                    className="api-modal__input"
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-primary-cyan btn-sm"
-                    onClick={handleSaveUrl}
-                    disabled={isChecking}
-                  >
-                    Save & Test
-                  </button>
-                </div>
-              </div>
+              {canConfigureUrl && (
+                <>
+                  <div className="api-modal__form-group">
+                    <label>Backend API Base URL (.NET Web API):</label>
+                    <div className="api-modal__input-row">
+                      <input
+                        type="text"
+                        value={inputUrl}
+                        onChange={(e) => setInputUrl(e.target.value)}
+                        placeholder="https://localhost:44391/api"
+                        className="api-modal__input"
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary-cyan btn-sm"
+                        onClick={handleSaveUrl}
+                        disabled={isChecking}
+                      >
+                        Save & Test
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="api-modal__presets">
-                <span className="api-modal__presets-label">Quick Presets (from PMS.sln launchSettings):</span>
-                <div className="api-modal__presets-buttons">
-                  <button
-                    type="button"
-                    className="preset-btn"
-                    onClick={() => handleQuickPreset('https://localhost:44391/api')}
-                  >
-                    IIS Express (44391)
-                  </button>
-                  <button
-                    type="button"
-                    className="preset-btn"
-                    onClick={() => handleQuickPreset('https://localhost:5001/api')}
-                  >
-                    Kestrel HTTPS (5001)
-                  </button>
-                  <button
-                    type="button"
-                    className="preset-btn"
-                    onClick={() => handleQuickPreset('http://localhost:5000/api')}
-                  >
-                    Kestrel HTTP (5000)
-                  </button>
-                </div>
-              </div>
+                  <div className="api-modal__presets">
+                    <span className="api-modal__presets-label">Quick Presets (from PMS.sln launchSettings):</span>
+                    <div className="api-modal__presets-buttons">
+                      <button
+                        type="button"
+                        className="preset-btn"
+                        onClick={() => handleQuickPreset('https://localhost:44391/api')}
+                      >
+                        IIS Express (44391)
+                      </button>
+                      <button
+                        type="button"
+                        className="preset-btn"
+                        onClick={() => handleQuickPreset('https://localhost:5001/api')}
+                      >
+                        Kestrel HTTPS (5001)
+                      </button>
+                      <button
+                        type="button"
+                        className="preset-btn"
+                        onClick={() => handleQuickPreset('http://localhost:5000/api')}
+                      >
+                        Kestrel HTTP (5000)
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="api-modal__tip">
                 <p>
