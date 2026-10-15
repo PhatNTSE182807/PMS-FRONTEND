@@ -12,9 +12,11 @@ import { isMockService } from '@/config/env'
 import { roleLabel, useAuth } from '@/hooks/useAuth'
 import { initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { ADMIN_NAV } from './adminNav'
+import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const { user } = useAuth()
+  const navigation = user?.role === 'MANAGER' ? MANAGER_NAV : ADMIN_NAV
   return (
     <div className="flex h-full w-full flex-col bg-slate-950 text-slate-300">
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
@@ -29,7 +31,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <nav aria-label="Điều hướng quản trị" className="flex-1 space-y-1 px-3 py-5">
         <p className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Quản trị</p>
-        {ADMIN_NAV.map(({ to, label, icon: Icon }) => (
+        {navigation.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -81,7 +83,7 @@ export function AdminLayout() {
   const { pathname } = useLocation()
   const [isNavOpen, setIsNavOpen] = useState(false)
 
-  const current = ADMIN_NAV.find((item) => pathname.startsWith(item.to))
+  const current = [...ADMIN_NAV, ...MANAGER_NAV].find((item) => pathname.startsWith(item.to))
   const usesMockData = isDemo || isMockService('staff') || isMockService('parking') || isMockService('reports')
 
   const handleLogout = () => {

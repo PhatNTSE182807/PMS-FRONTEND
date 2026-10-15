@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ParkingLogo from './ParkingLogo';
 import { getErrorMessage } from '../api/apiError';
 import { useAuth, useLogin } from '../hooks/useAuth';
-import { DEMO_ADMIN, DEMO_DRIVER } from '../mocks/auth.mock';
+import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER } from '../mocks/auth.mock';
 
 export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
   const { startDemo } = useAuth();
@@ -227,6 +227,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
               >
                 Admin Demo →
               </button>
+              {import.meta.env.DEV && <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_MANAGER))} className="demo-btn">Manager Demo →</button>}
             </div>
 
             {/* SSO Section */}

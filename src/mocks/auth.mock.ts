@@ -22,6 +22,11 @@ export const DEMO_ADMIN: SessionUser = {
   role: 'ADMIN',
 }
 
+export const DEMO_MANAGER: SessionUser = {
+  userId: 'usr-0001', username: 'manager.demo', fullName: 'Manager Demo',
+  email: 'manager.demo@pms-ojt.vn', phoneNumber: '0900000001', role: 'MANAGER',
+}
+
 export const authMock = {
   /** Accepts any credentials; e-mails starting with "admin" sign in as Admin. */
   login({ email, password }: LoginCommand): Promise<LoginResponseDTO> {
