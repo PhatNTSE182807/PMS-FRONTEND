@@ -1,4 +1,4 @@
-import type { StaffListQuery } from '@/types/identity.dto'
+import type { CustomerListQuery, StaffListQuery } from '@/types/identity.dto'
 import type { RevenueBreakdownQuery, RevenueFilterQuery } from '@/types/report.dto'
 
 /** React Query cache keys, grouped by service so invalidation can target one service. */
@@ -8,6 +8,10 @@ export const queryKeys = {
     me: () => [...queryKeys.profile.all, 'me'] as const,
     vehicles: () => [...queryKeys.profile.all, 'vehicles'] as const,
     vehicleTypes: () => [...queryKeys.profile.all, 'vehicle-types'] as const,
+  },
+  customers: {
+    all: ['customers'] as const,
+    list: (query: CustomerListQuery) => [...queryKeys.customers.all, 'list', query] as const,
   },
   staff: {
     all: ['staff'] as const,

@@ -1,4 +1,4 @@
-import { Building2, ChartColumnBig, Gauge, Users, type LucideIcon } from 'lucide-react'
+import { Building2, ChartColumnBig, Gauge, UserRound, Users, type LucideIcon } from 'lucide-react'
 
 export interface AdminNavItem {
   to: string
@@ -8,12 +8,13 @@ export interface AdminNavItem {
 
 /** Sidebar entries of the admin dashboard, in display order. */
 export const MANAGER_NAV: AdminNavItem[] = [
-  { to: '/management/lots', label: 'Quản lý bãi xe', icon: Building2 },
+  { to: '/management/lots', label: 'Parking Lots', icon: Building2 },
 ]
 
 export const ADMIN_NAV: AdminNavItem[] = [
-  { to: '/admin/lots', label: 'Quản lý bãi xe', icon: Building2 },
-  { to: '/admin/staff', label: 'Quản lý nhân sự', icon: Users },
-  { to: '/admin/revenue', label: 'Báo cáo doanh thu', icon: ChartColumnBig },
-  { to: '/admin/capacity', label: 'Công suất bãi xe', icon: Gauge },
+  { to: '/admin/lots', label: 'Parking Lots', icon: Building2 },
+  { to: '/admin/staff', label: 'Staff Accounts', icon: Users },
+  { to: '/admin/customers', label: 'Customer Accounts', icon: UserRound },
+  { to: '/admin/revenue', label: 'Revenue Report', icon: ChartColumnBig },
+  { to: '/admin/capacity', label: 'Lot Capacity', icon: Gauge },
 ]

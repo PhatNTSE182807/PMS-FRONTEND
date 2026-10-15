@@ -143,9 +143,9 @@ function dailyMetrics(lot: MockParkingLot, date: string, vehicleType: RevenueFil
 }
 
 function validate(query: RevenueFilterQuery) {
-  if (query.startDate > query.endDate) mockFail(400, 'Ngày bắt đầu phải trước ngày kết thúc.')
+  if (query.startDate > query.endDate) mockFail(400, 'The start date must be before the end date.')
   if (daysBetween(query.startDate, query.endDate) > MAX_RANGE_DAYS) {
-    mockFail(400, `Khoảng thời gian tối đa là ${MAX_RANGE_DAYS} ngày.`)
+    mockFail(400, `The maximum range is ${MAX_RANGE_DAYS} days.`)
   }
 }
 
@@ -241,7 +241,7 @@ export const revenueMock = {
   getBreakdown: (query: RevenueBreakdownQuery): Promise<PaginatedResponse<RevenueBreakdownRowDTO>> =>
     mockResponse(() => {
       const rows = collect(query)
-        .sort((a, b) => b.date.localeCompare(a.date) || a.lot.name.localeCompare(b.lot.name, 'vi'))
+        .sort((a, b) => b.date.localeCompare(a.date) || a.lot.name.localeCompare(b.lot.name, 'en'))
         .map<RevenueBreakdownRowDTO>((r) => ({
           date: r.date,
           parkingLotId: r.lot.id,

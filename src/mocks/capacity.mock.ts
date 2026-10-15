@@ -149,7 +149,7 @@ function toDto(lotState: LotState): ParkingLotCapacityDTO {
 
   return {
     ...toLotSummary(lot),
-    managerOnDuty: staffMock.managerOf(lot.id) ?? 'Chưa phân công',
+    managerOnDuty: staffMock.managerOf(lot.id) ?? 'Unassigned',
     status: lotState.status,
     lastUpdated: new Date(lotState.lastUpdated).toISOString(),
     overallOccupancyPercentage: Math.round(occupancyRate(slots.occupied, slots.total) * 10) / 10,

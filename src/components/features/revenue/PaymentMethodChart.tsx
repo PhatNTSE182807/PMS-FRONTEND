@@ -25,8 +25,8 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
     <Card className="flex flex-col">
       <CardHeader>
         <div>
-          <CardTitle>Phương thức thanh toán</CardTitle>
-          <CardDescription>Tỷ trọng doanh thu theo kênh</CardDescription>
+          <CardTitle>Payment methods</CardTitle>
+          <CardDescription>Revenue share by channel</CardDescription>
         </div>
       </CardHeader>
 
@@ -71,7 +71,7 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
               <div>
-                <p className="text-xs text-slate-500">Tổng</p>
+                <p className="text-xs text-slate-500">Total</p>
                 <p className="text-lg font-semibold text-slate-900">{formatVndCompact(total)}</p>
               </div>
             </div>

@@ -49,20 +49,20 @@ export type LotInput = Omit<ManagedLot, 'id' | 'zones'>
 export type ZoneInput = Omit<ManagedZone, 'id' | 'slots'>
 export type SlotInput = Omit<ManagedSlot, 'id'>
 export const LOT_STATES: Record<LotState, string> = {
-  Active: 'Đang hoạt động',
-  Inactive: 'Ngừng hoạt động',
-  TemporarilyClosed: 'Đóng tạm thời',
-  Maintenance: 'Bảo trì',
+  Active: 'Active',
+  Inactive: 'Inactive',
+  TemporarilyClosed: 'Temporarily closed',
+  Maintenance: 'Maintenance',
 }
 export const SLOT_STATES: Record<SlotState, string> = {
-  Available: 'Trống',
-  Reserved: 'Giữ chỗ',
-  Occupied: 'Đang đỗ',
-  Maintenance: 'Bảo trì',
+  Available: 'Available',
+  Reserved: 'Reserved',
+  Occupied: 'Occupied',
+  Maintenance: 'Maintenance',
 }
 export const VEHICLE_TYPES = [
-  { id: 'CAR_4', name: 'Ô tô 4–5 chỗ' },
-  { id: 'CAR_7', name: 'Ô tô 7 chỗ' },
-  { id: 'MOTORBIKE', name: 'Xe máy' },
-  { id: 'BICYCLE', name: 'Xe đạp' },
+  { id: 'CAR_4', name: 'Car (4–5 seats)' },
+  { id: 'CAR_7', name: 'Car (7 seats)' },
+  { id: 'MOTORBIKE', name: 'Motorbike' },
+  { id: 'BICYCLE', name: 'Bicycle' },
 ] as const

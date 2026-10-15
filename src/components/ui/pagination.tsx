@@ -26,19 +26,19 @@ export function Pagination({ pageNumber, pageSize, totalCount, totalPages, onPag
 
   return (
     <nav
-      aria-label="Phân trang"
+      aria-label="Pagination"
       className={cn('flex flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row', className)}
     >
       <p>
-        Hiển thị <span className="font-medium text-slate-900">{formatNumber(from)}</span>–
-        <span className="font-medium text-slate-900">{formatNumber(to)}</span> trong{' '}
-        <span className="font-medium text-slate-900">{formatNumber(totalCount)}</span> kết quả
+        Showing <span className="font-medium text-slate-900">{formatNumber(from)}</span>–
+        <span className="font-medium text-slate-900">{formatNumber(to)}</span> of{' '}
+        <span className="font-medium text-slate-900">{formatNumber(totalCount)}</span> results
       </p>
       <div className="flex items-center gap-1">
         <Button
           variant="outline"
           size="icon"
-          aria-label="Trang trước"
+          aria-label="Previous page"
           disabled={pageNumber <= 1}
           onClick={() => onPageChange(pageNumber - 1)}
         >
@@ -64,7 +64,7 @@ export function Pagination({ pageNumber, pageSize, totalCount, totalPages, onPag
         <Button
           variant="outline"
           size="icon"
-          aria-label="Trang sau"
+          aria-label="Next page"
           disabled={pageNumber >= totalPages}
           onClick={() => onPageChange(pageNumber + 1)}
         >

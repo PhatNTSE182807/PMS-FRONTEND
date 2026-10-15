@@ -15,7 +15,7 @@ export function RevenueByLotChart({ data, isLoading }: { data?: RevenueByParking
   const [containerRef, width] = useElementWidth<HTMLDivElement>()
   const isNarrow = width > 0 && width < 520
   const rows = (data ?? []).map((row) => {
-    const shortName = row.parkingLotName.replace(/^Bãi xe /, '')
+    const shortName = row.parkingLotName.replace(/ Parking$/, '')
     return { ...row, shortName: isNarrow && shortName.length > 16 ? `${shortName.slice(0, 15)}…` : shortName }
   })
 
@@ -23,8 +23,8 @@ export function RevenueByLotChart({ data, isLoading }: { data?: RevenueByParking
     <Card>
       <CardHeader>
         <div>
-          <CardTitle>Doanh thu theo bãi xe</CardTitle>
-          <CardDescription>So sánh giữa các bãi trong kỳ đã chọn</CardDescription>
+          <CardTitle>Revenue by parking lot</CardTitle>
+          <CardDescription>Compared across lots for the selected period</CardDescription>
         </div>
       </CardHeader>
       <div ref={containerRef} className="px-2 pt-2 pb-4">

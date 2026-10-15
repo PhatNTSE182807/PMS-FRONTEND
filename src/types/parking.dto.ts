@@ -26,7 +26,7 @@ export type ZoneStatus = 'AVAILABLE' | 'WARNING' | 'FULL'
 
 export interface ZoneCapacityDTO {
   zoneId: string
-  /** e.g. "Tầng hầm B1 - Khu A" */
+  /** e.g. "Basement B1 - Zone A" */
   zoneName: string
   totalSlots: number
   occupiedSlots: number

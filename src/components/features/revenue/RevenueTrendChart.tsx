@@ -9,16 +9,16 @@ import { formatDayMonth, formatVnd, formatVndCompact, toIsoDate } from '@/lib/fo
 import type { RevenueTimeSeriesResultDTO, TimeSeriesGranularity } from '@/types/report.dto'
 
 const SERIES = {
-  total: { key: 'totalRevenue', label: 'Tổng doanh thu', color: SERIES_COLORS.blue },
-  car: { key: 'carRevenue', label: 'Ô tô', color: SERIES_COLORS.blue },
-  motorbike: { key: 'motorbikeRevenue', label: 'Xe máy', color: SERIES_COLORS.orange },
+  total: { key: 'totalRevenue', label: 'Total revenue', color: SERIES_COLORS.blue },
+  car: { key: 'carRevenue', label: 'Car', color: SERIES_COLORS.blue },
+  motorbike: { key: 'motorbikeRevenue', label: 'Motorbike', color: SERIES_COLORS.orange },
 } as const
 
 const formatPeriod = (granularity: TimeSeriesGranularity) => (date: string) =>
-  granularity === 'MONTH' ? `Tháng ${date.slice(5, 7)}/${date.slice(0, 4)}` : formatDayMonth(date)
+  granularity === 'MONTH' ? `Month ${date.slice(5, 7)}/${date.slice(0, 4)}` : formatDayMonth(date)
 
 const formatTooltipPeriod = (granularity: TimeSeriesGranularity) => (date: string) =>
-  granularity === 'MONTH' ? `Tháng ${date.slice(5, 7)}/${date.slice(0, 4)}` : `Ngày ${formatDayMonth(date)}/${date.slice(0, 4)}`
+  granularity === 'MONTH' ? `Month ${date.slice(5, 7)}/${date.slice(0, 4)}` : `${formatDayMonth(date)}/${date.slice(0, 4)}`
 
 interface RevenueTrendChartProps {
   data?: RevenueTimeSeriesResultDTO
@@ -39,10 +39,10 @@ export function RevenueTrendChart({ data, isLoading }: RevenueTrendChartProps) {
     <Card className="flex flex-col lg:col-span-2">
       <CardHeader>
         <div>
-          <CardTitle>Biến thiên doanh thu</CardTitle>
+          <CardTitle>Revenue trend</CardTitle>
           <CardDescription>
-            {granularity === 'MONTH' ? 'Theo tháng' : 'Theo ngày'}, đơn vị VNĐ
-            {includesToday && ' · kỳ cuối tính tới hiện tại'}
+            {granularity === 'MONTH' ? 'Monthly' : 'Daily'}, in VND
+            {includesToday && ' · latest period counted up to now'}
           </CardDescription>
         </div>
         <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
@@ -57,7 +57,7 @@ export function RevenueTrendChart({ data, isLoading }: RevenueTrendChartProps) {
               className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform ${compare ? 'translate-x-4' : ''}`}
             />
           </button>
-          So sánh Ô tô / Xe máy
+          Compare car / motorbike
         </label>
       </CardHeader>
 
@@ -67,7 +67,7 @@ export function RevenueTrendChart({ data, isLoading }: RevenueTrendChartProps) {
         {isLoading || !data ? (
           <Skeleton className="mx-3 h-full" />
         ) : data.points.length === 0 ? (
-          <EmptyState title="Không có dữ liệu" description="Không có giao dịch trong khoảng thời gian này." />
+          <EmptyState title="No data" description="No transactions in this period." />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data.points} margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>

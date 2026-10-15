@@ -23,7 +23,7 @@ function CloseButton() {
   return (
     <DialogPrimitive.Close
       className="absolute top-4 right-4 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-      aria-label="Đóng"
+      aria-label="Close"
     >
       <X className="size-4" />
     </DialogPrimitive.Close>
@@ -131,7 +131,7 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <DialogClose className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
-            Hủy
+            Cancel
           </DialogClose>
           <button
             type="button"

@@ -8,12 +8,12 @@ export type StaffFormMode = 'create' | 'edit'
 export function createStaffFormSchema(mode: StaffFormMode) {
   return z
     .object({
-      fullName: z.string().trim().min(3, 'Họ và tên tối thiểu 3 ký tự.').max(200, 'Họ và tên tối đa 200 ký tự.'),
-      email: z.string().trim().min(1, 'Vui lòng nhập email.').pipe(z.email({ error: 'Email không đúng định dạng.' })),
+      fullName: z.string().trim().min(3, 'Full name must be at least 3 characters.').max(200, 'Full name must be at most 200 characters.'),
+      email: z.string().trim().min(1, 'Please enter an email.').pipe(z.email({ error: 'Email is not valid.' })),
       phoneNumber: z
         .string()
         .trim()
-        .regex(VN_PHONE_REGEX, 'Số điện thoại Việt Nam gồm 10 số, ví dụ 0901234567.'),
+        .regex(VN_PHONE_REGEX, 'A Vietnamese phone number has 10 digits, e.g. 0901234567.'),
       role: z.enum(['MANAGER', 'STAFF']),
       assignedParkingLotIds: z.array(z.string()),
       shift: z.enum(['MORNING', 'AFTERNOON', 'NIGHT']).optional(),
@@ -23,13 +23,13 @@ export function createStaffFormSchema(mode: StaffFormMode) {
     })
     .superRefine((values, ctx) => {
       if (values.assignedParkingLotIds.length === 0) {
-        ctx.addIssue({ code: 'custom', path: ['assignedParkingLotIds'], message: 'Chọn ít nhất một bãi xe phụ trách.' })
+        ctx.addIssue({ code: 'custom', path: ['assignedParkingLotIds'], message: 'Select at least one parking lot.' })
       }
       if (values.role === 'STAFF' && values.assignedParkingLotIds.length > 1) {
-        ctx.addIssue({ code: 'custom', path: ['assignedParkingLotIds'], message: 'Nhân viên chỉ được gán một bãi xe.' })
+        ctx.addIssue({ code: 'custom', path: ['assignedParkingLotIds'], message: 'Staff can only be assigned to one parking lot.' })
       }
       if (values.role === 'STAFF' && !values.shift) {
-        ctx.addIssue({ code: 'custom', path: ['shift'], message: 'Chọn ca làm việc cho nhân viên.' })
+        ctx.addIssue({ code: 'custom', path: ['shift'], message: 'Select a shift for this staff member.' })
       }
       if (mode === 'create' && values.passwordMode === 'manual') {
         const password = values.password
@@ -37,7 +37,7 @@ export function createStaffFormSchema(mode: StaffFormMode) {
           ctx.addIssue({
             code: 'custom',
             path: ['password'],
-            message: 'Mật khẩu tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và chữ số.',
+            message: 'Password must be at least 8 characters with an upper-case letter, a lower-case letter and a digit.',
           })
         }
       }

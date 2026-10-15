@@ -27,10 +27,10 @@ export function CopyField({ value, label, actions }: CopyFieldProps) {
   const handleCopy = async () => {
     if (await copyText(value)) {
       setCopied(true)
-      toast.success('Đã sao chép vào clipboard')
+      toast.success('Copied to clipboard')
       window.setTimeout(() => setCopied(false), 1500)
     } else {
-      toast.error('Không thể sao chép tự động', { description: 'Hãy chọn và sao chép thủ công.' })
+      toast.error('Could not copy automatically', { description: 'Select and copy it manually.' })
     }
   }
 
@@ -43,9 +43,9 @@ export function CopyField({ value, label, actions }: CopyFieldProps) {
         onFocus={(e) => e.currentTarget.select()}
         className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-sm tracking-wide text-slate-900"
       />
-      <Button variant="outline" size="sm" onClick={handleCopy} aria-label={`Sao chép ${label}`}>
+      <Button variant="outline" size="sm" onClick={handleCopy} aria-label={`Copy ${label}`}>
         {copied ? <Check className="text-emerald-600" /> : <Copy />}
-        {copied ? 'Đã chép' : 'Copy'}
+        {copied ? 'Copied' : 'Copy'}
       </Button>
       {actions}
     </div>

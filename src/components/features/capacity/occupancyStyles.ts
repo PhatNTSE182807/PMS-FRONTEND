@@ -19,7 +19,7 @@ interface LevelStyle {
 /** Status colours are reserved for occupancy and always ship with an icon and a label. */
 export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
   AVAILABLE: {
-    label: 'Thông thoáng',
+    label: 'Plenty of space',
     icon: CircleCheck,
     tone: 'emerald',
     fill: 'bg-emerald-500',
@@ -28,7 +28,7 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     trackStroke: '#DCEADD',
   },
   HIGH: {
-    label: 'Sắp đầy',
+    label: 'Filling up',
     icon: TriangleAlert,
     tone: 'amber',
     fill: 'bg-amber-500',
@@ -37,7 +37,7 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     trackStroke: '#F5E7CC',
   },
   CRITICAL: {
-    label: 'Quá tải',
+    label: 'Overloaded',
     icon: CircleAlert,
     tone: 'rose',
     fill: 'bg-rose-500',
@@ -48,17 +48,17 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
 }
 
 export const LOT_STATUS_STYLES: Record<ParkingLotStatus, { label: string; tone: BadgeTone }> = {
-  OPEN: { label: 'Đang mở', tone: 'sky' },
-  FULL: { label: 'Hết chỗ', tone: 'rose' },
-  MAINTENANCE: { label: 'Bảo trì', tone: 'amber' },
-  CLOSED: { label: 'Đã đóng', tone: 'neutral' },
+  OPEN: { label: 'Open', tone: 'sky' },
+  FULL: { label: 'Full', tone: 'rose' },
+  MAINTENANCE: { label: 'Maintenance', tone: 'amber' },
+  CLOSED: { label: 'Closed', tone: 'neutral' },
 }
 
 export type CapacityFilter = 'ALL' | OccupancyLevel
 
 export const CAPACITY_FILTERS: { value: CapacityFilter; label: string }[] = [
-  { value: 'ALL', label: 'Tất cả' },
-  { value: 'AVAILABLE', label: 'Còn trống nhiều' },
-  { value: 'HIGH', label: 'Sắp đầy' },
-  { value: 'CRITICAL', label: 'Đã đầy' },
+  { value: 'ALL', label: 'All' },
+  { value: 'AVAILABLE', label: 'Plenty free' },
+  { value: 'HIGH', label: 'Filling up' },
+  { value: 'CRITICAL', label: 'Full' },
 ]

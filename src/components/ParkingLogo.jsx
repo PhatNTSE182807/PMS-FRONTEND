@@ -49,8 +49,8 @@ export default function ParkingLogo({ size = 'medium', className = '' }) {
       </div>
 
       <div className="parking-logo__text">
-        <span className="parking-logo__brand">PARKING MANAGEMENT SYSTEM</span>
-        <span className="parking-logo__sub">OJT</span>
+        <span className="parking-logo__brand">XXIV</span>
+        <span className="parking-logo__sub">PARKING</span>
       </div>
     </div>
   );

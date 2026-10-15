@@ -90,35 +90,35 @@ export default function ParkingLotsPage() {
   const currentPage = Math.min(page, pageCount)
   const reload = async () => {
     await lots.refetch()
-    toast.success('Đã lưu dữ liệu demo trên trình duyệt')
+    toast.success('Demo data saved in this browser')
   }
   const canConfigure = Boolean(
     selected &&
       user?.role === 'MANAGER' &&
       selected.managerUserId === user.userId,
   )
-  const title = zone ? zone.name : selected ? selected.name : 'Quản lý bãi xe'
+  const title = zone ? zone.name : selected ? selected.name : 'Parking Lots'
   return (
     <div className="space-y-6">
       <PageHeader
         title={title}
         description={
           selected
-            ? 'Thông tin bãi, phân khu và chỗ đỗ dành cho đặt trước.'
-            : 'Thiết lập thông tin bãi và phân công quản lý theo phạm vi được giao.'
+            ? 'Lot details, zones and reservable slots.'
+            : 'Set up parking lots and assign their managers.'
         }
         actions={
           admin && !selected ? (
             <Button onClick={() => setEditing({ kind: 'lot' })}>
               <Plus />
-              Tạo bãi xe
+              Create parking lot
             </Button>
           ) : undefined
         }
       />
       {lots.isPending ? (
         <Card className="p-8 text-sm text-slate-500" aria-busy="true">
-          Đang tải bãi xe…
+          Loading parking lots…
         </Card>
       ) : lots.isError ? (
         <ErrorState
@@ -131,13 +131,13 @@ export default function ParkingLotsPage() {
             <>
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
-                  ['Tổng số bãi', lots.data.length],
+                  ['Total lots', lots.data.length],
                   [
-                    'Đang hoạt động',
+                    'Active',
                     lots.data.filter((l) => l.status === 'Active').length,
                   ],
                   [
-                    'Chưa gán Manager',
+                    'No manager assigned',
                     lots.data.filter((l) => !l.managerUserId).length,
                   ],
                 ].map(([label, value]) => (
@@ -154,8 +154,8 @@ export default function ParkingLotsPage() {
                   <div className="relative flex-1">
                     <Search className="absolute top-2.5 left-3 size-4 text-slate-400" />
                     <Input
-                      aria-label="Tìm bãi xe"
-                      placeholder="Tìm tên, mã bãi hoặc địa chỉ…"
+                      aria-label="Search parking lots"
+                      placeholder="Search by name, code or address…"
                       className="pl-9"
                       value={search}
                       onChange={(e) => {
@@ -165,14 +165,14 @@ export default function ParkingLotsPage() {
                     />
                   </div>
                   <NativeSelect
-                    aria-label="Lọc trạng thái bãi"
+                    aria-label="Filter by lot status"
                     value={status}
                     onChange={(e) => {
                       setStatus(e.target.value)
                       setPage(1)
                     }}
                   >
-                    <option value="">Tất cả trạng thái</option>
+                    <option value="">All statuses</option>
                     {Object.entries(LOT_STATES).map(([k, v]) => (
                       <option key={k} value={k}>
                         {v}
@@ -185,11 +185,11 @@ export default function ParkingLotsPage() {
                 <Card>
                   <EmptyState
                     icon={Building2}
-                    title="Không có bãi xe phù hợp"
+                    title="No matching parking lots"
                     description={
                       admin
-                        ? 'Thử bỏ bộ lọc hoặc tạo bãi mới.'
-                        : 'Bạn chưa được gán bãi hoặc bộ lọc không có kết quả. Liên hệ Admin để kiểm tra phạm vi.'
+                        ? 'Try clearing the filters or create a new lot.'
+                        : 'You have no assigned lots or the filters returned nothing. Ask an Admin to check your assignments.'
                     }
                   />
                 </Card>
@@ -234,18 +234,18 @@ export default function ParkingLotsPage() {
                           <p className="flex items-center gap-2">
                             <Clock className="size-4" />
                             {l.is24Hours
-                              ? 'Hoạt động 24 giờ'
+                              ? 'Open 24 hours'
                               : `${l.openTime} – ${l.closeTime}`}
                           </p>
                           <div className="grid grid-cols-2 rounded-lg bg-slate-50 p-3">
                             <span>
-                              Sức chứa{' '}
+                              Capacity{' '}
                               <strong className="block text-lg text-slate-900">
-                                {l.capacity.toLocaleString('vi-VN')}
+                                {l.capacity.toLocaleString('en-US')}
                               </strong>
                             </span>
                             <span>
-                              Phân khu{' '}
+                              Zones{' '}
                               <strong className="block text-lg text-slate-900">
                                 {l.zones.length}
                               </strong>
@@ -258,8 +258,8 @@ export default function ParkingLotsPage() {
                                 (m) => m.id === l.managerUserId,
                               )?.fullName ??
                                 (l.managerUserId
-                                  ? 'Đã phân công'
-                                  : 'Chưa phân công')}
+                                  ? 'Assigned'
+                                  : 'Unassigned')}
                             </strong>
                           </p>
                         </div>
@@ -272,7 +272,7 @@ export default function ParkingLotsPage() {
                               setZoneId(null)
                             }}
                           >
-                            Xem chi tiết
+                            View details
                             <ChevronRight />
                           </Button>
                           {admin && (
@@ -280,7 +280,7 @@ export default function ParkingLotsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                aria-label={`Sửa ${l.name}`}
+                                aria-label={`Edit ${l.name}`}
                                 onClick={() =>
                                   setEditing({ kind: 'lot', lot: l })
                                 }
@@ -290,11 +290,11 @@ export default function ParkingLotsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                aria-label={`Xóa ${l.name}`}
+                                aria-label={`Delete ${l.name}`}
                                 disabled={
                                   l.status === 'Active' || l.zones.length > 0
                                 }
-                                title="Chỉ xóa bãi ngừng hoạt động, chưa có zone"
+                                title="Only inactive lots without zones can be deleted"
                                 onClick={() =>
                                   setRemoving({
                                     name: l.name,
@@ -313,7 +313,7 @@ export default function ParkingLotsPage() {
               )}
               <div className="flex items-center justify-between text-sm text-slate-500">
                 <span>
-                  {filtered.length} bãi · Trang {currentPage}/{pageCount}
+                  {filtered.length} lots · Page {currentPage}/{pageCount}
                 </span>
                 <div className="flex gap-2">
                   <Button
@@ -321,14 +321,14 @@ export default function ParkingLotsPage() {
                     disabled={currentPage === 1}
                     onClick={() => setPage(currentPage - 1)}
                   >
-                    Trước
+                    Previous
                   </Button>
                   <Button
                     variant="outline"
                     disabled={currentPage === pageCount}
                     onClick={() => setPage(currentPage + 1)}
                   >
-                    Sau
+                    Next
                   </Button>
                 </div>
               </div>
@@ -344,7 +344,7 @@ export default function ParkingLotsPage() {
                   }}
                 >
                   <ArrowLeft />
-                  Quay lại
+                  Back
                 </Button>
                 <span className="text-slate-400">/</span>
                 <span>{selected.code}</span>
@@ -370,9 +370,9 @@ export default function ParkingLotsPage() {
                         <p>{selected.address}</p>
                         <p>
                           {selected.is24Hours
-                            ? '24 giờ'
+                            ? '24 hours'
                             : `${selected.openTime} – ${selected.closeTime}`}{' '}
-                          · Sức chứa {selected.capacity} chỗ
+                          · Capacity {selected.capacity} slots
                         </p>
                         <p>
                           GPS: {selected.latitude ?? '—'},{' '}
@@ -386,21 +386,21 @@ export default function ParkingLotsPage() {
                             target="_blank"
                             rel="noreferrer"
                           >
-                            Xem hình ảnh bãi
+                            View lot photo
                           </a>
                         )}
                         {selected.closureReason && (
-                          <p>Lý do: {selected.closureReason}</p>
+                          <p>Reason: {selected.closureReason}</p>
                         )}
                         {selected.closedFrom &&
                           selected.status === 'TemporarilyClosed' && (
                             <p>
-                              Đóng từ {selected.closedFrom.replace('T', ' ')}{' '}
-                              đến {selected.closedUntil.replace('T', ' ')}
+                              Closed from {selected.closedFrom.replace('T', ' ')}{' '}
+                              to {selected.closedUntil.replace('T', ' ')}
                             </p>
                           )}
                         {selected.maintenanceNotice && (
-                          <p>Thông báo: {selected.maintenanceNotice}</p>
+                          <p>Notice: {selected.maintenanceNotice}</p>
                         )}
                       </div>
                       <div className="flex gap-2">
@@ -412,7 +412,7 @@ export default function ParkingLotsPage() {
                             }
                           >
                             <Pencil />
-                            Sửa thông tin
+                            Edit details
                           </Button>
                         )}
                         {canConfigure && (
@@ -423,7 +423,7 @@ export default function ParkingLotsPage() {
                             }
                           >
                             <Settings2 />
-                            Trạng thái bãi
+                            Lot status
                           </Button>
                         )}
                       </div>
@@ -431,7 +431,7 @@ export default function ParkingLotsPage() {
                   </Card>
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-slate-900">
-                      Phân khu · {selected.zones.length}
+                      Zones · {selected.zones.length}
                     </h2>
                     {canConfigure && (
                       <Button
@@ -440,24 +440,24 @@ export default function ParkingLotsPage() {
                         }
                       >
                         <Plus />
-                        Thêm zone
+                        Add zone
                       </Button>
                     )}
                   </div>
                   <p className="text-sm text-slate-500">
-                    Đã phân bổ{' '}
+                    Allocated{' '}
                     {selected.zones.reduce((n, z) => n + z.capacity, 0)}/
-                    {selected.capacity} chỗ.{' '}
+                    {selected.capacity} slots.{' '}
                     {admin
-                      ? 'Manager được giao bãi cấu hình zone/slot; Admin xem cấu trúc tại đây.'
-                      : 'Xe vãng lai dùng Zone Counter, không gán slot cụ thể.'}
+                      ? 'The assigned Manager configures zones and slots; Admins can review the structure here.'
+                      : 'Walk-in vehicles use the zone counter and are not assigned a specific slot.'}
                   </p>
                   {!selected.zones.length ? (
                     <Card>
                       <EmptyState
                         icon={Layers}
-                        title="Chưa cấu hình phân khu"
-                        description="Manager được giao bãi sẽ tạo tầng/khu/dãy và hạn mức đặt trước."
+                        title="No zones configured yet"
+                        description="The assigned Manager will create floors, areas or rows and their reservation limits."
                       />
                     </Card>
                   ) : (
@@ -465,12 +465,12 @@ export default function ParkingLotsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Mã / tên phân khu</TableHead>
-                            <TableHead>Loại</TableHead>
-                            <TableHead>Sức chứa</TableHead>
-                            <TableHead>Đặt trước / Vãng lai</TableHead>
-                            <TableHead>Trạng thái</TableHead>
-                            <TableHead>Thao tác</TableHead>
+                            <TableHead>Zone code / name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Capacity</TableHead>
+                            <TableHead>Reserved / Walk-in</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -487,9 +487,9 @@ export default function ParkingLotsPage() {
                               <TableCell>
                                 {
                                   {
-                                    Floor: 'Tầng',
-                                    Row: 'Dãy',
-                                    Area: 'Khu vực',
+                                    Floor: 'Floor',
+                                    Row: 'Row',
+                                    Area: 'Area',
                                   }[z.zoneType]
                                 }
                                 {z.floorNo !== null ? ` (${z.floorNo})` : ''}
@@ -503,7 +503,7 @@ export default function ParkingLotsPage() {
                                 <Badge
                                   tone={z.isActive ? 'emerald' : 'neutral'}
                                 >
-                                  {z.isActive ? 'Hoạt động' : 'Tạm tắt'}
+                                  {z.isActive ? 'Active' : 'Disabled'}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -520,7 +520,7 @@ export default function ParkingLotsPage() {
                                       <Button
                                         size="icon"
                                         variant="ghost"
-                                        aria-label={`Sửa zone ${z.code}`}
+                                        aria-label={`Edit zone ${z.code}`}
                                         onClick={() =>
                                           setEditing({
                                             kind: 'zone',
@@ -534,7 +534,7 @@ export default function ParkingLotsPage() {
                                       <Button
                                         size="icon"
                                         variant="ghost"
-                                        aria-label={`Xóa zone ${z.code}`}
+                                        aria-label={`Delete zone ${z.code}`}
                                         disabled={z.slots.length > 0}
                                         onClick={() =>
                                           setRemoving({
@@ -565,12 +565,12 @@ export default function ParkingLotsPage() {
                   <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
                     <div>
                       <p className="font-semibold text-slate-900">
-                        {zone.slots.length}/{zone.reservationLimit} slot đặt
-                        trước đã tạo
+                        {zone.slots.length}/{zone.reservationLimit} reservable slots
+                        created
                       </p>
                       <p className="mt-1 text-sm text-slate-500">
-                        Sức chứa zone: {zone.capacity} · Phần vãng lai:{' '}
-                        {zone.capacity - zone.reservationLimit} chỗ
+                        Zone capacity: {zone.capacity} · Walk-in share:{' '}
+                        {zone.capacity - zone.reservationLimit} spaces
                       </p>
                     </div>
                     {canConfigure && (
@@ -584,20 +584,20 @@ export default function ParkingLotsPage() {
                         }
                       >
                         <Plus />
-                        Thêm slot
+                        Add slot
                       </Button>
                     )}
                   </Card>
                   <p className="text-sm text-slate-500">
-                    Trống / Bảo trì có thể cấu hình. Giữ chỗ / Đang đỗ chỉ được
-                    thay đổi bởi nghiệp vụ đặt chỗ và xe vào/ra.
+                    Available / Maintenance can be configured here. Reserved / Occupied only
+                    change through bookings and vehicle check-in/out.
                   </p>
                   {!zone.slots.length ? (
                     <Card>
                       <EmptyState
                         icon={Layers}
-                        title="Chưa có slot đặt trước"
-                        description="Tăng hạn mức trong cấu hình zone nếu cần, sau đó thêm slot. Xe vãng lai không cần tạo từng slot."
+                        title="No reservable slots yet"
+                        description="Raise the limit in the zone settings if needed, then add slots. Walk-in vehicles do not need individual slots."
                       />
                     </Card>
                   ) : (
@@ -605,10 +605,10 @@ export default function ParkingLotsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Mã slot</TableHead>
-                            <TableHead>Loại xe</TableHead>
-                            <TableHead>Trạng thái</TableHead>
-                            <TableHead>Thao tác</TableHead>
+                            <TableHead>Slot code</TableHead>
+                            <TableHead>Vehicle type</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -641,7 +641,7 @@ export default function ParkingLotsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      aria-label={`Sửa slot ${s.code}`}
+                                      aria-label={`Edit slot ${s.code}`}
                                       disabled={[
                                         'Occupied',
                                         'Reserved',
@@ -660,7 +660,7 @@ export default function ParkingLotsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      aria-label={`Xóa slot ${s.code}`}
+                                      aria-label={`Delete slot ${s.code}`}
                                       disabled={[
                                         'Occupied',
                                         'Reserved',
@@ -696,9 +696,9 @@ export default function ParkingLotsPage() {
       )}
       {managers.isError && admin && (
         <p role="alert" className="text-sm text-rose-600">
-          Không tải được danh sách Manager.{' '}
+          Could not load the manager list.{' '}
           <button className="underline" onClick={() => managers.refetch()}>
-            Thử lại
+            Retry
           </button>
         </p>
       )}
@@ -737,9 +737,9 @@ export default function ParkingLotsPage() {
       {removing && (
         <ConfirmDialog
           open
-          title="Xóa dữ liệu cấu hình?"
-          description={`Xóa ${removing.name}? Chỉ thực hiện với dữ liệu chưa vận hành. Dữ liệu demo bị xóa không thể khôi phục từ màn hình này.`}
-          confirmLabel="Xóa"
+          title="Delete this configuration?"
+          description={`Delete ${removing.name}? Only do this for data that has never been in operation. Deleted demo data cannot be restored from this screen.`}
+          confirmLabel="Delete"
           tone="destructive"
           pending={deleting}
           onOpenChange={(o) => {

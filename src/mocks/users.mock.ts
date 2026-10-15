@@ -46,8 +46,8 @@ function seedUsers(): UserDTO[] {
     const fullName = `${family} ${middle} ${given}`
 
     const local = removeDiacritics(`${given}.${family}${middle}`).toLowerCase()
-    let email = `${local}@pms-ojt.vn`
-    for (let n = 2; emails.has(email); n++) email = `${local}${n}@pms-ojt.vn`
+    let email = `${local}@xxivparking.vn`
+    for (let n = 2; emails.has(email); n++) email = `${local}${n}@xxivparking.vn`
     emails.add(email)
 
     const isManager = index < MANAGER_COUNT
@@ -87,22 +87,22 @@ let users: UserDTO[] = seedUsers()
 
 function findUser(id: string): UserDTO {
   const user = users.find((u) => u.id === id)
-  if (!user) mockFail(404, 'Không tìm thấy tài khoản.')
+  if (!user) mockFail(404, 'Account not found.')
   return user
 }
 
 function resolveLots(ids: string[]) {
   return ids.map((id) => {
     const lot = findMockLot(id)
-    if (!lot) mockFail(400, `Bãi xe ${id} không tồn tại.`)
+    if (!lot) mockFail(400, `Parking lot ${id} does not exist.`)
     return { id: lot.id, name: lot.name }
   })
 }
 
 function validateAssignment(role: UserDTO['role'], lotIds: string[], shift?: WorkShift) {
-  if (lotIds.length === 0) mockFail(400, 'Phải gán ít nhất một bãi xe.')
-  if (role === 'STAFF' && lotIds.length !== 1) mockFail(400, 'Nhân viên chỉ được gán cố định một bãi xe.')
-  if (role === 'STAFF' && !shift) mockFail(400, 'Nhân viên phải có ca làm việc.')
+  if (lotIds.length === 0) mockFail(400, 'Assign at least one parking lot.')
+  if (role === 'STAFF' && lotIds.length !== 1) mockFail(400, 'Staff can only be assigned to one parking lot.')
+  if (role === 'STAFF' && !shift) mockFail(400, 'Staff must have a shift.')
 }
 
 function matchesSearch(user: UserDTO, term: string): boolean {
@@ -142,7 +142,7 @@ export const staffMock = {
   create(command: CreateUserCommand): Promise<UserDTO> {
     return mockResponse(() => {
       const email = command.email.trim().toLowerCase()
-      if (users.some((u) => u.email.toLowerCase() === email)) mockFail(409, 'Email này đã được sử dụng.')
+      if (users.some((u) => u.email.toLowerCase() === email)) mockFail(409, 'This email is already in use.')
       validateAssignment(command.role, command.assignedParkingLotIds, command.shift)
 
       const nextNumber = users.reduce((max, u) => Math.max(max, Number(u.employeeCode.slice(2))), 0) + 1

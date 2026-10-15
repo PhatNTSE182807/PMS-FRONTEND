@@ -106,7 +106,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
     try {
       if (user) {
         const updated = await updateStaff.mutateAsync({ id: user.id, command: assignment })
-        toast.success('Đã cập nhật tài khoản', { description: `${updated.fullName} (${updated.employeeCode})` })
+        toast.success('Account updated', { description: `${updated.fullName} (${updated.employeeCode})` })
       } else {
         const created = await createStaff.mutateAsync({
           ...assignment,
@@ -114,15 +114,15 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
           password: values.passwordMode === 'auto' ? generatedPassword : values.password,
           sendWelcomeEmail: values.sendWelcomeEmail,
         })
-        toast.success(`Đã tạo tài khoản cho ${created.fullName}`, {
+        toast.success(`Account created for ${created.fullName}`, {
           description: values.sendWelcomeEmail
-            ? `Mã nhân viên ${created.employeeCode}. Email chào mừng đã được gửi tới ${created.email}.`
-            : `Mã nhân viên ${created.employeeCode}. Hãy gửi mật khẩu cho nhân viên qua kênh an toàn.`,
+            ? `Employee code ${created.employeeCode}. A welcome email was sent to ${created.email}.`
+            : `Employee code ${created.employeeCode}. Send the password to them through a secure channel.`,
         })
       }
       onDone()
     } catch (error) {
-      const message = getErrorMessage(error, 'Không lưu được tài khoản.')
+      const message = getErrorMessage(error, 'Could not save the account.')
       if (error instanceof ApiError && error.status === 409) {
         setError('email', { message })
       } else {
@@ -135,18 +135,18 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
     <form onSubmit={onSubmit} noValidate className="flex h-full flex-col">
       <div className="border-b border-slate-200 px-6 py-5 pr-12">
         <DialogTitle className="text-lg font-semibold text-slate-900">
-          {user ? 'Chỉnh sửa tài khoản' : 'Tạo tài khoản mới'}
+          {user ? 'Edit account' : 'New staff account'}
         </DialogTitle>
         <DialogDescription className="mt-1 text-sm text-slate-500">
           {user
             ? `${user.employeeCode} · ${user.email}`
-            : 'Tạo tài khoản cho quản lý bãi hoặc nhân viên trực chốt.'}
+            : 'Create an account for a parking lot Manager or gate Staff.'}
         </DialogDescription>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-        <Field label="Họ và tên" htmlFor="staff-fullName" error={errors.fullName?.message}>
-          <Input id="staff-fullName" autoComplete="off" placeholder="VD: Nguyễn Văn An" aria-invalid={!!errors.fullName} {...register('fullName')} />
+        <Field label="Full name" htmlFor="staff-fullName" error={errors.fullName?.message}>
+          <Input id="staff-fullName" autoComplete="off" placeholder="e.g. Nguyen Van An" aria-invalid={!!errors.fullName} {...register('fullName')} />
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -155,7 +155,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
               id="staff-email"
               type="email"
               autoComplete="off"
-              placeholder="ten.ho@pms-ojt.vn"
+              placeholder="ten.ho@xxivparking.vn"
               // readOnly, not disabled: react-hook-form drops the values of disabled inputs.
               readOnly={mode === 'edit'}
               className={mode === 'edit' ? 'bg-slate-50 text-slate-500' : undefined}
@@ -163,7 +163,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
               {...register('email')}
             />
           </Field>
-          <Field label="Số điện thoại" htmlFor="staff-phone" error={errors.phoneNumber?.message}>
+          <Field label="Phone number" htmlFor="staff-phone" error={errors.phoneNumber?.message}>
             <Input id="staff-phone" type="tel" inputMode="tel" placeholder="0901234567" aria-invalid={!!errors.phoneNumber} {...register('phoneNumber')} />
           </Field>
         </div>
@@ -174,7 +174,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
           render={({ field: lotsField }) => (
             <>
               <fieldset className="space-y-1.5">
-                <legend className="text-sm font-medium text-slate-700">Vai trò</legend>
+                <legend className="text-sm font-medium text-slate-700">Role</legend>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {ROLE_OPTIONS.map((option) => (
                     <label
@@ -198,7 +198,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
 
               {role === 'MANAGER' ? (
                 <fieldset className="space-y-1.5">
-                  <legend className="text-sm font-medium text-slate-700">Bãi gửi xe phụ trách</legend>
+                  <legend className="text-sm font-medium text-slate-700">Assigned parking lots</legend>
                   <div
                     className={cn(
                       'max-h-56 divide-y divide-slate-100 overflow-y-auto rounded-lg border',
@@ -224,19 +224,19 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                       )
                     })}
                   </div>
-                  <p className="text-xs text-slate-500">Quản lý có thể phụ trách nhiều bãi xe.</p>
+                  <p className="text-xs text-slate-500">A Manager can be assigned to several lots.</p>
                   <FieldError message={errors.assignedParkingLotIds?.message} />
                 </fieldset>
               ) : (
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Bãi gửi xe phụ trách" htmlFor="staff-lot" error={errors.assignedParkingLotIds?.message}>
+                  <Field label="Assigned parking lot" htmlFor="staff-lot" error={errors.assignedParkingLotIds?.message}>
                     <NativeSelect
                       id="staff-lot"
                       value={lotsField.value[0] ?? ''}
                       aria-invalid={!!errors.assignedParkingLotIds}
                       onChange={(e) => lotsField.onChange(e.target.value ? [e.target.value] : [])}
                     >
-                      <option value="">Chọn bãi xe…</option>
+                      <option value="">Select a lot…</option>
                       {parkingLots.map((lot) => (
                         <option key={lot.id} value={lot.id}>
                           {lot.name}
@@ -244,13 +244,13 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                       ))}
                     </NativeSelect>
                   </Field>
-                  <Field label="Ca làm việc" htmlFor="staff-shift" error={errors.shift?.message}>
+                  <Field label="Shift" htmlFor="staff-shift" error={errors.shift?.message}>
                     <NativeSelect
                       id="staff-shift"
                       aria-invalid={!!errors.shift}
                       {...register('shift', { setValueAs: (v) => v || undefined })}
                     >
-                      <option value="">Chọn ca…</option>
+                      <option value="">Select a shift…</option>
                       {SHIFT_OPTIONS.map((shift) => (
                         <option key={shift.value} value={shift.value}>
                           {shift.label}
@@ -266,28 +266,28 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
 
         {mode === 'create' && (
           <fieldset className="space-y-3 rounded-lg border border-slate-200 p-4">
-            <legend className="px-1 text-sm font-medium text-slate-700">Mật khẩu đăng nhập</legend>
+            <legend className="px-1 text-sm font-medium text-slate-700">Sign-in password</legend>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <input type="radio" value="auto" className="accent-indigo-600" {...register('passwordMode')} />
-                Tự động tạo mật khẩu
+                Generate automatically
               </label>
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <input type="radio" value="manual" className="accent-indigo-600" {...register('passwordMode')} />
-                Nhập thủ công
+                Enter manually
               </label>
             </div>
 
             {passwordMode === 'auto' ? (
               <CopyField
                 value={generatedPassword}
-                label="mật khẩu"
+                label="password"
                 actions={
                   <Button
                     variant="ghost"
                     size="icon"
-                    title="Tạo mật khẩu khác"
-                    aria-label="Tạo mật khẩu khác"
+                    title="Generate another password"
+                    aria-label="Generate another password"
                     onClick={() => setGeneratedPassword(generatePassword())}
                   >
                     <RefreshCw />
@@ -300,8 +300,8 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="Tối thiểu 8 ký tự"
-                    aria-label="Mật khẩu"
+                    placeholder="At least 8 characters"
+                    aria-label="Password"
                     aria-invalid={!!errors.password}
                     className="pr-10"
                     {...register('password')}
@@ -310,7 +310,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-700"
-                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -321,7 +321,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
 
             <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
               <Checkbox {...register('sendWelcomeEmail')} />
-              Gửi email chào mừng kèm thông tin đăng nhập
+              Send a welcome email with the sign-in details
             </label>
           </fieldset>
         )}
@@ -336,11 +336,11 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
         )}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <DialogClose asChild>
-            <Button variant="outline">Hủy</Button>
+            <Button variant="outline">Cancel</Button>
           </DialogClose>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Spinner className="size-3.5" />}
-            {user ? 'Lưu thay đổi' : 'Tạo tài khoản'}
+            {user ? 'Save changes' : 'Create account'}
           </Button>
         </div>
       </div>

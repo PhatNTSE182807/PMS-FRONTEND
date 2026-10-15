@@ -14,7 +14,7 @@ export const DEMO_DRIVER: SessionUser = {
   userId: 'u-demo-vip',
   username: 'alex.rivers',
   fullName: 'Alex Rivers',
-  email: 'alex.rivers@pms-ojt.vn',
+  email: 'alex.rivers@xxivparking.vn',
   phoneNumber: '+84 988 123 456',
   role: 'USER',
 }
@@ -24,14 +24,14 @@ export const DEMO_ADMIN: SessionUser = {
   userId: 'u-demo-admin',
   username: 'admin',
   fullName: 'Nguyễn Minh Quân',
-  email: 'admin@pms-ojt.vn',
+  email: 'admin@xxivparking.vn',
   phoneNumber: '0903 456 789',
   role: 'ADMIN',
 }
 
 export const DEMO_MANAGER: SessionUser = {
   userId: 'usr-0001', username: 'manager.demo', fullName: 'Manager Demo',
-  email: 'manager.demo@pms-ojt.vn', phoneNumber: '0900000001', role: 'MANAGER',
+  email: 'manager.demo@xxivparking.vn', phoneNumber: '0900000001', role: 'MANAGER',
 }
 
 const MOCK_LOGIN_OTP = '123456'

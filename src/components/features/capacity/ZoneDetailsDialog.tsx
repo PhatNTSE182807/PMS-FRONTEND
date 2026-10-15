@@ -11,8 +11,8 @@ import { OccupancyBar } from './OccupancyGauge'
 import { LEVEL_STYLES } from './occupancyStyles'
 
 const FLOW_SERIES = [
-  { key: 'checkIns', label: 'Xe vào', color: SERIES_COLORS.blue },
-  { key: 'checkOuts', label: 'Xe ra', color: SERIES_COLORS.orange },
+  { key: 'checkIns', label: 'Check-ins', color: SERIES_COLORS.blue },
+  { key: 'checkOuts', label: 'Check-outs', color: SERIES_COLORS.orange },
 ] as const
 
 interface ZoneDetailsDialogProps {
@@ -31,12 +31,12 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
           <>
             <DialogHeader>
               <DialogTitle>{lot.name}</DialogTitle>
-              <DialogDescription>Chi tiết phân khu · {lot.code}</DialogDescription>
+              <DialogDescription>Zone details · {lot.code}</DialogDescription>
             </DialogHeader>
 
             <section aria-labelledby="zones-heading" className="space-y-3">
               <h3 id="zones-heading" className="text-sm font-semibold text-slate-900">
-                Phân khu ({lot.zones.length})
+                Zones ({lot.zones.length})
               </h3>
               <ul className="space-y-3">
                 {lot.zones.map((zone) => {
@@ -49,7 +49,7 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
                         <p className="text-sm font-medium text-slate-900">{zone.zoneName}</p>
                         <div className="flex items-center gap-2 text-xs text-slate-500">
                           <span className="tabular-nums">
-                            {formatNumber(zone.occupiedSlots)} / {formatNumber(zone.totalSlots)} chỗ
+                            {formatNumber(zone.occupiedSlots)} / {formatNumber(zone.totalSlots)} slots
                           </span>
                           <Badge tone={style.tone}>
                             <Icon aria-hidden />
@@ -68,16 +68,16 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <h3 id="flow-heading" className="text-sm font-semibold text-slate-900">
-                    Lưu lượng xe theo giờ
+                    Hourly traffic
                   </h3>
                   {lastHour && (
                     <p className="mt-0.5 flex items-center gap-3 text-xs text-slate-500">
-                      Giờ gần nhất ({lastHour.hour}):
+                      Last hour ({lastHour.hour}):
                       <span className="flex items-center gap-1">
-                        <ArrowDownLeft className="size-3.5" aria-hidden /> {formatNumber(lastHour.checkIns)} vào
+                        <ArrowDownLeft className="size-3.5" aria-hidden /> {formatNumber(lastHour.checkIns)} in
                       </span>
                       <span className="flex items-center gap-1">
-                        <ArrowUpRight className="size-3.5" aria-hidden /> {formatNumber(lastHour.checkOuts)} ra
+                        <ArrowUpRight className="size-3.5" aria-hidden /> {formatNumber(lastHour.checkOuts)} out
                       </span>
                     </p>
                   )}
@@ -97,8 +97,8 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
                           active={props.active}
                           payload={props.payload}
                           label={props.label}
-                          formatLabel={(hour) => `Khung giờ ${hour}`}
-                          formatValue={(value) => `${formatNumber(value)} lượt`}
+                          formatLabel={(hour) => `Hour ${hour}`}
+                          formatValue={(value) => `${formatNumber(value)} vehicles`}
                         />
                       )}
                     />
