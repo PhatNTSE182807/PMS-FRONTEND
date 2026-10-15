@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import ParkingLogo from './ParkingLogo';
-import { authService } from '../services/authService';
+import { getErrorMessage } from '../api/apiError';
+import { useAuth, useLogin } from '../hooks/useAuth';
+import { DEMO_DRIVER } from '../mocks/auth.mock';
 
 export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
+  const { startDemo } = useAuth();
+  const loginMutation = useLogin();
+
   // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,13 +15,13 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
   const [rememberMe, setRememberMe] = useState(false);
 
   // Status & loading
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = loginMutation.isPending;
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   // Handle standard password login
-  const handlePasswordLogin = async (e) => {
+  const handlePasswordLogin = (e) => {
     e.preventDefault();
     setErrorMsg('');
     setInfoMsg('');
@@ -34,16 +39,17 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
       return;
     }
 
-    setIsLoading(true);
-    const res = await authService.login(email, password, rememberMe);
-    setIsLoading(false);
-
-    if (res.success) {
-      onLoginSuccess(res.user);
-    } else {
-      // If network error, provide option to use demo mode
-      setErrorMsg(res.message);
-    }
+    loginMutation.mutate(
+      { email: email.trim(), password, rememberMe },
+      {
+        onSuccess: (user) => onLoginSuccess(user),
+        onError: (error) => {
+          const message = getErrorMessage(error, 'Login failed. Please check your credentials.');
+          // Without a backend, point the user to the demo modes below.
+          setErrorMsg(error.isNetworkError ? `${message} Start the .NET backend or use a demo account below.` : message);
+        },
+      },
+    );
   };
 
   // Demo auto-fill
@@ -54,21 +60,12 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
     setInfoMsg('Filled demo credentials! Click Login or use instant demo below.');
   };
 
+  // Demo sessions run on mock data, so they work without the backend.
   const handleInstantDemoLogin = () => {
-    const demoUser = {
-      userId: 'u-demo-vip',
-      username: 'alex.rivers',
-      fullName: 'Alex Rivers',
-      email: 'alex.rivers@pms-ojt.vn',
-      phoneNumber: '+84 988 123 456',
-      role: 'User',
-    };
-    localStorage.setItem('pms_token', 'demo_active_token_user');
-    localStorage.setItem('pms_user', JSON.stringify(demoUser));
-    onLoginSuccess(demoUser);
+    onLoginSuccess(startDemo(DEMO_DRIVER));
   };
 
-  // Handle SSO mock login
+  // Handle SSO mock login (no SSO provider is integrated yet)
   const handleSsoLogin = (provider) => {
     const ssoUser = {
       userId: `u-sso-${provider.toLowerCase()}`,
@@ -76,11 +73,9 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister }) {
       fullName: `${provider} User`,
       email: `user@${provider.toLowerCase()}.com`,
       phoneNumber: '+84 912 345 678',
-      role: 'User',
+      role: 'USER',
     };
-    localStorage.setItem('pms_token', `sso_${provider}_token`);
-    localStorage.setItem('pms_user', JSON.stringify(ssoUser));
-    onLoginSuccess(ssoUser);
+    onLoginSuccess(startDemo(ssoUser));
   };
 
   return (
