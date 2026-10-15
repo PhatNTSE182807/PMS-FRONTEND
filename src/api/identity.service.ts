@@ -1,12 +1,20 @@
 import { isMockService, SERVICE_PATHS } from '@/config/env'
 import type { SessionUser } from '@/lib/session'
 import { authMock } from '@/mocks/auth.mock'
+import { staffMock } from '@/mocks/users.mock'
+import type { PaginatedResponse } from '@/types/common.dto'
 import type {
   AccountRole,
+  CreateUserCommand,
   LoginCommand,
   LoginResponseDTO,
   RegisterCommand,
   RegisterResponseDTO,
+  ResetPasswordResultDTO,
+  StaffListQuery,
+  UpdateUserCommand,
+  UserDTO,
+  UserStatus,
 } from '@/types/identity.dto'
 import { http } from './axiosClient'
 
@@ -23,6 +31,33 @@ export const identityService = {
   register(command: RegisterCommand): Promise<RegisterResponseDTO> {
     if (isMockService('auth')) return authMock.register(command)
     return http.post<RegisterResponseDTO>(`${SERVICE_PATHS.auth}/register`, command)
+  },
+
+  /* Staff accounts (Admin only) ------------------------------------- */
+
+  getStaff(query: StaffListQuery): Promise<PaginatedResponse<UserDTO>> {
+    if (isMockService('staff')) return staffMock.list(query)
+    return http.get<PaginatedResponse<UserDTO>>(SERVICE_PATHS.staff, { params: query })
+  },
+
+  createStaff(command: CreateUserCommand): Promise<UserDTO> {
+    if (isMockService('staff')) return staffMock.create(command)
+    return http.post<UserDTO>(SERVICE_PATHS.staff, command)
+  },
+
+  updateStaff(id: string, command: UpdateUserCommand): Promise<UserDTO> {
+    if (isMockService('staff')) return staffMock.update(id, command)
+    return http.put<UserDTO>(`${SERVICE_PATHS.staff}/${id}`, command)
+  },
+
+  setStaffStatus(id: string, status: UserStatus): Promise<UserDTO> {
+    if (isMockService('staff')) return staffMock.setStatus(id, status)
+    return http.patch<UserDTO>(`${SERVICE_PATHS.staff}/${id}/status`, { status })
+  },
+
+  resetStaffPassword(id: string): Promise<ResetPasswordResultDTO> {
+    if (isMockService('staff')) return staffMock.resetPassword(id)
+    return http.post<ResetPasswordResultDTO>(`${SERVICE_PATHS.staff}/${id}/reset-password`)
   },
 }
 

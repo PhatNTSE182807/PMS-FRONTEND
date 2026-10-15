@@ -1,3 +1,5 @@
+import type { EntityRef, PageQuery } from './common.dto'
+
 /* ------------------------------------------------------------------ */
 /* Authentication (PMS.API UsersController, live today)                */
 /* ------------------------------------------------------------------ */
@@ -33,4 +35,59 @@ export interface RegisterCommand {
 /** PMS.Application.Models.User.CreateUserResponseModel */
 export interface RegisterResponseDTO {
   id: string
+}
+
+/* ------------------------------------------------------------------ */
+/* Staff account management (Identity service, /v1/identity/staff)     */
+/* Not implemented by the backend yet: served from mocks/users.mock.ts. */
+/* ------------------------------------------------------------------ */
+
+export type UserRole = 'MANAGER' | 'STAFF'
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+export type WorkShift = 'MORNING' | 'AFTERNOON' | 'NIGHT'
+
+export interface UserDTO {
+  id: string
+  employeeCode: string
+  fullName: string
+  email: string
+  phoneNumber: string
+  role: UserRole
+  assignedParkingLots: EntityRef[]
+  /** Staff only: the shift they are rostered on. */
+  shift?: WorkShift
+  status: UserStatus
+  createdAt: string
+}
+
+export interface StaffListQuery extends PageQuery {
+  /** Matches name, email, employee code or phone number. */
+  search?: string
+  role?: UserRole
+  parkingLotId?: string
+  status?: UserStatus
+}
+
+export interface CreateUserCommand {
+  fullName: string
+  email: string
+  phoneNumber: string
+  role: UserRole
+  assignedParkingLotIds: string[]
+  shift?: WorkShift
+  /** Omitted when the server should generate one. */
+  password?: string
+  sendWelcomeEmail: boolean
+}
+
+export interface UpdateUserCommand {
+  fullName: string
+  phoneNumber: string
+  role: UserRole
+  assignedParkingLotIds: string[]
+  shift?: WorkShift
+}
+
+export interface ResetPasswordResultDTO {
+  temporaryPassword: string
 }
