@@ -1,6 +1,18 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import ParkingLogo from './ParkingLogo';
-import { authService } from '../services/authService';
+import { getErrorMessage } from '../api/apiError';
+import { roleLabel } from '../hooks/useAuth';
+import {
+  useAddVehicle,
+  useChangePassword,
+  useDeleteVehicle,
+  useProfile,
+  useSetDefaultVehicle,
+  useUpdateProfile,
+  useUpdateVehicle,
+  useVehicles,
+  useVehicleTypes,
+} from '../hooks/useProfile';
 
 const CheckInQrMark = memo(function CheckInQrMark({ size = 110, onClick }) {
   return (
@@ -10,21 +22,21 @@ const CheckInQrMark = memo(function CheckInQrMark({ size = 110, onClick }) {
       title="Click to enlarge QR Code"
     >
       <svg width={size} height={size} viewBox="0 0 110 110" fill="none">
-        <rect width="110" height="110" rx="8" fill="#ffffff" />
+        <rect width="110" height="110" rx="8" fill="#FFFFFF" />
         <rect x="12" y="12" width="28" height="28" fill="#000" />
-        <rect x="16" y="16" width="20" height="20" fill="#fff" />
+        <rect x="16" y="16" width="20" height="20" fill="#FFFFFF" />
         <rect x="20" y="20" width="12" height="12" fill="#000" />
         <rect x="70" y="12" width="28" height="28" fill="#000" />
-        <rect x="74" y="16" width="20" height="20" fill="#fff" />
+        <rect x="74" y="16" width="20" height="20" fill="#FFFFFF" />
         <rect x="78" y="20" width="12" height="12" fill="#000" />
         <rect x="12" y="70" width="28" height="28" fill="#000" />
-        <rect x="16" y="74" width="20" height="20" fill="#fff" />
+        <rect x="16" y="74" width="20" height="20" fill="#FFFFFF" />
         <rect x="20" y="78" width="12" height="12" fill="#000" />
         <rect x="46" y="14" width="6" height="6" fill="#000" />
         <rect x="56" y="14" width="6" height="6" fill="#000" />
         <rect x="46" y="26" width="6" height="6" fill="#000" />
         <rect x="56" y="32" width="6" height="6" fill="#000" />
-        <rect x="46" y="46" width="18" height="18" fill="#00e5ff" rx="2" />
+        <rect x="46" y="46" width="18" height="18" fill="#E98074" rx="2" />
         <rect x="14" y="46" width="6" height="6" fill="#000" />
         <rect x="26" y="46" width="6" height="6" fill="#000" />
         <rect x="34" y="56" width="6" height="6" fill="#000" />
@@ -96,13 +108,42 @@ const ActiveParkingCard = memo(function ActiveParkingCard({ onPayNow, onQrZoom }
   );
 });
 
-export default function UserScreen({ user, isGuest = false, onLogout, onRequireLogin }) {
+// Shown until the vehicle-types catalog has loaded (or if it fails).
+const FALLBACK_VEHICLE_TYPES = [
+  { id: 1, name: 'Sedan / Hatchback (Car)', code: 'CAR' },
+  { id: 2, name: 'SUV / Crossover / 7-Seater', code: 'SUV' },
+  { id: 3, name: 'Motorbike / Scooter', code: 'MOTO' },
+  { id: 4, name: 'Electric Vehicle (EV)', code: 'EV' },
+];
+
+// Maps a VehicleDTO to the shape the vehicle cards render.
+const toVehicleView = (v) => ({
+  id: v.vehicleId,
+  vehicleId: v.vehicleId,
+  brand: v.brand || 'Vehicle',
+  model: v.model || '',
+  plate: v.licensePlate || '',
+  licensePlate: v.licensePlate || '',
+  color: v.color || 'Black',
+  vehicleTypeId: v.vehicleTypeId || 1,
+  vehicleType: v.vehicleType || 'Car',
+  isDefault: Boolean(v.isDefault),
+  isActive: v.isActive !== false,
+});
+
+// Session user enriched with the live profile (profile fields win when present).
+const withProfile = (user, profile) => {
+  if (!profile) return user;
+  const defined = Object.fromEntries(Object.entries(profile).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+  return { ...user, ...defined };
+};
+
+export default function UserScreen({ user, onLogout }) {
   // Navigation tabs: 'map' | 'reservations' | 'vehicles' | 'profile'
   const [activeTab, setActiveTab] = useState('map');
 
   const [isCentered, setIsCentered] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [guestPromptReason, setGuestPromptReason] = useState('');
 
   // Quick Reservation inputs
   const [selectedLocation, setSelectedLocation] = useState('Level 2 - Zone P5');
@@ -130,13 +171,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
   ]);
 
   // Stable callbacks for ActiveParkingTimer
-  const handlePayNow = useCallback(() => {
-    if (isGuest) {
-      setGuestPromptReason('Thanh toán phí đỗ xe');
-      return;
-    }
-    setIsPayModalOpen(true);
-  }, [isGuest]);
+  const handlePayNow = useCallback(() => setIsPayModalOpen(true), []);
   const handleQrZoom = useCallback(() => setIsQrZoomOpen(true), []);
 
   // Center on my vehicle effect
@@ -146,51 +181,27 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
     setTimeout(() => setIsCentered(false), 2500);
   };
 
-  // Handle Find Slots / Book Slot (Requires Login if in Guest Mode)
+  // Handle Find Slots
   const handleFindSlots = () => {
-    if (isGuest) {
-      setGuestPromptReason(`Đặt chỗ tại ${selectedLocation}`);
-      return;
-    }
     setReservationFeedback(`Found 8 available slots at ${selectedLocation}! Select a slot below to confirm.`);
   };
 
-  // Live User Profile state
-  const [currentUserProfile, setCurrentUserProfile] = useState(user);
+  // Live profile & vehicles (React Query; demo sessions are served from mock data)
+  const { data: profile } = useProfile();
+  const currentUserProfile = useMemo(() => withProfile(user, profile), [user, profile]);
 
-  // Vehicles list (include onboarding vehicle if added during registration)
-  const [vehicles, setVehicles] = useState(() => {
-    const base = [
-      { id: 'v1', vehicleId: 'v1', brand: 'Toyota', model: 'Camry', plate: '30E-123.45', licensePlate: '30E-123.45', color: 'White', isDefault: !user?.onboardingVehicle, vehicleTypeId: 1, vehicleType: 'Sedan' },
-      { id: 'v2', vehicleId: 'v2', brand: 'Honda', model: 'CRV', plate: '29A-678.90', licensePlate: '29A-678.90', color: 'Red', isDefault: false, vehicleTypeId: 2, vehicleType: 'SUV' },
-    ];
-    if (user?.onboardingVehicle?.licensePlate) {
-      return [
-        {
-          id: 'v-onboard',
-          vehicleId: 'v-onboard',
-          brand: user.onboardingVehicle.brand || 'VinFast',
-          model: user.onboardingVehicle.vehicleType?.toUpperCase() || 'EV',
-          plate: user.onboardingVehicle.licensePlate,
-          licensePlate: user.onboardingVehicle.licensePlate,
-          color: 'White',
-          isDefault: true,
-          vehicleTypeId: 1,
-          vehicleType: user.onboardingVehicle.vehicleType || 'Car',
-        },
-        ...base,
-      ];
-    }
-    return base;
-  });
+  const { data: vehicleDtos } = useVehicles();
+  const vehicles = useMemo(() => (vehicleDtos ?? []).map(toVehicleView), [vehicleDtos]);
 
-  // Vehicle Types list from backend
-  const [vehicleTypes, setVehicleTypes] = useState([
-    { id: 1, name: 'Sedan / Hatchback (Car)', code: 'CAR' },
-    { id: 2, name: 'SUV / Crossover / 7-Seater', code: 'SUV' },
-    { id: 3, name: 'Motorbike / Scooter', code: 'MOTO' },
-    { id: 4, name: 'Electric Vehicle (EV)', code: 'EV' },
-  ]);
+  const { data: vehicleTypesData } = useVehicleTypes();
+  const vehicleTypes = vehicleTypesData?.length ? vehicleTypesData : FALLBACK_VEHICLE_TYPES;
+
+  const addVehicle = useAddVehicle();
+  const updateVehicle = useUpdateVehicle();
+  const deleteVehicle = useDeleteVehicle();
+  const setDefaultVehicle = useSetDefaultVehicle();
+  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
 
   // Vehicle Add / Edit Modal state
   const [vehicleModalMode, setVehicleModalMode] = useState('add'); // 'add' | 'edit'
@@ -204,7 +215,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
     isDefault: false,
   });
   const [vehicleModalError, setVehicleModalError] = useState('');
-  const [vehicleModalLoading, setVehicleModalLoading] = useState(false);
+  const vehicleModalLoading = addVehicle.isPending || updateVehicle.isPending;
 
   // Edit Profile Modal state
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -215,7 +226,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
     avatarUrl: '',
   });
   const [profileFeedback, setProfileFeedback] = useState({ type: '', text: '' });
-  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+  const isProfileUpdating = updateProfile.isPending;
 
   // Change Password Modal state
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -230,49 +241,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
     confirm: false,
   });
   const [passwordFeedback, setPasswordFeedback] = useState({ type: '', text: '' });
-  const [isPasswordChanging, setIsPasswordChanging] = useState(false);
-
-  // Refresh live vehicles from backend
-  const refreshVehicles = async () => {
-    const list = await authService.fetchVehicles();
-    if (list && Array.isArray(list)) {
-      setVehicles(list.map(v => ({
-        id: v.vehicleId || v.id,
-        vehicleId: v.vehicleId || v.id,
-        brand: v.brand || 'Vehicle',
-        model: v.model || '',
-        plate: v.licensePlate || v.plateNumber || '',
-        licensePlate: v.licensePlate || v.plateNumber || '',
-        color: v.color || 'Black',
-        vehicleTypeId: v.vehicleTypeId || 1,
-        vehicleType: v.vehicleType || (v.vehicleTypeId === 2 ? 'SUV' : 'Car'),
-        isDefault: Boolean(v.isDefault),
-        isActive: v.isActive !== false,
-      })));
-    }
-  };
-
-  // Refresh live profile from backend
-  const refreshProfile = async () => {
-    const profile = await authService.fetchProfile();
-    if (profile) {
-      setCurrentUserProfile(prev => ({
-        ...prev,
-        ...profile,
-      }));
-    }
-  };
-
-  // On Mount: load profile, vehicles, and vehicle-types
-  useEffect(() => {
-    refreshVehicles();
-    refreshProfile();
-    authService.fetchVehicleTypes().then(types => {
-      if (types && Array.isArray(types) && types.length > 0) {
-        setVehicleTypes(types);
-      }
-    });
-  }, []);
+  const isPasswordChanging = changePassword.isPending;
 
   // Open Add Vehicle Modal
   const openAddVehicleModal = () => {
@@ -313,114 +282,83 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
       setVehicleModalError('Please enter license plate number.');
       return;
     }
-    setVehicleModalLoading(true);
     setVehicleModalError('');
 
-    if (vehicleModalMode === 'add') {
-      const res = await authService.addVehicle(vehicleFormData);
-      setVehicleModalLoading(false);
-      if (res.success) {
-        await refreshVehicles();
-        setIsAddVehicleModalOpen(false);
+    const command = {
+      licensePlate: vehicleFormData.licensePlate.trim(),
+      vehicleTypeId: Number(vehicleFormData.vehicleTypeId) || 1,
+      brand: vehicleFormData.brand?.trim(),
+      model: vehicleFormData.model?.trim(),
+      color: vehicleFormData.color?.trim() || 'Black',
+      isDefault: Boolean(vehicleFormData.isDefault),
+    };
+
+    try {
+      if (vehicleModalMode === 'add') {
+        await addVehicle.mutateAsync(command);
       } else {
-        // Fallback local update for demo
-        const newLocal = {
-          id: `v-${Date.now()}`,
-          vehicleId: `v-${Date.now()}`,
-          brand: vehicleFormData.brand,
-          model: vehicleFormData.model,
-          plate: vehicleFormData.licensePlate.toUpperCase(),
-          licensePlate: vehicleFormData.licensePlate.toUpperCase(),
-          color: vehicleFormData.color,
-          vehicleTypeId: vehicleFormData.vehicleTypeId,
-          vehicleType: vehicleTypes.find(t => t.id === Number(vehicleFormData.vehicleTypeId))?.name || 'Car',
-          isDefault: vehicleFormData.isDefault,
-        };
-        setVehicles(prev => [...prev, newLocal]);
-        setIsAddVehicleModalOpen(false);
+        await updateVehicle.mutateAsync({
+          vehicleId: selectedVehicleForEdit.vehicleId,
+          command: { ...command, isActive: selectedVehicleForEdit.isActive !== false },
+        });
       }
-    } else {
-      // Edit mode
-      const vId = selectedVehicleForEdit?.vehicleId || selectedVehicleForEdit?.id;
-      const res = await authService.updateVehicle(vId, vehicleFormData);
-      setVehicleModalLoading(false);
-      if (res.success) {
-        await refreshVehicles();
-        setIsAddVehicleModalOpen(false);
-      } else {
-        // Fallback local update
-        setVehicles(prev => prev.map(item => (item.id === vId || item.vehicleId === vId) ? {
-          ...item,
-          ...vehicleFormData,
-          plate: vehicleFormData.licensePlate.toUpperCase(),
-          licensePlate: vehicleFormData.licensePlate.toUpperCase(),
-        } : item));
-        setIsAddVehicleModalOpen(false);
-      }
+      setIsAddVehicleModalOpen(false);
+    } catch (error) {
+      setVehicleModalError(getErrorMessage(error, 'Failed to save vehicle.'));
     }
   };
 
   // Delete Vehicle (DELETE)
-  const handleDeleteVehicle = async (veh) => {
+  const handleDeleteVehicle = (veh) => {
     if (!window.confirm(`Are you sure you want to delete vehicle ${veh.plate || veh.licensePlate}?`)) return;
-    const vId = veh.vehicleId || veh.id;
-    const res = await authService.deleteVehicle(vId);
-    if (res.success) {
-      await refreshVehicles();
-    } else {
-      // Fallback local delete
-      setVehicles(prev => prev.filter(item => item.id !== vId && item.vehicleId !== vId));
-    }
+    deleteVehicle.mutate(veh.vehicleId, {
+      onError: (error) => window.alert(getErrorMessage(error, 'Failed to delete vehicle.')),
+    });
   };
 
   // Set Default Vehicle (PATCH)
-  const handleSetDefaultVehicle = async (veh) => {
-    const vId = veh.vehicleId || veh.id;
-    const res = await authService.setDefaultVehicle(vId);
-    if (res.success) {
-      await refreshVehicles();
-    } else {
-      // Fallback local set default
-      setVehicles(prev => prev.map(item => ({
-        ...item,
-        isDefault: item.id === vId || item.vehicleId === vId,
-      })));
-    }
+  const handleSetDefaultVehicle = (veh) => {
+    setDefaultVehicle.mutate(veh.vehicleId, {
+      onError: (error) => window.alert(getErrorMessage(error, 'Failed to set default vehicle.')),
+    });
   };
 
   // Edit Profile
   const openEditProfile = () => {
     setProfileFormData({
-      fullName: currentUserProfile?.fullName || user?.fullName || '',
-      email: currentUserProfile?.email || user?.email || '',
-      phoneNumber: currentUserProfile?.phoneNumber || user?.phoneNumber || '',
-      avatarUrl: currentUserProfile?.avatarUrl || user?.avatarUrl || '',
+      fullName: currentUserProfile?.fullName || '',
+      email: currentUserProfile?.email || '',
+      phoneNumber: currentUserProfile?.phoneNumber || '',
+      avatarUrl: currentUserProfile?.avatarUrl || '',
     });
     setProfileFeedback({ type: '', text: '' });
     setIsEditProfileOpen(true);
   };
 
-  const handleSaveProfile = async (e) => {
+  const handleSaveProfile = (e) => {
     e.preventDefault();
-    setIsProfileUpdating(true);
     setProfileFeedback({ type: '', text: '' });
 
-    const res = await authService.updateProfile(profileFormData);
-    setIsProfileUpdating(false);
-
-    if (res.success) {
-      setCurrentUserProfile(prev => ({
-        ...prev,
-        ...profileFormData,
-      }));
-      setProfileFeedback({ type: 'success', text: 'Profile updated successfully!' });
-      setTimeout(() => {
-        setIsEditProfileOpen(false);
-        setProfileFeedback({ type: '', text: '' });
-      }, 1200);
-    } else {
-      setProfileFeedback({ type: 'error', text: res.message || 'Failed to update profile.' });
-    }
+    updateProfile.mutate(
+      {
+        fullName: profileFormData.fullName?.trim(),
+        email: profileFormData.email?.trim(),
+        phoneNumber: profileFormData.phoneNumber?.trim(),
+        avatarUrl: profileFormData.avatarUrl || '',
+      },
+      {
+        onSuccess: () => {
+          setProfileFeedback({ type: 'success', text: 'Profile updated successfully!' });
+          setTimeout(() => {
+            setIsEditProfileOpen(false);
+            setProfileFeedback({ type: '', text: '' });
+          }, 1200);
+        },
+        onError: (error) => {
+          setProfileFeedback({ type: 'error', text: getErrorMessage(error, 'Failed to update profile.') });
+        },
+      },
+    );
   };
 
   // Change Password
@@ -434,7 +372,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
     setIsChangePasswordOpen(true);
   };
 
-  const handleSavePassword = async (e) => {
+  const handleSavePassword = (e) => {
     e.preventDefault();
     if (passwordFormData.newPassword.length < 6) {
       setPasswordFeedback({ type: 'error', text: 'New password must be at least 6 characters.' });
@@ -445,21 +383,23 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
       return;
     }
 
-    setIsPasswordChanging(true);
     setPasswordFeedback({ type: '', text: '' });
 
-    const res = await authService.changePassword(passwordFormData);
-    setIsPasswordChanging(false);
-
-    if (res.success) {
-      setPasswordFeedback({ type: 'success', text: 'Password changed successfully!' });
-      setTimeout(() => {
-        setIsChangePasswordOpen(false);
-        setPasswordFeedback({ type: '', text: '' });
-      }, 1500);
-    } else {
-      setPasswordFeedback({ type: 'error', text: res.message || 'Failed to change password. Please verify your current password.' });
-    }
+    changePassword.mutate(passwordFormData, {
+      onSuccess: () => {
+        setPasswordFeedback({ type: 'success', text: 'Password changed successfully!' });
+        setTimeout(() => {
+          setIsChangePasswordOpen(false);
+          setPasswordFeedback({ type: '', text: '' });
+        }, 1500);
+      },
+      onError: (error) => {
+        setPasswordFeedback({
+          type: 'error',
+          text: getErrorMessage(error, 'Failed to change password. Please verify your current password.'),
+        });
+      },
+    });
   };
 
   // Handle Bottom Nav click
@@ -492,12 +432,8 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
               <span className="online-indicator"></span>
             </div>
             <div className="user-avatar-meta">
-              <span className="user-avatar-name">
-                {isGuest ? 'Khách xem trước (Guest)' : (currentUserProfile?.fullName || currentUserProfile?.username || user?.fullName || 'Alex Rivers')}
-              </span>
-              <span className="user-avatar-role">
-                {isGuest ? 'Xem Bãi / Giá / 3D' : (currentUserProfile?.role || user?.role || 'User')}
-              </span>
+              <span className="user-avatar-name">{currentUserProfile?.fullName || currentUserProfile?.username || user?.fullName || 'Alex Rivers'}</span>
+              <span className="user-avatar-role">{roleLabel(currentUserProfile?.role)}</span>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
@@ -508,64 +444,58 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
           {isUserMenuOpen && (
             <div className="user-dropdown-menu">
               <div className="user-dropdown-header">
-                <strong>{isGuest ? 'Chế độ Khách (Guest)' : (currentUserProfile?.fullName || user?.fullName || 'Alex Rivers')}</strong>
-                <span>{isGuest ? 'Chỉ cần đăng nhập khi bấm Đặt chỗ' : (currentUserProfile?.email || user?.email || 'alex.rivers@pms-ojt.vn')}</span>
+                <strong>{currentUserProfile?.fullName || user?.fullName || 'Alex Rivers'}</strong>
+                <span>{currentUserProfile?.email || user?.email || 'alex.rivers@xxivparking.vn'}</span>
               </div>
-              {!isGuest && (
-                <>
-                  <button
-                    type="button"
-                    className="user-dropdown-item"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      setActiveSubModal('profile');
-                    }}
-                  >
-                    <span>👤</span> Account Profile
-                  </button>
-                  <button
-                    type="button"
-                    className="user-dropdown-item"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      setActiveSubModal('vehicles');
-                    }}
-                  >
-                    <span>🚗</span> My Vehicles
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                className="user-dropdown-item"
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  setActiveSubModal('profile');
+                }}
+              >
+                <span>👤</span> Account Profile
+              </button>
+              <button
+                type="button"
+                className="user-dropdown-item"
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  setActiveSubModal('vehicles');
+                }}
+              >
+                <span>🚗</span> My Vehicles
+              </button>
               <button
                 type="button"
                 className="user-dropdown-item user-dropdown-item--logout"
-                onClick={isGuest ? onRequireLogin : onLogout}
+                onClick={onLogout}
               >
-                <span>{isGuest ? '🔑' : '🚪'}</span> {isGuest ? 'Đăng nhập / Đăng ký' : 'Logout'}
+                <span>🚪</span> Logout
               </button>
             </div>
           )}
         </div>
 
-        {/* Center: PARKING BASE Logo */}
+        {/* Center: XXIV Parking logo */}
         <div className="user-top-bar__center">
           <ParkingLogo size="medium" />
         </div>
 
-        {/* Right: Profile, Notification Bell, Logout / Guest Login button */}
+        {/* Right: Profile, Notification Bell, Logout button */}
         <div className="user-top-bar__right">
-          {!isGuest && (
-            <button
-              type="button"
-              className="top-action-btn"
-              onClick={() => setActiveSubModal('profile')}
-              title="User Profile"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </button>
-          )}
+          <button
+            type="button"
+            className="top-action-btn"
+            onClick={() => setActiveSubModal('profile')}
+            title="User Profile"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
 
           <div className="notifications-wrapper">
             <button
@@ -600,19 +530,19 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
             )}
           </div>
 
-          {/* Explicit Logout or Guest Login Button */}
+          {/* Explicit Logout Button */}
           <button
             type="button"
             className="top-action-btn top-action-btn--logout"
-            onClick={isGuest ? onRequireLogin : onLogout}
-            title={isGuest ? 'Đăng nhập để Đặt chỗ' : 'Log out'}
+            onClick={onLogout}
+            title="Log out of XXIV Parking"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            <span className="logout-text">{isGuest ? 'Đăng nhập' : 'Logout'}</span>
+            <span className="logout-text">Logout</span>
           </button>
         </div>
       </header>
@@ -631,24 +561,24 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
           >
             <defs>
               <linearGradient id="parking-ground-grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#0b1324" />
-                <stop offset="100%" stopColor="#060c18" />
+                <stop offset="0%" stopColor="#F6F2EA" />
+                <stop offset="100%" stopColor="#E4DCCB" />
               </linearGradient>
 
               {/* Slot gradients */}
               <linearGradient id="slot-green" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#00e676" />
-                <stop offset="100%" stopColor="#00c853" />
+                <stop offset="0%" stopColor="#4F8A5B" />
+                <stop offset="100%" stopColor="#6FA67A" />
               </linearGradient>
 
               <linearGradient id="slot-yellow" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#ffb703" />
-                <stop offset="100%" stopColor="#fb8500" />
+                <stop offset="0%" stopColor="#C28A2C" />
+                <stop offset="100%" stopColor="#D8A55A" />
               </linearGradient>
 
               <linearGradient id="slot-blue" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#00f2fe" />
-                <stop offset="100%" stopColor="#0099ff" />
+                <stop offset="0%" stopColor="#E85A4F" />
+                <stop offset="100%" stopColor="#E98074" />
               </linearGradient>
 
             </defs>
@@ -657,7 +587,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
             <polygon
               points="500,60 920,240 500,520 80,340"
               fill="url(#parking-ground-grad)"
-              stroke="#1e293b"
+              stroke="#D8C3A5"
               strokeWidth="2.5"
             />
 
@@ -665,7 +595,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
             <polygon
               points="500,80 890,245 500,495 110,335"
               fill="none"
-              stroke="#334155"
+              stroke="#C9B497"
               strokeWidth="1.5"
               strokeDasharray="6 6"
             />
@@ -726,8 +656,8 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R1', status: 'Reserved', fee: 'Reserved (15:00 - 19:00)' })}
               />
-              <circle cx="525" cy="162" r="7" fill="#1e1e1e" opacity="0.6" />
-              <text x="525" y="165" fontSize="9" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="525" cy="162" r="7" fill="#3B3632" opacity="0.45" />
+              <text x="525" y="165" fontSize="9" textAnchor="middle" fill="#3B3632">🕒</text>
 
               {/* Reserved Slot 2 */}
               <polygon
@@ -736,8 +666,8 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R2', status: 'Reserved', fee: 'Reserved (16:30 - 20:30)' })}
               />
-              <circle cx="575" cy="184" r="7" fill="#1e1e1e" opacity="0.6" />
-              <text x="575" y="187" fontSize="9" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="575" cy="184" r="7" fill="#3B3632" opacity="0.45" />
+              <text x="575" y="187" fontSize="9" textAnchor="middle" fill="#3B3632">🕒</text>
             </g>
 
             {/* Bottom Row: Yellow Reserved Cluster */}
@@ -748,8 +678,8 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R3', status: 'Reserved', fee: 'Reserved' })}
               />
-              <circle cx="483" cy="164" r="6" fill="#1e1e1e" opacity="0.6" />
-              <text x="483" y="167" fontSize="8" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="483" cy="164" r="6" fill="#3B3632" opacity="0.45" />
+              <text x="483" y="167" fontSize="8" textAnchor="middle" fill="#3B3632">🕒</text>
 
               <polygon
                 points="480,192 550,162 590,179 520,210"
@@ -757,8 +687,8 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 className="interactive-slot"
                 onClick={() => setSelectedSlot({ id: 'R4', status: 'Reserved', fee: 'Reserved' })}
               />
-              <circle cx="533" cy="186" r="6" fill="#1e1e1e" opacity="0.6" />
-              <text x="533" y="189" fontSize="8" textAnchor="middle" fill="#fff">🕒</text>
+              <circle cx="533" cy="186" r="6" fill="#3B3632" opacity="0.45" />
+              <text x="533" y="189" fontSize="8" textAnchor="middle" fill="#3B3632">🕒</text>
             </g>
 
             {/* Right Row: Green Slots */}
@@ -783,43 +713,43 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
               <polygon
                 points="450,180 525,148 565,166 490,198"
                 fill="url(#slot-blue)"
-                stroke="#00f2fe"
+                stroke="#E85A4F"
                 strokeWidth="2.5"
               />
 
-              <ellipse cx="507" cy="173" rx="42" ry="20" fill="none" stroke="#00f2fe" strokeWidth="1.5" opacity="0.45" />
+              <ellipse cx="507" cy="173" rx="42" ry="20" fill="none" stroke="#E85A4F" strokeWidth="1.5" opacity="0.45" />
 
               {/* Futuristic Isometric Car Silhouette */}
               <g transform="translate(485, 155)">
                 {/* Car roof & body isometric */}
-                <polygon points="20,5 38,-3 46,2 28,10" fill="#ffffff" />
-                <polygon points="12,12 36,1 48,7 24,18" fill="#00e5ff" />
-                <polygon points="12,12 24,18 24,24 12,18" fill="#0284c7" />
-                <polygon points="24,18 48,7 48,13 24,24" fill="#0369a1" />
+                <polygon points="20,5 38,-3 46,2 28,10" fill="#3B3632" />
+                <polygon points="12,12 36,1 48,7 24,18" fill="#E98074" />
+                <polygon points="12,12 24,18 24,24 12,18" fill="#C2453B" />
+                <polygon points="24,18 48,7 48,13 24,24" fill="#A63C33" />
               </g>
 
               {/* Pin Icon Label */}
               <g transform="translate(470, 125)">
-                <circle cx="16" cy="16" r="14" fill="#00e5ff" />
-                <circle cx="16" cy="16" r="12" fill="#0a192f" />
+                <circle cx="16" cy="16" r="14" fill="#E98074" />
+                <circle cx="16" cy="16" r="12" fill="#FFFFFF" />
                 <path
                   d="M11 15L12 12C12.3 11 13 10.5 14 10.5H18C19 10.5 19.7 11 20 12L21 15"
-                  stroke="#00e5ff"
+                  stroke="#E98074"
                   strokeWidth="1.5"
                 />
-                <circle cx="13" cy="17" r="1" fill="#00e5ff" />
-                <circle cx="19" cy="17" r="1" fill="#00e5ff" />
+                <circle cx="13" cy="17" r="1" fill="#E98074" />
+                <circle cx="19" cy="17" r="1" fill="#E98074" />
               </g>
             </g>
 
             {/* Other Parked Cars Outline silhouettes for realism */}
             <g transform="translate(320, 260)" opacity="0.3">
-              <polygon points="20,5 38,-3 46,2 28,10" fill="#94a3b8" />
-              <polygon points="12,12 36,1 48,7 24,18" fill="#64748b" />
+              <polygon points="20,5 38,-3 46,2 28,10" fill="#6F6A64" />
+              <polygon points="12,12 36,1 48,7 24,18" fill="#8E8D8A" />
             </g>
             <g transform="translate(490, 310)" opacity="0.3">
-              <polygon points="20,5 38,-3 46,2 28,10" fill="#94a3b8" />
-              <polygon points="12,12 36,1 48,7 24,18" fill="#64748b" />
+              <polygon points="20,5 38,-3 46,2 28,10" fill="#6F6A64" />
+              <polygon points="12,12 36,1 48,7 24,18" fill="#8E8D8A" />
             </g>
           </svg>
 
@@ -855,15 +785,11 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                   className="btn btn-primary-cyan btn-sm"
                   style={{ marginTop: '0.5rem', width: '100%' }}
                   onClick={() => {
-                    if (isGuest) {
-                      setGuestPromptReason(`Đặt chỗ vị trí ${selectedSlot.id} (${selectedSlot.fee})`);
-                      return;
-                    }
                     setReservationFeedback(`Successfully reserved Slot ${selectedSlot.id}!`);
                     setSelectedSlot(null);
                   }}
                 >
-                  Đặt chỗ (Reserve Slot)
+                  Reserve This Slot
                 </button>
               )}
             </div>
@@ -877,7 +803,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
         <div className="bottom-widgets-dock">
           {/* Card 1: Quick Reservation */}
           <div className="widget-card quick-reservation-card">
-            <h4 className="widget-card__title">Quick Reservation (Đặt chỗ nhanh)</h4>
+            <h4 className="widget-card__title">Quick Reservation</h4>
             <div className="quick-reservation-form">
               <div className="widget-select-wrap">
                 <select
@@ -906,7 +832,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 className="btn btn-primary-cyan btn-find-slots"
                 onClick={handleFindSlots}
               >
-                Đặt chỗ / Find Slots
+                Find Slots
               </button>
             </div>
             {reservationFeedback && (
@@ -932,7 +858,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 <div key={v.id || v.vehicleId} className="vehicle-pill-item">
                   <div className="vehicle-car-thumb">
                     {/* Car icon */}
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="1.8">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E98074" strokeWidth="1.8">
                       <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H7c-.7 0-1.4.3-1.8.8C4.3 8.7 3 10 3 10S1.5 10.6.5 11.1C-.2 11.3-.5 12.1-.5 13v3c0 .6.4 1 1 1h2" />
                       <circle cx="7" cy="17" r="2" />
                       <circle cx="17" cy="17" r="2" />
@@ -1110,7 +1036,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 )}
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Brand</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Brand</label>
                     <input
                       type="text"
                       className="cyber-input"
@@ -1121,7 +1047,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                     />
                   </div>
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Model</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Model</label>
                     <input
                       type="text"
                       className="cyber-input"
@@ -1134,7 +1060,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 </div>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>License Plate (VN Standard)</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>License Plate (VN Standard)</label>
                   <input
                     type="text"
                     className="cyber-input"
@@ -1147,7 +1073,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
 
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Vehicle Type</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Vehicle Type</label>
                     <select
                       className="cyber-select"
                       style={{ width: '100%' }}
@@ -1162,7 +1088,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                     </select>
                   </div>
                   <div className="form-group">
-                    <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Color</label>
+                    <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Color</label>
                     <input
                       type="text"
                       className="cyber-input"
@@ -1204,28 +1130,28 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
               <button type="button" className="api-modal__close" onClick={() => setIsQrZoomOpen(false)}>✕</button>
             </div>
             <div className="api-modal__body text-center" style={{ textAlign: 'center', padding: '1.5rem' }}>
-              <div style={{ background: '#ffffff', display: 'inline-block', padding: '16px', borderRadius: '12px' }}>
+              <div style={{ background: '#FFFFFF', display: 'inline-block', padding: '16px', borderRadius: '12px' }}>
                 <svg width="220" height="220" viewBox="0 0 110 110" fill="none">
-                  <rect width="110" height="110" rx="4" fill="#ffffff" />
+                  <rect width="110" height="110" rx="4" fill="#FFFFFF" />
                   <rect x="12" y="12" width="28" height="28" fill="#000" />
-                  <rect x="16" y="16" width="20" height="20" fill="#fff" />
+                  <rect x="16" y="16" width="20" height="20" fill="#FFFFFF" />
                   <rect x="20" y="20" width="12" height="12" fill="#000" />
                   <rect x="70" y="12" width="28" height="28" fill="#000" />
-                  <rect x="74" y="16" width="20" height="20" fill="#fff" />
+                  <rect x="74" y="16" width="20" height="20" fill="#FFFFFF" />
                   <rect x="78" y="20" width="12" height="12" fill="#000" />
                   <rect x="12" y="70" width="28" height="28" fill="#000" />
-                  <rect x="16" y="74" width="20" height="20" fill="#fff" />
+                  <rect x="16" y="74" width="20" height="20" fill="#FFFFFF" />
                   <rect x="20" y="78" width="12" height="12" fill="#000" />
                   <rect x="46" y="14" width="6" height="6" fill="#000" />
                   <rect x="56" y="14" width="6" height="6" fill="#000" />
                   <rect x="46" y="26" width="6" height="6" fill="#000" />
-                  <rect x="46" y="46" width="18" height="18" fill="#00e5ff" rx="2" />
+                  <rect x="46" y="46" width="18" height="18" fill="#E98074" rx="2" />
                   <rect x="72" y="48" width="6" height="6" fill="#000" />
                   <rect x="52" y="74" width="6" height="6" fill="#000" />
                   <rect x="80" y="80" width="6" height="6" fill="#000" />
                 </svg>
               </div>
-              <p style={{ marginTop: '1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+              <p style={{ marginTop: '1rem', color: '#6F6A64', fontSize: '0.9rem' }}>
                 Hold near scanner at Gate Barrier 2 for automated entry & exit.
               </p>
             </div>
@@ -1280,7 +1206,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
               {activeSubModal === 'vehicles' && (
                 <div className="vehicles-modal-content">
                   {vehicles.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#8E8D8A' }}>
                       No registered vehicles found. Add one below!
                     </div>
                   ) : (
@@ -1353,7 +1279,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Email:</span>
-                    <strong>{currentUserProfile?.email || user?.email || 'alex.rivers@pms-ojt.vn'}</strong>
+                    <strong>{currentUserProfile?.email || user?.email || 'alex.rivers@xxivparking.vn'}</strong>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Phone:</span>
@@ -1361,7 +1287,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Role:</span>
-                    <strong className="text-cyan">{currentUserProfile?.role || user?.role || 'User'}</strong>
+                    <strong className="text-cyan">{roleLabel(currentUserProfile?.role)}</strong>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-label">Status:</span>
@@ -1426,7 +1352,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                   </div>
                 )}
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Full Name</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Full Name</label>
                   <input
                     type="text"
                     className="cyber-input"
@@ -1436,7 +1362,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                   />
                 </div>
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Email Address</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Email Address</label>
                   <input
                     type="email"
                     className="cyber-input"
@@ -1446,7 +1372,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                   />
                 </div>
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Phone Number</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Phone Number</label>
                   <input
                     type="text"
                     className="cyber-input"
@@ -1456,7 +1382,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                   />
                 </div>
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Avatar Image URL (Optional)</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Avatar Image URL (Optional)</label>
                   <input
                     type="url"
                     className="cyber-input"
@@ -1494,12 +1420,12 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                     {passwordFeedback.text}
                   </div>
                 )}
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
+                <p style={{ color: '#6F6A64', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
                   Authenticated password change directly via backend API. No email token required.
                 </p>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Current Password</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Current Password</label>
                   <div className="password-input-wrapper">
                     <input
                       type={showPasswordVisibility.current ? 'text' : 'password'}
@@ -1519,7 +1445,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 </div>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>New Password (min. 6 characters)</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>New Password (min. 6 characters)</label>
                   <div className="password-input-wrapper">
                     <input
                       type={showPasswordVisibility.new ? 'text' : 'password'}
@@ -1539,7 +1465,7 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 </div>
 
                 <div className="form-group">
-                  <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Confirm New Password</label>
+                  <label style={{ color: '#6F6A64', fontSize: '0.85rem' }}>Confirm New Password</label>
                   <div className="password-input-wrapper">
                     <input
                       type={showPasswordVisibility.confirm ? 'text' : 'password'}
@@ -1567,41 +1493,6 @@ export default function UserScreen({ user, isGuest = false, onLogout, onRequireL
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* GUEST MODE: Require Login Only When Clicking Book/Reserve Slot */}
-      {guestPromptReason && (
-        <div className="api-modal-backdrop" onClick={() => setGuestPromptReason('')}>
-          <div className="api-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="api-modal__header">
-              <h3>Cần đăng nhập để Đặt chỗ</h3>
-              <button type="button" className="api-modal__close" onClick={() => setGuestPromptReason('')}>✕</button>
-            </div>
-            <div className="api-modal__body">
-              <div style={{ background: 'rgba(255, 92, 0, 0.12)', border: '1px solid rgba(255, 92, 0, 0.4)', borderRadius: '10px', padding: '0.85rem 1rem', marginBottom: '1rem', color: '#f8fafc', fontSize: '0.88rem' }}>
-                <strong>Yêu cầu:</strong> {guestPromptReason}
-              </div>
-              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.55' }}>
-                Bạn đang xem sơ đồ bãi 3D và bảng giá ở <strong>Chế độ Khách</strong>. Để giữ chỗ và nhận mã QR vào bãi, vui lòng đăng nhập nhanh bằng SĐT/OTP (chỉ mất 10 giây).
-              </p>
-            </div>
-            <div className="api-modal__footer">
-              <button type="button" className="btn btn-outline-cyan" onClick={() => setGuestPromptReason('')}>
-                Tiếp tục xem 3D
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary-cyan"
-                onClick={() => {
-                  setGuestPromptReason('');
-                  if (onRequireLogin) onRequireLogin();
-                }}
-              >
-                Đăng nhập / Đăng ký ngay →
-              </button>
-            </div>
           </div>
         </div>
       )}
