@@ -11,6 +11,7 @@ import UserDashboardPage from '@/pages/UserDashboardPage'
 // Admin pages are code-split: drivers never download the dashboard (or its chart library).
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'))
 const RevenueReportPage = lazy(() => import('@/pages/admin/RevenueReportPage'))
+const ParkingCapacityPage = lazy(() => import('@/pages/admin/ParkingCapacityPage'))
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="staff" replace /> },
       { path: 'staff', element: <UserManagementPage /> },
       { path: 'revenue', element: <RevenueReportPage /> },
+      { path: 'capacity', element: <ParkingCapacityPage /> },
     ],
   },
   { path: '*', element: <HomeRedirect /> },

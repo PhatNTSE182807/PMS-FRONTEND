@@ -1,4 +1,4 @@
-import { ChartColumnBig, Users, type LucideIcon } from 'lucide-react'
+import { ChartColumnBig, Gauge, Users, type LucideIcon } from 'lucide-react'
 
 export interface AdminNavItem {
   to: string
@@ -10,4 +10,5 @@ export interface AdminNavItem {
 export const ADMIN_NAV: AdminNavItem[] = [
   { to: '/admin/staff', label: 'Quản lý nhân sự', icon: Users },
   { to: '/admin/revenue', label: 'Báo cáo doanh thu', icon: ChartColumnBig },
+  { to: '/admin/capacity', label: 'Công suất bãi xe', icon: Gauge },
 ]
