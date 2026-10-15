@@ -93,10 +93,10 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
   // Auto-fill demo info
   const fillSampleData = () => {
     setFullName('Alexander Vance');
-    setEmail('alex.vance@pms-ojt.vn');
+    setEmail('alex.vance@xxivparking.vn');
     setPhoneNumber('0988123456');
-    setPassword('PmsOjt@2026');
-    setConfirmPassword('PmsOjt@2026');
+    setPassword('Xxiv@2026');
+    setConfirmPassword('Xxiv@2026');
     setAgreeTerms(true);
     setErrorMsg('');
   };
@@ -291,7 +291,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
               <button type="button" className="api-modal__close" onClick={() => setIsTermsOpen(false)}>✕</button>
             </div>
             <div className="api-modal__body" style={{ color: '#6F6A64', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              <p>Welcome to <strong>Parking Management System - OJT</strong>.</p>
+              <p>Welcome to <strong>XXIV Parking</strong>.</p>
               <p style={{ marginTop: '0.5rem' }}>
                 1. <strong>Parking Access:</strong> Real-time reservation guarantees a reserved parking slot for your vehicle for up to 30 minutes after scheduled arrival.
               </p>

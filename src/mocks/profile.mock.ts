@@ -53,7 +53,7 @@ function currentProfile(): UserProfileDTO {
   return {
     userId: user?.userId ?? 'u-demo',
     fullName: user?.fullName ?? 'Demo User',
-    email: user?.email ?? 'demo@pms-ojt.vn',
+    email: user?.email ?? 'demo@xxivparking.vn',
     phoneNumber: user?.phoneNumber ?? '0988123456',
     avatarUrl: user?.avatarUrl ?? null,
     isActive: true,

@@ -155,7 +155,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
               id="staff-email"
               type="email"
               autoComplete="off"
-              placeholder="ten.ho@pms-ojt.vn"
+              placeholder="ten.ho@xxivparking.vn"
               // readOnly, not disabled: react-hook-form drops the values of disabled inputs.
               readOnly={mode === 'edit'}
               className={mode === 'edit' ? 'bg-slate-50 text-slate-500' : undefined}

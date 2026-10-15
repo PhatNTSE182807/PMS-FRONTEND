@@ -7,7 +7,7 @@ import { mockResponse } from './mockApi'
 const CUSTOMERS: CustomerAccountDTO[] = [
   ['nguyentanphat', 'phat@gmail.com', '0977654654'],
   ['buihaminhnhat', 'nhat@gmail.com', '0986456456'],
-  ['alex.rivers', 'alex.rivers@pms-ojt.vn', '0988123456'],
+  ['alex.rivers', 'alex.rivers@xxivparking.vn', '0988123456'],
   ['tranthuha', 'thuha.tran@gmail.com', '0903112233'],
   ['lequocbao', 'baolq@outlook.com', '0912445566'],
   ['phamngoclan', 'lan.pham@gmail.com', '0935778899'],

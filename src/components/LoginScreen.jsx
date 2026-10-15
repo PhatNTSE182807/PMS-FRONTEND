@@ -227,7 +227,7 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNa
 
           {/* Footer Navigation */}
           <div className="auth-card-footer">
-            <span>New to Parking Management System - OJT? </span>
+            <span>New to XXIV Parking? </span>
             <button
               type="button"
               className="auth-link-highlight"

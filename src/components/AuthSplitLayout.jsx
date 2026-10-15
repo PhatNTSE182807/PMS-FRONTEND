@@ -7,19 +7,19 @@ import ParkingLogo from './ParkingLogo';
 export default function AuthSplitLayout({ title, subtitle, children }) {
   return (
     <div className="auth-split">
-      <aside className="auth-split__brand" aria-label="Parking Management System - OJT">
+      <aside className="auth-split__brand" aria-label="XXIV Parking">
         <div className="auth-split__photo" style={{ backgroundImage: `url('/lamborghini.jpg')` }} aria-hidden="true" />
         <div className="auth-split__tint" aria-hidden="true" />
 
         <div className="auth-split__brand-content">
           <span className="auth-split__badge">
             <ParkingLogo size="small" className="parking-logo--icon-only" />
-            Smart parking platform
+            Parking platform
           </span>
 
           <h1 className="auth-split__title">
-            Parking Management System
-            <span className="auth-split__title-accent">- OJT</span>
+            XXIV
+            <span className="auth-split__title-accent">Parking</span>
           </h1>
 
           <p className="auth-split__tagline">

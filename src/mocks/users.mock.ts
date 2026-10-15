@@ -46,8 +46,8 @@ function seedUsers(): UserDTO[] {
     const fullName = `${family} ${middle} ${given}`
 
     const local = removeDiacritics(`${given}.${family}${middle}`).toLowerCase()
-    let email = `${local}@pms-ojt.vn`
-    for (let n = 2; emails.has(email); n++) email = `${local}${n}@pms-ojt.vn`
+    let email = `${local}@xxivparking.vn`
+    for (let n = 2; emails.has(email); n++) email = `${local}${n}@xxivparking.vn`
     emails.add(email)
 
     const isManager = index < MANAGER_COUNT

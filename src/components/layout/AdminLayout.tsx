@@ -24,8 +24,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <SquareParking className="size-5" aria-hidden />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold text-white">PMS Admin</p>
-          <p className="text-xs text-slate-400">Smart Parking System</p>
+          <p className="text-sm font-semibold text-white">XXIV Parking</p>
+          <p className="text-xs text-slate-400">Admin console</p>
         </div>
       </div>
 
@@ -54,7 +54,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="border-t border-white/10 px-5 py-4 text-xs text-slate-500">Parking Management System</div>
+      <div className="border-t border-white/10 px-5 py-4 text-xs text-slate-500">XXIV Parking</div>
     </div>
   )
 }
