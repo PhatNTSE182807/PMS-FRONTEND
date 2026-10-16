@@ -11,6 +11,7 @@ import type {
   CustomerAccountDTO,
   CustomerListQuery,
   CreateUserCommand,
+  GoogleLoginCommand,
   InternalUserResponseDTO,
   LoginCommand,
   LoginResponseDTO,
@@ -49,6 +50,11 @@ export const identityService = {
   verifyLoginOtp(command: VerifyLoginOtpCommand): Promise<LoginResponseDTO> {
     if (isMockService('auth')) return authMock.verifyLoginOtp(command)
     return http.post<LoginResponseDTO>(`${SERVICE_PATHS.auth}/login-otp/verify`, command)
+  },
+
+  /** Customers only: Manager/Staff/Admin accounts keep their password login. */
+  loginWithGoogle(command: GoogleLoginCommand): Promise<LoginResponseDTO> {
+    return http.post<LoginResponseDTO>(`${SERVICE_PATHS.auth}/login-google`, command)
   },
 
   /** Second step of a Manager/Staff password login. */

@@ -6,6 +6,7 @@ import type { LoginResponseDTO } from '@/types/identity.dto'
 import {
   AuthContext,
   type AuthContextValue,
+  type GoogleLoginInput,
   type LoginInput,
   type OtpLoginInput,
   type TwoFactorChallenge,
@@ -49,6 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return startSession(await identityService.verifyTwoFactor(command), rememberMe)
   }, [startSession])
 
+  const loginWithGoogle = useCallback(async ({ rememberMe, ...command }: GoogleLoginInput) => {
+    return startSession(await identityService.loginWithGoogle(command), rememberMe)
+  }, [startSession])
+
   const loginWithOtp = useCallback(async ({ rememberMe, ...command }: OtpLoginInput) => {
     return startSession(await identityService.verifyLoginOtp(command), rememberMe)
   }, [startSession])
@@ -62,8 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => session.clear(), [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isDemo: user !== null && session.isDemo(), login, verifyTwoFactor, loginWithOtp, startDemo, logout }),
-    [user, login, verifyTwoFactor, loginWithOtp, startDemo, logout],
+    () => ({ user, isDemo: user !== null && session.isDemo(), login, verifyTwoFactor, loginWithGoogle, loginWithOtp, startDemo, logout }),
+    [user, login, verifyTwoFactor, loginWithGoogle, loginWithOtp, startDemo, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

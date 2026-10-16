@@ -45,6 +45,11 @@ export interface LoginResponseDTO {
   destination?: string | null
 }
 
+/** POST /Users/login-google: the ID token from Google Identity Services. The first sign-in creates the account. */
+export interface GoogleLoginCommand {
+  idToken: string
+}
+
 /** POST /Users/two-factor — PMS.Application.Models.User.TwoFactorLoginModel */
 export interface TwoFactorLoginCommand {
   twoFactorToken: string

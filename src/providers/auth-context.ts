@@ -15,6 +15,11 @@ export interface TwoFactorChallenge {
   rememberMe: boolean
 }
 
+export interface GoogleLoginInput {
+  idToken: string
+  rememberMe: boolean
+}
+
 export interface TwoFactorInput {
   twoFactorToken: string
   code: string
@@ -31,6 +36,8 @@ export interface AuthContextValue {
   login: (input: LoginInput) => Promise<SessionUser | TwoFactorChallenge>
   /** Completes a login that returned a TwoFactorChallenge. */
   verifyTwoFactor: (input: TwoFactorInput) => Promise<SessionUser>
+  /** Signs in with a Google ID token; the first sign-in creates the customer account. */
+  loginWithGoogle: (input: GoogleLoginInput) => Promise<SessionUser>
   /** Signs in with the 6-digit code emailed by /login-otp/request. */
   loginWithOtp: (input: OtpLoginInput) => Promise<SessionUser>
   /** Signs in without a backend; every service then serves mock data. */

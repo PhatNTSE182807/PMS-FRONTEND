@@ -688,6 +688,34 @@
   padding: 0 10px;
 }
 
+.sso-section--compact {
+  margin-top: 0.5rem;
+}
+
+/* Google draws its own button in an iframe; this only centres it in the form column */
+.google-signin {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.google-signin__button {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.google-signin__status {
+  font-size: 0.78rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.google-signin__status--error {
+  color: #B8433A;
+}
+
 /* Footer card navigation */
 .auth-card-footer {
   margin-top: 0.85rem;

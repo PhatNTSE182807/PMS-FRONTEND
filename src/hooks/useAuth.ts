@@ -2,7 +2,13 @@ import { useContext } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { identityService } from '@/api/identity.service'
 import type { AccountRole } from '@/types/identity.dto'
-import { AuthContext, type LoginInput, type OtpLoginInput, type TwoFactorInput } from '@/providers/auth-context'
+import {
+  AuthContext,
+  type GoogleLoginInput,
+  type LoginInput,
+  type OtpLoginInput,
+  type TwoFactorInput,
+} from '@/providers/auth-context'
 
 export function useAuth() {
   const context = useContext(AuthContext)
@@ -13,6 +19,11 @@ export function useAuth() {
 export function useLogin() {
   const { login } = useAuth()
   return useMutation({ mutationFn: (input: LoginInput) => login(input) })
+}
+
+export function useGoogleLogin() {
+  const { loginWithGoogle } = useAuth()
+  return useMutation({ mutationFn: (input: GoogleLoginInput) => loginWithGoogle(input) })
 }
 
 export function useVerifyTwoFactor() {

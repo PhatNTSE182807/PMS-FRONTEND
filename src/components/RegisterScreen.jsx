@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import AuthSplitLayout from './AuthSplitLayout';
+import GoogleSignInButton from './GoogleSignInButton';
 import { getErrorMessage } from '../api/apiError';
 import { useRegister } from '../hooks/useAuth';
+import { GOOGLE_CLIENT_ID } from '../lib/google-identity';
 
-export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }) {
+export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, onLoginSuccess }) {
   const registerMutation = useRegister();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -123,6 +125,23 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
               <span>{successMsg}</span>
+            </div>
+          )}
+
+          {/* One click instead of the form: the first Google sign-in creates the account */}
+          <GoogleSignInButton
+            text="signup_with"
+            onLoginSuccess={onLoginSuccess}
+            onError={(message) => {
+              setSuccessMsg('');
+              setErrorMsg(message);
+            }}
+          />
+          {GOOGLE_CLIENT_ID && (
+            <div className="sso-section sso-section--compact">
+              <div className="sso-divider">
+                <span>or register with email</span>
+              </div>
             </div>
           )}
 

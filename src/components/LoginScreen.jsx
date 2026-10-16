@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Mail } from 'lucide-react';
 import AuthSplitLayout from './AuthSplitLayout';
+import GoogleSignInButton from './GoogleSignInButton';
 import { getErrorMessage } from '../api/apiError';
 import { useAuth, useLogin } from '../hooks/useAuth';
 import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER } from '../mocks/auth.mock';
@@ -172,29 +174,21 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
               {isLoading ? 'Authenticating...' : 'Login'}
             </button>
 
+            <GoogleSignInButton
+              rememberMe={rememberMe}
+              onLoginSuccess={onLoginSuccess}
+              onError={(message) => {
+                setInfoMsg('');
+                setErrorMsg(message);
+              }}
+            />
+
             <button
               type="button"
               className="btn btn-outline-cyan btn-full auth-alt-login-btn"
               onClick={onNavigateToOtpLogin}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="#EA4335"
-                  d="M12 5c1.7 0 3 .7 3.7 1.3l2.8-2.8C16.8 2 14.6 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.3 2.6C6 7.2 8.7 5 12 5z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.2 14.7c-.2-.7-.4-1.5-.4-2.7 0-1.1.2-1.9.4-2.7L1.9 6.7C.7 9.1 0 10.5 0 12s.7 2.9 1.9 5.3l3.3-2.6z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.3 0-6-2.2-6.8-4.9L1.9 16C3.7 19.7 7.5 23 12 23z"
-                />
-              </svg>
+              <Mail size={18} aria-hidden="true" />
               Sign in with email code
             </button>
           </form>
