@@ -15,11 +15,15 @@ export interface ClassicOutletContext {
  * Shell of the public and driver screens: global header and toast. The auth pages draw
  * their own Lamborghini brand panel (AuthSplitLayout).
  */
+const AUTH_PATHS = ['/login', '/login-otp', '/register', '/activate']
+
 export function ClassicLayout() {
   const { user, logout, startDemo } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isDriverView = pathname.startsWith('/me')
+  // Sign-in screens fill the window with their own brand panel instead of the header.
+  const isAuthView = AUTH_PATHS.includes(pathname)
 
   const [toastMessage, setToastMessage] = useState('')
   const toastTimer = useRef<number | undefined>(undefined)
@@ -52,66 +56,75 @@ export function ClassicLayout() {
       <div className="cyber-glow cyber-glow--cyan-top"></div>
       <div className="cyber-glow cyber-glow--blue-bottom"></div>
 
-      {/* Global Navigation Bar / Control Header */}
-      <nav className="global-header">
-        <div className="global-header__left">
-          <div className="brand-pill" onClick={() => navigate('/login')} style={{ cursor: 'pointer' }}>
-            <img src={LOGO_SRC} alt="" className="brand-logo" />
-            <span className="brand-text">XXIV PARKING</span>
-          </div>
-
-          {/* Quick Screen Switcher Tabs */}
-          <div className="screen-nav-tabs">
-            <button
-              type="button"
-              className={`nav-btn ${pathname === '/login' || pathname === '/login-otp' ? 'nav-btn--active' : ''}`}
-              onClick={() => navigate('/login')}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              className={`nav-btn ${pathname === '/register' ? 'nav-btn--active' : ''}`}
-              onClick={() => navigate('/register')}
-            >
-              Register
-            </button>
-            <button
-              type="button"
-              className={`nav-btn ${isDriverView ? 'nav-btn--active' : ''}`}
-              onClick={openDriverDashboard}
-            >
-              User Dashboard
-            </button>
-          </div>
-        </div>
-
-        <div className="global-header__right">
-          {/* Backend Connection Indicator Badge */}
+      {/* The API status badge (and its URL override) stays reachable on the sign-in screens */}
+      {isAuthView && (
+        <div className="auth-floating-badge">
           <ApiStatusBadge />
-
-          {user && !isDriverView && (
-            <button
-              type="button"
-              className="btn btn-outline-cyan btn-sm"
-              onClick={() => navigate(homePathFor(user.role))}
-            >
-              Dashboard ({user.username})
-            </button>
-          )}
-
-          {user && (
-            <button
-              type="button"
-              className="btn btn-danger-sm"
-              onClick={handleLogout}
-              title="Logout current session"
-            >
-              Logout
-            </button>
-          )}
         </div>
-      </nav>
+      )}
+
+      {/* Global Navigation Bar / Control Header */}
+      {!isAuthView && (
+        <nav className="global-header">
+          <div className="global-header__left">
+            <div className="brand-pill" onClick={() => navigate('/login')} style={{ cursor: 'pointer' }}>
+              <img src={LOGO_SRC} alt="" className="brand-logo" />
+              <span className="brand-text">XXIV PARKING</span>
+            </div>
+
+            {/* Quick Screen Switcher Tabs */}
+            <div className="screen-nav-tabs">
+              <button
+                type="button"
+                className={`nav-btn ${pathname === '/login' || pathname === '/login-otp' ? 'nav-btn--active' : ''}`}
+                onClick={() => navigate('/login')}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                className={`nav-btn ${pathname === '/register' ? 'nav-btn--active' : ''}`}
+                onClick={() => navigate('/register')}
+              >
+                Register
+              </button>
+              <button
+                type="button"
+                className={`nav-btn ${isDriverView ? 'nav-btn--active' : ''}`}
+                onClick={openDriverDashboard}
+              >
+                User Dashboard
+              </button>
+            </div>
+          </div>
+
+          <div className="global-header__right">
+            {/* Backend Connection Indicator Badge */}
+            <ApiStatusBadge />
+
+            {user && !isDriverView && (
+              <button
+                type="button"
+                className="btn btn-outline-cyan btn-sm"
+                onClick={() => navigate(homePathFor(user.role))}
+              >
+                Dashboard ({user.username})
+              </button>
+            )}
+
+            {user && (
+              <button
+                type="button"
+                className="btn btn-danger-sm"
+                onClick={handleLogout}
+                title="Logout current session"
+              >
+                Logout
+              </button>
+            )}
+          </div>
+        </nav>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -124,7 +137,7 @@ export function ClassicLayout() {
 
       {/* Main Single Screen Viewport */}
       <ErrorBoundary>
-        <main className="pms-main-viewport">
+        <main className={`pms-main-viewport ${isAuthView ? 'pms-main-viewport--full' : ''}`}>
           <Outlet context={context} />
         </main>
       </ErrorBoundary>
