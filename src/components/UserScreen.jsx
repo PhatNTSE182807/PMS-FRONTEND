@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import ParkingLogo from './ParkingLogo';
 import { getErrorMessage } from '../api/apiError';
 import { roleLabel } from '../hooks/useAuth';
@@ -455,7 +456,7 @@ export default function UserScreen({ user, onLogout }) {
                   setActiveSubModal('profile');
                 }}
               >
-                <span>👤</span> Account Profile
+                Account Profile
               </button>
               <button
                 type="button"
@@ -465,14 +466,14 @@ export default function UserScreen({ user, onLogout }) {
                   setActiveSubModal('vehicles');
                 }}
               >
-                <span>🚗</span> My Vehicles
+                My Vehicles
               </button>
               <button
                 type="button"
                 className="user-dropdown-item user-dropdown-item--logout"
                 onClick={onLogout}
               >
-                <span>🚪</span> Logout
+                Logout
               </button>
             </div>
           )}
@@ -647,7 +648,7 @@ export default function UserScreen({ user, onLogout }) {
               />
             </g>
 
-            {/* Center Row: Yellow Reserved Slots with Clock Icons 🕒 */}
+            {/* Center Row: Yellow Reserved Slots */}
             <g className="slot-row" transform="translate(-30, 85)">
               {/* Reserved Slot 1 */}
               <polygon
@@ -657,7 +658,6 @@ export default function UserScreen({ user, onLogout }) {
                 onClick={() => setSelectedSlot({ id: 'R1', status: 'Reserved', fee: 'Reserved (15:00 - 19:00)' })}
               />
               <circle cx="525" cy="162" r="7" fill="#3B3632" opacity="0.45" />
-              <text x="525" y="165" fontSize="9" textAnchor="middle" fill="#3B3632">🕒</text>
 
               {/* Reserved Slot 2 */}
               <polygon
@@ -667,7 +667,6 @@ export default function UserScreen({ user, onLogout }) {
                 onClick={() => setSelectedSlot({ id: 'R2', status: 'Reserved', fee: 'Reserved (16:30 - 20:30)' })}
               />
               <circle cx="575" cy="184" r="7" fill="#3B3632" opacity="0.45" />
-              <text x="575" y="187" fontSize="9" textAnchor="middle" fill="#3B3632">🕒</text>
             </g>
 
             {/* Bottom Row: Yellow Reserved Cluster */}
@@ -679,7 +678,6 @@ export default function UserScreen({ user, onLogout }) {
                 onClick={() => setSelectedSlot({ id: 'R3', status: 'Reserved', fee: 'Reserved' })}
               />
               <circle cx="483" cy="164" r="6" fill="#3B3632" opacity="0.45" />
-              <text x="483" y="167" fontSize="8" textAnchor="middle" fill="#3B3632">🕒</text>
 
               <polygon
                 points="480,192 550,162 590,179 520,210"
@@ -688,7 +686,6 @@ export default function UserScreen({ user, onLogout }) {
                 onClick={() => setSelectedSlot({ id: 'R4', status: 'Reserved', fee: 'Reserved' })}
               />
               <circle cx="533" cy="186" r="6" fill="#3B3632" opacity="0.45" />
-              <text x="533" y="189" fontSize="8" textAnchor="middle" fill="#3B3632">🕒</text>
             </g>
 
             {/* Right Row: Green Slots */}
@@ -878,7 +875,7 @@ export default function UserScreen({ user, onLogout }) {
                       onClick={() => openEditVehicleModal(v)}
                       title="Edit vehicle"
                     >
-                      ✏️
+                      <Pencil size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -886,7 +883,7 @@ export default function UserScreen({ user, onLogout }) {
                       onClick={() => handleDeleteVehicle(v)}
                       title="Delete vehicle"
                     >
-                      🗑️
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -1242,7 +1239,7 @@ export default function UserScreen({ user, onLogout }) {
                             onClick={() => openEditVehicleModal(v)}
                             title="Edit vehicle details"
                           >
-                            ✏️
+                            <Pencil size={16} aria-hidden="true" />
                           </button>
                           <button
                             type="button"
@@ -1250,7 +1247,7 @@ export default function UserScreen({ user, onLogout }) {
                             onClick={() => handleDeleteVehicle(v)}
                             title="Delete vehicle"
                           >
-                            🗑️
+                            <Trash2 size={16} aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -1300,7 +1297,7 @@ export default function UserScreen({ user, onLogout }) {
                       className="btn btn-primary-cyan btn-full"
                       onClick={openEditProfile}
                     >
-                      ✏️ Edit Profile
+                      Edit Profile
                     </button>
                     <button
                       type="button"
@@ -1308,7 +1305,7 @@ export default function UserScreen({ user, onLogout }) {
                       style={{ marginTop: '0.65rem' }}
                       onClick={openChangePassword}
                     >
-                      🔑 Change Password
+                      Change Password
                     </button>
                     <button
                       type="button"
@@ -1316,7 +1313,7 @@ export default function UserScreen({ user, onLogout }) {
                       style={{ marginTop: '0.65rem' }}
                       onClick={onLogout}
                     >
-                      🚪 Log Out of Session
+                      Log Out of Session
                     </button>
                   </div>
                 </div>
@@ -1437,9 +1434,10 @@ export default function UserScreen({ user, onLogout }) {
                     <button
                       type="button"
                       className="password-eye-toggle"
+                      aria-label="Show or hide password"
                       onClick={() => setShowPasswordVisibility(p => ({ ...p, current: !p.current }))}
                     >
-                      {showPasswordVisibility.current ? '👁️' : '👁️‍🗨️'}
+                      {showPasswordVisibility.current ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -1457,9 +1455,10 @@ export default function UserScreen({ user, onLogout }) {
                     <button
                       type="button"
                       className="password-eye-toggle"
+                      aria-label="Show or hide password"
                       onClick={() => setShowPasswordVisibility(p => ({ ...p, new: !p.new }))}
                     >
-                      {showPasswordVisibility.new ? '👁️' : '👁️‍🗨️'}
+                      {showPasswordVisibility.new ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -1477,9 +1476,10 @@ export default function UserScreen({ user, onLogout }) {
                     <button
                       type="button"
                       className="password-eye-toggle"
+                      aria-label="Show or hide password"
                       onClick={() => setShowPasswordVisibility(p => ({ ...p, confirm: !p.confirm }))}
                     >
-                      {showPasswordVisibility.confirm ? '👁️' : '👁️‍🗨️'}
+                      {showPasswordVisibility.confirm ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                 </div>

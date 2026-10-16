@@ -1,26 +1,47 @@
 import { useEffect, useRef, useState } from 'react';
 import AuthSplitLayout from './AuthSplitLayout';
 import { getErrorMessage } from '../api/apiError';
-import { useOtpLogin, useRequestLoginOtp } from '../hooks/useAuth';
+import { useOtpLogin, useRequestLoginOtp, useResendTwoFactor, useVerifyTwoFactor } from '../hooks/useAuth';
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
+/**
+ * Passwordless sign-in with an emailed code. With `twoFactor` (the challenge a Manager/Staff
+ * password login returns) it skips the email step and confirms the second factor instead.
+ *
+ * @param {{
+ *   onLoginSuccess: (user: import('../lib/session').SessionUser) => void,
+ *   onNavigateToLogin: () => void,
+ *   twoFactor?: import('../providers/auth-context').TwoFactorChallenge | null,
+ * }} props
+ */
+export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoFactor = null }) {
   const requestCodeMutation = useRequestLoginOtp();
   const otpLoginMutation = useOtpLogin();
+  const verifyTwoFactorMutation = useVerifyTwoFactor();
+  const resendTwoFactorMutation = useResendTwoFactor();
+  const isTwoFactor = twoFactor !== null;
 
   // 'email' -> enter address, 'code' -> enter the 6 digits from the inbox
-  const [step, setStep] = useState('email');
+  const [step, setStep] = useState(isTwoFactor ? 'code' : 'email');
   const [email, setEmail] = useState('');
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(''));
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(twoFactor?.rememberMe ?? false);
+  // A resend replaces the challenge token and invalidates the previous code.
+  const [challengeToken, setChallengeToken] = useState(twoFactor?.twoFactorToken ?? '');
+  const [destination, setDestination] = useState(twoFactor?.destination ?? '');
 
-  const isLoading = requestCodeMutation.isPending || otpLoginMutation.isPending;
+  const isLoading =
+    requestCodeMutation.isPending ||
+    otpLoginMutation.isPending ||
+    verifyTwoFactorMutation.isPending ||
+    resendTwoFactorMutation.isPending;
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
-  const [cooldown, setCooldown] = useState(0);
+  // The backend rate-limits two-factor resends for 60 seconds after the first code.
+  const [cooldown, setCooldown] = useState(isTwoFactor ? RESEND_COOLDOWN_SECONDS : 0);
 
   const digitRefs = useRef([]);
 
@@ -34,7 +55,28 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
     if (step === 'code') digitRefs.current[0]?.focus();
   }, [step]);
 
+  const resendTwoFactorCode = async () => {
+    setErrorMsg('');
+    setInfoMsg('');
+    try {
+      const result = await resendTwoFactorMutation.mutateAsync({ twoFactorToken: challengeToken });
+      if (result.twoFactorToken) setChallengeToken(result.twoFactorToken);
+      if (result.destination) setDestination(result.destination);
+      setInfoMsg(result.message || 'A new verification code has been sent to your email.');
+    } catch (error) {
+      setErrorMsg(getErrorMessage(error, 'Could not send a new verification code.'));
+      return;
+    }
+    setDigits(Array(CODE_LENGTH).fill(''));
+    setCooldown(RESEND_COOLDOWN_SECONDS);
+    digitRefs.current[0]?.focus();
+  };
+
   const sendCode = async () => {
+    if (isTwoFactor) {
+      await resendTwoFactorCode();
+      return;
+    }
     setErrorMsg('');
     setInfoMsg('');
 
@@ -56,7 +98,7 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
     }
 
     setDigits(Array(CODE_LENGTH).fill(''));
-    setInfoMsg(message || 'If the email is registered, a login code has been sent to it.');
+    setInfoMsg(message || 'A login code has been sent to your email.');
     setCooldown(RESEND_COOLDOWN_SECONDS);
     setStep('code');
   };
@@ -69,7 +111,9 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
   const verifyCode = async (code) => {
     setErrorMsg('');
     try {
-      const user = await otpLoginMutation.mutateAsync({ email: email.trim(), code, rememberMe });
+      const user = isTwoFactor
+        ? await verifyTwoFactorMutation.mutateAsync({ twoFactorToken: challengeToken, code, rememberMe })
+        : await otpLoginMutation.mutateAsync({ email: email.trim(), code, rememberMe });
       onLoginSuccess(user);
       return;
     } catch (error) {
@@ -150,14 +194,14 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
               </svg>
             </span>
             <h2 className="otp-heading__title">
-              {step === 'email' ? 'Sign in with email code' : 'Check your inbox'}
+              {isTwoFactor ? 'Verify it’s you' : step === 'email' ? 'Sign in with email code' : 'Check your inbox'}
             </h2>
             <p className="otp-heading__subtitle">
               {step === 'email' ? (
-                'We will email you a 6-digit code. No password needed.'
+                'Enter any email and we will send it a 6-digit code. No password or sign-up needed.'
               ) : (
                 <>
-                  Enter the code sent to <strong>{email.trim()}</strong>
+                  Enter the code sent to <strong>{isTwoFactor ? destination : email.trim()}</strong>
                 </>
               )}
             </p>
@@ -241,8 +285,8 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
                   <span>Remember Me</span>
                 </label>
 
-                <button type="button" className="auth-link-btn" onClick={changeEmail}>
-                  Change email
+                <button type="button" className="auth-link-btn" onClick={isTwoFactor ? onNavigateToLogin : changeEmail}>
+                  {isTwoFactor ? 'Back to login' : 'Change email'}
                 </button>
               </div>
 
@@ -267,18 +311,22 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin }) {
             </form>
           )}
 
-          <div className="sso-section">
-            <div className="sso-divider">
-              <span>or</span>
-            </div>
-          </div>
+          {!isTwoFactor && (
+            <>
+              <div className="sso-section">
+                <div className="sso-divider">
+                  <span>or</span>
+                </div>
+              </div>
 
-          <div className="auth-card-footer auth-card-footer--tight">
-            <span>Prefer your password? </span>
-            <button type="button" className="auth-link-highlight" onClick={onNavigateToLogin}>
-              Back to Login
-            </button>
-          </div>
+              <div className="auth-card-footer auth-card-footer--tight">
+                <span>Prefer your password? </span>
+                <button type="button" className="auth-link-highlight" onClick={onNavigateToLogin}>
+                  Back to Login
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </AuthSplitLayout>
     </>

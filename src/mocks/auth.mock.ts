@@ -38,15 +38,16 @@ const MOCK_LOGIN_OTP = '123456'
 
 export const authMock = {
   /** Accepts any credentials; e-mails starting with "admin" sign in as Admin. */
-  login({ email, password }: LoginCommand): Promise<LoginResponseDTO> {
+  login({ email, username, password }: LoginCommand): Promise<LoginResponseDTO> {
     return mockResponse(() => {
-      if (!email.trim() || !password) mockFail(400, 'Email and password are required.')
-      const isAdmin = email.trim().toLowerCase().startsWith('admin')
+      const identifier = (email ?? username ?? '').trim()
+      if (!identifier || !password) mockFail(400, 'Email and password are required.')
+      const isAdmin = identifier.toLowerCase().startsWith('admin')
       const userId = isAdmin ? DEMO_ADMIN.userId : mockId('u')
       return {
         userId,
-        username: email.trim().split('@')[0],
-        email: email.trim(),
+        username: identifier.split('@')[0],
+        email: identifier.includes('@') ? identifier : `${identifier}@xxivparking.vn`,
         phoneNumber: isAdmin ? DEMO_ADMIN.phoneNumber : '0988123456',
         role: isAdmin ? 'Admin' : 'User',
         token: `demo.${userId}`,

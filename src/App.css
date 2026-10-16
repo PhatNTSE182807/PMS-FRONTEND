@@ -1724,11 +1724,6 @@
   color: #57524C;
 }
 
-.api-status-badge__gear {
-  font-size: 0.75rem;
-  opacity: 0.7;
-}
-
 /* Toast */
 .pms-toast {
   position: fixed;

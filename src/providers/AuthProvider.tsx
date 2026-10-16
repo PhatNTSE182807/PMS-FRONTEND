@@ -3,7 +3,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { identityService, toSessionUser } from '@/api/identity.service'
 import { session, type SessionUser } from '@/lib/session'
 import type { LoginResponseDTO } from '@/types/identity.dto'
-import { AuthContext, type AuthContextValue, type LoginInput, type OtpLoginInput } from './auth-context'
+import {
+  AuthContext,
+  type AuthContextValue,
+  type LoginInput,
+  type OtpLoginInput,
+  type TwoFactorChallenge,
+  type TwoFactorInput,
+} from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -18,14 +25,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, queryClient])
 
   const startSession = useCallback((response: LoginResponseDTO, rememberMe: boolean) => {
+    if (!response.token) throw new Error('The server did not return an access token.')
     const sessionUser = toSessionUser(response)
     queryClient.clear()
     session.save(response.token, sessionUser, rememberMe)
     return sessionUser
   }, [queryClient])
 
-  const login = useCallback(async ({ rememberMe, ...command }: LoginInput) => {
-    return startSession(await identityService.login(command), rememberMe)
+  const login = useCallback(async ({ rememberMe, ...command }: LoginInput): Promise<SessionUser | TwoFactorChallenge> => {
+    const response = await identityService.login(command)
+    if (response.requiresTwoFactor && response.twoFactorToken) {
+      return {
+        kind: 'two-factor',
+        twoFactorToken: response.twoFactorToken,
+        destination: response.destination ?? response.email,
+        rememberMe,
+      }
+    }
+    return startSession(response, rememberMe)
+  }, [startSession])
+
+  const verifyTwoFactor = useCallback(async ({ rememberMe, ...command }: TwoFactorInput) => {
+    return startSession(await identityService.verifyTwoFactor(command), rememberMe)
   }, [startSession])
 
   const loginWithOtp = useCallback(async ({ rememberMe, ...command }: OtpLoginInput) => {
@@ -41,8 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => session.clear(), [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isDemo: user !== null && session.isDemo(), login, loginWithOtp, startDemo, logout }),
-    [user, login, loginWithOtp, startDemo, logout],
+    () => ({ user, isDemo: user !== null && session.isDemo(), login, verifyTwoFactor, loginWithOtp, startDemo, logout }),
+    [user, login, verifyTwoFactor, loginWithOtp, startDemo, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

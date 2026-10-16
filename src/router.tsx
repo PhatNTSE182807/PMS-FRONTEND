@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ClassicLayout } from '@/components/layout/ClassicLayout'
 import { HomeRedirect } from '@/components/layout/HomeRedirect'
 import { RequireAuth } from '@/components/layout/RequireAuth'
+import ActivateAccountPage from '@/pages/ActivateAccountPage'
 import LoginPage from '@/pages/LoginPage'
 import OtpLoginPage from '@/pages/OtpLoginPage'
 import RegisterPage from '@/pages/RegisterPage'
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/login', element: <LoginPage /> },
       { path: '/login-otp', element: <OtpLoginPage /> },
+      { path: '/activate', element: <ActivateAccountPage /> },
       { path: '/register', element: <RegisterPage /> },
       {
         path: '/me',

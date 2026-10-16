@@ -7,7 +7,6 @@ import {
   protectedSlot,
 } from '@/lib/lot-rules'
 import { MOCK_PARKING_LOTS } from '@/mocks/parkingLots.mock'
-import { staffMock } from '@/mocks/users.mock'
 import type {
   LotInput,
   ManagedLot,
@@ -15,6 +14,8 @@ import type {
   ZoneInput,
 } from '@/types/lot-management.dto'
 import { VEHICLE_TYPES } from '@/types/lot-management.dto'
+import { identityService } from './identity.service'
+import { lotManagementApi } from './lot-management.live'
 
 const KEY = 'pms_lot_management_demo_v1'
 const newId = () => crypto.randomUUID()
@@ -58,12 +59,11 @@ function save(lots: ManagedLot[]) {
   localStorage.setItem(KEY, JSON.stringify(lots))
   memory = structuredClone(lots)
 }
+/** Demo sessions and VITE_MOCK_SERVICES=parking keep the data in this browser; otherwise the REST API. */
+const isDemo = () => isMockService('parking')
+/** The same rules run before both: the backend repeats them, the client just answers sooner. */
+const load = (): Promise<ManagedLot[]> => (isDemo() ? Promise.resolve(read()) : lotManagementApi.list())
 function actor() {
-  // No guessed live endpoints: this FE deliverable intentionally runs on demo data only.
-  if (!isMockService('parking'))
-    throw new Error(
-      'The parking lot management API is not integrated yet. Enable the parking mock to use the frontend demo.',
-    )
   const user = session.getUser()
   if (!user || !['ADMIN', 'MANAGER'].includes(user.role))
     throw new Error('You do not have permission to manage parking lots.')
@@ -88,16 +88,18 @@ function requireManager(lot: ManagedLot) {
     )
 }
 export const lotManagementService = {
+  /** Whether changes stay in this browser (shown to the user after saving). */
+  isDemo,
   async list() {
     const user = actor()
-    return read().filter(
+    return (await load()).filter(
       (l) => user.role === 'ADMIN' || l.managerUserId === user.userId,
     )
   },
   async managers() {
     requireAdmin()
     return (
-      await staffMock.list({
+      await identityService.getStaff({
         role: 'MANAGER',
         status: 'ACTIVE',
         pageNumber: 1,
@@ -107,7 +109,7 @@ export const lotManagementService = {
   },
   async saveLot(input: LotInput, id?: string) {
     requireAdmin()
-    const lots = read()
+    const lots = await load()
     const current = id ? getLot(lots, id) : undefined
     validateLot(input, lots, current)
     if (
@@ -115,6 +117,12 @@ export const lotManagementService = {
       !(await this.managers()).some((m) => m.id === input.managerUserId)
     )
       throw new Error('The Manager does not exist or is inactive.')
+    if (!isDemo()) {
+      const savedId = await lotManagementApi.saveLot(input, id)
+      const saved = (await lotManagementApi.list()).find((l) => l.id === savedId)
+      if (!saved) throw new Error('The parking lot was saved but could not be reloaded.')
+      return saved
+    }
     // Status is not an editable admin field; it is managed through the separate operational command.
     const next: ManagedLot = {
       ...input,
@@ -132,21 +140,29 @@ export const lotManagementService = {
   },
   async deleteLot(id: string) {
     requireAdmin()
-    const lots = read()
+    const lots = await load()
     const lot = getLot(lots, id)
     if (lot.status === 'Active' || lot.zones.length)
       throw new Error(
         'Only inactive lots without zones can be deleted. Lots that have operated must keep their history in the backend.',
       )
+    if (!isDemo()) {
+      await lotManagementApi.deleteLot(id)
+      return
+    }
     save(lots.filter((l) => l.id !== id))
   },
   async saveZone(lotId: string, input: ZoneInput, id?: string) {
-    const lots = read()
+    const lots = await load()
     const lot = getLot(lots, lotId)
     requireManager(lot)
     const current = id ? lot.zones.find((z) => z.id === id) : undefined
     if (id && !current) throw new Error('The zone no longer exists.')
     validateZone(input, lot, current)
+    if (!isDemo()) {
+      await lotManagementApi.saveZone(lotId, input, id)
+      return
+    }
     const next = {
       ...input,
       code: input.code.trim(),
@@ -159,40 +175,53 @@ export const lotManagementService = {
     save(lots)
   },
   async deleteZone(lotId: string, id: string) {
-    const lots = read()
+    const lots = await load()
     const lot = getLot(lots, lotId)
     requireManager(lot)
     const zone = lot.zones.find((z) => z.id === id)
     if (!zone || zone.slots.length)
       throw new Error('Only zones without slots can be deleted; operational data is never removed.')
+    if (!isDemo()) {
+      await lotManagementApi.deleteZone(id)
+      return
+    }
     lot.zones = lot.zones.filter((z) => z.id !== id)
     save(lots)
   },
   async saveSlot(lotId: string, zoneId: string, input: SlotInput, id?: string) {
-    const lots = read()
+    const lots = await load()
     const lot = getLot(lots, lotId)
     requireManager(lot)
     const zone = lot.zones.find((z) => z.id === zoneId)
     if (!zone) throw new Error('Zone not found.')
     if (!zone.isActive) throw new Error('Activate the zone before configuring slots.')
-    if (id && !zone.slots.some((s) => s.id === id))
+    const current = id ? zone.slots.find((s) => s.id === id) : undefined
+    if (id && !current)
       throw new Error('The slot no longer exists.')
     if (!VEHICLE_TYPES.some((t) => t.id === input.vehicleTypeId))
       throw new Error('Invalid vehicle type.')
     validateSlot(input, zone, id)
+    if (!isDemo()) {
+      await lotManagementApi.saveSlot(zoneId, input, current)
+      return
+    }
     const next = { ...input, code: input.code.trim(), id: id ?? newId() }
     if (id) zone.slots[zone.slots.findIndex((s) => s.id === id)] = next
     else zone.slots.push(next)
     save(lots)
   },
   async deleteSlot(lotId: string, zoneId: string, id: string) {
-    const lots = read()
+    const lots = await load()
     const lot = getLot(lots, lotId)
     requireManager(lot)
     const zone = lot.zones.find((z) => z.id === zoneId)
     const slot = zone?.slots.find((s) => s.id === id)
     if (!zone || !slot || ['Reserved', 'Occupied'].includes(slot.status))
       throw new Error('Cannot delete a slot that is reserved, occupied or no longer exists.')
+    if (!isDemo()) {
+      await lotManagementApi.deleteSlot(id)
+      return
+    }
     zone.slots = zone.slots.filter((s) => s.id !== id)
     save(lots)
   },
@@ -207,7 +236,7 @@ export const lotManagementService = {
       | 'maintenanceNotice'
     >,
   ) {
-    const lots = read()
+    const lots = await load()
     const lot = getLot(lots, lotId)
     requireManager(lot)
     if (patch.status !== 'Active' && lot.zones.some(protectedSlot))
@@ -226,6 +255,10 @@ export const lotManagementService = {
         new Date(patch.closedUntil) <= new Date(patch.closedFrom))
     )
       throw new Error('Enter a valid closing and reopening time.')
+    if (!isDemo()) {
+      await lotManagementApi.setOperation(lotId, patch)
+      return
+    }
     Object.assign(lot, patch)
     save(lots)
   },

@@ -6,6 +6,21 @@ export interface LoginInput extends LoginCommand {
   rememberMe: boolean
 }
 
+/** Returned by login instead of a session when the account must confirm an emailed code. */
+export interface TwoFactorChallenge {
+  kind: 'two-factor'
+  twoFactorToken: string
+  /** Masked email the code went to. */
+  destination: string
+  rememberMe: boolean
+}
+
+export interface TwoFactorInput {
+  twoFactorToken: string
+  code: string
+  rememberMe: boolean
+}
+
 export interface OtpLoginInput extends VerifyLoginOtpCommand {
   rememberMe: boolean
 }
@@ -13,7 +28,9 @@ export interface OtpLoginInput extends VerifyLoginOtpCommand {
 export interface AuthContextValue {
   user: SessionUser | null
   isDemo: boolean
-  login: (input: LoginInput) => Promise<SessionUser>
+  login: (input: LoginInput) => Promise<SessionUser | TwoFactorChallenge>
+  /** Completes a login that returned a TwoFactorChallenge. */
+  verifyTwoFactor: (input: TwoFactorInput) => Promise<SessionUser>
   /** Signs in with the 6-digit code emailed by /login-otp/request. */
   loginWithOtp: (input: OtpLoginInput) => Promise<SessionUser>
   /** Signs in without a backend; every service then serves mock data. */

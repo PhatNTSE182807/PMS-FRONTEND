@@ -83,7 +83,7 @@ export function AdminLayout() {
   const [isNavOpen, setIsNavOpen] = useState(false)
 
   const current = [...ADMIN_NAV, ...MANAGER_NAV].find((item) => pathname.startsWith(item.to))
-  const usesMockData = isDemo || isMockService('staff') || isMockService('parking') || isMockService('reports')
+  const usesMockData = isDemo || isMockService('staff') || isMockService('parking') || isMockService('capacity') || isMockService('reports')
 
   const handleLogout = () => {
     logout()

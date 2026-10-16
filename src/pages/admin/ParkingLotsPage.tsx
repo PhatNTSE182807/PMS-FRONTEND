@@ -90,7 +90,7 @@ export default function ParkingLotsPage() {
   const currentPage = Math.min(page, pageCount)
   const reload = async () => {
     await lots.refetch()
-    toast.success('Demo data saved in this browser')
+    toast.success(service.isDemo() ? 'Demo data saved in this browser' : 'Changes saved')
   }
   const canConfigure = Boolean(
     selected &&
@@ -738,7 +738,7 @@ export default function ParkingLotsPage() {
         <ConfirmDialog
           open
           title="Delete this configuration?"
-          description={`Delete ${removing.name}? Only do this for data that has never been in operation. Deleted demo data cannot be restored from this screen.`}
+          description={`Delete ${removing.name}? Only do this for data that has never been in operation. Deleted data cannot be restored from this screen.`}
           confirmLabel="Delete"
           tone="destructive"
           pending={deleting}

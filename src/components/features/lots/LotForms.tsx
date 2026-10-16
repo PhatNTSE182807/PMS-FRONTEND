@@ -490,7 +490,7 @@ export function OperationForm({
   return (
     <Editor
       title="Operating status"
-      description="Managers run their assigned lots. The demo only checks slots; the real API must also check sessions and bookings."
+      description="Managers run their assigned lots. A lot cannot close while any of its slots is reserved or occupied."
       onClose={onClose}
       onSave={async () => {
         await service.setOperation(lot.id, v)

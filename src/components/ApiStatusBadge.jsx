@@ -54,7 +54,6 @@ export default function ApiStatusBadge() {
         <span className="api-status-badge__text">
           API: {isOnline ? 'Connected' : 'Offline (Demo Mode)'}
         </span>
-        <span className="api-status-badge__gear">⚙️</span>
       </button>
 
       {isOpen && (
@@ -133,7 +132,7 @@ export default function ApiStatusBadge() {
 
               <div className="api-modal__tip">
                 <p>
-                  💡 <strong>Tip:</strong> If the .NET backend is not yet started, you can still use the <strong>Instant Demo</strong> credentials on the login screen to explore the entire UI seamlessly!
+                  <strong>Tip:</strong> If the .NET backend is not yet started, you can still use the <strong>Instant Demo</strong> credentials on the login screen to explore the entire UI seamlessly!
                 </p>
               </div>
             </div>

@@ -3,23 +3,32 @@ import { capacityMock } from '@/mocks/capacity.mock'
 import type { ParkingLotCapacityDTO, ParkingLotSummaryDTO } from '@/types/parking.dto'
 import { http } from './axiosClient'
 
-const base = SERVICE_PATHS.parking
+const base = SERVICE_PATHS.capacity
 
-/** Parking service: lots, zones and live occupancy. */
+interface LotResponse {
+  id: number
+  code: string
+  name: string
+  address: string
+}
+
+/** Parking service: lots (PMS.API LotsController) and live occupancy (no endpoint yet). */
 export const parkingService = {
-  getParkingLots(): Promise<ParkingLotSummaryDTO[]> {
-    return isMockService('parking') ? capacityMock.getParkingLots() : http.get<ParkingLotSummaryDTO[]>(`${base}/lots`)
+  async getParkingLots(): Promise<ParkingLotSummaryDTO[]> {
+    if (isMockService('parking')) return capacityMock.getParkingLots()
+    const lots = await http.get<LotResponse[]>(`${SERVICE_PATHS.parking}/lots`)
+    return lots.map(({ id, code, name, address }) => ({ id: String(id), code, name, address }))
   },
 
   getCapacityOverview(): Promise<ParkingLotCapacityDTO[]> {
-    return isMockService('parking')
+    return isMockService('capacity')
       ? capacityMock.getCapacityOverview()
       : http.get<ParkingLotCapacityDTO[]>(`${base}/lots/capacity`)
   },
 
   /** The occupancy simulation only exists for the mock backend (frontend demos). */
   canSimulate(): boolean {
-    return isMockService('parking')
+    return isMockService('capacity')
   },
 
   simulateCapacityTick(): ParkingLotCapacityDTO[] {

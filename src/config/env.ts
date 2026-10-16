@@ -1,7 +1,7 @@
 import { session } from '@/lib/session'
 
 /** Bounded contexts the frontend talks to. Each maps to one backend (micro)service. */
-export type ServiceKey = 'auth' | 'profile' | 'staff' | 'parking' | 'reports'
+export type ServiceKey = 'auth' | 'profile' | 'staff' | 'parking' | 'capacity' | 'reports'
 
 const DEFAULT_API_BASE_URL = 'https://localhost:44391/api'
 const API_URL_OVERRIDE_KEY = 'pms_custom_api_url'
@@ -15,8 +15,9 @@ const API_URL_OVERRIDE_KEY = 'pms_custom_api_url'
 export const SERVICE_PATHS: Record<ServiceKey, string> = {
   auth: '/Users',
   profile: '/Users/profile',
-  staff: '/v1/identity/staff',
-  parking: '/v1/parking',
+  staff: '/admin',
+  parking: '',
+  capacity: '/v1/parking',
   reports: '/v1/reports',
 }
 
@@ -65,7 +66,7 @@ export function setApiBaseUrlOverride(url: string | null): void {
 
 const mockAllServices = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 const mockedServices = new Set(
-  (import.meta.env.VITE_MOCK_SERVICES ?? 'staff,parking,reports')
+  (import.meta.env.VITE_MOCK_SERVICES ?? 'capacity,reports')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),

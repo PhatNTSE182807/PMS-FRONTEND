@@ -4,7 +4,7 @@ import { getErrorMessage } from '../api/apiError';
 import { useAuth, useLogin } from '../hooks/useAuth';
 import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER } from '../mocks/auth.mock';
 
-export default function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateToOtpLogin }) {
+export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNavigateToRegister, onNavigateToOtpLogin }) {
   const { startDemo } = useAuth();
   const loginMutation = useLogin();
 
@@ -26,11 +26,14 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNa
     setErrorMsg('');
     setInfoMsg('');
 
-    if (!email.trim()) {
-      setErrorMsg('Please enter your email!');
+    // Customers sign in with an email; Manager/Staff accounts may also use their username.
+    const identifier = email.trim();
+    const isEmail = identifier.includes('@');
+    if (!identifier) {
+      setErrorMsg('Please enter your email or username!');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (isEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
       setErrorMsg('Please enter a valid email address!');
       return;
     }
@@ -40,9 +43,9 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNa
     }
 
     loginMutation.mutate(
-      { email: email.trim(), password, rememberMe },
+      { ...(isEmail ? { email: identifier } : { username: identifier }), password, rememberMe },
       {
-        onSuccess: (user) => onLoginSuccess(user),
+        onSuccess: (result) => (result.kind === 'two-factor' ? onTwoFactorRequired(result) : onLoginSuccess(result)),
         onError: (error) => {
           const message = getErrorMessage(error, 'Login failed. Please check your credentials.');
           // Without a backend, point the user to the demo modes below.
@@ -101,12 +104,12 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNa
             <div className="form-group">
               <input
                 id="login-email"
-                type="email"
+                type="text"
                 className="cyber-input"
-                placeholder="Email"
+                placeholder="Email or username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
 
