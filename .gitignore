@@ -6,3 +6,5 @@ dist-ssr
 .env.*
 !.env.example
 backend/
+# Local Claude Code settings (preview configs)
+.claude/
