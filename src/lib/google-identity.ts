@@ -39,8 +39,14 @@ declare global {
 
 const SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
 
-/** OAuth client ID from Google Cloud Console; the button is hidden while it is not set. */
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? ''
+/**
+ * The project's OAuth 2.0 Web client ID (Google Cloud Console). It is public by design: Google
+ * only accepts it from the origins listed there. VITE_GOOGLE_CLIENT_ID overrides it, and must
+ * match GoogleAuth:ClientId on the backend.
+ */
+const PROJECT_GOOGLE_CLIENT_ID = '338219481698-9e5noh3cim8dpiedco5r9lqb6dv90k53.apps.googleusercontent.com'
+
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || PROJECT_GOOGLE_CLIENT_ID
 
 let loading: Promise<GoogleAccountsId> | undefined
 
