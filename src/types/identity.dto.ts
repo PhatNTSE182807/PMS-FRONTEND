@@ -68,13 +68,6 @@ export interface ResendTwoFactorResponseDTO {
   message: string | null
 }
 
-/** POST /Users/activate — the userId and token come from the activation email. */
-export interface ActivateAccountCommand {
-  userId: string
-  token: string
-  newPassword: string
-  confirmPassword: string
-}
 
 /** POST /Users/register — PMS.Application.Models.User.CreateUserModel */
 export interface RegisterCommand {
@@ -96,8 +89,7 @@ export interface RegisterResponseDTO {
 /* ------------------------------------------------------------------ */
 
 export type UserRole = 'MANAGER' | 'STAFF'
-/** PENDING: created by an Admin, waiting for the user to set a password from the activation email. */
-export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING'
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
 export type WorkShift = 'MORNING' | 'AFTERNOON' | 'NIGHT'
 
 export interface UserDTO {
@@ -140,14 +132,12 @@ export interface InternalUserResponseDTO {
   isActive: boolean
   /** Employee record creation time; null for customers. */
   createdAt: string | null
-  isPendingActivation: boolean
 }
 
 /** PMS.Application.Models.User.CreateUserResponseModel for POST /admin/managers and /admin/staff. */
 export interface CreateEmployeeResponseDTO {
   id: string
   employeeCode: string | null
-  activationToken: string | null
 }
 
 export interface CustomerListQuery extends PageQuery {

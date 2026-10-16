@@ -15,7 +15,7 @@ export interface ClassicOutletContext {
  * Shell of the public and driver screens: global header and toast. The auth pages draw
  * their own Lamborghini brand panel (AuthSplitLayout).
  */
-const AUTH_PATHS = ['/login', '/login-otp', '/register', '/activate']
+const AUTH_PATHS = ['/login', '/login-otp', '/register']
 
 export function ClassicLayout() {
   const { user, logout, startDemo } = useAuth()

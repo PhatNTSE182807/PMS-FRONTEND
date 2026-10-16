@@ -125,19 +125,16 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                     <Button variant="ghost" size="icon" title="Edit" aria-label={`Edit ${user.fullName}`} onClick={() => onEdit(user)}>
                       <Pencil />
                     </Button>
-                    {/* A pending account becomes active only through its activation email */}
-                    {user.status !== 'PENDING' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title={isLocked ? 'Activate' : 'Deactivate'}
-                        aria-label={`${isLocked ? 'Activate' : 'Deactivate'} ${user.fullName}`}
-                        className={isLocked ? 'text-emerald-600 hover:text-emerald-700' : 'text-rose-600 hover:text-rose-700'}
-                        onClick={() => onToggleLock(user)}
-                      >
-                        {isLocked ? <UserCheck /> : <UserX />}
-                      </Button>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={isLocked ? 'Activate' : 'Deactivate'}
+                      aria-label={`${isLocked ? 'Activate' : 'Deactivate'} ${user.fullName}`}
+                      className={isLocked ? 'text-emerald-600 hover:text-emerald-700' : 'text-rose-600 hover:text-rose-700'}
+                      onClick={() => onToggleLock(user)}
+                    >
+                      {isLocked ? <UserCheck /> : <UserX />}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

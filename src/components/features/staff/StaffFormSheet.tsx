@@ -9,6 +9,7 @@ import { CopyField } from '@/components/ui/copy-field'
 import { Dialog, DialogClose, DialogDescription, DialogTitle, SheetContent } from '@/components/ui/dialog'
 import { Checkbox, FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { Spinner } from '@/components/ui/states'
+import { isMockService } from '@/config/env'
 import { useCreateStaff, useUpdateStaff } from '@/hooks/useStaff'
 import { generatePassword } from '@/lib/password'
 import { cn } from '@/lib/utils'
@@ -93,6 +94,9 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
     if (next === 'MANAGER') setValue('shift', undefined)
   }
 
+  // The live backend sends no email when it creates an account; only the demo data pretends to
+  const sendsWelcomeEmail = isMockService('staff')
+
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null)
     const assignment = {
@@ -115,9 +119,10 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
           sendWelcomeEmail: values.sendWelcomeEmail,
         })
         toast.success(`Account created for ${created.fullName}`, {
-          description: values.sendWelcomeEmail
-            ? `Employee code ${created.employeeCode}. A welcome email was sent to ${created.email}.`
-            : `Employee code ${created.employeeCode}. Send the password to them through a secure channel.`,
+          description:
+            sendsWelcomeEmail && values.sendWelcomeEmail
+              ? `Employee code ${created.employeeCode}. A welcome email was sent to ${created.email}.`
+              : `Employee code ${created.employeeCode}. They can sign in now with ${created.email}; send them the password through a secure channel.`,
         })
       }
       onDone()
@@ -319,10 +324,12 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
               </div>
             )}
 
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-              <Checkbox {...register('sendWelcomeEmail')} />
-              Send a welcome email with the sign-in details
-            </label>
+            {sendsWelcomeEmail && (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                <Checkbox {...register('sendWelcomeEmail')} />
+                Send a welcome email with the sign-in details
+              </label>
+            )}
           </fieldset>
         )}
       </div>

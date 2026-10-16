@@ -35,10 +35,6 @@ export function useResendTwoFactor() {
   return useMutation({ mutationFn: identityService.resendTwoFactor })
 }
 
-export function useActivateAccount() {
-  return useMutation({ mutationFn: identityService.activateAccount })
-}
-
 export function useRequestLoginOtp() {
   return useMutation({ mutationFn: identityService.requestLoginOtp })
 }

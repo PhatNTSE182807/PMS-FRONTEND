@@ -6,7 +6,6 @@ import { staffMock } from '@/mocks/users.mock'
 import type { EntityRef, PaginatedResponse } from '@/types/common.dto'
 import type {
   AccountRole,
-  ActivateAccountCommand,
   CreateEmployeeResponseDTO,
   CustomerAccountDTO,
   CustomerListQuery,
@@ -30,6 +29,7 @@ import type {
   VerifyLoginOtpCommand,
 } from '@/types/identity.dto'
 import { http } from './axiosClient'
+import { lotManagementApi } from './lot-management.live'
 
 /**
  * Identity service: authentication and account management.
@@ -67,11 +67,6 @@ export const identityService = {
     return http.post<ResendTwoFactorResponseDTO>(`${SERVICE_PATHS.auth}/two-factor/resend`, command)
   },
 
-  /** A new Manager/Staff account sets its password with the token from the activation email. */
-  activateAccount(command: ActivateAccountCommand): Promise<boolean> {
-    return http.post<boolean>(`${SERVICE_PATHS.auth}/activate`, command)
-  },
-
   register(command: RegisterCommand): Promise<RegisterResponseDTO> {
     if (isMockService('auth')) return authMock.register(command)
     return http.post<RegisterResponseDTO>(`${SERVICE_PATHS.auth}/register`, command)
@@ -104,7 +99,7 @@ export const identityService = {
       http.get<InternalUserResponseDTO[]>(`${SERVICE_PATHS.staff}/users`, {
         params: {
           role: query.role ? backendRole(query.role) : undefined,
-          isActive: query.status === 'ACTIVE' ? true : query.status ? false : undefined,
+          isActive: query.status ? query.status === 'ACTIVE' : undefined,
           searchTerm: query.search?.trim() || undefined,
         },
       }),
@@ -112,16 +107,12 @@ export const identityService = {
     ])
     const users = accounts
       .map((account) => toUserDTO(account, managedLots))
-      .filter((user) => !query.status || user.status === query.status)
       .filter((user) => !query.parkingLotId || user.assignedParkingLots.some((lot) => lot.id === query.parkingLotId))
       .sort((a, b) => a.fullName.localeCompare(b.fullName))
     return toPage(users, query)
   },
 
-  /**
-   * POST /admin/managers or /admin/staff. The account starts inactive: the backend emails an
-   * activation token and the user sets a password on /activate before the first login.
-   */
+  /** POST /admin/managers or /admin/staff. The account is active and can sign in with the password set here. */
   async createStaff(command: CreateUserCommand): Promise<UserDTO> {
     if (isMockService('staff')) return staffMock.create(command)
     const path = command.role === 'MANAGER' ? 'managers' : 'staff'
@@ -133,6 +124,8 @@ export const identityService = {
       phoneNumber: command.phoneNumber,
       assignedParkingLot: command.assignedParkingLotIds[0],
     })
+    // The backend keeps a lot's Manager on the lot itself, so assign the chosen lots there
+    const assignedParkingLots = command.role === 'MANAGER' ? await assignManager(created.id, command.assignedParkingLotIds) : []
     return {
       id: created.id,
       employeeCode: created.employeeCode ?? '',
@@ -140,9 +133,9 @@ export const identityService = {
       email: command.email,
       phoneNumber: command.phoneNumber,
       role: command.role,
-      assignedParkingLots: [],
+      assignedParkingLots,
       shift: command.shift,
-      status: 'INACTIVE',
+      status: 'ACTIVE',
       createdAt: new Date().toISOString(),
     }
   },
@@ -182,9 +175,19 @@ function toUserDTO(account: InternalUserResponseDTO, managedLots: Map<string, En
     role: normalizeRole(account.role) === 'MANAGER' ? 'MANAGER' : 'STAFF',
     // A lot names its Manager; Staff lot assignments and shifts are not stored by the backend yet.
     assignedParkingLots: managedLots.get(account.id) ?? [],
-    status: account.isPendingActivation ? 'PENDING' : account.isActive ? 'ACTIVE' : 'INACTIVE',
+    status: account.isActive ? 'ACTIVE' : 'INACTIVE',
     createdAt: account.createdAt ?? '',
   }
+}
+
+/** Makes the user the Manager of each lot (PUT /lots/{id} with managerUserId). */
+async function assignManager(userId: string, lotIds: string[]): Promise<EntityRef[]> {
+  if (lotIds.length === 0) return []
+  const lots = (await lotManagementApi.list()).filter((lot) => lotIds.includes(lot.id))
+  for (const lot of lots) {
+    await lotManagementApi.saveLot({ ...lot, managerUserId: userId }, lot.id)
+  }
+  return lots.map(({ id, name }) => ({ id, name }))
 }
 
 /** Manager user id -> the lots they manage (from each lot's managerUserId). */
