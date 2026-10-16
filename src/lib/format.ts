@@ -16,7 +16,11 @@ export const formatNumber = (value: number) => numberFormatter.format(value)
 export const formatPercent = (value: number, fractionDigits = 1) =>
   `${value > 0 ? '+' : ''}${value.toFixed(fractionDigits)}%`
 
-export const formatDate = (iso: string) => dateFormatter.format(new Date(iso))
+/** "—" for a missing or unparseable date instead of throwing "Invalid time value". */
+export function formatDate(iso: string | null | undefined): string {
+  const date = iso ? new Date(iso) : null
+  return date && !Number.isNaN(date.getTime()) ? dateFormatter.format(date) : '—'
+}
 
 export const formatTime = (value: string | number | Date) => timeFormatter.format(new Date(value))
 

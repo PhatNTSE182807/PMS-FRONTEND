@@ -96,7 +96,8 @@ export interface RegisterResponseDTO {
 /* ------------------------------------------------------------------ */
 
 export type UserRole = 'MANAGER' | 'STAFF'
-export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+/** PENDING: created by an Admin, waiting for the user to set a password from the activation email. */
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING'
 export type WorkShift = 'MORNING' | 'AFTERNOON' | 'NIGHT'
 
 export interface UserDTO {
@@ -137,6 +138,9 @@ export interface InternalUserResponseDTO {
   role: string
   employeeCode: string | null
   isActive: boolean
+  /** Employee record creation time; null for customers. */
+  createdAt: string | null
+  isPendingActivation: boolean
 }
 
 /** PMS.Application.Models.User.CreateUserResponseModel for POST /admin/managers and /admin/staff. */

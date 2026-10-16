@@ -10,6 +10,7 @@ export const STATUS_OPTIONS: { value: UserStatus; label: string; tone: BadgeTone
   { value: 'ACTIVE', label: 'Active', tone: 'emerald' },
   { value: 'INACTIVE', label: 'Deactivated', tone: 'rose' },
   { value: 'SUSPENDED', label: 'Suspended', tone: 'amber' },
+  { value: 'PENDING', label: 'Pending activation', tone: 'sky' },
 ]
 
 export const SHIFT_OPTIONS: { value: WorkShift; label: string }[] = [

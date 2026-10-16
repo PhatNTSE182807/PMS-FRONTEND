@@ -3,7 +3,7 @@ import type { SessionUser } from '@/lib/session'
 import { authMock } from '@/mocks/auth.mock'
 import { customersMock, toCustomerPage } from '@/mocks/customers.mock'
 import { staffMock } from '@/mocks/users.mock'
-import type { PaginatedResponse } from '@/types/common.dto'
+import type { EntityRef, PaginatedResponse } from '@/types/common.dto'
 import type {
   AccountRole,
   ActivateAccountCommand,
@@ -100,14 +100,21 @@ export const identityService = {
     // The backend has no suspended state.
     if (query.status === 'SUSPENDED') return toPage([], query)
 
-    const accounts = await http.get<InternalUserResponseDTO[]>(`${SERVICE_PATHS.staff}/users`, {
-      params: {
-        role: query.role ? backendRole(query.role) : undefined,
-        isActive: query.status ? query.status === 'ACTIVE' : undefined,
-        searchTerm: query.search?.trim() || undefined,
-      },
-    })
-    const users = accounts.map(toUserDTO).sort((a, b) => a.fullName.localeCompare(b.fullName))
+    const [accounts, managedLots] = await Promise.all([
+      http.get<InternalUserResponseDTO[]>(`${SERVICE_PATHS.staff}/users`, {
+        params: {
+          role: query.role ? backendRole(query.role) : undefined,
+          isActive: query.status === 'ACTIVE' ? true : query.status ? false : undefined,
+          searchTerm: query.search?.trim() || undefined,
+        },
+      }),
+      lotsByManager(),
+    ])
+    const users = accounts
+      .map((account) => toUserDTO(account, managedLots))
+      .filter((user) => !query.status || user.status === query.status)
+      .filter((user) => !query.parkingLotId || user.assignedParkingLots.some((lot) => lot.id === query.parkingLotId))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName))
     return toPage(users, query)
   },
 
@@ -152,7 +159,7 @@ export const identityService = {
     const accounts = await http.get<InternalUserResponseDTO[]>(`${SERVICE_PATHS.staff}/users`)
     const account = accounts.find((a) => a.id === id)
     if (!account) throw new Error('The account no longer exists.')
-    return toUserDTO(account)
+    return toUserDTO(account, await lotsByManager())
   },
 
   resetStaffPassword(id: string): Promise<ResetPasswordResultDTO> {
@@ -165,7 +172,7 @@ function backendRole(role: UserRole): string {
   return role === 'MANAGER' ? 'Manager' : 'Staff'
 }
 
-function toUserDTO(account: InternalUserResponseDTO): UserDTO {
+function toUserDTO(account: InternalUserResponseDTO, managedLots: Map<string, EntityRef[]>): UserDTO {
   return {
     id: account.id,
     employeeCode: account.employeeCode ?? '',
@@ -173,11 +180,22 @@ function toUserDTO(account: InternalUserResponseDTO): UserDTO {
     email: account.email,
     phoneNumber: account.phoneNumber ?? '',
     role: normalizeRole(account.role) === 'MANAGER' ? 'MANAGER' : 'STAFF',
-    // Lot assignment and shifts are not stored by the backend yet.
-    assignedParkingLots: [],
-    status: account.isActive ? 'ACTIVE' : 'INACTIVE',
-    createdAt: '',
+    // A lot names its Manager; Staff lot assignments and shifts are not stored by the backend yet.
+    assignedParkingLots: managedLots.get(account.id) ?? [],
+    status: account.isPendingActivation ? 'PENDING' : account.isActive ? 'ACTIVE' : 'INACTIVE',
+    createdAt: account.createdAt ?? '',
   }
+}
+
+/** Manager user id -> the lots they manage (from each lot's managerUserId). */
+async function lotsByManager(): Promise<Map<string, EntityRef[]>> {
+  const lots = await http.get<{ id: number; name: string; managerUserId: string | null }[]>(`${SERVICE_PATHS.parking}/lots`)
+  const byManager = new Map<string, EntityRef[]>()
+  for (const lot of lots) {
+    if (!lot.managerUserId) continue
+    byManager.set(lot.managerUserId, [...(byManager.get(lot.managerUserId) ?? []), { id: String(lot.id), name: lot.name }])
+  }
+  return byManager
 }
 
 /** The backend requires a username; staff are created from an email, so derive it from there. */
