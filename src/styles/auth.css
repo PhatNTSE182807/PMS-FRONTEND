@@ -70,7 +70,7 @@
 .auth-shell__brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.875rem;
   color: inherit;
   text-decoration: none;
 }
@@ -79,10 +79,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0.3rem;
-  border-radius: 0.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0.35rem;
+  border-radius: 0.625rem;
   background: rgba(24, 33, 39, 0.6);
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
@@ -96,7 +96,7 @@
 
 .auth-shell__brand-name {
   font-family: var(--auth-headline-font);
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
