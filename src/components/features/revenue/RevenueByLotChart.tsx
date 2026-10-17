@@ -47,7 +47,7 @@ export function RevenueByLotChart({ data, isLoading }: { data?: RevenueByParking
                 tick={{ fill: CHART_TEXT.secondary, fontSize: 12 }}
               />
               <Tooltip
-                cursor={{ fill: '#f1f5f9' }}
+                cursor={{ fill: '#222b32' }}
                 content={(props) => (
                   <ChartTooltip
                     active={props.active}

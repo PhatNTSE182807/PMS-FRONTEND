@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import ApiStatusBadge from '@/components/ApiStatusBadge'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { homePathFor, useAuth } from '@/hooks/useAuth'
+import { homePathFor, useAuth, useSignOut } from '@/hooks/useAuth'
 import { DEMO_DRIVER } from '@/mocks/auth.mock'
 
 /** Context handed to the login/register/driver pages rendered inside this shell. */
@@ -18,7 +18,7 @@ export interface ClassicOutletContext {
 const AUTH_PATHS = ['/login', '/register']
 
 export function ClassicLayout() {
-  const { user, logout, startDemo } = useAuth()
+  const { user, startDemo } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isDriverView = pathname.startsWith('/me')
@@ -36,11 +36,7 @@ export function ClassicLayout() {
 
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-    showToast('Logged out successfully. See you again!')
-  }
+  const handleLogout = useSignOut()
 
   const openDriverDashboard = () => {
     // Without a session, the tab opens the dashboard with the demo driver (as before).

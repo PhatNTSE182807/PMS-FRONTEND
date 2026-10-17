@@ -75,7 +75,7 @@ export function RevenueTrendChart({ data, isLoading }: RevenueTrendChartProps) {
               <XAxis dataKey="date" {...axisProps} tickFormatter={formatPeriod(granularity)} minTickGap={24} dy={6} />
               <YAxis {...axisProps} tickFormatter={formatVndCompact} width={72} />
               <Tooltip
-                cursor={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                cursor={{ stroke: '#41484c', strokeWidth: 1 }}
                 content={(props) => (
                   <ChartTooltip
                     active={props.active}
@@ -96,7 +96,7 @@ export function RevenueTrendChart({ data, isLoading }: RevenueTrendChartProps) {
                   strokeWidth={2}
                   fill={s.color}
                   fillOpacity={0.1}
-                  activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2 }}
+                  activeDot={{ r: 4, stroke: '#182127', strokeWidth: 2 }}
                   dot={false}
                   isAnimationActive={false}
                 />

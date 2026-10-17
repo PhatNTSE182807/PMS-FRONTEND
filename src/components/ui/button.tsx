@@ -8,12 +8,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500',
+        default: 'bg-indigo-600 text-slate-950 shadow-sm hover:bg-indigo-500',
         secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200',
         outline: 'border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900',
         ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-        destructive: 'bg-rose-600 text-white shadow-sm hover:bg-rose-500',
-        success: 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-500',
+        destructive: 'bg-rose-600 text-slate-950 shadow-sm hover:bg-rose-500',
+        gold: 'bg-(--color-gold) font-semibold text-(--color-on-gold) shadow-sm hover:bg-(--color-gold-hover)',
+        success: 'bg-emerald-600 text-[#06281c] shadow-sm hover:bg-emerald-500',
       },
       size: {
         sm: 'h-8 px-3 text-xs',

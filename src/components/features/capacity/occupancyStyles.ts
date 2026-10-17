@@ -24,8 +24,8 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     tone: 'emerald',
     fill: 'bg-emerald-500',
     track: 'bg-emerald-100',
-    stroke: '#4F8A5B',
-    trackStroke: '#DCEADD',
+    stroke: '#10B981',
+    trackStroke: '#10372A',
   },
   HIGH: {
     label: 'Filling up',
@@ -33,8 +33,8 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     tone: 'amber',
     fill: 'bg-amber-500',
     track: 'bg-amber-100',
-    stroke: '#C28A2C',
-    trackStroke: '#F5E7CC',
+    stroke: '#E9C349',
+    trackStroke: '#3A3013',
   },
   CRITICAL: {
     label: 'Overloaded',
@@ -42,8 +42,8 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     tone: 'rose',
     fill: 'bg-rose-500',
     track: 'bg-rose-100',
-    stroke: '#B8433A',
-    trackStroke: '#F6D8D4',
+    stroke: '#EF4444',
+    trackStroke: '#3D1A1C',
   },
 }
 

@@ -1,5 +1,7 @@
 @theme {
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --animate-pulse-soft: pulse-soft 1.6s ease-in-out infinite;
 
@@ -10,90 +12,99 @@
 }
 
 /*
- * "Minimal Yet Warm" palette for the admin dashboard. The components use stock Tailwind
- * colour utilities; re-pointing the colour variables here re-themes all of them:
- * slate -> sand/stone neutrals, indigo -> coral (primary), violet -> tan, sky -> stone,
- * rose -> deep red (danger), emerald -> sage (success), amber -> ochre (warning).
+ * Dark "XXIV Sovereign Telemetry" palette for the admin dashboard (Stitch "Admin Command").
+ * The components use stock Tailwind colour utilities; re-pointing the colour variables here
+ * re-themes all of them. The scales are inverted for the dark surface: `white` is the card
+ * surface, slate-50 the faintest tint and slate-950 the brightest text.
+ * indigo -> teal (primary), amber/violet -> gold, sky -> steel, emerald/rose -> status.
  */
 .admin-root {
-  --color-white: #FBFAF6;
-  --color-slate-50: #F1EEE6;
-  --color-slate-100: #EAE7DC;
-  --color-slate-200: #DDD6C8;
-  --color-slate-300: #C9C0AF;
-  --color-slate-400: #A8A197;
-  --color-slate-500: #8E8D8A;
-  --color-slate-600: #6F6A64;
-  --color-slate-700: #57524C;
-  --color-slate-800: #45403B;
-  --color-slate-900: #3B3632;
-  --color-slate-950: #2A2623;
-  --color-indigo-50: #FDF0EE;
-  --color-indigo-100: #FBDCD8;
-  --color-indigo-200: #F6B9B2;
-  --color-indigo-300: #F0968C;
-  --color-indigo-400: #E98074;
-  --color-indigo-500: #E85A4F;
-  --color-indigo-600: #D94C41;
-  --color-indigo-700: #C2453B;
-  --color-indigo-800: #9E3D35;
-  --color-indigo-900: #7E342E;
-  --color-indigo-950: #45191A;
-  --color-violet-50: #F8F3EB;
-  --color-violet-100: #F0E6D6;
-  --color-violet-200: #E5D4BA;
-  --color-violet-300: #D8C3A5;
-  --color-violet-400: #C8AC86;
-  --color-violet-500: #B8976B;
-  --color-violet-600: #9C7C53;
-  --color-violet-700: #7E6443;
-  --color-violet-800: #634F36;
-  --color-violet-900: #4D3D2A;
-  --color-violet-950: #2C2318;
-  --color-sky-50: #F3F2F1;
-  --color-sky-100: #E6E5E3;
-  --color-sky-200: #CFCDCA;
-  --color-sky-300: #B3B1AD;
-  --color-sky-400: #9D9B97;
-  --color-sky-500: #8E8D8A;
-  --color-sky-600: #75736F;
-  --color-sky-700: #5E5C59;
-  --color-sky-800: #4A4846;
-  --color-sky-900: #3A3937;
-  --color-sky-950: #222120;
-  --color-rose-50: #FBEEEC;
-  --color-rose-100: #F6D8D4;
-  --color-rose-200: #EDB3AC;
-  --color-rose-300: #E08A80;
-  --color-rose-400: #CF655A;
-  --color-rose-500: #B8433A;
-  --color-rose-600: #A33A32;
-  --color-rose-700: #88302A;
-  --color-rose-800: #6E2823;
-  --color-rose-900: #5A221E;
-  --color-rose-950: #31110F;
-  --color-emerald-50: #EFF5EF;
-  --color-emerald-100: #DCEADD;
-  --color-emerald-200: #BBD6BE;
-  --color-emerald-300: #93BD98;
-  --color-emerald-400: #6FA67A;
-  --color-emerald-500: #4F8A5B;
-  --color-emerald-600: #427650;
-  --color-emerald-700: #365F41;
-  --color-emerald-800: #2C4C35;
-  --color-emerald-900: #243E2C;
-  --color-emerald-950: #132219;
-  --color-amber-50: #FBF5EA;
-  --color-amber-100: #F5E7CC;
-  --color-amber-200: #EBD09D;
-  --color-amber-300: #DDB46B;
-  --color-amber-400: #D29E47;
-  --color-amber-500: #C28A2C;
-  --color-amber-600: #A57424;
-  --color-amber-700: #855D1F;
-  --color-amber-800: #6B4B1B;
-  --color-amber-900: #573D17;
-  --color-amber-950: #30210B;
+  --color-white: #182127;
+  --color-black: #000000;
+  --color-slate-50: #141d23;
+  --color-slate-100: #1d272e;
+  --color-slate-200: #2d363d;
+  --color-slate-300: #41484c;
+  --color-slate-400: #6f787d;
+  --color-slate-500: #8a9297;
+  --color-slate-600: #a7b0b6;
+  --color-slate-700: #c0c7cd;
+  --color-slate-800: #d0d9e1;
+  --color-slate-900: #dae4ed;
+  --color-slate-950: #f2f7fa;
+  --color-indigo-50: #0f2731;
+  --color-indigo-100: #12303e;
+  --color-indigo-200: #1a4558;
+  --color-indigo-300: #2f647d;
+  --color-indigo-400: #9acdea;
+  --color-indigo-500: #3a91b5;
+  --color-indigo-600: #2a7fa3;
+  --color-indigo-700: #9acdea;
+  --color-indigo-800: #c1e8ff;
+  --color-indigo-900: #dff3ff;
+  --color-indigo-950: #f0faff;
+  --color-violet-50: #2a2414;
+  --color-violet-100: #3a3120;
+  --color-violet-200: #5a4a2a;
+  --color-violet-300: #8a7340;
+  --color-violet-400: #b89a5a;
+  --color-violet-500: #c8ac86;
+  --color-violet-600: #b8976b;
+  --color-violet-700: #e5c99a;
+  --color-violet-800: #f0dcbc;
+  --color-violet-900: #f8ecd8;
+  --color-violet-950: #fdf7ec;
+  --color-sky-50: #13232a;
+  --color-sky-100: #1a2e36;
+  --color-sky-200: #2a4048;
+  --color-sky-300: #4b6a72;
+  --color-sky-400: #748d92;
+  --color-sky-500: #8aa7ad;
+  --color-sky-600: #a2bcc1;
+  --color-sky-700: #b1cbd0;
+  --color-sky-800: #cde7ed;
+  --color-sky-900: #e2f3f6;
+  --color-sky-950: #f2fafb;
+  --color-rose-50: #2e1416;
+  --color-rose-100: #3d1a1c;
+  --color-rose-200: #5c2427;
+  --color-rose-300: #9b3a3a;
+  --color-rose-400: #f87171;
+  --color-rose-500: #e5534b;
+  --color-rose-600: #d9443c;
+  --color-rose-700: #ffb4ab;
+  --color-rose-800: #ffdad6;
+  --color-rose-900: #ffecea;
+  --color-rose-950: #fff6f5;
+  --color-emerald-50: #0d2a20;
+  --color-emerald-100: #10372a;
+  --color-emerald-200: #17513d;
+  --color-emerald-300: #2a7a5a;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #19a974;
+  --color-emerald-600: #10b981;
+  --color-emerald-700: #6fdba8;
+  --color-emerald-800: #a7f0cd;
+  --color-emerald-900: #d4f8e6;
+  --color-emerald-950: #ecfdf5;
+  --color-amber-50: #2b2410;
+  --color-amber-100: #3a3013;
+  --color-amber-200: #574500;
+  --color-amber-300: #af8d11;
+  --color-amber-400: #e9c349;
+  --color-amber-500: #d4af37;
+  --color-amber-600: #e9c349;
+  --color-amber-700: #e9c349;
+  --color-amber-800: #ffe088;
+  --color-amber-900: #fff0c2;
+  --color-amber-950: #fff8e1;
+
+  /* Gold call-to-action and its ink, for the few gold buttons (see button.tsx "gold"). */
+  --color-gold: #e9c349;
+  --color-gold-hover: #ffe088;
+  --color-on-gold: #3c2f00;
+
+  color-scheme: dark;
 }
 
 /* Tailwind preflight, scoped to the admin dashboard (and its portalled overlays). */
@@ -211,4 +222,9 @@
 
 @keyframes admin-page-enter {
   from { opacity: 0; transform: translateY(4px); }
+}
+
+/* The page behind the dark dashboard (visible on overscroll and short pages). */
+body:has(.admin-root) {
+  background: #0b141b;
 }

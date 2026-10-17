@@ -1,5 +1,5 @@
 import { Suspense, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ChevronRight, LogOut, Menu } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
@@ -10,26 +10,73 @@ import { Dialog, DialogTitle, NavDrawerContent } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { isMockService } from '@/config/env'
-import { roleLabel, useAuth } from '@/hooks/useAuth'
-import { initials } from '@/lib/format'
+import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
+import { useParkingCapacity } from '@/hooks/useParking'
+import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
+
+/** Live bay count of the whole network, shown at the bottom of the sidebar. */
+function NetworkFooter() {
+  const { data: lots = [] } = useParkingCapacity()
+  const totals = lots.reduce(
+    (sum, lot) => {
+      for (const d of lot.capacityByVehicle) {
+        sum.total += d.totalSlots
+        sum.occupied += d.totalSlots - d.availableSlots
+      }
+      return sum
+    },
+    { total: 0, occupied: 0 },
+  )
+
+  return (
+    <div className="space-y-3 px-4 pb-4">
+      <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+        <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+          IoT telemetry nodes
+          <span className="size-2 animate-pulse-soft rounded-full bg-amber-500" aria-hidden />
+        </div>
+        <div className="mt-1.5 flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-900">Bays occupied</span>
+          <span className="font-display text-base font-semibold text-indigo-700 tabular-nums">
+            {formatNumber(totals.occupied)} / {formatNumber(totals.total)}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between px-1 text-xs">
+        <span className="font-semibold text-slate-700">Command Node XXIV</span>
+        <span className="font-mono text-slate-500">{lots.length} hubs</span>
+      </div>
+    </div>
+  )
+}
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth()
   const navigation = user?.role === 'MANAGER' ? MANAGER_NAV : ADMIN_NAV
   return (
-    <div className="flex h-full w-full flex-col bg-slate-950 text-slate-300">
-      <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
-        <img src={LOGO_SRC} alt="" className="h-10 w-auto shrink-0 drop-shadow" />
+    <div className="flex h-full w-full flex-col border-r border-slate-200 bg-[#101920] text-slate-700">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-5">
+        <img src={LOGO_SRC} alt="" className="h-11 w-auto shrink-0 drop-shadow" />
         <div className="leading-tight">
-          <p className="text-sm font-semibold text-white">XXIV Parking</p>
-          <p className="text-xs text-slate-400">Admin console</p>
+          <p className="font-display text-lg font-bold tracking-wide text-slate-950">
+            XXIV <span className="text-amber-500">PARKING</span>
+          </p>
+          <p className="text-xs font-bold tracking-[0.14em] text-indigo-700 uppercase">
+            {user?.role === 'MANAGER' ? 'Manager console' : 'Admin command'}
+          </p>
         </div>
       </div>
 
-      <nav aria-label="Admin navigation" className="flex-1 space-y-1 px-3 py-5">
-        <p className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Administration</p>
+      <div className="mx-3 flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-xs font-semibold tracking-wider text-slate-700 uppercase">
+        Ops hub core
+        <span className="rounded bg-indigo-100 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-indigo-700 normal-case">
+          v4.8-prod
+        </span>
+      </div>
+
+      <nav aria-label="Admin navigation" className="flex-1 space-y-1 px-3 py-4">
         {navigation.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -37,23 +84,25 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive ? 'bg-indigo-500/15 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white',
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors',
+                isActive ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
               )
             }
           >
             {({ isActive }) => (
               <>
-                <Icon className={cn('size-4.5', isActive ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300')} aria-hidden />
+                <Icon
+                  className={cn('size-5', isActive ? 'text-indigo-800' : 'text-slate-500 group-hover:text-amber-500')}
+                  aria-hidden
+                />
                 {label}
-                {isActive && <span className="ml-auto size-1.5 rounded-full bg-indigo-400" aria-hidden />}
               </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="border-t border-white/10 px-5 py-4 text-xs text-slate-500">XXIV Parking</div>
+      <NetworkFooter />
     </div>
   )
 }
@@ -77,23 +126,19 @@ function PageSkeleton() {
 
 /** Shell of the admin dashboard: sidebar navigation, top bar and page outlet. */
 export function AdminLayout() {
-  const { user, isDemo, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, isDemo } = useAuth()
   const { pathname } = useLocation()
   const [isNavOpen, setIsNavOpen] = useState(false)
 
   const current = [...ADMIN_NAV, ...MANAGER_NAV].find((item) => pathname.startsWith(item.to))
   const usesMockData = isDemo || isMockService('staff') || isMockService('parking') || isMockService('capacity') || isMockService('reports')
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = useSignOut()
 
   return (
-    <div className="admin-root min-h-dvh bg-slate-50">
+    <div className="admin-root min-h-dvh bg-[#0b141b]">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 lg:flex">
         <SidebarContent />
       </aside>
 
@@ -105,15 +150,20 @@ export function AdminLayout() {
         </NavDrawerContent>
       </Dialog>
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/85 px-4 backdrop-blur sm:px-6 lg:px-8">
+      <div className="lg:pl-72">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-[#0b141b]/90 px-4 backdrop-blur sm:px-6 lg:px-8">
           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu" onClick={() => setIsNavOpen(true)}>
             <Menu />
           </Button>
 
+          <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-900 uppercase ring-1 ring-slate-200 md:inline-flex">
+            <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
+            Saigon edge cluster
+          </span>
+
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
             <span className="hidden text-slate-500 sm:inline">Administration</span>
-            <ChevronRight className="hidden size-4 text-slate-300 sm:inline" aria-hidden />
+            <ChevronRight className="hidden size-4 text-slate-400 sm:inline" aria-hidden />
             <span className="truncate font-medium text-slate-900">{current?.label ?? 'Overview'}</span>
           </nav>
 
@@ -124,12 +174,10 @@ export function AdminLayout() {
               </Badge>
             )}
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
-              <div className="grid size-8 place-items-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
-                {initials(user?.fullName ?? 'A')}
-              </div>
+              <img src={LOGO_SRC} alt="" className="size-9 rounded-full bg-slate-50 object-contain p-0.5 ring-1 ring-amber-300" />
               <div className="hidden leading-tight md:block">
-                <p className="text-sm font-medium text-slate-900">{user?.fullName}</p>
-                <p className="text-xs text-slate-500">{roleLabel(user?.role)}</p>
+                <p className="text-sm font-semibold text-slate-950">{user?.fullName}</p>
+                <p className="text-xs font-bold tracking-wide text-amber-500 uppercase">{roleLabel(user?.role)}</p>
               </div>
               <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={handleLogout}>
                 <LogOut />
@@ -155,7 +203,7 @@ export function AdminLayout() {
         </main>
       </div>
 
-      <Toaster position="top-right" richColors closeButton toastOptions={{ className: 'font-sans' }} />
+      <Toaster position="top-right" theme="dark" richColors closeButton toastOptions={{ className: 'font-sans' }} />
     </div>
   )
 }

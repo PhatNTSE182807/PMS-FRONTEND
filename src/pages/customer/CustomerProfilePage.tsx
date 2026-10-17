@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ChevronRight,
@@ -26,7 +25,7 @@ import {
   memberCode,
   passwordScore,
 } from '@/components/customer/customerFormat'
-import { roleLabel, useAuth } from '@/hooks/useAuth'
+import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useChangePassword, useProfile, useUpdateProfile, useVehicles } from '@/hooks/useProfile'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -101,8 +100,7 @@ const SECTIONS = [
 ]
 
 export default function CustomerProfilePage() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
   const profileQuery = useProfile()
   const profile = profileQuery.data
   const { data: vehicles = [] } = useVehicles()
@@ -158,10 +156,7 @@ export default function CustomerProfilePage() {
     })
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = useSignOut()
 
   return (
     <>

@@ -91,7 +91,7 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
                     <XAxis dataKey="hour" {...axisProps} />
                     <YAxis {...axisProps} tickFormatter={formatNumber} />
                     <Tooltip
-                      cursor={{ fill: '#f1f5f9' }}
+                      cursor={{ fill: '#222b32' }}
                       content={(props) => (
                         <ChartTooltip
                           active={props.active}

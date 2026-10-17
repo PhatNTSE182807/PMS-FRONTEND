@@ -11,8 +11,10 @@ import RegisterPage from '@/pages/RegisterPage'
 import CustomerDashboardPage from '@/pages/customer/CustomerDashboardPage'
 import CustomerProfilePage from '@/pages/customer/CustomerProfilePage'
 import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
+import CustomerBookingsPage from '@/pages/customer/CustomerBookingsPage'
 
 // Admin pages are code-split: drivers never download the dashboard (or its chart library).
+const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'))
 const ParkingLotsPage = lazy(() => import('@/pages/admin/ParkingLotsPage'))
 const StaffAccountsPage = lazy(() => import('@/pages/admin/StaffAccountsPage'))
 const CustomerAccountsPage = lazy(() => import('@/pages/admin/CustomerAccountsPage'))
@@ -41,6 +43,7 @@ export const router = createBrowserRouter([
       { index: true, element: <CustomerDashboardPage /> },
       { path: 'profile', element: <CustomerProfilePage /> },
       { path: 'vehicles', element: <RegisterVehiclePage /> },
+      { path: 'bookings', element: <CustomerBookingsPage /> },
     ],
   },
   {
@@ -51,7 +54,8 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="staff" replace /> },
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'dashboard', element: <AdminDashboardPage /> },
       { path: 'staff', element: <StaffAccountsPage /> },
       { path: 'customers', element: <CustomerAccountsPage /> },
       { path: 'lots', element: <ParkingLotsPage /> },

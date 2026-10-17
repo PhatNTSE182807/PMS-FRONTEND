@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { LogOut, Shield } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { LOGO_SRC } from '@/components/ParkingLogo'
-import { roleLabel, useAuth } from '@/hooks/useAuth'
+import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { initials } from './customerFormat'
 import '@/styles/customer.css'
@@ -13,16 +13,16 @@ const LINKS = [
   { to: '/me', label: 'Dashboard', end: true },
   { to: '/me#session', label: 'Active Session' },
   { to: '/me/vehicles', label: 'My Vehicles' },
+  { to: '/me/bookings', label: 'My Bookings' },
   { to: '/me#map', label: 'Book Slot' },
-  { to: '/me#history', label: 'History' },
+  { to: '/me/bookings#history', label: 'History' },
   { to: '/me/profile', label: 'Profile' },
 ]
 
 /** Layout of the signed-in customer area: top navigation, page outlet and footer. */
 export function CustomerShell() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { data: profile } = useProfile()
-  const navigate = useNavigate()
   const { pathname, hash } = useLocation()
 
   // React Router does not follow #anchors: scroll to the section, or to the top on a new page.
@@ -38,13 +38,12 @@ export function CustomerShell() {
   const isActive = (to: string, end?: boolean) => {
     const [path, anchor] = to.split('#')
     if (anchor) return pathname === path && hash === `#${anchor}`
+    // A section link (e.g. History) wins over the page it lives on.
+    if (hash && LINKS.some((l) => l.to === pathname + hash)) return false
     return end ? pathname === path && !hash : pathname.startsWith(path)
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = useSignOut()
 
   return (
     <div className="cx">

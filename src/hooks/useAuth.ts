@@ -1,5 +1,6 @@
-import { useContext } from 'react'
+import { useCallback, useContext } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { identityService } from '@/api/identity.service'
 import type { AccountRole } from '@/types/identity.dto'
 import {
@@ -14,6 +15,20 @@ export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) throw new Error('useAuth must be used inside <AuthProvider>.')
   return context
+}
+
+/**
+ * Signs out and lands on the public homepage. The navigation is committed first (flushSync,
+ * not a transition): clearing the session while a protected page is still mounted would let
+ * its guard redirect to /login.
+ */
+export function useSignOut() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+  return useCallback(async () => {
+    await navigate('/', { replace: true, flushSync: true })
+    logout()
+  }, [logout, navigate])
 }
 
 export function useLogin() {

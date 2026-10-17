@@ -15,7 +15,7 @@ export const DialogClose = DialogPrimitive.Close
 
 function Overlay() {
   return (
-    <DialogPrimitive.Overlay className="admin-root fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-[2px] admin-overlay" />
+    <DialogPrimitive.Overlay className="admin-root fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] admin-overlay" />
   )
 }
 
@@ -138,11 +138,11 @@ export function ConfirmDialog({
             disabled={pending}
             onClick={onConfirm}
             className={cn(
-              'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium text-white shadow-sm disabled:opacity-60',
+              'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium text-slate-950 shadow-sm disabled:opacity-60',
               tone === 'destructive' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500',
             )}
           >
-            {pending && <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+            {pending && <span className="size-3.5 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950" />}
             {confirmLabel}
           </button>
         </DialogFooter>
