@@ -53,7 +53,8 @@ const HOURLY_PROFILE = [
   0.055, 0.05, 0.048, 0.05, 0.06, 0.08, 0.085, 0.07, 0.05, 0.03, 0.015, 0.009,
 ]
 
-const zoneType = (name: string): SlotType => (toSearchable(name).includes('o to') ? 'CAR' : 'MOTORBIKE')
+/** Car zones are named "… - Cars" or "Car park"; every other zone holds motorbikes. */
+const zoneType = (name: string): SlotType => (/\bcars?\b/.test(toSearchable(name)) ? 'CAR' : 'MOTORBIKE')
 
 /** Splits `total` into `parts` integer chunks with mild random weights. */
 function split(total: number, parts: number, random: () => number): number[] {

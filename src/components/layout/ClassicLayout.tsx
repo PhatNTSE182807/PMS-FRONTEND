@@ -67,7 +67,7 @@ export function ClassicLayout() {
       {!isAuthView && (
         <nav className="global-header">
           <div className="global-header__left">
-            <div className="brand-pill" onClick={() => navigate('/login')} style={{ cursor: 'pointer' }}>
+            <div className="brand-pill" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
               <img src={LOGO_SRC} alt="" className="brand-logo" />
               <span className="brand-text">XXIV PARKING</span>
             </div>

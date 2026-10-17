@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ClassicLayout } from '@/components/layout/ClassicLayout'
 import { HomeRedirect } from '@/components/layout/HomeRedirect'
 import { RequireAuth } from '@/components/layout/RequireAuth'
+import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
 import OtpLoginPage from '@/pages/OtpLoginPage'
 import RegisterPage from '@/pages/RegisterPage'
@@ -17,6 +18,8 @@ const RevenueReportPage = lazy(() => import('@/pages/admin/RevenueReportPage'))
 const ParkingCapacityPage = lazy(() => import('@/pages/admin/ParkingCapacityPage'))
 
 export const router = createBrowserRouter([
+  // Public landing page, outside ClassicLayout: it has its own navigation bar.
+  { path: '/', element: <HomePage /> },
   {
     element: <ClassicLayout />,
     children: [

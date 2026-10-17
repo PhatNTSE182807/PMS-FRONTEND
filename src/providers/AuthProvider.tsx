@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { identityService, toSessionUser } from '@/api/identity.service'
 import { session, type SessionUser } from '@/lib/session'
@@ -20,9 +20,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // The session store is the source of truth (the HTTP client clears it on 401).
   useEffect(() => session.subscribe(setUser), [])
 
-  // Never show one account's cached data to the next account.
+  // Never show one account's cached data to the next account: clear on sign-out only.
+  // Clearing while signed out on first load would also drop the public pages' in-flight
+  // queries (the homepage's live availability then waited for the next refetch).
+  const previousUser = useRef(user)
   useEffect(() => {
-    if (!user) queryClient.clear()
+    if (previousUser.current && !user) queryClient.clear()
+    previousUser.current = user
   }, [user, queryClient])
 
   const startSession = useCallback((response: LoginResponseDTO, rememberMe: boolean) => {
