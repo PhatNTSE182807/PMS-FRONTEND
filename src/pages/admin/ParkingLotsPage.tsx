@@ -158,7 +158,7 @@ export default function ParkingLotsPage() {
             </>
           )
         }
-        title={selected ? title : 'Parking Lots & Facilities Management'}
+        title={selected ? title : admin ? 'Parking Lots & Facilities Management' : 'Facility Zones & Bays'}
         description={
           selected
             ? 'Lot details, zones and reservable slots.'

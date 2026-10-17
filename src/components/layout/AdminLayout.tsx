@@ -1,7 +1,7 @@
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ChevronRight, LogOut, Menu } from 'lucide-react'
+import { Building2, ChevronRight, LogOut, Menu } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { isMockService } from '@/config/env'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
+import { useManagerLot } from '@/hooks/useManagerLot'
 import { useParkingCapacity } from '@/hooks/useParking'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -49,6 +50,29 @@ function NetworkFooter() {
         <span className="font-mono text-slate-500">{lots.length} hubs</span>
       </div>
     </div>
+  )
+}
+
+/** Manager top bar: which assigned lot the console is showing. */
+function ManagerLotSelect() {
+  const { lots, lot, setLotId } = useManagerLot()
+  if (!lots.data?.length) return null
+  return (
+    <label className="flex items-center gap-2.5 rounded-lg bg-slate-100 py-1 pr-1 pl-3 ring-1 ring-slate-200">
+      <Building2 className="size-4 shrink-0 text-amber-500" aria-hidden />
+      <span className="sr-only">Parking lot</span>
+      <select
+        value={lot?.id}
+        onChange={(e) => setLotId(e.target.value)}
+        className="max-w-56 cursor-pointer truncate bg-transparent py-1 pr-1 text-sm font-semibold text-slate-950 focus-visible:outline-none"
+      >
+        {lots.data.map((l) => (
+          <option key={l.id} value={l.id} className="bg-white">
+            {l.name} · {l.code}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }
 
@@ -156,10 +180,14 @@ export function AdminLayout() {
             <Menu />
           </Button>
 
-          <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-900 uppercase ring-1 ring-slate-200 md:inline-flex">
-            <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
-            Saigon edge cluster
-          </span>
+          {user?.role === 'MANAGER' ? (
+            <ManagerLotSelect />
+          ) : (
+            <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-900 uppercase ring-1 ring-slate-200 md:inline-flex">
+              <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
+              Saigon edge cluster
+            </span>
+          )}
 
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
             <span className="hidden text-slate-500 sm:inline">Administration</span>

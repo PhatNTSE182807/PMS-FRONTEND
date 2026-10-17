@@ -1,4 +1,4 @@
-import { ChartColumnBig, Gauge, LayoutDashboard, SquareParking, UserCog, Users, type LucideIcon } from 'lucide-react'
+import { BadgeDollarSign, CalendarCheck, ChartColumnBig, ClipboardCheck, Gauge, LayoutDashboard, Network, SquareParking, UserCog, Users, type LucideIcon } from 'lucide-react'
 
 export interface AdminNavItem {
   to: string
@@ -8,7 +8,12 @@ export interface AdminNavItem {
 
 /** Sidebar entries of the admin dashboard, in display order. */
 export const MANAGER_NAV: AdminNavItem[] = [
-  { to: '/management/lots', label: 'Parking Facilities', icon: SquareParking },
+  { to: '/management/console', label: 'Overview Console', icon: LayoutDashboard },
+  { to: '/management/reservations', label: 'Reservations & Slots', icon: CalendarCheck },
+  { to: '/management/approvals', label: 'Approval Queue', icon: ClipboardCheck },
+  { to: '/management/pricing', label: 'Pricing & Tariffs', icon: BadgeDollarSign },
+  { to: '/management/staff', label: 'Staff & POS Assignment', icon: UserCog },
+  { to: '/management/lots', label: 'Facility Zones & Bays', icon: Network },
 ]
 
 export const ADMIN_NAV: AdminNavItem[] = [

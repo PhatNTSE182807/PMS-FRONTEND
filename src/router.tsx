@@ -20,6 +20,11 @@ const StaffAccountsPage = lazy(() => import('@/pages/admin/StaffAccountsPage'))
 const CustomerAccountsPage = lazy(() => import('@/pages/admin/CustomerAccountsPage'))
 const RevenueReportPage = lazy(() => import('@/pages/admin/RevenueReportPage'))
 const ParkingCapacityPage = lazy(() => import('@/pages/admin/ParkingCapacityPage'))
+const ManagerConsolePage = lazy(() => import('@/pages/management/ManagerConsolePage'))
+const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerReservationsPage'))
+const ManagerApprovalsPage = lazy(() => import('@/pages/management/ManagerApprovalsPage'))
+const ManagerPricingPage = lazy(() => import('@/pages/management/ManagerPricingPage'))
+const ManagerStaffPage = lazy(() => import('@/pages/management/ManagerStaffPage'))
 
 export const router = createBrowserRouter([
   // Public landing page, outside ClassicLayout: it has its own navigation bar.
@@ -67,7 +72,12 @@ export const router = createBrowserRouter([
     path: '/management',
     element: <RequireAuth roles={['MANAGER']}><AdminLayout /></RequireAuth>,
     children: [
-      { index: true, element: <Navigate to="lots" replace /> },
+      { index: true, element: <Navigate to="console" replace /> },
+      { path: 'console', element: <ManagerConsolePage /> },
+      { path: 'reservations', element: <ManagerReservationsPage /> },
+      { path: 'approvals', element: <ManagerApprovalsPage /> },
+      { path: 'pricing', element: <ManagerPricingPage /> },
+      { path: 'staff', element: <ManagerStaffPage /> },
       { path: 'lots', element: <ParkingLotsPage /> },
     ],
   },

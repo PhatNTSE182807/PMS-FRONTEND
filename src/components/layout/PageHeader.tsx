@@ -26,6 +26,18 @@ export function PageHeader({ title, description, eyebrow, actions }: PageHeaderP
   )
 }
 
+/** Marks a section that shows sample data because its API does not exist yet. */
+export function DemoTag() {
+  return (
+    <span
+      className="inline-flex items-center rounded border border-dashed border-amber-300 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-500 uppercase"
+      title="Sample data: this section has no API yet"
+    >
+      Demo
+    </span>
+  )
+}
+
 /** Teal pill used inside a PageHeader eyebrow. */
 export function EyebrowTag({ children }: { children: ReactNode }) {
   return <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-indigo-700">{children}</span>
