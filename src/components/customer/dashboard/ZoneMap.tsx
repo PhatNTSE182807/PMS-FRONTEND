@@ -1,17 +1,18 @@
-import { useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Bike, Car, CircleCheck, Info, MapPin, Zap } from 'lucide-react'
+import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, X } from 'lucide-react'
 import { formatNumber } from '@/lib/format'
-import type { CapacityVehicleType, ParkingLotCapacityDTO, ZoneCapacityDTO } from '@/types/parking.dto'
+import { demoTariffs } from '@/mocks/managerOps.mock'
+import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
+import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
 
-const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike, EV_CHARGING: Zap }
-const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Car', MOTORBIKE: 'Motorbike', EV_CHARGING: 'EV charging' }
+// three.js is large: load it only when the map is on screen.
+const Garage3D = lazy(() => import('../garage/Garage3D'))
 
-const zoneFree = (zone: ZoneCapacityDTO) => Math.max(0, zone.totalSlots - zone.occupiedSlots)
-
-function zoneTone(zone: ZoneCapacityDTO): 'open' | 'busy' | 'full' {
-  if (zone.status === 'FULL' || zoneFree(zone) === 0) return 'full'
-  return zone.status === 'WARNING' ? 'busy' : 'open'
+const STATUS_LABEL: Record<BayStatus, string> = {
+  AVAILABLE: 'Available',
+  RESERVED: 'Booked by another driver',
+  OCCUPIED: 'Occupied',
 }
 
 interface ZoneMapProps {
@@ -21,25 +22,52 @@ interface ZoneMapProps {
   onLotChange: (lotId: string) => void
 }
 
-/** Live zones of one parking lot from the capacity feed; booking itself has no API yet. */
+/**
+ * 3D garage of the selected lot: B1 motorbikes, B2 and B3 cars. Each floor mirrors the live
+ * occupancy of the lot's zones; the customer picks a free bay and reserves it.
+ */
 export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
   const lot = lots.find((l) => l.id === lotId) ?? lots[0]
-  const [zoneId, setZoneId] = useState<string>()
-  const zone = lot?.zones.find((z) => z.zoneId === zoneId) ?? lot?.zones.find((z) => zoneTone(z) !== 'full') ?? lot?.zones[0]
+  const floors = useMemo(() => (lot ? buildGarage(lot) : []), [lot])
+  const [focusFloor, setFocusFloor] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // The booking made here; demo until the booking API exists.
+  const [myBooking, setMyBooking] = useState<{ lotId: string; bayId: string; code: string } | null>(null)
 
-  const free = zone ? zoneFree(zone) : 0
-  const occupancy = zone && zone.totalSlots > 0 ? (zone.occupiedSlots / zone.totalSlots) * 100 : 0
-  const tone = zone ? zoneTone(zone) : 'full'
+  const allBays = floors.flatMap((f) => f.bays)
+  const selected = allBays.find((b) => b.id === selectedId) ?? null
+  const selectedFloor = selected ? floors[selected.floorIndex] : null
+  const myBayId = myBooking && myBooking.lotId === lot?.id ? myBooking.bayId : null
+  const tariff = demoTariffs.find((t) => t.id === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR'))
+
+  const changeLot = (id: string) => {
+    onLotChange(id)
+    setSelectedId(null)
+    setFocusFloor(null)
+  }
+
+  const selectBay = (bay: Bay) => {
+    setSelectedId(bay.id)
+    setFocusFloor(bay.floorIndex)
+  }
+
+  const book = () => {
+    if (!selected || !lot) return
+    setMyBooking({ lotId: lot.id, bayId: selected.id, code: selected.code })
+    toast.success(`Bay ${selected.code} reserved at ${lot.name}`, {
+      description: 'Demo booking: it is kept on this page until the booking API is connected.',
+    })
+  }
 
   return (
     <section className="cx-card cx-map" id="map" aria-labelledby="map-title">
       <div className="cx-map__head">
         <div>
           <span className="cx-eyebrow">
-            <span className="cx-dot cx-dot--gold" aria-hidden="true" /> Digital twin • Real-time bay reservation
+            <span className="cx-dot cx-dot--gold" aria-hidden="true" /> 3D digital twin • Real-time bay reservation
           </span>
-          <h2 className="cx-map__title" id="map-title">Interactive Parking Map &amp; Slot Booking</h2>
-          <p className="cx-card__subtitle">Live zone availability across Saigon terminals, refreshed every few seconds.</p>
+          <h2 className="cx-map__title" id="map-title">Interactive 3D Parking Map &amp; Slot Booking</h2>
+          <p className="cx-card__subtitle">Three floors refreshed live from the gate sensors. Drag to rotate, scroll to zoom, click a bay.</p>
         </div>
         <div className="cx-tabs" role="tablist" aria-label="Parking terminal">
           {lots.map((l) => (
@@ -49,10 +77,7 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
               role="tab"
               aria-selected={l.id === lot?.id}
               className={`cx-tab ${l.id === lot?.id ? 'cx-tab--active' : ''}`}
-              onClick={() => {
-                onLotChange(l.id)
-                setZoneId(undefined)
-              }}
+              onClick={() => changeLot(l.id)}
             >
               {l.name}
             </button>
@@ -60,108 +85,135 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
         </div>
       </div>
 
-      {isLoading && <div className="cx-skeleton" style={{ height: '22rem' }} />}
+      {isLoading && <div className="cx-skeleton" style={{ height: '30rem' }} />}
       {!isLoading && !lot && <p className="cx-empty">No parking terminals are available right now.</p>}
 
       {lot && (
         <div className="cx-map__body">
-          <div className="cx-map__board">
+          <div className="cx-map__board cx-map__board--3d">
             <div className="cx-map__legend">
               <span className="cx-map__legend-items">
                 <span><span className="cx-dot" aria-hidden="true" /> Available</span>
-                <span><span className="cx-dot cx-dot--amber" aria-hidden="true" /> Filling up</span>
+                <span><span className="cx-dot cx-dot--gold" aria-hidden="true" /> Booked</span>
+                <span><span className="cx-dot cx-dot--red" aria-hidden="true" /> Occupied</span>
                 <span><span className="cx-dot cx-dot--teal" aria-hidden="true" /> Selected</span>
-                <span><span className="cx-dot cx-dot--red" aria-hidden="true" /> Full</span>
               </span>
-              <span className="cx-mono">{lot.code} • {Math.round(lot.overallOccupancyPercentage)}% occupied</span>
+              <div className="cx-floor-tabs" role="tablist" aria-label="Floor">
+                <button type="button" role="tab" aria-selected={focusFloor === null} className={`cx-tab ${focusFloor === null ? 'cx-tab--active' : ''}`} onClick={() => setFocusFloor(null)}>
+                  All floors
+                </button>
+                {floors.map((f) => (
+                  <button
+                    key={f.level}
+                    type="button"
+                    role="tab"
+                    aria-selected={focusFloor === f.index}
+                    className={`cx-tab ${focusFloor === f.index ? 'cx-tab--active' : ''}`}
+                    onClick={() => setFocusFloor(f.index)}
+                  >
+                    {f.level} {f.kind === 'car' ? <Car size={13} aria-hidden /> : <Bike size={13} aria-hidden />}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="cx-map__grid">
-              {lot.zones.map((z) => {
-                const zTone = zoneTone(z)
-                const selected = z.zoneId === zone?.zoneId
+            <Suspense fallback={<div className="garage3d garage3d--loading">Loading 3D model…</div>}>
+              <Garage3D floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} onSelectBay={selectBay} />
+            </Suspense>
+
+            <div className="cx-map__footer">
+              <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>
+              <span><Rotate3d size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> Drag to rotate • scroll to zoom</span>
+            </div>
+          </div>
+
+          <aside className="cx-map__detail" aria-live="polite">
+            <div className="cx-card__head" style={{ marginBottom: 0 }}>
+              <span className="cx-eyebrow cx-eyebrow--teal">
+                <Info size={14} aria-hidden /> Selected slot telemetry
+              </span>
+              <span className="cx-chip cx-chip--teal">{lot.code}</span>
+            </div>
+
+            {selected && selectedFloor ? (
+              <>
+                <div className="cx-map__stall">
+                  <div>
+                    <span className="cx-label">Stall ID</span>
+                    <span className="cx-map__stall-name">Bay {selected.code}</span>
+                    <span className="cx-metric__sub">
+                      Floor {selectedFloor.level} • {selectedFloor.kind === 'car' ? 'Car deck' : 'Motorbike deck'}
+                    </span>
+                  </div>
+                  <button type="button" className="cx-icon-btn" aria-label="Clear selection" onClick={() => setSelectedId(null)}>
+                    <X aria-hidden />
+                  </button>
+                </div>
+                <div className="cx-map__cells">
+                  <div className="cx-map__cell">
+                    <span className="cx-label">Status</span>
+                    <strong className={selected.status === 'AVAILABLE' ? 'is-gold' : undefined}>
+                      {selected.id === myBayId ? 'Your booking' : STATUS_LABEL[selected.status]}
+                    </strong>
+                  </div>
+                  <div className="cx-map__cell">
+                    <span className="cx-label">Vehicle type</span>
+                    <strong>{selectedFloor.kind === 'car' ? 'Sedan / SUV / EV' : 'Motorbike / scooter'}</strong>
+                  </div>
+                  <div className="cx-map__cell">
+                    <span className="cx-label">Rate</span>
+                    <strong>{tariff ? `${formatNumber(tariff.firstBlockPrice)} VND first block` : '—'}</strong>
+                  </div>
+                  <div className="cx-map__cell">
+                    <span className="cx-label">Floor free now</span>
+                    <strong className="is-gold">{formatNumber(selectedFloor.liveFree)} / {formatNumber(selectedFloor.liveTotal)}</strong>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="cx-btn cx-btn--light cx-btn--block"
+                  disabled={selected.status !== 'AVAILABLE' || selected.id === myBayId}
+                  onClick={book}
+                >
+                  <CircleCheck aria-hidden />
+                  {selected.id === myBayId ? 'Booked for you' : selected.status === 'AVAILABLE' ? `Book bay ${selected.code}` : 'Not available'}
+                </button>
+              </>
+            ) : (
+              <div className="cx-map__hint">
+                <MousePointerClick aria-hidden />
+                <p>Click a green bay in the 3D model to see its details and book it.</p>
+              </div>
+            )}
+
+            <div className="cx-map__floors">
+              {floors.map((f) => {
+                const free = f.bays.filter((b) => b.status === 'AVAILABLE').length
+                const percent = f.liveTotal ? ((f.liveTotal - f.liveFree) / f.liveTotal) * 100 : 0
                 return (
-                  <button
-                    key={z.zoneId}
-                    type="button"
-                    className={`cx-zone cx-zone--${zTone} ${selected ? 'cx-zone--selected' : ''}`}
-                    aria-pressed={selected}
-                    onClick={() => setZoneId(z.zoneId)}
-                  >
-                    <span className="cx-zone__name">{z.zoneName}</span>
-                    <span className="cx-zone__free">{formatNumber(zoneFree(z))}</span>
-                    <span className="cx-zone__label">{zTone === 'full' ? 'Occupied' : `free of ${formatNumber(z.totalSlots)}`}</span>
+                  <button key={f.level} type="button" className="cx-map__floor" onClick={() => setFocusFloor(f.index)}>
+                    <span className="cx-map__floor-name">
+                      {f.level} • {f.kind === 'car' ? 'Cars' : 'Motorbikes'}
+                    </span>
+                    <span className="cx-map__floor-meta">{f.zoneLabel}</span>
+                    <span className={`cx-meter ${percent >= 90 ? 'cx-meter--full' : percent >= 75 ? 'cx-meter--busy' : ''}`}>
+                      <span style={{ width: `${Math.min(100, percent)}%` }} />
+                    </span>
+                    <span className="cx-map__floor-meta">
+                      {formatNumber(f.liveFree)} free of {formatNumber(f.liveTotal)} • {free} bookable bays shown
+                    </span>
                   </button>
                 )
               })}
             </div>
 
-            <div className="cx-map__footer">
-              <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>
-              <span><span className="cx-dot cx-dot--live" aria-hidden="true" style={{ display: 'inline-block' }} /> Sensor feed online</span>
-            </div>
-          </div>
-
-          {zone && (
-            <aside className="cx-map__detail" aria-live="polite">
-              <div className="cx-card__head" style={{ marginBottom: 0 }}>
-                <span className="cx-eyebrow cx-eyebrow--teal">
-                  <Info size={14} aria-hidden /> Selected zone telemetry
-                </span>
-                <span className="cx-chip cx-chip--teal">{lot.code}</span>
-              </div>
-
-              <div className="cx-map__stall">
-                <div>
-                  <span className="cx-label">Zone</span>
-                  <span className="cx-map__stall-name">{zone.zoneName}</span>
-                  <span className="cx-metric__sub">{lot.name}</span>
-                </div>
-                <span className="cx-session__p" aria-hidden="true">P</span>
-              </div>
-
-              <div className="cx-map__cells">
-                <div className="cx-map__cell">
-                  <span className="cx-label">Free bays</span>
-                  <strong className="is-gold">{formatNumber(free)}</strong>
-                </div>
-                <div className="cx-map__cell">
-                  <span className="cx-label">Capacity</span>
-                  <strong>{formatNumber(zone.totalSlots)} bays</strong>
-                </div>
-                {lot.capacityByVehicle.map((d) => {
-                  const Icon = VEHICLE_ICON[d.vehicleType]
-                  return (
-                    <div className="cx-map__cell" key={d.vehicleType}>
-                      <span className="cx-label">{VEHICLE_LABEL[d.vehicleType]} (lot)</span>
-                      <strong>
-                        <Icon size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {formatNumber(d.availableSlots)} free
-                      </strong>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div>
-                <div className="cx-strength__row" style={{ marginBottom: '0.45rem', color: 'var(--cx-on-variant)' }}>
-                  <span>Zone occupancy</span>
-                  <span>{Math.round(occupancy)}%</span>
-                </div>
-                <div className={`cx-meter cx-meter--${tone}`}>
-                  <span style={{ width: `${Math.min(100, occupancy)}%` }} />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="cx-btn cx-btn--light cx-btn--block"
-                disabled={tone === 'full'}
-                onClick={() => toast.info(`Online booking for ${zone.zoneName} opens soon. Free bays are shown live.`)}
-              >
-                <CircleCheck aria-hidden /> {tone === 'full' ? 'Zone is full' : `Proceed to book in ${zone.zoneName}`}
-              </button>
-            </aside>
-          )}
+            {myBooking && (
+              <p className="cx-map__mine">
+                <CircleCheck size={15} aria-hidden /> Your booking: bay <strong>{myBooking.code}</strong>
+                <button type="button" className="cx-link" onClick={() => setMyBooking(null)}>Cancel</button>
+              </p>
+            )}
+          </aside>
         </div>
       )}
     </section>
