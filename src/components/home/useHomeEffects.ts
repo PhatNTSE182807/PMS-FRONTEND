@@ -61,16 +61,3 @@ export function useReveal<T extends HTMLElement>() {
 
   return ref
 }
-
-/** Index that advances every `intervalMs`, paused while `paused` is true or motion is reduced. */
-export function useRotatingIndex(length: number, intervalMs: number, paused = false): [number, (index: number) => void] {
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    if (paused || prefersReducedMotion() || length < 2) return undefined
-    const timer = window.setInterval(() => setIndex((i) => (i + 1) % length), intervalMs)
-    return () => window.clearInterval(timer)
-  }, [length, intervalMs, paused])
-
-  return [index, setIndex]
-}

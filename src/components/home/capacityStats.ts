@@ -3,13 +3,6 @@ import type { CapacityVehicleType, ParkingLotCapacityDTO } from '@/types/parking
 
 export type VehicleFilter = 'ALL' | CapacityVehicleType
 
-export const VEHICLE_FILTERS: { value: VehicleFilter; label: string }[] = [
-  { value: 'ALL', label: 'All vehicles' },
-  { value: 'CAR', label: 'Car' },
-  { value: 'MOTORBIKE', label: 'Motorbike' },
-  { value: 'EV_CHARGING', label: 'EV charging' },
-]
-
 /** Free and total spaces of a lot, optionally for one vehicle type. */
 export function lotSpaces(lot: ParkingLotCapacityDTO, filter: VehicleFilter = 'ALL') {
   const details = lot.capacityByVehicle.filter((d) => filter === 'ALL' || d.vehicleType === filter)
@@ -21,10 +14,6 @@ export function lotSpaces(lot: ParkingLotCapacityDTO, filter: VehicleFilter = 'A
 
 /** Lots that are taking vehicles (a full lot is still operating). */
 export const isOperating = (lot: ParkingLotCapacityDTO) => lot.status === 'OPEN' || lot.status === 'FULL'
-
-/** Spaces a driver can actually use: none while the lot is closed or under maintenance. */
-export const bookableSpaces = (lot: ParkingLotCapacityDTO, filter: VehicleFilter = 'ALL') =>
-  isOperating(lot) ? lotSpaces(lot, filter).free : 0
 
 /** Headline numbers for the hero. */
 export function systemTotals(lots: ParkingLotCapacityDTO[]) {

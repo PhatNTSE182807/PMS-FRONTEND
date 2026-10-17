@@ -1,46 +1,41 @@
-import { useState } from 'react'
-import { FaqSection, HomeFooter } from '@/components/home/FaqSection'
-import { FeeEstimator } from '@/components/home/FeeEstimator'
+import { Capabilities } from '@/components/home/Capabilities'
+import { CtaBanner } from '@/components/home/CtaBanner'
+import { FacilityShowcase } from '@/components/home/FacilityShowcase'
 import { HeroSection } from '@/components/home/HeroSection'
+import { HomeFooter } from '@/components/home/HomeFooter'
 import { HomeNav } from '@/components/home/HomeNav'
-import { HowItWorks } from '@/components/home/HowItWorks'
-import { LiveAvailability } from '@/components/home/LiveAvailability'
+import { TerminalNetwork } from '@/components/home/TerminalNetwork'
+import { homePathFor, useAuth } from '@/hooks/useAuth'
 import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
 import '@/styles/home.css'
 
-/** Public landing page at "/". Live availability uses the same capacity feed as the admin page. */
+/** Public landing page at "/". The terminal cards use the same capacity feed as the admin page. */
 export default function HomePage() {
+  const { user } = useAuth()
   const capacity = useParkingCapacity()
   // With mock data, vehicles arrive and leave every few seconds so the page feels live.
   useCapacitySimulation(true)
 
-  const [search, setSearch] = useState('')
   const lots = capacity.data ?? []
-
-  const searchFromHero = (query: string) => {
-    setSearch(query)
-    document.getElementById('availability')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  const dashboardTo = user ? homePathFor(user.role) : '/register'
 
   return (
     <div className="home">
-      <a href="#availability" className="home-skip">
-        Skip to live availability
+      <a href="#terminals" className="home-skip">
+        Skip to live terminals
       </a>
-      <HomeNav />
+      <HomeNav isOnline={!capacity.isError} />
       <main>
-        <HeroSection lots={lots} isLoading={capacity.isPending} onSearch={searchFromHero} />
-        <LiveAvailability
+        <HeroSection lots={lots} isLoading={capacity.isPending} reserveTo={dashboardTo} />
+        <FacilityShowcase />
+        <Capabilities />
+        <TerminalNetwork
           lots={lots}
           isLoading={capacity.isPending}
           isError={capacity.isError}
-          updatedAt={capacity.dataUpdatedAt}
-          search={search}
-          onSearchChange={setSearch}
+          reserveTo={dashboardTo}
         />
-        <HowItWorks />
-        <FeeEstimator />
-        <FaqSection />
+        <CtaBanner isSignedIn={Boolean(user)} dashboardTo={dashboardTo} />
       </main>
       <HomeFooter />
     </div>
