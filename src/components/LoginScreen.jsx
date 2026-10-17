@@ -5,9 +5,10 @@ import { AuthAlert, AuthCheckbox, AuthField } from './AuthFields';
 import GoogleSignInButton from './GoogleSignInButton';
 import { getErrorMessage } from '../api/apiError';
 import { useAuth, useLogin } from '../hooks/useAuth';
+import { GOOGLE_CLIENT_ID } from '../lib/google-identity';
 import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER } from '../mocks/auth.mock';
 
-export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNavigateToRegister, onNavigateToOtpLogin }) {
+export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNavigateToRegister }) {
   const { startDemo } = useAuth();
   const loginMutation = useLogin();
 
@@ -112,11 +113,10 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
           {!isLoading && <ArrowRight size={20} aria-hidden="true" />}
         </button>
 
-        <div className="auth-shell__divider">Or continue with</div>
+        {GOOGLE_CLIENT_ID && <div className="auth-shell__divider">Or continue with</div>}
 
         <GoogleSignInButton
-          theme="filled_black"
-          shape="rectangular"
+          variant="dark"
           rememberMe={rememberMe}
           onLoginSuccess={onLoginSuccess}
           onError={(message) => {
@@ -124,11 +124,6 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
             setErrorMsg(message);
           }}
         />
-
-        <button type="button" className="auth-shell__ghost" onClick={onNavigateToOtpLogin}>
-          <Mail size={17} aria-hidden="true" />
-          Sign in with email code
-        </button>
       </form>
 
       <p className="auth-shell__footer">

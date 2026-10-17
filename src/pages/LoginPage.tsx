@@ -41,7 +41,6 @@ export default function LoginPage() {
         onLoginSuccess={handleLoginSuccess}
         onTwoFactorRequired={setChallenge}
         onNavigateToRegister={() => navigate('/register')}
-        onNavigateToOtpLogin={() => navigate('/login-otp')}
       />
     </div>
   )

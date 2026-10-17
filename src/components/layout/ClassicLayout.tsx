@@ -15,7 +15,7 @@ export interface ClassicOutletContext {
  * Shell of the public and driver screens: global header and toast. The auth pages draw
  * their own Lamborghini brand panel (AuthSplitLayout).
  */
-const AUTH_PATHS = ['/login', '/login-otp', '/register']
+const AUTH_PATHS = ['/login', '/register']
 
 export function ClassicLayout() {
   const { user, logout, startDemo } = useAuth()
@@ -76,7 +76,7 @@ export function ClassicLayout() {
             <div className="screen-nav-tabs">
               <button
                 type="button"
-                className={`nav-btn ${pathname === '/login' || pathname === '/login-otp' ? 'nav-btn--active' : ''}`}
+                className={`nav-btn ${pathname === '/login' ? 'nav-btn--active' : ''}`}
                 onClick={() => navigate('/login')}
               >
                 Login

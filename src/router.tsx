@@ -1,14 +1,16 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { CustomerShell } from '@/components/customer/CustomerShell'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ClassicLayout } from '@/components/layout/ClassicLayout'
 import { HomeRedirect } from '@/components/layout/HomeRedirect'
 import { RequireAuth } from '@/components/layout/RequireAuth'
 import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
-import OtpLoginPage from '@/pages/OtpLoginPage'
 import RegisterPage from '@/pages/RegisterPage'
-import UserDashboardPage from '@/pages/UserDashboardPage'
+import CustomerDashboardPage from '@/pages/customer/CustomerDashboardPage'
+import CustomerProfilePage from '@/pages/customer/CustomerProfilePage'
+import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
 
 // Admin pages are code-split: drivers never download the dashboard (or its chart library).
 const ParkingLotsPage = lazy(() => import('@/pages/admin/ParkingLotsPage'))
@@ -24,16 +26,21 @@ export const router = createBrowserRouter([
     element: <ClassicLayout />,
     children: [
       { path: '/login', element: <LoginPage /> },
-      { path: '/login-otp', element: <OtpLoginPage /> },
       { path: '/register', element: <RegisterPage /> },
-      {
-        path: '/me',
-        element: (
-          <RequireAuth>
-            <UserDashboardPage />
-          </RequireAuth>
-        ),
-      },
+    ],
+  },
+  // Signed-in customer area with its own navigation bar.
+  {
+    path: '/me',
+    element: (
+      <RequireAuth>
+        <CustomerShell />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <CustomerDashboardPage /> },
+      { path: 'profile', element: <CustomerProfilePage /> },
+      { path: 'vehicles', element: <RegisterVehiclePage /> },
     ],
   },
   {

@@ -122,8 +122,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
       {/* One click instead of the form: the first Google sign-in creates the account */}
       <GoogleSignInButton
         text="signup_with"
-        theme="filled_black"
-        shape="rectangular"
+        variant="dark"
         onLoginSuccess={onLoginSuccess}
         onError={(message) => {
           setSuccessMsg('');
