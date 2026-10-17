@@ -12,9 +12,18 @@ import { GOOGLE_CLIENT_ID, loadGoogleIdentity } from '../lib/google-identity';
  *   onError: (message: string) => void,
  *   rememberMe?: boolean,
  *   text?: 'signin_with' | 'signup_with' | 'continue_with',
+ *   theme?: 'outline' | 'filled_blue' | 'filled_black',
+ *   shape?: 'rectangular' | 'pill',
  * }} props
  */
-export default function GoogleSignInButton({ onLoginSuccess, onError, rememberMe = false, text = 'continue_with' }) {
+export default function GoogleSignInButton({
+  onLoginSuccess,
+  onError,
+  rememberMe = false,
+  text = 'continue_with',
+  theme = 'outline',
+  shape = 'pill',
+}) {
   const containerRef = useRef(null);
   const googleLogin = useGoogleLogin();
   const [loadError, setLoadError] = useState('');
@@ -44,9 +53,9 @@ export default function GoogleSignInButton({ onLoginSuccess, onError, rememberMe
         });
         containerRef.current.replaceChildren();
         googleId.renderButton(containerRef.current, {
-          theme: 'outline',
+          theme,
           size: 'large',
-          shape: 'pill',
+          shape,
           text,
           logo_alignment: 'center',
           // Google draws a fixed-width iframe (200–400px); match the form column.
@@ -59,7 +68,7 @@ export default function GoogleSignInButton({ onLoginSuccess, onError, rememberMe
     return () => {
       cancelled = true;
     };
-  }, [text]);
+  }, [text, theme, shape]);
 
   if (!GOOGLE_CLIENT_ID) return null;
 
