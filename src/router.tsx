@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { CustomerShell } from '@/components/customer/CustomerShell'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ClassicLayout } from '@/components/layout/ClassicLayout'
+import { StaffLayout } from '@/components/layout/StaffLayout'
 import { HomeRedirect } from '@/components/layout/HomeRedirect'
 import { RequireAuth } from '@/components/layout/RequireAuth'
 import HomePage from '@/pages/HomePage'
@@ -25,6 +26,10 @@ const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerRes
 const ManagerApprovalsPage = lazy(() => import('@/pages/management/ManagerApprovalsPage'))
 const ManagerPricingPage = lazy(() => import('@/pages/management/ManagerPricingPage'))
 const ManagerStaffPage = lazy(() => import('@/pages/management/ManagerStaffPage'))
+const StaffGatePage = lazy(() => import('@/pages/staff/StaffGatePage'))
+const StaffCheckoutPage = lazy(() => import('@/pages/staff/StaffCheckoutPage'))
+const StaffExceptionsPage = lazy(() => import('@/pages/staff/StaffExceptionsPage'))
+const StaffCashTallyPage = lazy(() => import('@/pages/staff/StaffCashTallyPage'))
 
 export const router = createBrowserRouter([
   // Public landing page, outside ClassicLayout: it has its own navigation bar.
@@ -79,6 +84,17 @@ export const router = createBrowserRouter([
       { path: 'pricing', element: <ManagerPricingPage /> },
       { path: 'staff', element: <ManagerStaffPage /> },
       { path: 'lots', element: <ParkingLotsPage /> },
+    ],
+  },
+  {
+    path: '/staff',
+    element: <RequireAuth roles={['STAFF']}><StaffLayout /></RequireAuth>,
+    children: [
+      { index: true, element: <Navigate to="gate" replace /> },
+      { path: 'gate', element: <StaffGatePage /> },
+      { path: 'checkout', element: <StaffCheckoutPage /> },
+      { path: 'exceptions', element: <StaffExceptionsPage /> },
+      { path: 'cash-tally', element: <StaffCashTallyPage /> },
     ],
   },
   { path: '*', element: <HomeRedirect /> },

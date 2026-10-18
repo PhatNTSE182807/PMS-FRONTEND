@@ -34,6 +34,12 @@ export const DEMO_MANAGER: SessionUser = {
   email: 'manager.demo@xxivparking.vn', phoneNumber: '0900000001', role: 'MANAGER',
 }
 
+/** Gate attendant account used by the Staff demo. */
+export const DEMO_STAFF: SessionUser = {
+  userId: 'usr-0418', username: 'staff.demo', fullName: 'Tran Hoang Nam',
+  email: 'staff.demo@xxivparking.vn', phoneNumber: '0900000418', role: 'STAFF',
+}
+
 const MOCK_LOGIN_OTP = '123456'
 
 export const authMock = {

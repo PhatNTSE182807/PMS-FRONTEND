@@ -6,7 +6,7 @@ import GoogleSignInButton from './GoogleSignInButton';
 import { getErrorMessage } from '../api/apiError';
 import { useAuth, useLogin } from '../hooks/useAuth';
 import { GOOGLE_CLIENT_ID } from '../lib/google-identity';
-import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER } from '../mocks/auth.mock';
+import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER, DEMO_STAFF } from '../mocks/auth.mock';
 
 export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNavigateToRegister }) {
   const { startDemo } = useAuth();
@@ -145,6 +145,9 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
         </button>
         {import.meta.env.DEV && (
           <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_MANAGER))}>Manager →</button>
+        )}
+        {import.meta.env.DEV && (
+          <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_STAFF))} title="Open the gate attendant console with mock data">Staff →</button>
         )}
       </div>
 

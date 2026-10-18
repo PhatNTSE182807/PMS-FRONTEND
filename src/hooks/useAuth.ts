@@ -65,7 +65,10 @@ export function useRegister() {
 
 /** Landing page for a role after sign-in. */
 export function homePathFor(role: AccountRole | undefined): string {
-  return role === 'ADMIN' ? '/admin' : role === 'MANAGER' ? '/management/console' : '/me'
+  if (role === 'ADMIN') return '/admin'
+  if (role === 'MANAGER') return '/management/console'
+  if (role === 'STAFF') return '/staff/gate'
+  return '/me'
 }
 
 const ROLE_LABELS: Record<AccountRole, string> = {
