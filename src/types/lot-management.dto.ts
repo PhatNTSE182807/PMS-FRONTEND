@@ -35,6 +35,8 @@ export interface ManagedLot {
   openTime: string
   closeTime: string
   capacity: number
+  /** 3D building template (GARAGE_TEMPLATES id); empty when the lot has none yet. */
+  layoutTemplate: string
   imageUrl: string
   description: string
   managerUserId: string

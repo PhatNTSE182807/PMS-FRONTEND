@@ -1,3 +1,4 @@
+import { templateForLot } from '@/components/customer/garage/garageModel'
 import { isMockService } from '@/config/env'
 import { session } from '@/lib/session'
 import {
@@ -29,7 +30,8 @@ function read(): ManagedLot[] {
       throw new Error(
         'Demo data is invalid. Saved data was not overwritten.',
       )
-    memory = parsed as ManagedLot[]
+    // Lots saved before 3D templates existed get the same template the customer map shows.
+    memory = (parsed as ManagedLot[]).map((l) => ({ ...l, layoutTemplate: l.layoutTemplate ?? templateForLot(l).id }))
     return structuredClone(memory)
   }
   memory = MOCK_PARKING_LOTS.map((l) => ({
@@ -43,6 +45,7 @@ function read(): ManagedLot[] {
     openTime: '',
     closeTime: '',
     capacity: l.carSlots + l.motorbikeSlots,
+    layoutTemplate: templateForLot(l).id,
     imageUrl: '',
     description: '',
     managerUserId: l.id === 'lot-01' ? 'usr-0001' : '',

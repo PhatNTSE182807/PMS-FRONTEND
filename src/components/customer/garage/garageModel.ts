@@ -14,7 +14,7 @@ export interface Bay {
 
 export interface GarageFloor {
   index: number
-  /** "L1" (ground) to "L3" (open-air rooftop) */
+  /** "L1" (ground) up to the open-air rooftop. */
   level: string
   kind: FloorKind
   /** Zone(s) of the lot this floor stands for. */
@@ -27,18 +27,44 @@ export interface GarageFloor {
   liveTotal: number
 }
 
-/** Bays drawn per floor: enough to read the floor at a glance, not one mesh per real space. */
-const LAYOUT: Record<FloorKind, { rows: number; cols: number }> = {
-  car: { rows: 2, cols: 12 },
-  motorbike: { rows: 2, cols: 20 },
+/* ------------------------------------------------------------------ */
+/* Building templates the Admin picks when registering a lot            */
+/* ------------------------------------------------------------------ */
+
+export type GarageTemplateId = 'L3S20' | 'L3S50' | 'L4S30'
+
+export interface GarageTemplate {
+  id: GarageTemplateId
+  name: string
+  summary: string
+  /** Kind of each level, ground first. Motorbikes always park on the ground level. */
+  floors: FloorKind[]
+  slotsPerFloor: number
 }
+
+export const GARAGE_TEMPLATES: GarageTemplate[] = [
+  { id: 'L3S20', name: 'Compact deck', summary: '3 levels × 20 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 20 },
+  { id: 'L3S50', name: 'Wide deck', summary: '3 levels × 50 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 50 },
+  { id: 'L4S30', name: 'Tower', summary: '4 levels × 30 bays · 3 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car', 'car'], slotsPerFloor: 30 },
+]
+
+export const findTemplate = (id: string | null | undefined) => GARAGE_TEMPLATES.find((t) => t.id === id)
+
+export const templateCapacity = (t: GarageTemplate) => {
+  const car = t.floors.filter((k) => k === 'car').length * t.slotsPerFloor
+  const motorbike = t.floors.filter((k) => k === 'motorbike').length * t.slotsPerFloor
+  return { car, motorbike, total: car + motorbike }
+}
+
+/** Up to 30 bays a level fits in two rows around one lane; bigger levels use two lanes and four rows. */
+const rowsFor = (slots: number) => (slots > 30 ? 4 : 2)
 
 /** Share of the free bays held by bookings that have not arrived yet. */
 const RESERVED_SHARE = 0.12
 
 const isCarZone = (z: ZoneCapacityDTO) => /\bcars?\b/i.test(z.zoneName)
 
-/** Small seeded PRNG, so a floor keeps the same layout of parked cars between refreshes. */
+/** Small seeded PRNG, so a floor keeps the same layout of parked vehicles between refreshes. */
 function seeded(seedText: string) {
   let h = 1779033703 ^ seedText.length
   for (let i = 0; i < seedText.length; i++) {
@@ -64,10 +90,12 @@ function fillOrder(count: number, seed: string) {
   return order
 }
 
-interface ZoneStats {
+export interface ZoneStats {
   label: string
   total: number
   occupied: number
+  /** Bookings not yet arrived; estimated from RESERVED_SHARE when unknown. */
+  reserved?: number
 }
 
 const stats = (zones: ZoneCapacityDTO[], label?: string): ZoneStats => ({
@@ -76,60 +104,77 @@ const stats = (zones: ZoneCapacityDTO[], label?: string): ZoneStats => ({
   occupied: zones.reduce((s, z) => s + z.occupiedSlots, 0),
 })
 
-function buildFloor(index: number, level: string, kind: FloorKind, zone: ZoneStats, lotId: string): GarageFloor {
-  const { rows, cols } = LAYOUT[kind]
-  const count = rows * cols
+function buildFloor(index: number, kind: FloorKind, slots: number, zone: ZoneStats, seed: string): GarageFloor {
+  const level = `L${index + 1}`
+  const rows = rowsFor(slots)
+  const cols = Math.ceil(slots / rows)
   const ratio = zone.total > 0 ? zone.occupied / zone.total : 0
-  const occupied = Math.min(count, Math.round(count * ratio))
-  const reserved = Math.min(count - occupied, Math.round((count - occupied) * RESERVED_SHARE))
-  const order = fillOrder(count, `${lotId}:${level}`)
+  const occupied = Math.min(slots, Math.round(slots * ratio))
+  const reservedRatio = zone.reserved !== undefined && zone.total > 0 ? zone.reserved / zone.total : undefined
+  // A level without live numbers (a template preview) shows every bay free.
+  const reserved =
+    zone.total > 0
+      ? Math.min(slots - occupied, reservedRatio !== undefined ? Math.round(slots * reservedRatio) : Math.round((slots - occupied) * RESERVED_SHARE))
+      : 0
+  const order = fillOrder(slots, `${seed}:${level}`)
   const statusOf = new Map<number, BayStatus>()
   order.forEach((bayIndex, rank) => {
     statusOf.set(bayIndex, rank < occupied ? 'OCCUPIED' : rank < occupied + reserved ? 'RESERVED' : 'AVAILABLE')
   })
 
   const prefix = kind === 'car' ? level : `${level}M`
-  const bays: Bay[] = Array.from({ length: count }, (_, i) => {
-    const row = Math.floor(i / cols)
-    const col = i % cols
-    return {
-      id: `${lotId}-${level}-${i}`,
-      code: `${prefix}-${String(i + 1).padStart(2, '0')}`,
-      floorIndex: index,
-      row,
-      col,
-      status: statusOf.get(i) ?? 'AVAILABLE',
-    }
-  })
+  const bays: Bay[] = Array.from({ length: slots }, (_, i) => ({
+    id: `${seed}-${level}-${i}`,
+    code: `${prefix}-${String(i + 1).padStart(2, '0')}`,
+    floorIndex: index,
+    row: Math.floor(i / cols),
+    col: i % cols,
+    status: statusOf.get(i) ?? 'AVAILABLE',
+  }))
 
   return { index, level, kind, zoneLabel: zone.label, rows, cols, bays, liveFree: Math.max(0, zone.total - zone.occupied), liveTotal: zone.total }
 }
 
+/** Levels of a template, each mirroring the given stats (index-aligned with `template.floors`). */
+export function buildTemplateGarage(template: GarageTemplate, floorStats: ZoneStats[], seed: string): GarageFloor[] {
+  return template.floors.map((kind, i) => buildFloor(i, kind, template.slotsPerFloor, floorStats[i] ?? { label: '', total: 0, occupied: 0 }, seed))
+}
+
+/** The lot's own template, or a stable pick from its id until the backend stores one. */
+export function templateForLot(lot: Pick<ParkingLotCapacityDTO, 'id'> & { layoutTemplate?: string | null }): GarageTemplate {
+  const own = findTemplate(lot.layoutTemplate)
+  if (own) return own
+  const hash = [...lot.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7)
+  return GARAGE_TEMPLATES[hash % GARAGE_TEMPLATES.length]
+}
+
 /**
- * Three levels for the 3D view: L1 (ground) for motorbikes, L2 and the open-air rooftop L3 for
- * cars. Each level mirrors the
+ * Levels for the customer 3D view: motorbikes on the ground, cars above. Each level mirrors the
  * live occupancy of the lot's zones, so its bays fill and empty as vehicles come and go.
  */
 export function buildGarage(lot: ParkingLotCapacityDTO): GarageFloor[] {
+  const template = templateForLot(lot)
   const carZones = lot.zones.filter(isCarZone)
   const bikeZones = lot.zones.filter((z) => !isCarZone(z))
+  const carLevels = template.floors.filter((k) => k === 'car').length
 
-  // Two car floors: one per car zone, or the single car zone shared between both floors.
-  const carStats: ZoneStats[] =
-    carZones.length >= 2
-      ? [stats([carZones[0]]), stats(carZones.slice(1))]
-      : carZones.length === 1
-        ? [stats(carZones, `${carZones[0].zoneName} (north)`), stats(carZones, `${carZones[0].zoneName} (south)`)]
-        : [0, 1].map((i) => {
-            const car = lot.capacityByVehicle.find((d) => d.vehicleType === 'CAR')
-            const total = Math.round((car?.totalSlots ?? 0) / 2)
-            return { label: `Car deck ${i + 1}`, total, occupied: Math.round(total - (car?.availableSlots ?? 0) / 2) }
-          })
+  // One car zone per car level when there are enough, otherwise the car zones are shared.
+  const carStats: ZoneStats[] = Array.from({ length: carLevels }, (_, i) => {
+    if (carZones.length >= carLevels) {
+      const per = Math.floor(carZones.length / carLevels)
+      return stats(i === carLevels - 1 ? carZones.slice(i * per) : carZones.slice(i * per, (i + 1) * per))
+    }
+    if (carZones.length) return stats(carZones, `${carZones.map((z) => z.zoneName).join(' + ')} (deck ${i + 1})`)
+    const car = lot.capacityByVehicle.find((d) => d.vehicleType === 'CAR')
+    const total = Math.round((car?.totalSlots ?? 0) / carLevels)
+    return { label: `Car deck ${i + 1}`, total, occupied: Math.round(total - (car?.availableSlots ?? 0) / carLevels) }
+  })
   const bikeStats = bikeZones.length ? stats(bikeZones) : { label: 'Motorbike deck', total: 0, occupied: 0 }
 
-  return [
-    buildFloor(0, 'L1', 'motorbike', bikeStats, lot.id),
-    buildFloor(1, 'L2', 'car', carStats[0], lot.id),
-    buildFloor(2, 'L3', 'car', carStats[1], lot.id),
-  ]
+  let car = 0
+  return buildTemplateGarage(
+    template,
+    template.floors.map((kind) => (kind === 'car' ? carStats[car++] : bikeStats)),
+    lot.id,
+  )
 }

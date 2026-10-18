@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
+  Box,
   Building2,
   ChevronRight,
   Layers,
@@ -48,6 +49,8 @@ import {
   type ManagedZone,
   type ManagedSlot,
 } from '@/types/lot-management.dto'
+import { GaragePreview } from '@/components/customer/garage/GaragePreview'
+import { findTemplate, type ZoneStats } from '@/components/customer/garage/garageModel'
 import { toSearchable } from '@/lib/text'
 import { formatPhone, initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -92,6 +95,49 @@ function exportLots(rows: ManagedLot[], managerName: (id: string) => string) {
   link.download = `parking-facilities-${new Date().toISOString().slice(0, 10)}.csv`
   link.click()
   URL.revokeObjectURL(url)
+}
+
+/** Each level of the 3D model mirrors the zones on that floor: their capacity and slot states. */
+function layoutStats(lot: ManagedLot, levels: number): ZoneStats[] {
+  return Array.from({ length: levels }, (_, i) => {
+    const zones = lot.zones.filter((z) => z.floorNo === i + 1)
+    const slots = zones.flatMap((z) => z.slots)
+    return {
+      label: zones.map((z) => z.name).join(' + '),
+      total: zones.reduce((n, z) => n + z.capacity, 0),
+      occupied: slots.filter((s) => s.status === 'Occupied').length,
+      reserved: slots.filter((s) => s.status === 'Reserved').length,
+    }
+  })
+}
+
+function LotLayoutCard({ lot, onEdit }: { lot: ManagedLot; onEdit?: () => void }) {
+  const template = findTemplate(lot.layoutTemplate)
+  const stats = useMemo(() => (template ? layoutStats(lot, template.floors.length) : []), [lot, template])
+  return (
+    <Card className="space-y-3 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <Box className="size-5 text-amber-500" aria-hidden />
+            3D building layout
+          </h2>
+          <p className="text-sm text-slate-500">
+            {template
+              ? `${template.name} · ${template.summary}. Levels follow the zones by floor number.`
+              : 'No 3D layout chosen for this lot yet.'}
+          </p>
+        </div>
+        {onEdit && (
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Pencil />
+            {template ? 'Change layout' : 'Choose layout'}
+          </Button>
+        )}
+      </div>
+      {template && <GaragePreview key={`${lot.id}:${template.id}`} template={template} floorStats={stats} seed={lot.id} />}
+    </Card>
+  )
 }
 
 type Editing =
@@ -489,6 +535,7 @@ export default function ParkingLotsPage() {
                       </div>
                     </div>
                   </Card>
+                  <LotLayoutCard lot={selected} onEdit={admin ? () => setEditing({ kind: 'lot', lot: selected }) : undefined} />
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-slate-900">
                       Zones · {selected.zones.length}

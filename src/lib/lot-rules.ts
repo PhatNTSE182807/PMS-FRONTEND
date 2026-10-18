@@ -1,3 +1,4 @@
+import { findTemplate } from '@/components/customer/garage/garageModel'
 import type {
   LotInput,
   ManagedLot,
@@ -43,6 +44,10 @@ export function validateLot(
   check(
     input.capacity >= (current?.zones.reduce((n, z) => n + z.capacity, 0) ?? 0),
     'Lot capacity cannot be less than the total zone capacity.',
+  )
+  check(
+    !input.layoutTemplate || Boolean(findTemplate(input.layoutTemplate)),
+    'Unknown 3D building layout.',
   )
   check(
     input.latitude === null ||

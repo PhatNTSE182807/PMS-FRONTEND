@@ -35,6 +35,8 @@ interface LotResponse {
   closureReason: string | null
   maintenanceNotice: string | null
   managerUserId: string | null
+  /** Proposed field: the 3D building template id. */
+  layoutTemplate?: string | null
 }
 
 interface ZoneResponse {
@@ -126,6 +128,7 @@ function toLot(lot: LotResponse, zones: ZoneResponse[], slots: SlotResponse[]): 
     imageUrl: lot.imageUrl ?? '',
     description: lot.description ?? '',
     managerUserId: lot.managerUserId ?? '',
+    layoutTemplate: lot.layoutTemplate ?? '',
     status: lot.status as LotState,
     closedFrom: toDateTimeInput(lot.closedFrom),
     closedUntil: toDateTimeInput(lot.closedUntil),
@@ -176,6 +179,7 @@ export const lotManagementApi = {
       imageUrl: input.imageUrl || null,
       description: input.description || null,
       managerUserId: input.managerUserId || null,
+      layoutTemplate: input.layoutTemplate || null,
     }
     if (id) {
       await http.put<LotResponse>(`/lots/${id}`, body)

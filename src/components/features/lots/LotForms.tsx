@@ -19,6 +19,9 @@ import type {
 } from '@/types/lot-management.dto'
 import { LOT_STATES, VEHICLE_TYPES } from '@/types/lot-management.dto'
 import type { UserDTO } from '@/types/identity.dto'
+import { GaragePreview } from '@/components/customer/garage/GaragePreview'
+import { findTemplate, GARAGE_TEMPLATES, templateCapacity } from '@/components/customer/garage/garageModel'
+import { cn } from '@/lib/utils'
 
 export function Field({
   label,
@@ -40,12 +43,14 @@ export function Editor({
   children,
   onClose,
   onSave,
+  wide = false,
 }: {
   title: string
   description: string
   children: ReactNode
   onClose: () => void
   onSave: () => Promise<void>
+  wide?: boolean
 }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -56,7 +61,7 @@ export function Editor({
         if (!open && !busy) onClose()
       }}
     >
-      <DialogContent className="max-w-2xl">
+      <DialogContent className={wide ? 'max-w-4xl' : 'max-w-2xl'}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -112,7 +117,8 @@ const emptyLot: LotInput = {
   is24Hours: true,
   openTime: '07:00',
   closeTime: '22:00',
-  capacity: 100,
+  capacity: 60,
+  layoutTemplate: 'L3S20',
   imageUrl: '',
   description: '',
   managerUserId: '',
@@ -133,12 +139,14 @@ export function LotForm({
   onClose: () => void
   onSaved: () => Promise<void>
 }) {
-  const [v, set] = useState<LotInput>(lot ?? emptyLot)
+  const [v, set] = useState<LotInput>(lot ? { ...lot, layoutTemplate: lot.layoutTemplate ?? '' } : emptyLot)
   const patch = (p: Partial<LotInput>) => set({ ...v, ...p })
+  const template = findTemplate(v.layoutTemplate)
   return (
     <Editor
       title={lot ? 'Edit parking lot' : 'Create parking lot'}
       description="Admins set up the lot and assign its Manager. New lots start inactive until their configuration is complete."
+      wide
       onClose={onClose}
       onSave={async () => {
         await service.saveLot(v, lot?.id)
@@ -171,6 +179,40 @@ export function LotForm({
           />
         </Field>
       </div>
+      <fieldset className="grid gap-2 sm:col-span-2">
+        <legend className="mb-1.5 text-sm font-medium text-slate-700">3D building layout</legend>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {GARAGE_TEMPLATES.map((t) => {
+            const active = v.layoutTemplate === t.id
+            const mix = templateCapacity(t)
+            return (
+              <label
+                key={t.id}
+                className={cn(
+                  'flex cursor-pointer flex-col gap-1 rounded-xl border p-3 text-sm transition-colors',
+                  active ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500' : 'border-slate-200 hover:bg-slate-50',
+                )}
+              >
+                <span className="flex items-center gap-2 font-semibold text-slate-900">
+                  <input
+                    type="radio"
+                    name="layoutTemplate"
+                    className="accent-indigo-600"
+                    checked={active}
+                    onChange={() => patch({ layoutTemplate: t.id, capacity: mix.total })}
+                  />
+                  {t.name}
+                </span>
+                <span className="text-xs text-slate-600">{t.summary}</span>
+                <span className="text-xs font-semibold text-slate-700">
+                  {mix.car} car + {mix.motorbike} motorbike = {mix.total} bays
+                </span>
+              </label>
+            )
+          })}
+        </div>
+        {template && <GaragePreview key={template.id} template={template} seed="lot-form" className="h-[18rem] sm:h-[22rem]" />}
+      </fieldset>
       <Field label="Maximum capacity *">
         <Input
           required

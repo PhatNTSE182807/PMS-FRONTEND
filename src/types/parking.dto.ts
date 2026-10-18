@@ -51,6 +51,8 @@ export interface ParkingLotCapacityDTO {
   overallOccupancyPercentage: number
   capacityByVehicle: VehicleCapacityDetail[]
   zones: ZoneCapacityDTO[]
+  /** 3D building template chosen by the Admin (GARAGE_TEMPLATES id), when the backend sends it. */
+  layoutTemplate?: string | null
   /** Oldest first; the last entry is the most recent hour. */
   recentHourlyFlow: HourlyFlowDTO[]
 }

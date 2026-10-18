@@ -23,7 +23,7 @@ interface ZoneMapProps {
 }
 
 /**
- * 3D garage of the selected lot: B1 motorbikes, B2 and B3 cars. Each floor mirrors the live
+ * 3D garage of the selected lot, built from its layout template: motorbikes on the ground level, cars above. Each floor mirrors the live
  * occupancy of the lot's zones; the customer picks a free bay and reserves it.
  */
 export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
@@ -67,7 +67,7 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
             <span className="cx-dot cx-dot--gold" aria-hidden="true" /> 3D digital twin • Real-time bay reservation
           </span>
           <h2 className="cx-map__title" id="map-title">Interactive 3D Parking Map &amp; Slot Booking</h2>
-          <p className="cx-card__subtitle">Three floors refreshed live from the gate sensors. Drag to rotate, scroll to zoom, click a bay.</p>
+          <p className="cx-card__subtitle">Every level refreshed live from the gate sensors. Drag to rotate, scroll to zoom, click a bay.</p>
         </div>
         <div className="cx-tabs" role="tablist" aria-label="Parking terminal">
           {lots.map((l) => (

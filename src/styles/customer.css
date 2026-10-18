@@ -1083,7 +1083,7 @@
 
 .cx-map__body {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr);
   gap: 1.25rem;
 }
 
@@ -2452,7 +2452,7 @@
 
 .garage3d {
   position: relative;
-  height: clamp(22rem, 52vh, 32rem);
+  height: clamp(28rem, 72vh, 46rem);
   border-radius: 0.6rem;
   background: radial-gradient(ellipse at 50% 35%, rgba(18, 78, 102, 0.35) 0%, rgba(6, 15, 22, 0) 70%);
   overflow: hidden;
