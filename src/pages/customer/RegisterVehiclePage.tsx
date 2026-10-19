@@ -40,7 +40,9 @@ const KIND_DESCRIPTION = {
 /** Vietnamese plates: 51K-992.88, 30E-1234, 59X1-123.45 (spaces and missing separators allowed). */
 const PLATE_PATTERN = /^\d{2}[A-Z]{1,2}\d?[-\s]?\d{3,4}(\.?\d{2})?$/
 
-const EMPTY_FORM = { licensePlate: '', vehicleTypeId: 0, brand: '', model: '', color: '', isDefault: false, consent: false }
+// citizenId stays null until edited, so the field shows the account's own Citizen ID
+const EMPTY_FORM = { licensePlate: '', vehicleTypeId: 0, brand: '', model: '', color: '', citizenId: null as string | null, isDefault: false, consent: false }
+const CITIZEN_ID_PATTERN = /^\d{12}$/
 
 /** Best guess at a CSS colour for the swatch next to the colour name ("Gentian Blue" -> blue). */
 function swatchColor(name: string): string {
@@ -117,8 +119,11 @@ export default function RegisterVehiclePage() {
   const plateValid = PLATE_PATTERN.test(plate)
   // The first vehicle always becomes the primary one.
   const isDefault = vehicles.length === 0 || form.isDefault
+  // Owner on the vehicle papers; defaults to the account's own Citizen ID
+  const citizenId = (form.citizenId ?? profile?.citizenId ?? '').trim()
+  const citizenIdValid = CITIZEN_ID_PATTERN.test(citizenId)
 
-  const filled = [plateValid, Boolean(type), Boolean(form.brand.trim()), Boolean(form.model.trim()), Boolean(form.color.trim()), form.consent]
+  const filled = [plateValid, Boolean(type), Boolean(form.brand.trim()), Boolean(form.model.trim()), Boolean(form.color.trim()), citizenIdValid, form.consent]
   const progress = Math.round((filled.filter(Boolean).length / filled.length) * 100)
 
   const submit = (e: FormEvent) => {
@@ -126,6 +131,7 @@ export default function RegisterVehiclePage() {
     setError('')
     if (!plateValid) return setError('Enter a valid Vietnamese plate number, for example 51K-992.88.')
     if (!form.brand.trim() || !form.model.trim()) return setError('Enter the manufacturer and the model.')
+    if (!citizenIdValid) return setError('Enter the 12-digit Citizen ID of the owner on the vehicle papers.')
     if (!form.consent) return setError('Please confirm that you own or are authorised to drive this vehicle.')
 
     addVehicle.mutate(
@@ -135,6 +141,7 @@ export default function RegisterVehiclePage() {
         brand: form.brand.trim(),
         model: form.model.trim(),
         color: form.color.trim() || 'Black',
+        citizenId,
         isDefault,
       },
       {
@@ -266,6 +273,27 @@ export default function RegisterVehiclePage() {
                   </span>
                   <input id="vehicle-color" className="cx-input cx-input--with-icon" placeholder="Gentian Blue Metallic" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
                 </div>
+              </div>
+
+              <div className="cx-field">
+                <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID (CCCD)</label>
+                <div className="cx-control">
+                  <span className="cx-control__icon"><IdCard aria-hidden /></span>
+                  <input
+                    id="vehicle-citizen-id"
+                    className="cx-input cx-input--with-icon"
+                    inputMode="numeric"
+                    maxLength={12}
+                    autoComplete="off"
+                    placeholder="12 digits"
+                    value={citizenId}
+                    onChange={(e) => setForm({ ...form, citizenId: e.target.value.replace(/\D/g, '') })}
+                    aria-describedby="vehicle-citizen-id-hint"
+                  />
+                </div>
+                <p className="cx-field__hint" id="vehicle-citizen-id-hint">
+                  The owner named on the vehicle papers. Filled in with your own Citizen ID; change it if the vehicle is in someone else's name.
+                </p>
               </div>
 
               <label className="cx-check">

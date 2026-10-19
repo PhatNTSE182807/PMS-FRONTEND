@@ -29,8 +29,6 @@ export interface ManagedLot {
   code: string
   name: string
   address: string
-  latitude: number | null
-  longitude: number | null
   is24Hours: boolean
   openTime: string
   closeTime: string
@@ -48,8 +46,6 @@ export interface ManagedLot {
   zones: ManagedZone[]
 }
 export type LotInput = Omit<ManagedLot, 'id' | 'zones'>
-export type ZoneInput = Omit<ManagedZone, 'id' | 'slots'>
-export type SlotInput = Omit<ManagedSlot, 'id'>
 export const LOT_STATES: Record<LotState, string> = {
   Active: 'Active',
   Inactive: 'Inactive',

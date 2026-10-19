@@ -1,20 +1,9 @@
-import { templateForLot } from '@/components/customer/garage/garageModel'
+import { findTemplate, templateForLot } from '@/components/customer/garage/garageModel'
 import { isMockService } from '@/config/env'
 import { session } from '@/lib/session'
-import {
-  validateLot,
-  validateSlot,
-  validateZone,
-  protectedSlot,
-} from '@/lib/lot-rules'
+import { protectedSlot, validateLot, zonesFromTemplate } from '@/lib/lot-rules'
 import { MOCK_PARKING_LOTS } from '@/mocks/parkingLots.mock'
-import type {
-  LotInput,
-  ManagedLot,
-  SlotInput,
-  ZoneInput,
-} from '@/types/lot-management.dto'
-import { VEHICLE_TYPES } from '@/types/lot-management.dto'
+import type { LotInput, ManagedLot } from '@/types/lot-management.dto'
 import { identityService } from './identity.service'
 import { lotManagementApi } from './lot-management.live'
 
@@ -30,33 +19,40 @@ function read(): ManagedLot[] {
       throw new Error(
         'Demo data is invalid. Saved data was not overwritten.',
       )
-    // Lots saved before 3D templates existed get the same template the customer map shows.
-    memory = (parsed as ManagedLot[]).map((l) => ({ ...l, layoutTemplate: l.layoutTemplate ?? templateForLot(l).id }))
+    // Lots saved before ready-made models existed get the model the customer map shows, and its zones
+    memory = (parsed as ManagedLot[]).map((l) => withModel({ ...l, layoutTemplate: l.layoutTemplate ?? templateForLot(l).id }))
     return structuredClone(memory)
   }
-  memory = MOCK_PARKING_LOTS.map((l) => ({
-    id: l.id,
-    code: l.code,
-    name: l.name,
-    address: l.address,
-    latitude: null,
-    longitude: null,
-    is24Hours: true,
-    openTime: '',
-    closeTime: '',
-    capacity: l.carSlots + l.motorbikeSlots,
-    layoutTemplate: templateForLot(l).id,
-    imageUrl: '',
-    description: '',
-    managerUserId: l.id === 'lot-01' ? 'usr-0001' : '',
-    status: 'Active',
-    closedFrom: '',
-    closedUntil: '',
-    closureReason: '',
-    maintenanceNotice: '',
-    zones: [],
-  }))
+  memory = MOCK_PARKING_LOTS.map((l) =>
+    withModel({
+      id: l.id,
+      code: l.code,
+      name: l.name,
+      address: l.address,
+      is24Hours: true,
+      openTime: '',
+      closeTime: '',
+      capacity: 0,
+      layoutTemplate: templateForLot(l).id,
+      imageUrl: '',
+      description: '',
+      managerUserId: l.id === 'lot-01' ? 'usr-0001' : '',
+      status: 'Active',
+      closedFrom: '',
+      closedUntil: '',
+      closureReason: '',
+      maintenanceNotice: '',
+      zones: [],
+    }),
+  )
   return structuredClone(memory)
+}
+/** Builds the zones and bays of a demo lot from its model, as the backend does when a lot is registered. */
+function withModel(lot: ManagedLot): ManagedLot {
+  const template = findTemplate(lot.layoutTemplate)
+  if (lot.zones.length || !template) return lot
+  const zones = zonesFromTemplate(template, newId)
+  return { ...lot, zones, capacity: zones.reduce((n, z) => n + z.capacity, 0) }
 }
 function save(lots: ManagedLot[]) {
   localStorage.setItem(KEY, JSON.stringify(lots))
@@ -87,7 +83,7 @@ function requireManager(lot: ManagedLot) {
   const user = actor()
   if (user.role !== 'MANAGER' || user.userId !== lot.managerUserId)
     throw new Error(
-      'Only the Manager assigned to this lot can configure its zones, slots and operating status.',
+      'Only the Manager assigned to this lot can change its operating status.',
     )
 }
 export const lotManagementService = {
@@ -121,20 +117,23 @@ export const lotManagementService = {
     )
       throw new Error('The Manager does not exist or is inactive.')
     if (!isDemo()) {
-      const savedId = await lotManagementApi.saveLot(input, id)
+      const savedId = await lotManagementApi.saveLot(input, id, Boolean(current?.zones.length))
       const saved = (await lotManagementApi.list()).find((l) => l.id === savedId)
       if (!saved) throw new Error('The parking lot was saved but could not be reloaded.')
       return saved
     }
     // Status is not an editable admin field; it is managed through the separate operational command.
+    // Zones, slots and capacity come from the ready-made model, like on the backend.
+    const zones = current?.zones.length ? current.zones : zonesFromTemplate(findTemplate(input.layoutTemplate)!, newId)
     const next: ManagedLot = {
       ...input,
       code: input.code.trim(),
       name: input.name.trim(),
       address: input.address.trim(),
       id: id ?? newId(),
-      zones: current?.zones ?? [],
-      status: current?.status ?? 'Inactive',
+      zones,
+      capacity: zones.reduce((n, z) => n + z.capacity, 0),
+      status: current?.status ?? 'Active',
     }
     if (current) lots[lots.findIndex((l) => l.id === id)] = next
     else lots.push(next)
@@ -154,79 +153,6 @@ export const lotManagementService = {
       return
     }
     save(lots.filter((l) => l.id !== id))
-  },
-  async saveZone(lotId: string, input: ZoneInput, id?: string) {
-    const lots = await load()
-    const lot = getLot(lots, lotId)
-    requireManager(lot)
-    const current = id ? lot.zones.find((z) => z.id === id) : undefined
-    if (id && !current) throw new Error('The zone no longer exists.')
-    validateZone(input, lot, current)
-    if (!isDemo()) {
-      await lotManagementApi.saveZone(lotId, input, id)
-      return
-    }
-    const next = {
-      ...input,
-      code: input.code.trim(),
-      name: input.name.trim(),
-      id: id ?? newId(),
-      slots: current?.slots ?? [],
-    }
-    if (current) lot.zones[lot.zones.findIndex((z) => z.id === id)] = next
-    else lot.zones.push(next)
-    save(lots)
-  },
-  async deleteZone(lotId: string, id: string) {
-    const lots = await load()
-    const lot = getLot(lots, lotId)
-    requireManager(lot)
-    const zone = lot.zones.find((z) => z.id === id)
-    if (!zone || zone.slots.length)
-      throw new Error('Only zones without slots can be deleted; operational data is never removed.')
-    if (!isDemo()) {
-      await lotManagementApi.deleteZone(id)
-      return
-    }
-    lot.zones = lot.zones.filter((z) => z.id !== id)
-    save(lots)
-  },
-  async saveSlot(lotId: string, zoneId: string, input: SlotInput, id?: string) {
-    const lots = await load()
-    const lot = getLot(lots, lotId)
-    requireManager(lot)
-    const zone = lot.zones.find((z) => z.id === zoneId)
-    if (!zone) throw new Error('Zone not found.')
-    if (!zone.isActive) throw new Error('Activate the zone before configuring slots.')
-    const current = id ? zone.slots.find((s) => s.id === id) : undefined
-    if (id && !current)
-      throw new Error('The slot no longer exists.')
-    if (!VEHICLE_TYPES.some((t) => t.id === input.vehicleTypeId))
-      throw new Error('Invalid vehicle type.')
-    validateSlot(input, zone, id)
-    if (!isDemo()) {
-      await lotManagementApi.saveSlot(zoneId, input, current)
-      return
-    }
-    const next = { ...input, code: input.code.trim(), id: id ?? newId() }
-    if (id) zone.slots[zone.slots.findIndex((s) => s.id === id)] = next
-    else zone.slots.push(next)
-    save(lots)
-  },
-  async deleteSlot(lotId: string, zoneId: string, id: string) {
-    const lots = await load()
-    const lot = getLot(lots, lotId)
-    requireManager(lot)
-    const zone = lot.zones.find((z) => z.id === zoneId)
-    const slot = zone?.slots.find((s) => s.id === id)
-    if (!zone || !slot || ['Reserved', 'Occupied'].includes(slot.status))
-      throw new Error('Cannot delete a slot that is reserved, occupied or no longer exists.')
-    if (!isDemo()) {
-      await lotManagementApi.deleteSlot(id)
-      return
-    }
-    zone.slots = zone.slots.filter((s) => s.id !== id)
-    save(lots)
   },
   async setOperation(
     lotId: string,

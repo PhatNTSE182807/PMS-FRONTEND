@@ -149,11 +149,10 @@ export function templateForLot(lot: Pick<ParkingLotCapacityDTO, 'id'> & { layout
 }
 
 /**
- * Levels for the customer 3D view: motorbikes on the ground, cars above. Each level mirrors the
- * live occupancy of the lot's zones, so its bays fill and empty as vehicles come and go.
+ * Live stats of each level of the lot's template (index-aligned with `template.floors`): car
+ * zones spread over the car levels, motorbike zones on the ground.
  */
-export function buildGarage(lot: ParkingLotCapacityDTO): GarageFloor[] {
-  const template = templateForLot(lot)
+export function liveFloorStats(lot: ParkingLotCapacityDTO, template: GarageTemplate = templateForLot(lot)): ZoneStats[] {
   const carZones = lot.zones.filter(isCarZone)
   const bikeZones = lot.zones.filter((z) => !isCarZone(z))
   const carLevels = template.floors.filter((k) => k === 'car').length
@@ -172,9 +171,14 @@ export function buildGarage(lot: ParkingLotCapacityDTO): GarageFloor[] {
   const bikeStats = bikeZones.length ? stats(bikeZones) : { label: 'Motorbike deck', total: 0, occupied: 0 }
 
   let car = 0
-  return buildTemplateGarage(
-    template,
-    template.floors.map((kind) => (kind === 'car' ? carStats[car++] : bikeStats)),
-    lot.id,
-  )
+  return template.floors.map((kind) => (kind === 'car' ? carStats[car++] : bikeStats))
+}
+
+/**
+ * Levels for the customer 3D view: motorbikes on the ground, cars above. Each level mirrors the
+ * live occupancy of the lot's zones, so its bays fill and empty as vehicles come and go.
+ */
+export function buildGarage(lot: ParkingLotCapacityDTO): GarageFloor[] {
+  const template = templateForLot(lot)
+  return buildTemplateGarage(template, liveFloorStats(lot, template), lot.id)
 }

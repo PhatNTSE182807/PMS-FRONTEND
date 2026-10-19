@@ -2,9 +2,12 @@ import { generatePassword } from '@/lib/password'
 import { removeDiacritics, toSearchable } from '@/lib/text'
 import type { PaginatedResponse } from '@/types/common.dto'
 import type {
+  CreateManagedStaffCommand,
   CreateUserCommand,
+  ManagedStaffQuery,
   ResetPasswordResultDTO,
   StaffListQuery,
+  UpdateEmployeeCommand,
   UpdateUserCommand,
   UserDTO,
   UserStatus,
@@ -84,6 +87,13 @@ function seedUsers(): UserDTO[] {
 }
 
 let users: UserDTO[] = seedUsers()
+/** Staff a Manager removed: kept (BR-21, no hard delete) but hidden from the Manager's roster. */
+const terminated = new Set<string>()
+
+function ensurePhoneIsFree(phoneNumber: string, exceptId?: string) {
+  const phone = phoneNumber.trim()
+  if (users.some((u) => u.id !== exceptId && u.phoneNumber === phone)) mockFail(400, 'Phone number is already in use')
+}
 
 function findUser(id: string): UserDTO {
   const user = users.find((u) => u.id === id)
@@ -141,6 +151,7 @@ export const staffMock = {
 
   create(command: CreateUserCommand): Promise<UserDTO> {
     return mockResponse(() => {
+      if (command.role !== 'MANAGER') mockFail(403, 'Staff accounts are created by the Manager of their parking lot.')
       const email = command.email.trim().toLowerCase()
       if (users.some((u) => u.email.toLowerCase() === email)) mockFail(409, 'This email is already in use.')
       validateAssignment(command.role, command.assignedParkingLotIds, command.shift)
@@ -154,7 +165,6 @@ export const staffMock = {
         phoneNumber: command.phoneNumber.trim(),
         role: command.role,
         assignedParkingLots: resolveLots(command.assignedParkingLotIds),
-        shift: command.role === 'STAFF' ? command.shift : undefined,
         status: 'ACTIVE',
         createdAt: new Date().toISOString(),
       }
@@ -191,6 +201,70 @@ export const staffMock = {
     return mockResponse(() => {
       findUser(id)
       return { temporaryPassword: generatePassword() }
+    })
+  },
+
+  /* A Manager's own Staff (mirrors ManagerController: one lot per Staff, soft delete). */
+
+  teamList(query: ManagedStaffQuery): Promise<UserDTO[]> {
+    return mockResponse(() => {
+      const term = toSearchable(query.search ?? '')
+      return users
+        .filter((u) => u.role === 'STAFF' && !terminated.has(u.id))
+        .filter((u) => !query.parkingLotId || u.assignedParkingLots.some((lot) => lot.id === query.parkingLotId))
+        .filter((u) => !query.status || u.status === query.status)
+        .filter((u) => !term || matchesSearch(u, term))
+        .sort((a, b) => a.fullName.localeCompare(b.fullName))
+    })
+  },
+
+  teamCreate(command: CreateManagedStaffCommand): Promise<UserDTO> {
+    return mockResponse(() => {
+      const email = command.email.trim().toLowerCase()
+      if (users.some((u) => u.email.toLowerCase() === email)) mockFail(400, 'Email address is already in use')
+      ensurePhoneIsFree(command.phoneNumber)
+      const nextNumber = users.reduce((max, u) => Math.max(max, Number(u.employeeCode.slice(2))), 0) + 1
+      const user: UserDTO = {
+        id: mockId('usr'),
+        employeeCode: `NV${String(nextNumber).padStart(4, '0')}`,
+        fullName: command.fullName.trim(),
+        email,
+        phoneNumber: command.phoneNumber.trim(),
+        role: 'STAFF',
+        assignedParkingLots: resolveLots([command.parkingLotId]),
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString(),
+      }
+      users = [user, ...users]
+      return user
+    })
+  },
+
+  teamUpdate(id: string, command: UpdateEmployeeCommand): Promise<UserDTO> {
+    return mockResponse(() => {
+      const email = command.email.trim().toLowerCase()
+      if (users.some((u) => u.id !== id && u.email.toLowerCase() === email)) mockFail(400, 'Email address is already in use')
+      ensurePhoneIsFree(command.phoneNumber, id)
+      const updated: UserDTO = { ...findUser(id), fullName: command.fullName.trim(), email, phoneNumber: command.phoneNumber.trim() }
+      users = users.map((u) => (u.id === id ? updated : u))
+      return updated
+    })
+  },
+
+  teamAssignLot(id: string, parkingLotId: string): Promise<UserDTO> {
+    return mockResponse(() => {
+      const updated: UserDTO = { ...findUser(id), assignedParkingLots: resolveLots([parkingLotId]) }
+      users = users.map((u) => (u.id === id ? updated : u))
+      return updated
+    })
+  },
+
+  teamDelete(id: string): Promise<boolean> {
+    return mockResponse(() => {
+      findUser(id)
+      terminated.add(id)
+      users = users.map((u) => (u.id === id ? { ...u, status: 'INACTIVE' } : u))
+      return true
     })
   },
 

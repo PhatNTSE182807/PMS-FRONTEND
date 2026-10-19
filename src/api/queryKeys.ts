@@ -1,4 +1,4 @@
-import type { CustomerListQuery, StaffListQuery } from '@/types/identity.dto'
+import type { CustomerListQuery, ManagedStaffQuery, StaffListQuery } from '@/types/identity.dto'
 import type { RevenueBreakdownQuery, RevenueFilterQuery } from '@/types/report.dto'
 
 /** React Query cache keys, grouped by service so invalidation can target one service. */
@@ -17,10 +17,23 @@ export const queryKeys = {
     all: ['staff'] as const,
     list: (query: StaffListQuery) => [...queryKeys.staff.all, 'list', query] as const,
   },
+  /** A Manager's own Staff; kept under `staff` so Admin staff edits refresh it too. */
+  team: {
+    all: ['staff', 'team'] as const,
+    list: (query: ManagedStaffQuery) => [...queryKeys.team.all, 'list', query] as const,
+  },
   parking: {
     all: ['parking'] as const,
     lots: () => [...queryKeys.parking.all, 'lots'] as const,
     capacity: () => [...queryKeys.parking.all, 'capacity'] as const,
+    staffLots: (userId: string | undefined) => [...queryKeys.parking.all, 'staff-lots', userId] as const,
+  },
+  layout: {
+    all: ['layout'] as const,
+    templates: () => [...queryKeys.layout.all, 'templates'] as const,
+    lot: (lotId: string) => [...queryKeys.layout.all, 'lot', lotId] as const,
+    status: (lotId: string) => [...queryKeys.layout.all, 'status', lotId] as const,
+    plan2D: (lotId: string, detail: string) => [...queryKeys.layout.all, '2d', lotId, detail] as const,
   },
   reports: {
     all: ['reports'] as const,

@@ -5,7 +5,6 @@ import {
   Building2,
   ChevronRight,
   Layers,
-  Plus,
   Search,
   Pencil,
   Trash2,
@@ -35,19 +34,12 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table'
-import {
-  LotForm,
-  ZoneForm,
-  SlotForm,
-  OperationForm,
-} from '@/components/features/lots/LotForms'
+import { LotForm, OperationForm } from '@/components/features/lots/LotForms'
 import {
   LOT_STATES,
   SLOT_STATES,
   VEHICLE_TYPES,
   type ManagedLot,
-  type ManagedZone,
-  type ManagedSlot,
 } from '@/types/lot-management.dto'
 import { GaragePreview } from '@/components/customer/garage/GaragePreview'
 import { findTemplate, type ZoneStats } from '@/components/customer/garage/garageModel'
@@ -140,10 +132,9 @@ function LotLayoutCard({ lot, onEdit }: { lot: ManagedLot; onEdit?: () => void }
   )
 }
 
+// Zones and slots come from the lot's ready-made model: they are viewed here, never edited by hand
 type Editing =
   | { kind: 'lot'; lot?: ManagedLot }
-  | { kind: 'zone'; lot: ManagedLot; zone?: ManagedZone }
-  | { kind: 'slot'; lot: ManagedLot; zone: ManagedZone; slot?: ManagedSlot }
   | { kind: 'operation'; lot: ManagedLot }
   | null
 export default function ParkingLotsPage() {
@@ -208,7 +199,7 @@ export default function ParkingLotsPage() {
         description={
           selected
             ? 'Lot details, zones and reservable slots.'
-            : 'Register new facilities, configure capacity, update the operating lifecycle and assign facility managers across Ho Chi Minh City.'
+            : 'Register new facilities from ready-made parking models, update the operating lifecycle and assign facility managers across Ho Chi Minh City.'
         }
         actions={
           !selected ? (
@@ -480,10 +471,6 @@ export default function ParkingLotsPage() {
                             : `${selected.openTime} – ${selected.closeTime}`}{' '}
                           · Capacity {selected.capacity} slots
                         </p>
-                        <p>
-                          GPS: {selected.latitude ?? '—'},{' '}
-                          {selected.longitude ?? '—'}
-                        </p>
                         {selected.description && <p>{selected.description}</p>}
                         {selected.imageUrl && (
                           <a
@@ -536,35 +523,24 @@ export default function ParkingLotsPage() {
                     </div>
                   </Card>
                   <LotLayoutCard lot={selected} onEdit={admin ? () => setEditing({ kind: 'lot', lot: selected }) : undefined} />
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">
-                      Zones · {selected.zones.length}
-                    </h2>
-                    {canConfigure && (
-                      <Button
-                        onClick={() =>
-                          setEditing({ kind: 'zone', lot: selected })
-                        }
-                      >
-                        <Plus />
-                        Add zone
-                      </Button>
-                    )}
-                  </div>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    Zones · {selected.zones.length}
+                  </h2>
                   <p className="text-sm text-slate-500">
-                    Allocated{' '}
-                    {selected.zones.reduce((n, z) => n + z.capacity, 0)}/
-                    {selected.capacity} slots.{' '}
-                    {admin
-                      ? 'The assigned Manager configures zones and slots; Admins can review the structure here.'
-                      : 'Walk-in vehicles use the zone counter and are not assigned a specific slot.'}
+                    {selected.zones.reduce((n, z) => n + z.capacity, 0)} bays across{' '}
+                    {selected.zones.length} levels, built from the lot&apos;s model. Zones and bays are not added or
+                    removed by hand.
                   </p>
                   {!selected.zones.length ? (
                     <Card>
                       <EmptyState
                         icon={Layers}
-                        title="No zones configured yet"
-                        description="The assigned Manager will create floors, areas or rows and their reservation limits."
+                        title="No model applied yet"
+                        description={
+                          admin
+                            ? 'Edit the lot and pick a parking lot model: its levels, zones and bays are created from it.'
+                            : 'An Admin picks the parking lot model; its levels, zones and bays are created from it.'
+                        }
                       />
                     </Card>
                   ) : (
@@ -614,51 +590,13 @@ export default function ParkingLotsPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setZoneId(z.id)}
-                                  >
-                                    Slot
-                                  </Button>
-                                  {canConfigure && (
-                                    <>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        aria-label={`Edit zone ${z.code}`}
-                                        onClick={() =>
-                                          setEditing({
-                                            kind: 'zone',
-                                            lot: selected,
-                                            zone: z,
-                                          })
-                                        }
-                                      >
-                                        <Pencil />
-                                      </Button>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        aria-label={`Delete zone ${z.code}`}
-                                        disabled={z.slots.length > 0}
-                                        onClick={() =>
-                                          setRemoving({
-                                            name: z.name,
-                                            run: () =>
-                                              service.deleteZone(
-                                                selected.id,
-                                                z.id,
-                                              ),
-                                          })
-                                        }
-                                      >
-                                        <Trash2 />
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setZoneId(z.id)}
+                                >
+                                  View bays
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -669,42 +607,25 @@ export default function ParkingLotsPage() {
                 </>
               ) : (
                 <>
-                  <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        {zone.slots.length}/{zone.reservationLimit} reservable slots
-                        created
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Zone capacity: {zone.capacity} · Walk-in share:{' '}
-                        {zone.capacity - zone.reservationLimit} spaces
-                      </p>
-                    </div>
-                    {canConfigure && (
-                      <Button
-                        disabled={
-                          !zone.isActive ||
-                          zone.slots.length >= zone.reservationLimit
-                        }
-                        onClick={() =>
-                          setEditing({ kind: 'slot', lot: selected, zone })
-                        }
-                      >
-                        <Plus />
-                        Add slot
-                      </Button>
-                    )}
+                  <Card className="p-5">
+                    <p className="font-semibold text-slate-900">
+                      {zone.slots.length} bays · {zone.reservationLimit} reservable
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Zone capacity: {zone.capacity} · Walk-in share:{' '}
+                      {zone.capacity - zone.reservationLimit} spaces
+                    </p>
                   </Card>
                   <p className="text-sm text-slate-500">
-                    Available / Maintenance can be configured here. Reserved / Occupied only
-                    change through bookings and vehicle check-in/out.
+                    Bays come from the lot&apos;s model. Reserved / Occupied change through bookings and
+                    vehicle check-in/out.
                   </p>
                   {!zone.slots.length ? (
                     <Card>
                       <EmptyState
                         icon={Layers}
-                        title="No reservable slots yet"
-                        description="Raise the limit in the zone settings if needed, then add slots. Walk-in vehicles do not need individual slots."
+                        title="No bays in this zone"
+                        description="Bays are created from the lot's model."
                       />
                     </Card>
                   ) : (
@@ -715,7 +636,6 @@ export default function ParkingLotsPage() {
                             <TableHead>Slot code</TableHead>
                             <TableHead>Vehicle type</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -742,53 +662,6 @@ export default function ParkingLotsPage() {
                                   {SLOT_STATES[s.status]}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
-                                {canConfigure && (
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      aria-label={`Edit slot ${s.code}`}
-                                      disabled={[
-                                        'Occupied',
-                                        'Reserved',
-                                      ].includes(s.status)}
-                                      onClick={() =>
-                                        setEditing({
-                                          kind: 'slot',
-                                          lot: selected,
-                                          zone,
-                                          slot: s,
-                                        })
-                                      }
-                                    >
-                                      <Pencil />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      aria-label={`Delete slot ${s.code}`}
-                                      disabled={[
-                                        'Occupied',
-                                        'Reserved',
-                                      ].includes(s.status)}
-                                      onClick={() =>
-                                        setRemoving({
-                                          name: s.code,
-                                          run: () =>
-                                            service.deleteSlot(
-                                              selected.id,
-                                              zone.id,
-                                              s.id,
-                                            ),
-                                        })
-                                      }
-                                    >
-                                      <Trash2 />
-                                    </Button>
-                                  </div>
-                                )}
-                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -813,23 +686,6 @@ export default function ParkingLotsPage() {
         <LotForm
           lot={editing.lot}
           managers={managers.data ?? []}
-          onClose={() => setEditing(null)}
-          onSaved={reload}
-        />
-      )}
-      {editing?.kind === 'zone' && (
-        <ZoneForm
-          lot={editing.lot}
-          zone={editing.zone}
-          onClose={() => setEditing(null)}
-          onSaved={reload}
-        />
-      )}
-      {editing?.kind === 'slot' && (
-        <SlotForm
-          lot={editing.lot}
-          zone={editing.zone}
-          slot={editing.slot}
           onClose={() => setEditing(null)}
           onSaved={reload}
         />

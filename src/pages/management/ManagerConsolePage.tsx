@@ -17,6 +17,7 @@ import {
   UserPlus,
   Zap,
 } from 'lucide-react'
+import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatClock, vnd } from '@/components/features/manager/managerFormat'
 import { presetRange } from '@/components/features/revenue/revenueFilters'
@@ -24,6 +25,7 @@ import { DemoTag, EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDemoApprovals } from '@/hooks/useDemoApprovals'
+import { useManagerLot } from '@/hooks/useManagerLot'
 import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
 import { usePaymentMethodBreakdown, useRevenueByParkingLot } from '@/hooks/useRevenueReport'
 import { useNow } from '@/hooks/useNow'
@@ -53,6 +55,7 @@ function Console({ lot }: { lot: ManagedLot }) {
   const now = useNow(30_000)
   const capacity = useParkingCapacity()
   useCapacitySimulation(true)
+  const { lots: assigned, setLotId } = useManagerLot()
   const live = capacity.data?.find((c) => c.id === lot.id)
 
   const today = presetRange('today')
@@ -190,6 +193,8 @@ function Console({ lot }: { lot: ManagedLot }) {
           </Link>
         </Kpi>
       </div>
+
+      <LiveLotModel lots={assigned.data ?? [lot]} lotId={lot.id} onLotChange={setLotId} />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">

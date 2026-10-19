@@ -134,7 +134,7 @@ export default function StaffAccountsPage() {
         actions={
           <Button size="lg" onClick={() => setFormState({ open: true })}>
             <UserPlus />
-            Provision new account
+            Add manager
           </Button>
         }
       />

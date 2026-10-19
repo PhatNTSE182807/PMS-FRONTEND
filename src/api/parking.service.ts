@@ -1,6 +1,8 @@
 import { isMockService, SERVICE_PATHS } from '@/config/env'
+import { session } from '@/lib/session'
 import { capacityMock } from '@/mocks/capacity.mock'
-import type { ParkingLotCapacityDTO, ParkingLotSummaryDTO } from '@/types/parking.dto'
+import { lotAssignmentsMock } from '@/mocks/lotAssignments.mock'
+import type { AssignedParkingLotDTO, ParkingLotCapacityDTO, ParkingLotSummaryDTO } from '@/types/parking.dto'
 import { http } from './axiosClient'
 
 const base = SERVICE_PATHS.capacity
@@ -18,6 +20,15 @@ export const parkingService = {
     if (isMockService('parking')) return capacityMock.getParkingLots()
     const lots = await http.get<LotResponse[]>(`${SERVICE_PATHS.parking}/lots`)
     return lots.map(({ id, code, name, address }) => ({ id: String(id), code, name, address }))
+  },
+
+  /**
+   * The lot(s) the signed-in Staff works at. No endpoint yet (proposed GET /staff/lots, same
+   * shape as GET /manager/lots), so it is always mocked. Managers use lotManagementService.list().
+   */
+  async getMyStaffLots(): Promise<AssignedParkingLotDTO[]> {
+    const user = session.getUser()
+    return user?.role === 'STAFF' ? lotAssignmentsMock.getStaffLots(user.userId) : []
   },
 
   getCapacityOverview(): Promise<ParkingLotCapacityDTO[]> {

@@ -7,6 +7,10 @@ import type { EntityRef, PaginatedResponse } from '@/types/common.dto'
 import type {
   AccountRole,
   CreateEmployeeResponseDTO,
+  CreateManagedStaffCommand,
+  EmployeeAccountResponseDTO,
+  ManagedStaffQuery,
+  UpdateEmployeeCommand,
   CustomerAccountDTO,
   CustomerListQuery,
   CreateUserCommand,
@@ -29,7 +33,6 @@ import type {
   VerifyLoginOtpCommand,
 } from '@/types/identity.dto'
 import { http } from './axiosClient'
-import { lotManagementApi } from './lot-management.live'
 
 /**
  * Identity service: authentication and account management.
@@ -112,20 +115,22 @@ export const identityService = {
     return toPage(users, query)
   },
 
-  /** POST /admin/managers or /admin/staff. The account is active and can sign in with the password set here. */
+  /**
+   * POST /admin/managers. Admins create Managers only; Staff are created by the Manager of
+   * their lot (POST /manager/staff). The account can sign in with the password set here.
+   */
   async createStaff(command: CreateUserCommand): Promise<UserDTO> {
     if (isMockService('staff')) return staffMock.create(command)
-    const path = command.role === 'MANAGER' ? 'managers' : 'staff'
-    const created = await http.post<CreateEmployeeResponseDTO>(`${SERVICE_PATHS.staff}/${path}`, {
+    if (command.role !== 'MANAGER') throw new Error('Staff accounts are created by the Manager of their parking lot.')
+    const created = await http.post<CreateEmployeeResponseDTO>(`${SERVICE_PATHS.staff}/managers`, {
       userName: userNameFromEmail(command.email),
       fullName: command.fullName,
       email: command.email,
       password: command.password,
       phoneNumber: command.phoneNumber,
-      assignedParkingLot: command.assignedParkingLotIds[0],
     })
-    // The backend keeps a lot's Manager on the lot itself, so assign the chosen lots there
-    const assignedParkingLots = command.role === 'MANAGER' ? await assignManager(created.id, command.assignedParkingLotIds) : []
+    // One Manager per lot: the new Manager takes over the chosen lots
+    const assignedParkingLots = await assignManager(created.id, command.assignedParkingLotIds)
     return {
       id: created.id,
       employeeCode: created.employeeCode ?? '',
@@ -140,9 +145,23 @@ export const identityService = {
     }
   },
 
-  updateStaff(id: string, command: UpdateUserCommand): Promise<UserDTO> {
+  /**
+   * PUT /admin/managers/{id} then PUT /admin/managers/{id}/lots. Admins edit Managers only:
+   * Staff accounts belong to the Manager of their lot (SRS FR-AUTH-07).
+   */
+  async updateStaff(id: string, command: UpdateUserCommand): Promise<UserDTO> {
     if (isMockService('staff')) return staffMock.update(id, command)
-    return Promise.reject(new Error('Editing staff details is not supported by the backend yet.'))
+    if (command.role !== 'MANAGER') throw new Error('Staff accounts are edited by the Manager of their parking lot.')
+    const current = await http.get<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.staff}/managers/${id}`)
+    await http.put<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.staff}/managers/${id}`, {
+      fullName: command.fullName,
+      email: current.email,
+      phoneNumber: command.phoneNumber,
+    })
+    const updated = await http.put<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.staff}/managers/${id}/lots`, {
+      parkingLotIds: command.assignedParkingLotIds.map(Number),
+    })
+    return employeeToUserDTO(updated)
   },
 
   /** PATCH /admin/users/{id}/status. The backend only knows active and inactive. */
@@ -158,6 +177,61 @@ export const identityService = {
   resetStaffPassword(id: string): Promise<ResetPasswordResultDTO> {
     if (isMockService('staff')) return staffMock.resetPassword(id)
     return Promise.reject(new Error('Resetting a staff password is not supported by the backend yet.'))
+  },
+
+  /* A Manager's own Staff (Manager only, /manager) -------------------- */
+
+  /** GET /manager/staff: Staff working at the lots the signed-in Manager manages. */
+  async getManagedStaff(query: ManagedStaffQuery): Promise<UserDTO[]> {
+    if (isMockService('team')) return staffMock.teamList(query)
+    // The backend has no suspended state.
+    if (query.status === 'SUSPENDED') return []
+    const accounts = await http.get<EmployeeAccountResponseDTO[]>(`${SERVICE_PATHS.team}/staff`, {
+      params: {
+        parkingLotId: query.parkingLotId ? Number(query.parkingLotId) : undefined,
+        isActive: query.status ? query.status === 'ACTIVE' : undefined,
+        searchTerm: query.search?.trim() || undefined,
+      },
+    })
+    return accounts.map(employeeToUserDTO)
+  },
+
+  /** POST /manager/staff: the account is active at once and signs in with the password set here. */
+  async createManagedStaff(command: CreateManagedStaffCommand): Promise<UserDTO> {
+    if (isMockService('team')) return staffMock.teamCreate(command)
+    const created = await http.post<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.team}/staff`, {
+      ...command,
+      parkingLotId: Number(command.parkingLotId),
+    })
+    return employeeToUserDTO(created)
+  },
+
+  async updateManagedStaff(id: string, command: UpdateEmployeeCommand): Promise<UserDTO> {
+    if (isMockService('team')) return staffMock.teamUpdate(id, command)
+    return employeeToUserDTO(await http.put<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.team}/staff/${id}`, command))
+  },
+
+  /** PUT /manager/staff/{id}/lot: moves the Staff member to another lot of the same Manager. */
+  async assignManagedStaffLot(id: string, parkingLotId: string): Promise<UserDTO> {
+    if (isMockService('team')) return staffMock.teamAssignLot(id, parkingLotId)
+    const updated = await http.put<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.team}/staff/${id}/lot`, {
+      parkingLotId: Number(parkingLotId),
+    })
+    return employeeToUserDTO(updated)
+  },
+
+  async setManagedStaffStatus(id: string, status: UserStatus): Promise<UserDTO> {
+    if (isMockService('team')) return staffMock.setStatus(id, status)
+    const updated = await http.patch<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.team}/staff/${id}/status`, {
+      isActive: status === 'ACTIVE',
+    })
+    return employeeToUserDTO(updated)
+  },
+
+  /** DELETE /manager/staff/{id}: locks the account and marks it Terminated; nothing is erased (BR-21). */
+  deleteManagedStaff(id: string): Promise<boolean> {
+    if (isMockService('team')) return staffMock.teamDelete(id)
+    return http.delete<boolean>(`${SERVICE_PATHS.team}/staff/${id}`)
   },
 }
 
@@ -180,14 +254,28 @@ function toUserDTO(account: InternalUserResponseDTO, managedLots: Map<string, En
   }
 }
 
-/** Makes the user the Manager of each lot (PUT /lots/{id} with managerUserId). */
+/** PUT /admin/managers/{id}/lots: the Manager takes over these lots (one Manager per lot) and releases any others. */
 async function assignManager(userId: string, lotIds: string[]): Promise<EntityRef[]> {
   if (lotIds.length === 0) return []
-  const lots = (await lotManagementApi.list()).filter((lot) => lotIds.includes(lot.id))
-  for (const lot of lots) {
-    await lotManagementApi.saveLot({ ...lot, managerUserId: userId }, lot.id)
+  const updated = await http.put<EmployeeAccountResponseDTO>(`${SERVICE_PATHS.staff}/managers/${userId}/lots`, {
+    parkingLotIds: lotIds.map(Number),
+  })
+  return employeeToUserDTO(updated).assignedParkingLots
+}
+
+/** EmployeeAccountResponseModel (Admin manager list, Manager staff list) -> the client's UserDTO. */
+function employeeToUserDTO(account: EmployeeAccountResponseDTO): UserDTO {
+  return {
+    id: account.id,
+    employeeCode: account.employeeCode ?? '',
+    fullName: account.fullName || account.userName,
+    email: account.email,
+    phoneNumber: account.phoneNumber ?? '',
+    role: normalizeRole(account.role) === 'MANAGER' ? 'MANAGER' : 'STAFF',
+    assignedParkingLots: account.parkingLots.map(({ id, name }) => ({ id: String(id), name })),
+    status: account.isActive ? 'ACTIVE' : 'INACTIVE',
+    createdAt: account.createdAt ?? '',
   }
-  return lots.map(({ id, name }) => ({ id, name }))
 }
 
 /** Manager user id -> the lots they manage (from each lot's managerUserId). */

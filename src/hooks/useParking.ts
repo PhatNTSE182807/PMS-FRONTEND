@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { parkingService } from '@/api/parking.service'
 import { queryKeys } from '@/api/queryKeys'
+import { useAuth } from './useAuth'
 
 /** Near real-time polling interval for occupancy (to be replaced by a SignalR push). */
 export const CAPACITY_REFRESH_MS = 15_000
@@ -12,6 +13,16 @@ export function useParkingLots() {
     queryKey: queryKeys.parking.lots(),
     queryFn: parkingService.getParkingLots,
     staleTime: 10 * 60 * 1000,
+  })
+}
+
+/** The lot(s) the signed-in Staff works at (Managers use useManagerLot). */
+export function useMyStaffLots() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.parking.staffLots(user?.userId),
+    queryFn: parkingService.getMyStaffLots,
+    enabled: !!user,
   })
 }
 

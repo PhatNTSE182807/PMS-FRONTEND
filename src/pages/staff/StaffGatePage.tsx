@@ -20,12 +20,15 @@ import {
   Video,
   Wallet,
 } from 'lucide-react'
+import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { CameraFrame, Key, Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
 import { formatClock } from '@/components/features/manager/managerFormat'
 import { DemoTag } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useDemoIncidents } from '@/hooks/useDemoIncidents'
+import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { demoCameras, demoGateEvents, demoGateSession, demoGateStats, demoStation, type GateClearance } from '@/mocks/staffOps.mock'
@@ -332,6 +335,9 @@ function ActivityStream({ query, setQuery, inputRef }: { query: string; setQuery
 
 export default function StaffGatePage() {
   const { open } = useDemoIncidents()
+  const myLots = useMyStaffLots()
+  const [lotId, setLotId] = useState<string>()
+  useCapacitySimulation(true)
   const [query, setQuery] = useState('')
   const lookupRef = useRef<HTMLInputElement>(null)
   const lookup = () => {
@@ -364,6 +370,12 @@ export default function StaffGatePage() {
         <AnprTelemetry />
         <GateSession onLookup={lookup} />
       </div>
+
+      {myLots.isPending ? (
+        <Skeleton className="h-[30rem] rounded-2xl" />
+      ) : (
+        <LiveLotModel lots={myLots.data ?? []} lotId={lotId} onLotChange={setLotId} />
+      )}
 
       <DispatchBar />
       <ActivityStream query={query} setQuery={setQuery} inputRef={lookupRef} />

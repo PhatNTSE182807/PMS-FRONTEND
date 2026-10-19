@@ -4,9 +4,7 @@ import type {
   ManagedLot,
   ManagedSlot,
   ManagedZone,
-  SlotInput,
   SlotState,
-  ZoneInput,
   ZoneKind,
 } from '@/types/lot-management.dto'
 import { http } from './axiosClient'
@@ -21,8 +19,6 @@ interface LotResponse {
   code: string
   name: string
   address: string
-  latitude: number | null
-  longitude: number | null
   openTime: string | null
   closeTime: string | null
   is24Hours: boolean
@@ -35,7 +31,7 @@ interface LotResponse {
   closureReason: string | null
   maintenanceNotice: string | null
   managerUserId: string | null
-  /** Proposed field: the 3D building template id. */
+  /** Ready-made building model (L3S20, L3S50, L4S30) the zones, slots and 3D layout come from. */
   layoutTemplate?: string | null
 }
 
@@ -61,12 +57,7 @@ interface SlotResponse {
   isActive: boolean
 }
 
-interface VehicleTypeResponse {
-  id: number
-  code: string
-}
-
-/** The backend has no per-vehicle-type zone capacity, so the client keeps it in LayoutJson. */
+/** Older zones kept their per-vehicle-type capacity in LayoutJson; generated zones count their slots. */
 interface ZoneLayout {
   vehicleCapacities?: Record<string, number>
 }
@@ -106,7 +97,7 @@ function toZone(zone: ZoneResponse, slots: SlotResponse[]): ManagedZone {
     zoneType: zone.zoneType as ZoneKind,
     floorNo: zone.floorNo,
     capacity: zone.capacity,
-    vehicleCapacities: parseLayout(zone.layoutJson).vehicleCapacities ?? {},
+    vehicleCapacities: parseLayout(zone.layoutJson).vehicleCapacities ?? countByVehicleType(slots.filter((s) => s.zoneId === zone.id && s.isActive)),
     reservationLimit: zone.maxReservationSlots ?? 0,
     isActive: zone.isActive,
     slots: slots.filter((s) => s.zoneId === zone.id && s.isActive).map(toSlot),
@@ -119,8 +110,6 @@ function toLot(lot: LotResponse, zones: ZoneResponse[], slots: SlotResponse[]): 
     code: lot.code,
     name: lot.name,
     address: lot.address,
-    latitude: lot.latitude,
-    longitude: lot.longitude,
     is24Hours: lot.is24Hours,
     openTime: toTimeInput(lot.openTime),
     closeTime: toTimeInput(lot.closeTime),
@@ -138,22 +127,10 @@ function toLot(lot: LotResponse, zones: ZoneResponse[], slots: SlotResponse[]): 
   }
 }
 
-let vehicleTypeIds: Promise<Map<string, number>> | undefined
-
-/** Slots reference vehicle types by integer id; the client uses the codes (CAR_4, MOTORBIKE…). */
-function vehicleTypeId(code: string): Promise<number> {
-  vehicleTypeIds ??= http
-    .get<VehicleTypeResponse[]>('/Users/profile/vehicle-types')
-    .then((types) => new Map(types.map((t) => [t.code, t.id])))
-    .catch((error: unknown) => {
-      vehicleTypeIds = undefined
-      throw error
-    })
-  return vehicleTypeIds.then((ids) => {
-    const id = ids.get(code)
-    if (id === undefined) throw new Error('Invalid vehicle type.')
-    return id
-  })
+function countByVehicleType(slots: SlotResponse[]): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const slot of slots) counts[slot.vehicleTypeCode] = (counts[slot.vehicleTypeCode] ?? 0) + 1
+  return counts
 }
 
 export const lotManagementApi = {
@@ -166,78 +143,36 @@ export const lotManagementApi = {
     return lots.map((lot) => toLot(lot, zones, slots))
   },
 
-  async saveLot(input: LotInput, id?: string): Promise<string> {
+  /**
+   * POST /lots builds the zones, slots and 3D layout from the chosen ready-made model. An older lot
+   * without zones gets its model through PUT /lots/{id}/template; afterwards the model is fixed.
+   */
+  async saveLot(input: LotInput, id?: string, hasZones = false): Promise<string> {
     const body = {
       name: input.name.trim(),
       address: input.address.trim(),
-      latitude: input.latitude,
-      longitude: input.longitude,
       is24Hours: input.is24Hours,
       openTime: input.is24Hours ? null : toTimeOnly(input.openTime),
       closeTime: input.is24Hours ? null : toTimeOnly(input.closeTime),
-      capacity: input.capacity,
       imageUrl: input.imageUrl || null,
       description: input.description || null,
       managerUserId: input.managerUserId || null,
-      layoutTemplate: input.layoutTemplate || null,
     }
     if (id) {
       await http.put<LotResponse>(`/lots/${id}`, body)
+      if (!hasZones) await http.put<LotResponse>(`/lots/${id}/template`, { layoutTemplate: input.layoutTemplate })
       return id
     }
-    const created = await http.post<LotResponse>('/lots', { ...body, code: input.code.trim() })
+    const created = await http.post<LotResponse>('/lots', {
+      ...body,
+      code: input.code.trim(),
+      layoutTemplate: input.layoutTemplate,
+    })
     return String(created.id)
   },
 
   deleteLot(id: string): Promise<boolean> {
     return http.delete<boolean>(`/lots/${id}`)
-  },
-
-  async saveZone(lotId: string, input: ZoneInput, id?: string): Promise<void> {
-    const body = {
-      name: input.name.trim(),
-      zoneType: input.zoneType,
-      floorNo: input.floorNo,
-      capacity: input.capacity,
-      maxReservationSlots: input.reservationLimit,
-      layoutJson: JSON.stringify({ vehicleCapacities: input.vehicleCapacities } satisfies ZoneLayout),
-    }
-    if (id) {
-      await http.put<ZoneResponse>(`/zones/${id}`, { ...body, isActive: input.isActive })
-      return
-    }
-    const created = await http.post<ZoneResponse>(`/lots/${lotId}/zones`, {
-      ...body,
-      parkingLotId: Number(lotId),
-      code: input.code.trim(),
-    })
-    // New zones start active on the backend.
-    if (!input.isActive) await http.put<ZoneResponse>(`/zones/${created.id}`, { ...body, isActive: false })
-  },
-
-  deleteZone(id: string): Promise<boolean> {
-    return http.delete<boolean>(`/zones/${id}`)
-  },
-
-  async saveSlot(zoneId: string, input: SlotInput, current?: ManagedSlot): Promise<void> {
-    const typeId = await vehicleTypeId(input.vehicleTypeId)
-    if (!current) {
-      await http.post<SlotResponse>(`/zones/${zoneId}/slots`, {
-        zoneId: Number(zoneId),
-        vehicleTypeId: typeId,
-        code: input.code.trim(),
-        status: input.status,
-      })
-      return
-    }
-    await http.put<SlotResponse>(`/slots/${current.id}`, { vehicleTypeId: typeId, code: input.code.trim() })
-    if (current.status !== input.status) {
-      await http.patch<SlotResponse>(`/slots/${current.id}/status`, { status: input.status })
-    }
-  },
-
-  deleteSlot(id: string): Promise<boolean> {
-    return http.delete<boolean>(`/slots/${id}`)
   },
 
   setOperation(

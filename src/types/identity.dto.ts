@@ -76,6 +76,8 @@ export interface RegisterCommand {
   email: string
   password: string
   phoneNumber: string
+  /** Citizen ID (CCCD): 12 digits, one account per Citizen ID. */
+  citizenId: string
 }
 
 /** PMS.Application.Models.User.CreateUserResponseModel */
@@ -171,6 +173,50 @@ export interface UpdateUserCommand {
   role: UserRole
   assignedParkingLotIds: string[]
   shift?: WorkShift
+}
+
+/* ------------------------------------------------------------------ */
+/* Manager -> own Staff (PMS.API ManagerController, /manager)          */
+/* A lot has one Manager and many Staff; each Staff works at one lot.  */
+/* ------------------------------------------------------------------ */
+
+/** PMS.Application.Models.Account.EmployeeAccountResponseModel (also GET /admin/managers). */
+export interface EmployeeAccountResponseDTO {
+  id: string
+  userName: string
+  fullName: string | null
+  email: string
+  phoneNumber: string | null
+  role: string
+  employeeCode: string | null
+  isActive: boolean
+  /** Active, Inactive or Terminated. */
+  status: string
+  createdAt: string | null
+  parkingLots: { id: number; code: string; name: string }[]
+}
+
+/** POST /manager/staff — CreateStaffAccountModel. The lot must be one the Manager manages. */
+export interface CreateManagedStaffCommand {
+  fullName: string
+  email: string
+  phoneNumber: string
+  password: string
+  confirmPassword: string
+  parkingLotId: string
+}
+
+/** PUT /manager/staff/{id} and PUT /admin/managers/{id} — UpdateEmployeeAccountModel. */
+export interface UpdateEmployeeCommand {
+  fullName: string
+  email: string
+  phoneNumber: string
+}
+
+export interface ManagedStaffQuery {
+  parkingLotId?: string
+  status?: UserStatus
+  search?: string
 }
 
 export interface ResetPasswordResultDTO {

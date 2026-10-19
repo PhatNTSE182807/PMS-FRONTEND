@@ -1,7 +1,7 @@
 import { session } from '@/lib/session'
 
 /** Bounded contexts the frontend talks to. Each maps to one backend (micro)service. */
-export type ServiceKey = 'auth' | 'profile' | 'staff' | 'parking' | 'capacity' | 'reports'
+export type ServiceKey = 'auth' | 'profile' | 'staff' | 'team' | 'parking' | 'capacity' | 'reports'
 
 const DEFAULT_API_BASE_URL = 'https://localhost:44391/api'
 const API_URL_OVERRIDE_KEY = 'pms_custom_api_url'
@@ -16,6 +16,8 @@ export const SERVICE_PATHS: Record<ServiceKey, string> = {
   auth: '/Users',
   profile: '/Users/profile',
   staff: '/admin',
+  // A Manager's own Staff (ManagerController), scoped server-side to the lots they manage.
+  team: '/manager',
   parking: '',
   capacity: '/v1/parking',
   reports: '/v1/reports',

@@ -76,7 +76,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
       fullName: user?.fullName ?? '',
       email: user?.email ?? '',
       phoneNumber: user?.phoneNumber ?? '',
-      role: user?.role ?? 'STAFF',
+      role: user?.role ?? 'MANAGER',
       assignedParkingLotIds: user?.assignedParkingLots.map((lot) => lot.id) ?? [],
       shift: user?.shift,
       passwordMode: 'auto',
@@ -140,12 +140,12 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
     <form onSubmit={onSubmit} noValidate className="flex h-full flex-col">
       <div className="border-b border-slate-200 px-6 py-5 pr-12">
         <DialogTitle className="text-lg font-semibold text-slate-900">
-          {user ? 'Edit account' : 'New staff account'}
+          {user ? 'Edit account' : 'New manager account'}
         </DialogTitle>
         <DialogDescription className="mt-1 text-sm text-slate-500">
           {user
             ? `${user.employeeCode} · ${user.email}`
-            : 'Create an account for a parking lot Manager or gate Staff.'}
+            : 'Create a parking lot Manager. Gate Staff are created by the Manager of their lot.'}
         </DialogDescription>
       </div>
 
@@ -181,7 +181,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
               <fieldset className="space-y-1.5">
                 <legend className="text-sm font-medium text-slate-700">Role</legend>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {ROLE_OPTIONS.map((option) => (
+                  {(mode === 'create' ? ROLE_OPTIONS.filter((o) => o.value === 'MANAGER') : ROLE_OPTIONS).map((option) => (
                     <label
                       key={option.value}
                       className="flex cursor-pointer gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:border-slate-300 has-[input:checked]:border-indigo-500 has-[input:checked]:bg-indigo-50/60 has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-indigo-500/20"

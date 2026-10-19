@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
   ChevronRight,
   Eye,
   EyeOff,
+  IdCard,
   Info,
   KeyRound,
   Laptop,
@@ -27,6 +28,7 @@ import {
 } from '@/components/customer/customerFormat'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useChangePassword, useProfile, useUpdateProfile, useVehicles } from '@/hooks/useProfile'
+import type { UserProfileDTO } from '@/types/profile.dto'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -108,11 +110,14 @@ export default function CustomerProfilePage() {
   const changePassword = useChangePassword()
 
   // Personal information form, filled once the profile arrives
-  const [form, setForm] = useState({ fullName: '', email: '', phoneNumber: '' })
+  const [form, setForm] = useState({ fullName: '', email: '', phoneNumber: '', citizenId: '' })
   const [formError, setFormError] = useState('')
+  const resetForm = useCallback((p: UserProfileDTO) => {
+    setForm({ fullName: p.fullName, email: p.email, phoneNumber: p.phoneNumber, citizenId: p.citizenId ?? '' })
+  }, [])
   useEffect(() => {
-    if (profile) setForm({ fullName: profile.fullName, email: profile.email, phoneNumber: profile.phoneNumber })
-  }, [profile])
+    if (profile) resetForm(profile)
+  }, [profile, resetForm])
 
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [passwordError, setPasswordError] = useState('')
@@ -122,7 +127,12 @@ export default function CustomerProfilePage() {
 
   const name = profile?.fullName || user?.fullName || user?.username || 'Driver'
   const daysMember = profile?.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(profile.createdAt).getTime()) / 86_400_000)) : 0
-  const isDirty = profile !== undefined && (form.fullName !== profile.fullName || form.email !== profile.email || form.phoneNumber !== profile.phoneNumber)
+  const isDirty =
+    profile !== undefined &&
+    (form.fullName !== profile.fullName ||
+      form.email !== profile.email ||
+      form.phoneNumber !== profile.phoneNumber ||
+      form.citizenId !== (profile.citizenId ?? ''))
 
   const saveProfile = (e: FormEvent) => {
     e.preventDefault()
@@ -130,9 +140,16 @@ export default function CustomerProfilePage() {
     if (!form.fullName.trim()) return setFormError('Full name is required.')
     if (!EMAIL_PATTERN.test(form.email.trim())) return setFormError('Please enter a valid email address.')
     if (!form.phoneNumber.trim()) return setFormError('Phone number is required.')
+    if (form.citizenId.trim() && !/^\d{12}$/.test(form.citizenId.trim())) return setFormError('Citizen ID must have exactly 12 digits.')
 
     updateProfile.mutate(
-      { fullName: form.fullName.trim(), email: form.email.trim(), phoneNumber: form.phoneNumber.trim(), avatarUrl: profile?.avatarUrl ?? '' },
+      {
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        phoneNumber: form.phoneNumber.trim(),
+        avatarUrl: profile?.avatarUrl ?? '',
+        citizenId: form.citizenId.trim(),
+      },
       {
         onSuccess: () => toast.success('Profile updated.'),
         onError: (error) => setFormError(getErrorMessage(error, 'Could not update your profile.')),
@@ -264,13 +281,25 @@ export default function CustomerProfilePage() {
                   onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
                   autoComplete="tel"
                 />
+                <Field
+                  id="profile-citizen-id"
+                  label="Citizen ID (CCCD)"
+                  icon={IdCard}
+                  inputMode="numeric"
+                  maxLength={12}
+                  placeholder="12 digits"
+                  className="cx-mono"
+                  value={form.citizenId}
+                  onChange={(e) => setForm({ ...form, citizenId: e.target.value.replace(/\D/g, '') })}
+                  autoComplete="off"
+                />
                 {formError && <p className="cx-error" role="alert">{formError}</p>}
                 <div className="cx-actions">
                   <button
                     type="button"
                     className="cx-btn cx-btn--ghost"
                     disabled={!isDirty}
-                    onClick={() => profile && setForm({ fullName: profile.fullName, email: profile.email, phoneNumber: profile.phoneNumber })}
+                    onClick={() => profile && resetForm(profile)}
                   >
                     Discard
                   </button>

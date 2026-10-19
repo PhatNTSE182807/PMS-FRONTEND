@@ -1,10 +1,8 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Bike, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { buildTemplateGarage, type Bay, type GarageTemplate, type ZoneStats } from './garageModel'
-
-// three.js is large: load it only when a preview is on screen.
-const Garage3D = lazy(() => import('./Garage3D'))
+import { GarageView } from './GarageView'
 
 const STATUS_TEXT: Record<Bay['status'], string> = {
   AVAILABLE: 'available',
@@ -49,22 +47,20 @@ export function GaragePreview({
           </button>
         ))}
         <span className="ml-auto text-xs text-slate-500" aria-live="polite">
-          {selected ? `Bay ${selected.code} · ${STATUS_TEXT[selected.status]}` : 'Drag to rotate • scroll to zoom • click a bay'}
+          {selected ? `Bay ${selected.code} · ${STATUS_TEXT[selected.status]}` : 'Click a bay to see its status'}
         </span>
       </div>
-      <Suspense fallback={<div className={cn(height, 'grid place-items-center text-sm text-slate-400')}>Loading 3D model…</div>}>
-        <Garage3D
-          floors={floors}
-          focusFloor={focus}
-          selectedBayId={selected?.id ?? null}
-          myBayId={null}
-          onSelectBay={(bay) => {
-            setSelected(bay)
-            setFocus(bay.floorIndex)
-          }}
-          className={height}
-        />
-      </Suspense>
+      <GarageView
+        floors={floors}
+        focusFloor={focus}
+        selectedBayId={selected?.id ?? null}
+        myBayId={null}
+        onSelectBay={(bay) => {
+          setSelected(bay)
+          setFocus(bay.floorIndex)
+        }}
+        className={height}
+      />
     </div>
   )
 }

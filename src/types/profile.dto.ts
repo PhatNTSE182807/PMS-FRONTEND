@@ -8,6 +8,8 @@ export interface VehicleDTO {
   brand: string
   model: string
   color: string
+  /** Citizen ID (CCCD) of the registered owner on the vehicle papers. */
+  citizenId?: string | null
   isDefault: boolean
   isActive: boolean
   createdAt: string
@@ -20,6 +22,8 @@ export interface UserProfileDTO {
   phoneNumber: string
   email: string
   avatarUrl?: string | null
+  /** Citizen ID (CCCD); null for Google accounts that have not added it yet. */
+  citizenId?: string | null
   isActive: boolean
   status: string
   hasPassword: boolean
@@ -42,6 +46,8 @@ export interface UpdateProfileCommand {
   email: string
   phoneNumber: string
   avatarUrl: string
+  /** Left unchanged when empty. */
+  citizenId?: string
 }
 
 export interface CreateVehicleCommand {
@@ -50,6 +56,8 @@ export interface CreateVehicleCommand {
   brand: string
   model: string
   color: string
+  /** Citizen ID (CCCD) of the registered owner; the backend uses the account's own when empty. */
+  citizenId?: string
   isDefault: boolean
 }
 

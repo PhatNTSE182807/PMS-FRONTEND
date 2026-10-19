@@ -1,13 +1,11 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, X } from 'lucide-react'
 import { formatNumber } from '@/lib/format'
 import { demoTariffs } from '@/mocks/managerOps.mock'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
+import { GarageView } from '../garage/GarageView'
 import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
-
-// three.js is large: load it only when the map is on screen.
-const Garage3D = lazy(() => import('../garage/Garage3D'))
 
 const STATUS_LABEL: Record<BayStatus, string> = {
   AVAILABLE: 'Available',
@@ -117,9 +115,7 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
               </div>
             </div>
 
-            <Suspense fallback={<div className="garage3d garage3d--loading">Loading 3D model…</div>}>
-              <Garage3D floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} onSelectBay={selectBay} />
-            </Suspense>
+            <GarageView floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} onSelectBay={selectBay} />
 
             <div className="cx-map__footer">
               <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>

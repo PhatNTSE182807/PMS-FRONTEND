@@ -18,6 +18,8 @@ const vehicleTypes: VehicleTypeDTO[] = [
 ]
 
 const now = new Date().toISOString()
+/** The demo driver's own Citizen ID (CCCD). */
+const DEMO_CITIZEN_ID = '079099001234'
 
 let vehicles: VehicleDTO[] = [
   {
@@ -28,6 +30,7 @@ let vehicles: VehicleDTO[] = [
     brand: 'Toyota',
     model: 'Camry',
     color: 'White',
+    citizenId: DEMO_CITIZEN_ID,
     isDefault: true,
     isActive: true,
     createdAt: now,
@@ -40,6 +43,7 @@ let vehicles: VehicleDTO[] = [
     brand: 'Honda',
     model: 'CR-V',
     color: 'Red',
+    citizenId: DEMO_CITIZEN_ID,
     isDefault: false,
     isActive: true,
     createdAt: now,
@@ -56,6 +60,7 @@ function currentProfile(): UserProfileDTO {
     email: user?.email ?? 'demo@xxivparking.vn',
     phoneNumber: user?.phoneNumber ?? '0988123456',
     avatarUrl: user?.avatarUrl ?? null,
+    citizenId: DEMO_CITIZEN_ID,
     isActive: true,
     status: 'Active',
     hasPassword: true,
@@ -81,6 +86,8 @@ function toVehicle(command: CreateVehicleCommand, existing?: VehicleDTO): Vehicl
     brand: command.brand,
     model: command.model,
     color: command.color,
+    // Same rule as the backend: the owner's Citizen ID, else the account's own
+    citizenId: command.citizenId?.trim() || existing?.citizenId || currentProfile().citizenId,
     isDefault: command.isDefault,
     isActive: true,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
@@ -97,7 +104,8 @@ export const profileMock = {
 
   updateProfile: (command: UpdateProfileCommand) =>
     mockResponse(() => {
-      profileOverrides = { ...profileOverrides, ...command }
+      const { citizenId, ...details } = command
+      profileOverrides = { ...profileOverrides, ...details, ...(citizenId?.trim() ? { citizenId: citizenId.trim() } : {}) }
       return currentProfile()
     }),
 

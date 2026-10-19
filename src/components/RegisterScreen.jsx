@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Lock, Mail, Phone, RotateCcwKey, User, X } from 'lucide-react';
+import { ArrowRight, IdCard, Lock, Mail, Phone, RotateCcwKey, User, X } from 'lucide-react';
 import AuthShowcaseLayout from './AuthShowcaseLayout';
 import { AuthAlert, AuthCheckbox, AuthField } from './AuthFields';
 import GoogleSignInButton from './GoogleSignInButton';
@@ -23,6 +23,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [citizenId, setCitizenId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -52,6 +53,10 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
       setErrorMsg('Phone Number is required.');
       return;
     }
+    if (!/^\d{12}$/.test(citizenId.trim())) {
+      setErrorMsg('Citizen ID must have exactly 12 digits.');
+      return;
+    }
     if (password.length < 6) {
       setErrorMsg('Password must be at least 6 characters long.');
       return;
@@ -75,6 +80,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
         email: email.trim(),
         password: password,
         phoneNumber: phoneNumber.trim(),
+        citizenId: citizenId.trim(),
       },
       {
         onSuccess: () => {
@@ -97,6 +103,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
     setFullName('Alexander Vance');
     setEmail('alex.vance@xxivparking.vn');
     setPhoneNumber('0988123456');
+    setCitizenId('079099001234');
     setPassword('Xxiv@2026');
     setConfirmPassword('Xxiv@2026');
     setAgreeTerms(true);
@@ -164,6 +171,19 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+        />
+
+        <AuthField
+          id="reg-citizen-id"
+          label="Citizen ID"
+          icon={IdCard}
+          type="text"
+          inputMode="numeric"
+          maxLength={12}
+          placeholder="12-digit Citizen ID (CCCD)"
+          value={citizenId}
+          onChange={(e) => setCitizenId(e.target.value.replace(/\D/g, ''))}
+          autoComplete="off"
         />
 
         <div className="auth-shell__row">

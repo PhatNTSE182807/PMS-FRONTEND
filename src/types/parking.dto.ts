@@ -56,3 +56,15 @@ export interface ParkingLotCapacityDTO {
   /** Oldest first; the last entry is the most recent hour. */
   recentHourlyFlow: HourlyFlowDTO[]
 }
+
+/**
+ * A lot an employee is assigned to: PMS.Application AssignedParkingLotModel, as returned by
+ * GET /manager/lots. Staff has no endpoint yet; the proposed GET /staff/lots returns the same shape.
+ */
+export interface AssignedParkingLotDTO {
+  id: string
+  code: string
+  name: string
+  /** 3D building template (GARAGE_TEMPLATES id), when known. */
+  layoutTemplate?: string | null
+}
