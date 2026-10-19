@@ -9,6 +9,19 @@ export const queryKeys = {
     vehicles: () => [...queryKeys.profile.all, 'vehicles'] as const,
     vehicleTypes: () => [...queryKeys.profile.all, 'vehicle-types'] as const,
   },
+  /** Paper checks (cà vẹt + CCCD) of the signed-in user's vehicles. */
+  vehicleDocuments: {
+    all: ['vehicle-documents'] as const,
+    latest: (vehicleId: string) => [...queryKeys.vehicleDocuments.all, 'latest', vehicleId] as const,
+  },
+  /** Staff review queue of paper checks that need a human decision. */
+  vehicleVerifications: {
+    all: ['vehicle-verifications'] as const,
+    queue: (status: string) => [...queryKeys.vehicleVerifications.all, 'queue', status] as const,
+    detail: (verificationId: string) => [...queryKeys.vehicleVerifications.all, 'detail', verificationId] as const,
+    file: (verificationId: string, documentId: string) =>
+      [...queryKeys.vehicleVerifications.all, 'file', verificationId, documentId] as const,
+  },
   customers: {
     all: ['customers'] as const,
     list: (query: CustomerListQuery) => [...queryKeys.customers.all, 'list', query] as const,

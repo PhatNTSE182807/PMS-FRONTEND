@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Bike, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { buildTemplateGarage, type Bay, type GarageTemplate, type ZoneStats } from './garageModel'
+import { buildTemplateGarage, type Bay, type GarageFloor, type GarageTemplate, type ZoneStats } from './garageModel'
 import { GarageView } from './GarageView'
 
 const STATUS_TEXT: Record<Bay['status'], string> = {
@@ -26,6 +26,11 @@ export function GaragePreview({
   className?: string
 }) {
   const floors = useMemo(() => buildTemplateGarage(template, floorStats, seed), [template, floorStats, seed])
+  return <GarageFloorsView floors={floors} className={className} />
+}
+
+/** Level tabs and the 3D model (or its 2D fallback) of ready-made levels, without booking. */
+export function GarageFloorsView({ floors, className }: { floors: GarageFloor[]; className?: string }) {
   const [focus, setFocus] = useState<number | null>(null)
   const [selected, setSelected] = useState<Bay | null>(null)
   const height = cn('relative h-[24rem] w-full overflow-hidden rounded-xl bg-slate-900 sm:h-[30rem]', className)

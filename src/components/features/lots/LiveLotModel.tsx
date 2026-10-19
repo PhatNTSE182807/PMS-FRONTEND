@@ -1,16 +1,26 @@
 import { useMemo } from 'react'
 import { Bike, Car, Rotate3d } from 'lucide-react'
-import { GaragePreview } from '@/components/customer/garage/GaragePreview'
-import { findTemplate, liveFloorStats, templateForLot } from '@/components/customer/garage/garageModel'
+import { GarageFloorsView } from '@/components/customer/garage/GaragePreview'
+import { buildTemplateGarage, findTemplate, liveFloorStats, templateForLot } from '@/components/customer/garage/garageModel'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useLotPlan2D } from '@/hooks/useLotLayout'
+import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { useParkingCapacity } from '@/hooks/useParking'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { AssignedParkingLotDTO } from '@/types/parking.dto'
 
+const SOURCE_TEXT = {
+  layout: 'live bay statuses from the gate and sensor feed',
+  pushed: 'bay statuses pushed live (SignalR)',
+  capacity: 'live zone occupancy',
+  model: 'no live bay data yet, showing the default model until an Admin picks one',
+} as const
+
 /**
- * Read-only 3D model of an employee's assigned lot, mirroring its live occupancy (the customer
- * map without booking). Shows lot tabs when the employee has several lots.
+ * Read-only 3D model of an employee's assigned lot (the customer map without booking). The lot's
+ * published layout and bay statuses come first, then the live zone occupancy; a lot that has
+ * neither still shows its building model with free bays. Shows lot tabs for several lots.
  */
 export function LiveLotModel({
   lots,
@@ -23,11 +33,22 @@ export function LiveLotModel({
   onLotChange?: (lotId: string) => void
   className?: string
 }) {
-  const capacity = useParkingCapacity()
   const lot = lots.find((l) => l.id === lotId) ?? lots[0]
+  const capacity = useParkingCapacity()
   const live = capacity.data?.find((c) => c.id === lot?.id)
+  // Live occupancy only exists for demo lots today; real lots read their published layout.
+  const planLotId = lot && !capacity.isPending && !live ? lot.id : undefined
+  const realtime = useLotRealtime(planLotId)
+  const plan = useLotPlan2D(planLotId, 'slots', realtime.connected)
   const template = lot ? (findTemplate(lot.layoutTemplate) ?? templateForLot({ id: lot.id, layoutTemplate: live?.layoutTemplate })) : undefined
-  const floorStats = useMemo(() => (live && template ? liveFloorStats(live, template) : []), [live, template])
+
+  const view = useMemo(() => {
+    if (!lot || !template) return null
+    if (live) return { source: 'capacity' as const, floors: buildTemplateGarage(template, liveFloorStats(live, template), lot.id) }
+    if (plan.data?.floors.length) return { source: realtime.connected ? ('pushed' as const) : ('layout' as const), floors: plan.data.floors }
+    return { source: 'model' as const, floors: buildTemplateGarage(template, [], lot.id) }
+  }, [lot, template, live, plan.data, realtime.connected])
+  const loading = capacity.isPending || (!live && plan.isLoading)
 
   return (
     <section className={cn('rounded-2xl bg-white p-5 ring-1 ring-slate-200', className)} aria-labelledby="lot-3d-title">
@@ -37,7 +58,8 @@ export function LiveLotModel({
             <Rotate3d className="size-5 text-indigo-700" aria-hidden /> Live 3D lot model
           </h2>
           <p className="mt-0.5 text-sm text-slate-700">
-            {lot ? `${lot.name} · ${template?.name ?? ''}` : 'Your assigned parking lot'} — monitoring only, refreshed from the gate and sensor feed.
+            {lot ? lot.name : 'Your assigned parking lot'}
+            {view && !loading && ` — monitoring only, ${SOURCE_TEXT[view.source]}.`}
           </p>
         </div>
         {lots.length > 1 && onLotChange && (
@@ -61,33 +83,32 @@ export function LiveLotModel({
         )}
       </div>
 
-      {!lot && <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600">No parking lot assigned yet.</p>}
-      {lot && capacity.isPending && <Skeleton className="mt-4 h-[24rem] rounded-xl" />}
-      {lot && !capacity.isPending && !live && (
-        <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600">No live occupancy data for this lot yet.</p>
+      {!lot && (
+        <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600">
+          No parking lot assigned yet. Ask your Manager to assign you to a lot.
+        </p>
       )}
-      {lot && live && template && (
+      {lot && loading && <Skeleton className="mt-4 h-[24rem] rounded-xl" />}
+      {lot && !loading && view && (
         <>
           <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Free bays per level">
-            {template.floors.map((kind, i) => {
-              const s = floorStats[i]
-              const free = s ? Math.max(0, s.total - s.occupied) : 0
-              const Icon = kind === 'car' ? Car : Bike
+            {view.floors.map((f) => {
+              const Icon = f.kind === 'car' ? Car : Bike
               return (
-                <li key={i} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs ring-1 ring-slate-200">
+                <li key={f.index} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs ring-1 ring-slate-200">
                   <Icon className="size-4 shrink-0 text-indigo-700" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <strong className="text-slate-950">L{i + 1}</strong> <span className="text-slate-600">{s?.label}</span>
+                    <strong className="text-slate-950">{f.level}</strong> <span className="text-slate-600">{f.zoneLabel || (f.kind === 'car' ? 'Cars' : 'Motorbikes')}</span>
                   </span>
                   <span className="font-mono font-bold text-slate-950 tabular-nums">
-                    {formatNumber(free)}/{formatNumber(s?.total ?? 0)}
+                    {f.liveTotal ? `${formatNumber(f.liveFree)}/${formatNumber(f.liveTotal)}` : `${f.bays.length} bays`}
                   </span>
                 </li>
               )
             })}
           </ul>
           <div className="mt-3">
-            <GaragePreview key={lot.id} template={template} floorStats={floorStats} seed={lot.id} />
+            <GarageFloorsView key={lot.id} floors={view.floors} />
           </div>
         </>
       )}

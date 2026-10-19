@@ -34,6 +34,20 @@ export const PASSWORD_MIN_LENGTH = 6
 
 export const PASSWORD_RULE_MESSAGE = 'Password must be at least 6 characters with an upper-case letter and a special character.'
 
+/** The same rule worded as advice, for the hint above password forms. Keep it in sync with PASSWORD_RULE_MESSAGE. */
+export const PASSWORD_RULE_HINT = `Protect your account with a strong password: at least ${PASSWORD_MIN_LENGTH} characters with an upper-case letter and a special character.`
+
+/**
+ * Each part of the rule on its own, so forms can tick them off as the user types. Mirrors the
+ * backend regex ^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).+$ plus the minimum length.
+ */
+export const PASSWORD_RULES = [
+  { id: 'length', label: `At least ${PASSWORD_MIN_LENGTH} characters`, test: (p: string) => p.length >= PASSWORD_MIN_LENGTH },
+  { id: 'upper', label: 'One upper-case letter (A–Z)', test: (p: string) => /[A-Z]/.test(p) },
+  { id: 'symbol', label: 'One special character (e.g. @ # ! ?)', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+] as const
+
+/** True when the password passes every rule the API checks. */
 export function isValidPassword(password: string): boolean {
-  return password.length >= PASSWORD_MIN_LENGTH && /[A-Z]/.test(password) && /[^A-Za-z0-9]/.test(password)
+  return PASSWORD_RULES.every((rule) => rule.test(password))
 }

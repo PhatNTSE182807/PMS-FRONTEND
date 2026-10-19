@@ -30,6 +30,7 @@ const StaffGatePage = lazy(() => import('@/pages/staff/StaffGatePage'))
 const StaffCheckoutPage = lazy(() => import('@/pages/staff/StaffCheckoutPage'))
 const StaffExceptionsPage = lazy(() => import('@/pages/staff/StaffExceptionsPage'))
 const StaffCashTallyPage = lazy(() => import('@/pages/staff/StaffCashTallyPage'))
+const StaffVehicleVerificationPage = lazy(() => import('@/pages/staff/StaffVehicleVerificationPage'))
 
 export const router = createBrowserRouter([
   // Public landing page, outside ClassicLayout: it has its own navigation bar.
@@ -95,6 +96,7 @@ export const router = createBrowserRouter([
       { path: 'checkout', element: <StaffCheckoutPage /> },
       { path: 'exceptions', element: <StaffExceptionsPage /> },
       { path: 'cash-tally', element: <StaffCashTallyPage /> },
+      { path: 'verifications', element: <StaffVehicleVerificationPage /> },
     ],
   },
   { path: '*', element: <HomeRedirect /> },

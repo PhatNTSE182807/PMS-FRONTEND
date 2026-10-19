@@ -22,13 +22,13 @@ export const parkingService = {
     return lots.map(({ id, code, name, address }) => ({ id: String(id), code, name, address }))
   },
 
-  /**
-   * The lot(s) the signed-in Staff works at. No endpoint yet (proposed GET /staff/lots, same
-   * shape as GET /manager/lots), so it is always mocked. Managers use lotManagementService.list().
-   */
+  /** GET /staff/lots: the lot the signed-in Staff works at, as assigned by their Manager. */
   async getMyStaffLots(): Promise<AssignedParkingLotDTO[]> {
     const user = session.getUser()
-    return user?.role === 'STAFF' ? lotAssignmentsMock.getStaffLots(user.userId) : []
+    if (user?.role !== 'STAFF') return []
+    if (isMockService('team')) return lotAssignmentsMock.getStaffLots(user.userId)
+    const lots = await http.get<{ id: number; code: string; name: string }[]>('/staff/lots')
+    return lots.map(({ id, code, name }) => ({ id: String(id), code, name }))
   },
 
   getCapacityOverview(): Promise<ParkingLotCapacityDTO[]> {

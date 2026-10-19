@@ -59,7 +59,7 @@ export interface ParkingLotCapacityDTO {
 
 /**
  * A lot an employee is assigned to: PMS.Application AssignedParkingLotModel, as returned by
- * GET /manager/lots. Staff has no endpoint yet; the proposed GET /staff/lots returns the same shape.
+ * GET /manager/lots and GET /staff/lots.
  */
 export interface AssignedParkingLotDTO {
   id: string

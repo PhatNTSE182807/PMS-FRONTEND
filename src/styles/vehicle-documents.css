@@ -1,0 +1,436 @@
+/* Vehicle papers upload (cà vẹt + CCCD) and OCR result, inside the customer shell (cx-* tokens). */
+
+.vd-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.vd-target {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--cx-outline);
+  border-radius: 0.6rem;
+  background: var(--cx-low);
+  font-size: 0.8125rem;
+  color: var(--cx-on-variant);
+}
+
+.vd-target strong {
+  color: var(--cx-primary);
+}
+
+.vd-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: none;
+  color: var(--cx-gold);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vd-link svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.vd-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.vd-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.vd-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 9.5rem;
+  overflow: hidden;
+  border: 1px dashed var(--cx-outline);
+  border-radius: 0.75rem;
+  background: var(--cx-low);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.vd-slot.is-dragging,
+.vd-slot:hover:not(.has-file) {
+  border-color: var(--cx-primary);
+  background: var(--cx-container);
+}
+
+.vd-slot.has-file {
+  border-style: solid;
+}
+
+.vd-slot.has-error {
+  border-color: var(--cx-crimson);
+}
+
+.vd-slot__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vd-slot__input:focus-visible + .vd-slot__empty {
+  outline: 2px solid var(--cx-primary);
+  outline-offset: -4px;
+}
+
+.vd-slot__empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 1rem 0.6rem;
+  text-align: center;
+  color: var(--cx-on-variant);
+  cursor: pointer;
+}
+
+.vd-slot__empty svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-bottom: 0.2rem;
+  color: var(--cx-primary);
+}
+
+.vd-slot__empty strong {
+  font-size: 0.8125rem;
+  color: var(--cx-on-surface);
+}
+
+.vd-slot__empty small {
+  font-size: 0.6875rem;
+  color: var(--cx-muted);
+}
+
+.vd-slot__preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 6rem;
+  background: var(--cx-lowest);
+}
+
+.vd-slot__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vd-slot__preview > svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--cx-gold);
+}
+
+.vd-slot__badge {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: flex;
+  padding: 0.15rem;
+  border-radius: 50%;
+  background: var(--cx-lowest);
+  color: var(--cx-emerald);
+}
+
+.vd-slot__badge svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.vd-slot__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.5rem 0.65rem 0.6rem;
+}
+
+.vd-slot__side {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cx-gold);
+}
+
+.vd-slot__name {
+  overflow: hidden;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--cx-on-surface);
+}
+
+.vd-slot__size {
+  font-size: 0.6875rem;
+  color: var(--cx-muted);
+}
+
+.vd-slot__remove {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: flex;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(6, 15, 22, 0.8);
+  color: var(--cx-on-surface);
+  cursor: pointer;
+}
+
+.vd-slot__remove svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.vd-slot__error {
+  padding: 0 0.65rem 0.55rem;
+  font-size: 0.6875rem;
+  color: var(--cx-error);
+}
+
+.vd-progress {
+  height: 0.25rem;
+  background: var(--cx-container-high);
+}
+
+.vd-progress span {
+  display: block;
+  height: 100%;
+  background: var(--cx-primary);
+  transition: width 0.2s;
+}
+
+.vd-verify {
+  width: 100%;
+  justify-content: center;
+}
+
+.vd-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--cx-outline);
+  border-left-width: 3px;
+  border-radius: 0.75rem;
+  background: var(--cx-lowest);
+}
+
+.vd-result--ok { border-left-color: var(--cx-emerald); }
+.vd-result--warn { border-left-color: var(--cx-amber); }
+.vd-result--bad { border-left-color: var(--cx-crimson); }
+.vd-result--busy { border-left-color: var(--cx-primary); }
+
+.vd-result__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.vd-result__head > svg {
+  flex-shrink: 0;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin-top: 0.1rem;
+}
+
+.vd-result--ok .vd-result__head > svg { color: var(--cx-emerald); }
+.vd-result--warn .vd-result__head > svg { color: var(--cx-amber); }
+.vd-result--bad .vd-result__head > svg { color: var(--cx-crimson); }
+.vd-result--busy .vd-result__head > svg { color: var(--cx-primary); }
+
+.vd-result__head > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.vd-result__head strong {
+  font-size: 0.9375rem;
+  color: var(--cx-on-surface);
+}
+
+.vd-result__head p {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  color: var(--cx-on-variant);
+}
+
+.vd-result__confidence {
+  font-family: var(--cx-mono-font);
+  font-size: 0.8125rem;
+  color: var(--cx-on-variant);
+}
+
+.vd-spin {
+  animation: vd-spin 1s linear infinite;
+}
+
+@keyframes vd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-spin { animation: none; }
+}
+
+.vd-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-x: auto;
+}
+
+.vd-fields__title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cx-gold);
+}
+
+.vd-fields table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.vd-fields th,
+.vd-fields td {
+  padding: 0.4rem 0.35rem;
+  border-bottom: 1px solid var(--cx-outline);
+  text-align: left;
+  vertical-align: top;
+  color: var(--cx-on-variant);
+}
+
+.vd-fields thead th {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cx-muted);
+}
+
+.vd-fields tbody th {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--cx-on-surface);
+}
+
+.vd-mono {
+  font-family: var(--cx-mono-font);
+}
+
+.vd-chip {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vd-chip--ok { background: rgba(16, 185, 129, 0.15); color: var(--cx-emerald); }
+.vd-chip--bad { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+.vd-chip--warn { background: rgba(245, 158, 11, 0.15); color: var(--cx-amber); }
+
+.vd-confidence {
+  margin-left: 0.35rem;
+  font-family: var(--cx-mono-font);
+  font-size: 0.6875rem;
+  color: var(--cx-muted);
+}
+
+.vd-note {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.6875rem;
+  color: var(--cx-muted);
+}
+
+.vd-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.vd-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--cx-outline);
+  border-radius: 999px;
+  background: var(--cx-low);
+  font: inherit;
+  font-size: 0.6875rem;
+  color: var(--cx-on-variant);
+  cursor: pointer;
+}
+
+.vd-file:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vd-file svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.vd-fine {
+  font-size: 0.6875rem;
+  color: var(--cx-muted);
+}
+
+/* Two tiles per row down to small phones; one below that */
+@media (max-width: 340px) {
+  .vd-slots {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The cx-* tokens these styles use, for screens outside the customer shell (Staff vehicle verification). */
+.vd-scope {
+  --cx-lowest: #060f16;
+  --cx-low: #141d23;
+  --cx-container: #182127;
+  --cx-container-high: #222b32;
+  --cx-outline: rgba(116, 141, 146, 0.2);
+  --cx-on-surface: #dae4ed;
+  --cx-on-variant: #c0c7cd;
+  --cx-muted: #8a9297;
+  --cx-primary: #9acdea;
+  --cx-gold: #e9c349;
+  --cx-emerald: #10b981;
+  --cx-amber: #f59e0b;
+  --cx-crimson: #ef4444;
+  --cx-error: #ffb4ab;
+  --cx-mono-font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  color: var(--cx-on-surface);
+}

@@ -1,3 +1,4 @@
+import { isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/password'
 import { session } from '@/lib/session'
 import type {
   ChangePasswordCommand,
@@ -147,6 +148,8 @@ export const profileMock = {
 
   changePassword: (command: ChangePasswordCommand) =>
     mockResponse(() => {
+      // Same checks as the API (ChangePasswordModelValidator), so demo mode behaves like the backend.
+      if (!isValidPassword(command.newPassword)) mockFail(400, PASSWORD_RULE_MESSAGE)
       if (command.newPassword !== command.confirmPassword) mockFail(400, 'Passwords do not match.')
       return true
     }),

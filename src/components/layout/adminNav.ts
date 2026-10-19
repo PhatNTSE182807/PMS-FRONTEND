@@ -1,4 +1,4 @@
-import { BadgeDollarSign, CalendarCheck, ChartColumnBig, ClipboardCheck, CreditCard, Gauge, LayoutDashboard, Network, SquareParking, TriangleAlert, UserCog, Users, Vault, type LucideIcon } from 'lucide-react'
+import { BadgeDollarSign, CalendarCheck, ChartColumnBig, ClipboardCheck, CreditCard, Gauge, LayoutDashboard, Network, ScanText, SquareParking, TriangleAlert, UserCog, Users, Vault, type LucideIcon } from 'lucide-react'
 
 export interface AdminNavItem {
   to: string
@@ -22,6 +22,7 @@ export const STAFF_NAV: AdminNavItem[] = [
   { to: '/staff/checkout', label: 'Payment & Checkout POS', icon: CreditCard },
   { to: '/staff/exceptions', label: 'Exceptions & Alerts', icon: TriangleAlert },
   { to: '/staff/cash-tally', label: 'End-of-Day Cash Tally', icon: Vault },
+  { to: '/staff/verifications', label: 'Vehicle Verification', icon: ScanText },
 ]
 
 export const ADMIN_NAV: AdminNavItem[] = [

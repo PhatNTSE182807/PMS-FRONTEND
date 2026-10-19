@@ -5,7 +5,7 @@ import {
   BadgeCheck,
   CircleCheck,
   ClipboardCheck,
-  CloudUpload,
+  FileCheck2,
   Gauge,
   IdCard,
   Info,
@@ -18,8 +18,10 @@ import {
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { KIND_ICON, vehicleKind, vehicleTitle } from '@/components/customer/customerFormat'
+import { VehicleDocumentsPanel } from '@/components/customer/VehicleDocumentsPanel'
 import { useAuth } from '@/hooks/useAuth'
 import { useAddVehicle, useDeleteVehicle, useProfile, useSetDefaultVehicle, useVehicles, useVehicleTypes } from '@/hooks/useProfile'
+import { useVehicleDocumentDraft } from '@/hooks/useVehicleDocuments'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
 
 /** Used while the vehicle-type list loads, or if it cannot be fetched (same ids as the backend seed). */
@@ -51,7 +53,7 @@ function swatchColor(name: string): string {
   return match ?? '#41484c'
 }
 
-function MiniVehicle({ vehicle }: { vehicle: VehicleDTO }) {
+function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () => void }) {
   const setDefault = useSetDefaultVehicle()
   const remove = useDeleteVehicle()
   const Icon = KIND_ICON[vehicleKind({ name: vehicle.vehicleType })]
@@ -80,6 +82,15 @@ function MiniVehicle({ vehicle }: { vehicle: VehicleDTO }) {
           Set primary
         </button>
       )}
+      <button
+        type="button"
+        className="cx-icon-btn"
+        aria-label={`Papers of ${vehicle.licensePlate}`}
+        title="Upload & verify papers (cà vẹt, CCCD)"
+        onClick={onPapers}
+      >
+        <FileCheck2 aria-hidden />
+      </button>
       <button
         type="button"
         className="cx-icon-btn"
@@ -113,6 +124,9 @@ export default function RegisterVehiclePage() {
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [error, setError] = useState('')
+  // Cà vẹt + CCCD photos, and the vehicle they belong to (null: the one being registered)
+  const papers = useVehicleDocumentDraft()
+  const [papersVehicle, setPapersVehicle] = useState<VehicleDTO | null>(null)
   const typeId = form.vehicleTypeId || types[0]?.id
   const type = types.find((t) => t.id === typeId)
   const plate = form.licensePlate.trim().toUpperCase()
@@ -133,6 +147,10 @@ export default function RegisterVehiclePage() {
     if (!form.brand.trim() || !form.model.trim()) return setError('Enter the manufacturer and the model.')
     if (!citizenIdValid) return setError('Enter the 12-digit Citizen ID of the owner on the vehicle papers.')
     if (!form.consent) return setError('Please confirm that you own or are authorised to drive this vehicle.')
+    // Photos chosen for an existing vehicle stay with it; only a fresh set goes with the new vehicle
+    const withPapers = papersVehicle === null && papers.chosen > 0
+    if (withPapers && !papers.complete)
+      return setError('Add the front and back of both papers, or remove them and upload them later.')
 
     addVehicle.mutate(
       {
@@ -145,13 +163,37 @@ export default function RegisterVehiclePage() {
         isDefault,
       },
       {
-        onSuccess: (vehicle) => {
+        onSuccess: async (vehicle) => {
           toast.success(`${vehicle.licensePlate} registered. Gates will recognise it on your next visit.`)
           setForm(EMPTY_FORM)
+          if (!withPapers) {
+            if (papersVehicle) papers.reset()
+            setPapersVehicle(null)
+            return
+          }
+          // Then the papers: upload with progress, submit, and follow the OCR result on this panel
+          setPapersVehicle(vehicle)
+          try {
+            await papers.uploadAndVerify(vehicle.vehicleId)
+            toast.success('Papers uploaded. Reading them now…')
+          } catch (err) {
+            setError(getErrorMessage(err, 'The vehicle is registered, but its papers could not be uploaded. Try again below.'))
+          }
         },
         onError: (err) => setError(getErrorMessage(err, 'Could not register the vehicle.')),
       },
     )
+  }
+
+  /** Show (and upload) the papers of a vehicle already in the fleet. */
+  const openPapers = (vehicle: VehicleDTO) => {
+    papers.reset()
+    setPapersVehicle(vehicle)
+  }
+
+  const closePapers = () => {
+    papers.reset()
+    setPapersVehicle(null)
   }
 
   return (
@@ -339,19 +381,17 @@ export default function RegisterVehiclePage() {
             <div className="cx-form">
               <p className="cx-note">
                 <Info aria-hidden />
-                Photos of the registration certificate (front and back) will be verified automatically once document
-                verification goes live. Your plate works at the gates as soon as you register.
+                Add the front and back of the registration certificate (cà vẹt) and of your Citizen ID card (CCCD).
+                We read them automatically and compare them with this form and your profile; anything unclear goes to
+                our Staff. Your plate works at the gates as soon as you register.
               </p>
 
-              <div className="cx-doc-head">
-                <span>Front &amp; back side (Mặt trước &amp; Mặt sau)</span>
-                <span>Coming soon</span>
-              </div>
-              <div className="cx-dropzone" aria-disabled="true">
-                <span className="cx-dropzone__icon"><CloudUpload aria-hidden /></span>
-                <strong>Document upload is not available yet</strong>
-                <small>JPEG, PNG or PDF up to 10MB will be accepted</small>
-              </div>
+              <VehicleDocumentsPanel
+                draft={papers}
+                vehicleId={papersVehicle?.vehicleId ?? null}
+                vehicleLabel={papersVehicle?.licensePlate}
+                onClearVehicle={closePapers}
+              />
 
               <div className="cx-summary" aria-live="polite">
                 <div className="cx-summary__head">
@@ -370,6 +410,9 @@ export default function RegisterVehiclePage() {
                 <div className="cx-summary__row">
                   Vehicle <strong>{[form.brand, form.model].map((s) => s.trim()).filter(Boolean).join(' ') || '—'}</strong>
                 </div>
+                <div className="cx-summary__row">
+                  Papers <strong className={papers.complete ? 'is-teal' : undefined}>{papersVehicle ? '—' : `${papers.chosen}/4 sides`}</strong>
+                </div>
                 <div className="cx-summary__progress">
                   <span style={{ width: `${progress}%` }} />
                 </div>
@@ -378,8 +421,9 @@ export default function RegisterVehiclePage() {
               {error && <p className="cx-error" role="alert">{error}</p>}
 
               <div className="cx-submit-row">
-                <button type="submit" className="cx-btn cx-btn--light" disabled={addVehicle.isPending}>
-                  <ScanLine aria-hidden /> {addVehicle.isPending ? 'Registering...' : 'Submit registration'}
+                <button type="submit" className="cx-btn cx-btn--light" disabled={addVehicle.isPending || papers.busy}>
+                  <ScanLine aria-hidden />{' '}
+                  {addVehicle.isPending ? 'Registering...' : papers.busy ? 'Uploading papers...' : 'Submit registration'}
                 </button>
                 <button type="button" className="cx-btn" onClick={() => navigate('/me')}>
                   Cancel
@@ -401,7 +445,7 @@ export default function RegisterVehiclePage() {
             {!vehiclesQuery.isPending && vehicles.length === 0 && <p className="cx-empty">No vehicles registered yet.</p>}
             <div className="cx-mini-list">
               {vehicles.map((v) => (
-                <MiniVehicle key={v.vehicleId} vehicle={v} />
+                <MiniVehicle key={v.vehicleId} vehicle={v} onPapers={() => openPapers(v)} />
               ))}
             </div>
           </section>

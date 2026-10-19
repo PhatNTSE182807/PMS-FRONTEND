@@ -9,7 +9,7 @@ const STAFF_LOTS: Record<string, string> = {
 }
 
 export const lotAssignmentsMock = {
-  /** Proposed GET /staff/lots: the Staff's own lot, or none. */
+  /** GET /staff/lots: the Staff's own lot, or none. */
   getStaffLots(userId: string): Promise<AssignedParkingLotDTO[]> {
     return mockResponse(() =>
       MOCK_PARKING_LOTS.filter((l) => l.id === STAFF_LOTS[userId]).map(({ id, code, name }) => ({ id, code, name })),

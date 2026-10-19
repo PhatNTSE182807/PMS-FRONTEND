@@ -808,6 +808,32 @@
   transition: background-color 0.25s ease;
 }
 
+/* Live checklist of the API password rule under the strength bars */
+.cx-strength__rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+}
+
+.cx-strength__rules li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--cx-muted);
+}
+
+.cx-strength__rules li[data-met='true'] { color: var(--cx-emerald); }
+
+.cx-strength__rules svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+}
+
 .cx-strength[data-score='1'] .cx-strength__verdict { color: var(--cx-crimson); }
 .cx-strength[data-score='2'] .cx-strength__verdict { color: var(--cx-amber); }
 .cx-strength[data-score='3'] .cx-strength__verdict { color: var(--cx-primary); }

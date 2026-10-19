@@ -1,4 +1,5 @@
 import { Bike, Car, CarFront, Zap, type LucideIcon } from 'lucide-react'
+import { PASSWORD_RULES } from '@/lib/password'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
 
 /** "Alex Nguyen" -> "AN" */
@@ -39,15 +40,19 @@ export const KIND_ICON: Record<VehicleKind, LucideIcon> = { car: Car, suv: CarFr
 export const vehicleTitle = (vehicle: VehicleDTO) =>
   [vehicle.brand, vehicle.model].filter(Boolean).join(' ') || vehicle.licensePlate
 
-/** Password strength: one point per rule (length 8+, digit, mixed case, symbol). 0 = empty. */
+/** Length from which a password that passes the API rule is rated "Strong" rather than "Good". */
+const STRONG_PASSWORD_LENGTH = 10
+
+/**
+ * Password strength for the 4-bar meter, based on the API rule (lib/password PASSWORD_RULES):
+ * one point per rule met (6+ characters, upper-case letter, special character), so 3 = the API
+ * accepts it, plus one more for 10+ characters. Anything typed scores at least 1; 0 = empty.
+ */
 export function passwordScore(password: string): 0 | 1 | 2 | 3 | 4 {
   if (!password) return 0
-  let score = 0
-  if (password.length >= 8) score++
-  if (/[0-9]/.test(password)) score++
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++
-  if (/[^A-Za-z0-9]/.test(password)) score++
-  return Math.max(score, 1) as 1 | 2 | 3 | 4
+  const met = PASSWORD_RULES.filter((rule) => rule.test(password)).length
+  const bonus = met === PASSWORD_RULES.length && password.length >= STRONG_PASSWORD_LENGTH ? 1 : 0
+  return Math.max(met + bonus, 1) as 1 | 2 | 3 | 4
 }
 
 export const STRENGTH_LABEL = ['', 'Weak', 'Fair', 'Good', 'Strong'] as const

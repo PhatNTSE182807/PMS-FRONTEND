@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
+  Check,
   ChevronRight,
   Eye,
   EyeOff,
@@ -16,6 +17,7 @@ import {
   ShieldCheck,
   User,
   UserRound,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
@@ -28,7 +30,7 @@ import {
 } from '@/components/customer/customerFormat'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useChangePassword, useProfile, useUpdateProfile, useVehicles } from '@/hooks/useProfile'
-import { isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/password'
+import { isValidPassword, PASSWORD_RULE_HINT, PASSWORD_RULE_MESSAGE, PASSWORD_RULES } from '@/lib/password'
 import type { UserProfileDTO } from '@/types/profile.dto'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -327,9 +329,10 @@ export default function CustomerProfilePage() {
             <form className="cx-form" onSubmit={savePassword} noValidate>
               <p className="cx-note">
                 <Info aria-hidden />
+                {/* Google-only accounts set a first password without the current one (backend AddPasswordAsync). */}
                 {hasPassword
-                  ? 'Protect your account with a strong password: at least 8 characters with upper and lower case letters, digits and symbols.'
-                  : 'You signed up with Google. Set a password to also sign in with your email address at the kiosks and gates.'}
+                  ? PASSWORD_RULE_HINT
+                  : `You signed up with Google, so there is no password yet. Set one to also sign in with your email address. ${PASSWORD_RULE_MESSAGE}`}
               </p>
 
               {hasPassword && (
@@ -371,6 +374,19 @@ export default function CustomerProfilePage() {
                 <div className="cx-strength__bars" aria-hidden="true">
                   <span /><span /><span /><span />
                 </div>
+                {/* The API rule, ticked off live so the user sees what is still missing before submitting. */}
+                <ul className="cx-strength__rules" aria-label="Password requirements">
+                  {PASSWORD_RULES.map((rule) => {
+                    const met = rule.test(passwords.newPassword)
+                    return (
+                      <li key={rule.id} data-met={met}>
+                        {met ? <Check aria-hidden /> : <X aria-hidden />}
+                        {rule.label}
+                        <span className="sr-only">{met ? ' (met)' : ' (missing)'}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
               </div>
 
               {passwordError && <p className="cx-error" role="alert">{passwordError}</p>}
