@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/password'
 
 /** Same rule as the backend (PMS.Application UserValidatorConfiguration.VietnamPhoneNumberRegex). */
 export const VN_PHONE_REGEX = /^(\+84|84|0)[35789][0-9]{8}$/
@@ -32,13 +33,8 @@ export function createStaffFormSchema(mode: StaffFormMode) {
         ctx.addIssue({ code: 'custom', path: ['shift'], message: 'Select a shift for this staff member.' })
       }
       if (mode === 'create' && values.passwordMode === 'manual') {
-        const password = values.password
-        if (password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['password'],
-            message: 'Password must be at least 8 characters with an upper-case letter, a lower-case letter and a digit.',
-          })
+        if (!isValidPassword(values.password)) {
+          ctx.addIssue({ code: 'custom', path: ['password'], message: PASSWORD_RULE_MESSAGE })
         }
       }
     })

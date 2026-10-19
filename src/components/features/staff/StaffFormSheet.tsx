@@ -305,7 +305,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="At least 8 characters"
+                    placeholder="6+ characters, A–Z and a symbol"
                     aria-label="Password"
                     aria-invalid={!!errors.password}
                     className="pr-10"

@@ -6,6 +6,7 @@ import GoogleSignInButton from './GoogleSignInButton';
 import { getErrorMessage } from '../api/apiError';
 import { useRegister } from '../hooks/useAuth';
 import { GOOGLE_CLIENT_ID } from '../lib/google-identity';
+import { isValidPassword, PASSWORD_RULE_MESSAGE } from '../lib/password';
 
 // 0 = empty, 1 = weak ... 4 = strong; one point per rule met
 function passwordScore(pwd) {
@@ -57,8 +58,8 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
       setErrorMsg('Citizen ID must have exactly 12 digits.');
       return;
     }
-    if (password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters long.');
+    if (!isValidPassword(password)) {
+      setErrorMsg(PASSWORD_RULE_MESSAGE);
       return;
     }
     if (password !== confirmPassword) {

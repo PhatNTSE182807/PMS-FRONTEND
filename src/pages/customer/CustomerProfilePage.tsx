@@ -28,6 +28,7 @@ import {
 } from '@/components/customer/customerFormat'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useChangePassword, useProfile, useUpdateProfile, useVehicles } from '@/hooks/useProfile'
+import { isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/password'
 import type { UserProfileDTO } from '@/types/profile.dto'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -161,7 +162,7 @@ export default function CustomerProfilePage() {
     e.preventDefault()
     setPasswordError('')
     if (hasPassword && !passwords.currentPassword) return setPasswordError('Enter your current password.')
-    if (passwords.newPassword.length < 6) return setPasswordError('The new password must be at least 6 characters.')
+    if (!isValidPassword(passwords.newPassword)) return setPasswordError(PASSWORD_RULE_MESSAGE)
     if (passwords.newPassword !== passwords.confirmPassword) return setPasswordError('The new passwords do not match.')
 
     changePassword.mutate(passwords, {
@@ -348,7 +349,7 @@ export default function CustomerProfilePage() {
                   value={passwords.newPassword}
                   onChange={(v) => setPasswords({ ...passwords, newPassword: v })}
                   autoComplete="new-password"
-                  placeholder="Minimum 8 characters"
+                  placeholder="6+ characters, A–Z and a symbol"
                 />
                 <PasswordField
                   id="pw-confirm"

@@ -28,3 +28,12 @@ export function generatePassword(length = 12): string {
   }
   return chars.join('')
 }
+
+/** Password rule shared with the backend (UserValidatorConfiguration): 6+ characters, one upper case letter, one special character. */
+export const PASSWORD_MIN_LENGTH = 6
+
+export const PASSWORD_RULE_MESSAGE = 'Password must be at least 6 characters with an upper-case letter and a special character.'
+
+export function isValidPassword(password: string): boolean {
+  return password.length >= PASSWORD_MIN_LENGTH && /[A-Z]/.test(password) && /[^A-Za-z0-9]/.test(password)
+}

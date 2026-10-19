@@ -10,7 +10,7 @@ import { Dialog, DialogClose, DialogDescription, DialogTitle, SheetContent } fro
 import { FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { Spinner } from '@/components/ui/states'
 import { useCreateManagedStaff, useUpdateManagedStaff } from '@/hooks/useManagedStaff'
-import { generatePassword } from '@/lib/password'
+import { generatePassword, isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/password'
 import type { UserDTO } from '@/types/identity.dto'
 import type { ManagedLot } from '@/types/lot-management.dto'
 
@@ -30,12 +30,8 @@ function createSchema(mode: 'create' | 'edit') {
     .superRefine((values, ctx) => {
       if (mode === 'edit') return
       const { password } = values
-      if (password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['password'],
-          message: 'At least 8 characters with an upper-case letter, a lower-case letter and a digit.',
-        })
+      if (!isValidPassword(password)) {
+        ctx.addIssue({ code: 'custom', path: ['password'], message: PASSWORD_RULE_MESSAGE })
       }
       if (values.confirmPassword !== password) {
         ctx.addIssue({ code: 'custom', path: ['confirmPassword'], message: 'Passwords do not match.' })
