@@ -749,11 +749,13 @@
 
 /* =========================================================
    MODALS & OVERLAYS (Api Status, Checkout, Vehicles, etc.)
+   Dark "XXIV Sovereign Telemetry" palette, like the rest of the app.
 ========================================================= */
 .api-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(59, 54, 50, 0.42);
+  background: rgba(6, 15, 22, 0.72);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -765,13 +767,14 @@
 .api-modal {
   width: 100%;
   max-width: 480px;
-  background: #F4F1EA;
-  border: 1px solid rgba(232, 90, 79, 0.3);
+  background: #182127;
+  border: 1px solid rgba(18, 78, 102, 0.6);
   border-radius: 18px;
-  box-shadow: 0 25px 60px rgba(92, 72, 56, 0.36);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  color: #dae4ed;
 }
 
 .api-modal__header {
@@ -779,25 +782,25 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(59, 54, 50, 0.08);
+  border-bottom: 1px solid rgba(116, 141, 146, 0.2);
 }
 
 .api-modal__header h3 {
   font-size: 1.1rem;
-  color: #3B3632;
+  color: #f2f7fa;
   font-weight: 700;
 }
 
 .api-modal__close {
   background: transparent;
   border: none;
-  color: #6F6A64;
+  color: #8a9297;
   font-size: 1.1rem;
   cursor: pointer;
 }
 
 .api-modal__close:hover {
-  color: #3B3632;
+  color: #f2f7fa;
 }
 
 .api-modal__body {
@@ -812,15 +815,15 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 1rem 1.5rem;
-  background: rgba(250, 248, 243, 0.6);
-  border-top: 1px solid rgba(59, 54, 50, 0.08);
+  background: #141d23;
+  border-top: 1px solid rgba(116, 141, 146, 0.2);
 }
 
 .api-modal__status-box {
-  background: rgba(59, 54, 50, 0.04);
+  background: #0b141b;
   padding: 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(59, 54, 50, 0.08);
+  border: 1px solid rgba(116, 141, 146, 0.2);
 }
 
 .status-pill {
@@ -831,17 +834,17 @@
   display: inline-block;
   margin-bottom: 6px;
 }
-.status-pill--success { background: rgba(79, 138, 91, 0.2); color: #4F8A5B; }
-.status-pill--warning { background: rgba(194, 138, 44, 0.2); color: #C28A2C; }
+.status-pill--success { background: rgba(16, 185, 129, 0.15); color: #6fdba8; }
+.status-pill--warning { background: rgba(233, 195, 73, 0.15); color: #e9c349; }
 
 .api-modal__status-msg {
   font-size: 0.85rem;
-  color: #6F6A64;
+  color: #c0c7cd;
 }
 
 .api-modal__form-group label {
   font-size: 0.85rem;
-  color: #57524C;
+  color: #c0c7cd;
   display: block;
   margin-bottom: 6px;
 }
@@ -853,17 +856,23 @@
 
 .api-modal__input {
   flex: 1;
-  background: rgba(250, 248, 243, 0.9);
-  border: 1px solid rgba(59, 54, 50, 0.15);
+  background: #0b141b;
+  border: 1px solid rgba(116, 141, 146, 0.3);
   border-radius: 8px;
   padding: 8px 12px;
-  color: #3B3632;
+  color: #dae4ed;
   font-size: 0.85rem;
+}
+
+.api-modal__input:focus {
+  outline: none;
+  border-color: #2f647d;
+  box-shadow: 0 0 0 2px rgba(18, 78, 102, 0.35);
 }
 
 .api-modal__presets-label {
   font-size: 0.75rem;
-  color: #6F6A64;
+  color: #8a9297;
   display: block;
   margin-bottom: 6px;
 }
@@ -875,9 +884,9 @@
 }
 
 .preset-btn {
-  background: rgba(59, 54, 50, 0.05);
-  border: 1px solid rgba(59, 54, 50, 0.12);
-  color: #57524C;
+  background: #222b32;
+  border: 1px solid rgba(116, 141, 146, 0.25);
+  color: #c0c7cd;
   font-size: 0.75rem;
   padding: 5px 10px;
   border-radius: 6px;
@@ -885,18 +894,44 @@
 }
 
 .preset-btn:hover {
-  background: rgba(232, 90, 79, 0.15);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  background: rgba(18, 78, 102, 0.45);
+  border-color: #2f647d;
+  color: #c1e8ff;
 }
 
 .api-modal__tip {
   font-size: 0.8rem;
-  color: #6F6A64;
-  background: rgba(232, 90, 79, 0.05);
-  border-left: 3px solid var(--color-primary);
+  color: #c0c7cd;
+  background: rgba(233, 195, 73, 0.06);
+  border-left: 3px solid #e9c349;
   padding: 8px 12px;
   border-radius: 0 8px 8px 0;
+}
+
+.api-modal__tip strong {
+  color: #e9c349;
+}
+
+/* The shared cyan buttons are coral on the light pages; inside this dialog they follow the teal theme. */
+.api-modal .btn-primary-cyan {
+  background: #124e66;
+  color: #c1e8ff;
+  box-shadow: none;
+}
+
+.api-modal .btn-primary-cyan:hover:not(:disabled) {
+  background: #186382;
+  box-shadow: 0 0 12px rgba(154, 205, 234, 0.25);
+}
+
+.api-modal .btn-outline-cyan {
+  border-color: rgba(116, 141, 146, 0.45);
+  color: #c0c7cd;
+}
+
+.api-modal .btn-outline-cyan:hover {
+  background: #222b32;
+  color: #f2f7fa;
 }
 
 /* Status Badge Top Right */
@@ -904,17 +939,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(250, 248, 243, 0.8);
-  border: 1px solid rgba(59, 54, 50, 0.12);
+  background: rgba(20, 29, 35, 0.85);
+  border: 1px solid rgba(116, 141, 146, 0.3);
   padding: 5px 12px;
   border-radius: 20px;
   cursor: pointer;
+  backdrop-filter: blur(8px);
   transition: var(--transition-fast);
 }
 
 .api-status-badge:hover {
-  background: rgba(232, 90, 79, 0.1);
-  border-color: var(--color-primary);
+  background: rgba(18, 78, 102, 0.55);
+  border-color: #2f647d;
 }
 
 .api-status-badge__dot {
@@ -924,19 +960,19 @@
 }
 
 .api-status-badge--online .api-status-badge__dot {
-  background: #4F8A5B;
-  box-shadow: 0 0 8px #4F8A5B;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
 }
 
 .api-status-badge--offline .api-status-badge__dot {
-  background: #C28A2C;
-  box-shadow: 0 0 8px #C28A2C;
+  background: #e9c349;
+  box-shadow: 0 0 8px rgba(233, 195, 73, 0.6);
 }
 
 .api-status-badge__text {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #57524C;
+  color: #dae4ed;
 }
 
 /* Toast */
