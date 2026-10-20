@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   BadgeCheck,
@@ -21,23 +21,19 @@ import {
   Wallet,
 } from 'lucide-react'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
-import { CameraFrame, Key, Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
-import { formatClock } from '@/components/features/manager/managerFormat'
+import { EntryLaneConsole } from '@/components/features/staff/EntryLaneConsole'
+import { CameraFrame, Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
 import { DemoTag } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDemoIncidents } from '@/hooks/useDemoIncidents'
+import { useOpenSessions, useZoneCounters } from '@/hooks/useGate'
 import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { demoCameras, demoGateEvents, demoGateSession, demoGateStats, demoStation, type GateClearance } from '@/mocks/staffOps.mock'
-
-const CLEARANCE: Record<GateClearance, { label: string; tone: string }> = {
-  AUTO_PASSED: { label: 'Automatic passed', tone: 'bg-indigo-100 text-indigo-700' },
-  PAID_OPENING: { label: 'Paid • Opening', tone: 'bg-amber-100 text-amber-700' },
-  COMPLETED: { label: 'Completed • Closed', tone: 'bg-slate-100 text-slate-800' },
-}
+import { demoCameras, demoGateStats, demoStation } from '@/mocks/staffOps.mock'
+import type { ParkingSessionDTO, ZoneCounterDTO } from '@/types/operations.dto'
 
 const clockWithSeconds = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
@@ -55,9 +51,14 @@ function CapacityRing({ percent }: { percent: number }) {
   )
 }
 
-function KpiRow() {
+function KpiRow({ counters, sessions }: { counters: ZoneCounterDTO[] | undefined; sessions: ParkingSessionDTO[] | undefined }) {
   const s = demoGateStats
-  const occupancy = Math.round((s.activeBays / s.totalBays) * 100)
+  // Live Zone Counters when the lot has them; the demo figures otherwise
+  const total = counters?.length ? counters.reduce((sum, c) => sum + c.totalCapacity, 0) : s.totalBays
+  const free = counters?.length ? counters.reduce((sum, c) => sum + c.availableSpaces, 0) : s.generalOpen
+  const active = total - free
+  const reserved = sessions ? sessions.filter((x) => x.sessionType === 'Reservation').length : s.reservedVip
+  const occupancy = total ? Math.round((active / total) * 100) : 0
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <StatTile label="Throughput today" icon={<Car />}>
@@ -70,19 +71,21 @@ function KpiRow() {
       <StatTile label="Facility capacity" className="ring-amber-300/40">
         <div className="mt-2 flex items-center justify-between gap-3">
           <div>
-            <Metric value={s.activeBays} unit={`/ ${s.totalBays}`} className="mt-0" />
-            <p className="mt-1 text-sm text-amber-500">Bays active • Heavy inflow</p>
+            <Metric value={active} unit={`/ ${total}`} className="mt-0" />
+            <p className="mt-1 text-sm text-amber-500">Spaces taken or held</p>
           </div>
           <CapacityRing percent={occupancy} />
         </div>
       </StatTile>
       <StatTile label="General open" icon={<DoorOpen />}>
-        <Metric value={s.generalOpen} unit="bays" className="text-indigo-700" />
-        <p className="mt-1 text-sm text-slate-700">Levels B1, B2, B3 active</p>
+        <Metric value={free} unit="free" className="text-indigo-700" />
+        <p className="mt-1 text-sm text-slate-700">
+          {counters?.length ? counters.map((c) => `${c.zoneCode} ${c.availableSpaces}`).join(' • ') : 'Levels B1, B2, B3 active'}
+        </p>
       </StatTile>
-      <StatTile label="VIP & pre-booked" icon={<ShieldCheck />}>
-        <Metric value={s.reservedVip} unit="reserved" className="text-amber-500" />
-        <p className="mt-1 text-sm text-slate-700">Executive concierge</p>
+      <StatTile label="Pre-booked inside" icon={<ShieldCheck />}>
+        <Metric value={reserved} unit="reserved" className="text-amber-500" />
+        <p className="mt-1 text-sm text-slate-700">Checked in on a reservation</p>
       </StatTile>
       <StatTile label="Cash in drawer" icon={<Wallet />}>
         <Metric value={formatNumber(s.cashInDrawer)} unit="VND" />
@@ -156,69 +159,6 @@ function AnprTelemetry() {
   )
 }
 
-function GateSession({ onLookup }: { onLookup: () => void }) {
-  const navigate = useNavigate()
-  const s = demoGateSession
-  const hotkeys = [
-    { key: 'F1', label: 'Manual barrier lift', hint: 'Bypass validation', primary: true, run: () => toast.warning('Barrier lifted manually', { description: `Logged against ${demoStation.employeeCode}. Demo only: no barrier is connected.` }) },
-    { key: 'F2', label: 'Scan ticket / NFC', hint: 'RFID terminal', run: () => toast.info('Waiting for a ticket or NFC card…', { description: 'Demo only: no reader is connected.' }) },
-    { key: 'F3', label: 'Lookup plate', hint: 'Manual database query', run: onLookup },
-    { key: 'F4', label: 'Flag incident', hint: 'Record exception log', run: () => void navigate('/staff/exceptions') },
-  ]
-  const rows: [string, ReactNode][] = [
-    ['Vehicle class', s.vehicleClass],
-    ['Registered driver', `${s.driver} • ${s.driverId}`],
-    ['Assigned location', <span className="text-amber-500">{s.bay}</span>],
-    ['Reservation status', <span className="text-indigo-700">{s.reservation}</span>],
-    ['Inductive loop sensor', <span className="flex items-center justify-end gap-1.5"><span className="size-1.5 rounded-full bg-indigo-400" aria-hidden />Loop S1 activated</span>],
-  ]
-  return (
-    <Panel>
-      <SectionTitle aside={<span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold tracking-wider text-indigo-700 uppercase">Entry in progress</span>}>
-        Current gate session
-      </SectionTitle>
-      <div className="flex items-start justify-between gap-3 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
-        <div>
-          <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Identified number plate</p>
-          <p className="mt-1 font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{s.plate}</p>
-        </div>
-        <div className="text-right">
-          <span className="rounded bg-amber-500 px-2 py-0.5 font-mono text-xs font-bold tracking-wider text-(--color-on-gold) uppercase">{s.tier}</span>
-          <p className="mt-1 text-xs text-slate-700">Pre-validated pass</p>
-        </div>
-      </div>
-      <dl className="mt-4 divide-y divide-slate-200 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between gap-4 py-2.5">
-            <dt className="text-slate-700">{label}</dt>
-            <dd className="text-right font-semibold text-slate-950">{value}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="mt-5 mb-3 text-xs font-bold tracking-wider text-slate-700 uppercase">Operator gate hotkeys</p>
-      <div className="grid grid-cols-2 gap-3">
-        {hotkeys.map((h) => (
-          <button
-            key={h.key}
-            type="button"
-            onClick={h.run}
-            className={cn(
-              'flex items-center gap-3 rounded-xl px-3 py-3 text-left ring-1 transition-colors',
-              h.primary ? 'bg-[#124e66] ring-indigo-300 hover:bg-[#186382]' : 'bg-slate-50 ring-slate-200 hover:bg-slate-100',
-            )}
-          >
-            <Key>{h.key}</Key>
-            <span className="leading-tight">
-              <span className={cn('block text-sm font-semibold', h.primary ? 'text-indigo-800' : 'text-slate-950')}>{h.label}</span>
-              <span className="text-xs text-slate-700">{h.hint}</span>
-            </span>
-          </button>
-        ))}
-      </div>
-    </Panel>
-  )
-}
-
 function DispatchBar() {
   const [armed, setArmed] = useState(false)
   const override = () => {
@@ -255,74 +195,76 @@ function DispatchBar() {
   )
 }
 
-function ActivityStream({ query, setQuery, inputRef }: { query: string; setQuery: (q: string) => void; inputRef: RefObject<HTMLInputElement | null> }) {
+const SESSION_TONE: Record<string, string> = {
+  PendingEntry: 'bg-amber-100 text-amber-700',
+  Active: 'bg-indigo-100 text-indigo-700',
+  PendingPayment: 'bg-rose-100 text-rose-700',
+  Paid: 'bg-emerald-100 text-emerald-700',
+  LostTicketPending: 'bg-rose-100 text-rose-700',
+}
+
+/** Vehicles inside the lot (or entering), live from the gate API; refreshed by SignalR or polling. */
+function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: ParkingSessionDTO[]; isLoading: boolean; query: string; setQuery: (q: string) => void }) {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
-    if (!q) return demoGateEvents
-    return demoGateEvents.filter((e) => `${e.plate}${e.vehicle}`.toLowerCase().replace(/[^a-z0-9]/g, '').includes(q))
-  }, [query])
+    if (!q) return sessions
+    return sessions.filter((e) => `${e.plateNumber}${e.code}`.toLowerCase().replace(/[^a-z0-9]/g, '').includes(q))
+  }, [query, sessions])
 
   return (
     <Panel>
       <SectionTitle
         aside={
-          <div className="flex items-center gap-2">
-            <DemoTag />
-            <label className="relative">
-              <span className="sr-only">Lookup plate</span>
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-slate-500" aria-hidden />
-              <Input ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Lookup plate…" className="w-52 pl-8 font-mono uppercase" />
-            </label>
-          </div>
+          <label className="relative">
+            <span className="sr-only">Lookup plate</span>
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-slate-500" aria-hidden />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Lookup plate…" className="w-52 pl-8 font-mono uppercase" />
+          </label>
         }
       >
-        Gate flow activity stream
+        Vehicles in the lot
       </SectionTitle>
-      <p className="-mt-3 mb-4 text-sm text-slate-700">Real-time telemetry log for {demoStation.facility} {demoStation.lane.toLowerCase()} gate</p>
+      <p className="-mt-3 mb-4 text-sm text-slate-700">Open parking sessions: entering, parked, paying or paid and on the way out.</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="bg-slate-50 text-left text-xs font-bold tracking-wider text-slate-700 uppercase">
-              <th className="rounded-l-lg px-4 py-3">Timestamp</th>
+              <th className="rounded-l-lg px-4 py-3">Entered</th>
               <th className="px-4 py-3">Vehicle plate</th>
-              <th className="px-4 py-3">Type / make</th>
-              <th className="px-4 py-3">Direction</th>
-              <th className="px-4 py-3">Payment / access</th>
-              <th className="px-4 py-3">Gate clearance</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Access</th>
+              <th className="px-4 py-3">Bay / zone</th>
+              <th className="px-4 py-3">Status</th>
               <th className="rounded-r-lg px-4 py-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
             {rows.map((e) => (
-              <tr key={`${e.at}-${e.plate}`} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-mono text-xs font-bold text-slate-900">{clockWithSeconds.format(e.at)}</td>
-                <td className="px-4 py-3"><Plate>{e.plate}</Plate></td>
-                <td className="px-4 py-3 text-slate-950">{e.vehicle}</td>
-                <td className="px-4 py-3">
-                  <span className={cn('flex items-center gap-1.5 text-xs font-bold uppercase', e.direction === 'ENTRY' ? 'text-indigo-700' : 'text-slate-800')}>
-                    {e.direction === 'ENTRY' ? <LogIn className="size-3.5" aria-hidden /> : <LogOut className="size-3.5" aria-hidden />}
-                    {e.direction}
-                  </span>
+              <tr key={e.id} className="hover:bg-slate-50">
+                <td className="px-4 py-3 font-mono text-xs font-bold text-slate-900">{clockWithSeconds.format(Date.parse(e.entryTime))}</td>
+                <td className="px-4 py-3"><Plate>{e.plateNumber || 'NO PLATE'}</Plate></td>
+                <td className="px-4 py-3 text-slate-950">{e.vehicleTypeName ?? '—'}</td>
+                <td className={cn('px-4 py-3 text-xs font-semibold', e.sessionType === 'Reservation' ? 'text-amber-500' : 'text-slate-900')}>
+                  {e.sessionType === 'Reservation' ? `Reservation ${e.reservationCode ?? ''}` : e.sessionType === 'Whitelist' ? 'Whitelist (free)' : 'Walk-in'}
+                  {e.isOverdue && <span className="ml-2 rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">Overdue</span>}
                 </td>
-                <td className={cn('px-4 py-3 text-xs font-semibold', e.premium ? 'text-amber-500' : 'text-slate-900')}>{e.access}</td>
+                <td className="px-4 py-3 font-mono text-xs text-slate-900">{e.slotCode ?? e.zoneName ?? '—'}</td>
                 <td className="px-4 py-3">
-                  <span className={cn('rounded px-2 py-0.5 text-xs font-bold tracking-wide uppercase', CLEARANCE[e.clearance].tone)}>{CLEARANCE[e.clearance].label}</span>
+                  <span className={cn('rounded px-2 py-0.5 text-xs font-bold tracking-wide uppercase', SESSION_TONE[e.status] ?? 'bg-slate-100 text-slate-800')}>{e.status}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toast.info(`${e.plate} • ${e.vehicle}`, { description: `${e.direction === 'ENTRY' ? 'Entered' : 'Left'} at ${formatClock(e.at)} • ${e.access}` })}
-                  >
-                    {e.clearance === 'COMPLETED' && e.access.startsWith('Cash') ? 'Receipt' : 'Inspect'}
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to={`/staff/checkout?session=${e.id}`}>
+                      <LogOut /> Exit
+                    </Link>
                   </Button>
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && (
+            {!isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-10 text-center text-slate-700">
-                  No gate event matches “{query}”.
+                  {query ? `No vehicle matches “${query}”.` : 'No vehicle is in the lot.'}
                 </td>
               </tr>
             )}
@@ -339,19 +281,16 @@ export default function StaffGatePage() {
   const [lotId, setLotId] = useState<string>()
   useCapacitySimulation(true)
   const [query, setQuery] = useState('')
-  const lookupRef = useRef<HTMLInputElement>(null)
-  const lookup = () => {
-    lookupRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    lookupRef.current?.focus()
-  }
+  const lotKey = lotId ?? myLots.data?.[0]?.id
+  const sessions = useOpenSessions(lotKey)
+  const counters = useZoneCounters(lotKey)
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] text-slate-700 uppercase">
-            <BadgeCheck className="size-4 text-indigo-700" aria-hidden /> {demoStation.station} • {demoStation.lane}
-            <DemoTag />
+            <BadgeCheck className="size-4 text-indigo-700" aria-hidden /> {myLots.data?.find((l) => l.id === lotKey)?.name ?? demoStation.station}
           </p>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-slate-950">Gate operations dashboard</h1>
         </div>
@@ -364,11 +303,18 @@ export default function StaffGatePage() {
         )}
       </div>
 
-      <KpiRow />
+      <KpiRow counters={counters.data} sessions={sessions.data} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
         <AnprTelemetry />
-        <GateSession onLookup={lookup} />
+        {lotKey ? (
+          <EntryLaneConsole lotId={lotKey} />
+        ) : (
+          <Panel>
+            <SectionTitle icon={<LogIn />}>Entry lane</SectionTitle>
+            <p className="text-sm text-slate-700">{myLots.isPending ? 'Loading your lot…' : 'No parking lot is assigned to you yet. Ask your Manager.'}</p>
+          </Panel>
+        )}
       </div>
 
       {myLots.isPending ? (
@@ -378,7 +324,7 @@ export default function StaffGatePage() {
       )}
 
       <DispatchBar />
-      <ActivityStream query={query} setQuery={setQuery} inputRef={lookupRef} />
+      <ActivityStream sessions={sessions.data ?? []} isLoading={sessions.isPending} query={query} setQuery={setQuery} />
     </div>
   )
 }

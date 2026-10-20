@@ -1,11 +1,18 @@
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, X } from 'lucide-react'
+import { isMockService } from '@/config/env'
+import { useLotPlan2D } from '@/hooks/useLotLayout'
+import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { formatNumber } from '@/lib/format'
 import { demoTariffs } from '@/mocks/managerOps.mock'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 import { GarageView } from '../garage/GarageView'
 import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
+import { ReserveBayPanel } from './ReserveBayPanel'
+
+/** What the map needs of a lot, from either the live lot list or the demo capacity data. */
+type MapLot = Pick<ParkingLotCapacityDTO, 'id' | 'code' | 'name' | 'address'>
 
 const STATUS_LABEL: Record<BayStatus, string> = {
   AVAILABLE: 'Available',
@@ -24,22 +31,42 @@ interface ZoneMapProps {
  * 3D garage of the selected lot, built from its layout template: motorbikes on the ground level, cars above. Each floor mirrors the live
  * occupancy of the lot's zones; the customer picks a free bay and reserves it.
  */
-export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
-  const lot = lots.find((l) => l.id === lotId) ?? lots[0]
-  const floors = useMemo(() => (lot ? buildGarage(lot) : []), [lot])
+export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: ZoneMapProps) {
+  // Live bookings need the backend's lots (numeric ids); demo bookings use the demo capacity lots
+  const liveBooking = !isMockService('booking')
+  const bookable = useBookableLots()
+  const lots: MapLot[] = liveBooking
+    ? (bookable.data ?? []).map((l) => ({ id: l.key, code: l.code, name: l.name, address: l.address }))
+    : capacityLots
+  const [liveLotId, setLiveLotId] = useState<string>()
+  const lot = lots.find((l) => l.id === (liveBooking ? liveLotId : lotId)) ?? lots[0]
+  const capacityLot = capacityLots.find((l) => l.id === lot?.id)
+
+  // The published layout gives the real slot ids a reservation needs; the template model is the fallback
+  const plan = useLotPlan2D(lot?.id, 'slots', false)
+  const planFloors = plan.data?.floors
+  const floors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
+  const bookableBays = Boolean(planFloors)
   const [focusFloor, setFocusFloor] = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  // The booking made here; demo until the booking API exists.
-  const [myBooking, setMyBooking] = useState<{ lotId: string; bayId: string; code: string } | null>(null)
+
+  const myReservations = useMyReservations()
+  const myActive = (myReservations.data ?? []).filter(
+    (r) => (r.status === 'PendingDeposit' || r.status === 'Confirmed') && lot && (String(r.parkingLotId) === lot.id || r.parkingLotName === lot.name),
+  )
+  const myBayIds = new Set(myActive.map((r) => String(r.slotId)))
 
   const allBays = floors.flatMap((f) => f.bays)
   const selected = allBays.find((b) => b.id === selectedId) ?? null
   const selectedFloor = selected ? floors[selected.floorIndex] : null
-  const myBayId = myBooking && myBooking.lotId === lot?.id ? myBooking.bayId : null
+  // Highlighted in the model as "your booking"
+  const myBayId = myActive[0] ? String(myActive[0].slotId) : null
   const tariff = demoTariffs.find((t) => t.id === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR'))
+  const isLoadingLots = liveBooking ? bookable.isPending : isLoading
 
   const changeLot = (id: string) => {
-    onLotChange(id)
+    if (liveBooking) setLiveLotId(id)
+    else onLotChange(id)
     setSelectedId(null)
     setFocusFloor(null)
   }
@@ -47,14 +74,6 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
   const selectBay = (bay: Bay) => {
     setSelectedId(bay.id)
     setFocusFloor(bay.floorIndex)
-  }
-
-  const book = () => {
-    if (!selected || !lot) return
-    setMyBooking({ lotId: lot.id, bayId: selected.id, code: selected.code })
-    toast.success(`Bay ${selected.code} reserved at ${lot.name}`, {
-      description: 'Demo booking: it is kept on this page until the booking API is connected.',
-    })
   }
 
   return (
@@ -83,8 +102,8 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
         </div>
       </div>
 
-      {isLoading && <div className="cx-skeleton" style={{ height: '30rem' }} />}
-      {!isLoading && !lot && <p className="cx-empty">No parking terminals are available right now.</p>}
+      {isLoadingLots && <div className="cx-skeleton" style={{ height: '30rem' }} />}
+      {!isLoadingLots && !lot && <p className="cx-empty">No parking terminals are available right now.</p>}
 
       {lot && (
         <div className="cx-map__body">
@@ -149,7 +168,7 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
                   <div className="cx-map__cell">
                     <span className="cx-label">Status</span>
                     <strong className={selected.status === 'AVAILABLE' ? 'is-gold' : undefined}>
-                      {selected.id === myBayId ? 'Your booking' : STATUS_LABEL[selected.status]}
+                      {myBayIds.has(selected.id) ? 'Your booking' : STATUS_LABEL[selected.status]}
                     </strong>
                   </div>
                   <div className="cx-map__cell">
@@ -165,15 +184,25 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
                     <strong className="is-gold">{formatNumber(selectedFloor.liveFree)} / {formatNumber(selectedFloor.liveTotal)}</strong>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="cx-btn cx-btn--light cx-btn--block"
-                  disabled={selected.status !== 'AVAILABLE' || selected.id === myBayId}
-                  onClick={book}
-                >
-                  <CircleCheck aria-hidden />
-                  {selected.id === myBayId ? 'Booked for you' : selected.status === 'AVAILABLE' ? `Book bay ${selected.code}` : 'Not available'}
-                </button>
+                {myBayIds.has(selected.id) ? (
+                  <Link to="/me/bookings" className="cx-btn cx-btn--light cx-btn--block">
+                    <CircleCheck aria-hidden />
+                    {myActive.find((r) => String(r.slotId) === selected.id)?.status === 'PendingDeposit' ? 'Booked for you • pay the deposit' : 'Booked for you • show my QR'}
+                  </Link>
+                ) : selected.status === 'AVAILABLE' && selectedFloor.kind === 'car' && bookableBays ? (
+                  <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
+                ) : (
+                  <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled>
+                    <CircleCheck aria-hidden />
+                    {myBayIds.has(selected.id)
+                      ? 'Booked for you'
+                      : selected.status !== 'AVAILABLE'
+                        ? 'Not available'
+                        : selectedFloor.kind !== 'car'
+                          ? 'Only car bays can be reserved (BR-01)'
+                          : 'This lot has no published layout yet'}
+                  </button>
+                )}
               </>
             ) : (
               <div className="cx-map__hint">
@@ -203,12 +232,13 @@ export function ZoneMap({ lots, isLoading, lotId, onLotChange }: ZoneMapProps) {
               })}
             </div>
 
-            {myBooking && (
-              <p className="cx-map__mine">
-                <CircleCheck size={15} aria-hidden /> Your booking: bay <strong>{myBooking.code}</strong>
-                <button type="button" className="cx-link" onClick={() => setMyBooking(null)}>Cancel</button>
+            {myActive.map((r) => (
+              <p key={r.id} className="cx-map__mine">
+                <CircleCheck size={15} aria-hidden /> Your booking: bay <strong>{r.slotCode}</strong>
+                {r.status === 'PendingDeposit' ? ' • deposit pending' : ' • confirmed'}
+                <Link to="/me/bookings" className="cx-link">Manage</Link>
               </p>
-            )}
+            ))}
           </aside>
         </div>
       )}

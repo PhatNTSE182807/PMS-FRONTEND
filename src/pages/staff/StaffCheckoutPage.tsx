@@ -1,88 +1,179 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowUp, Banknote, Car, Lock, QrCode, ReceiptText, RefreshCw, Send, ShieldCheck, Wifi } from 'lucide-react'
-import { CameraFrame, Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
+import { ArrowUp, Banknote, Car, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
+import { getErrorMessage } from '@/api/apiError'
+import { gateService } from '@/api/gate.service'
+import { paymentService } from '@/api/payment.service'
+import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { formatClock, formatMinutes, vnd } from '@/components/features/manager/managerFormat'
-import { DemoTag } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/form-controls'
+import { Checkbox, Input } from '@/components/ui/form-controls'
+import { QrCode } from '@/components/ui/qr-code'
+import { useCancelPaymentRequest, useCheckout, usePayCash, usePayOnline, useQuote } from '@/hooks/useGate'
 import { useNow } from '@/hooks/useNow'
+import { useMyStaffLots } from '@/hooks/useParking'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { demoCheckout } from '@/mocks/staffOps.mock'
+import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/operations.dto'
 
-const FAST_NOTES = [100_000, 200_000, 500_000]
-const QR_TTL_MS = 60_000
+const FAST_NOTES = [50_000, 100_000, 200_000, 500_000]
 
-/** Fake VietQR pattern: a deterministic grid so the code looks like a QR without encoding anything. */
-function QrGlyph() {
-  const cells = Array.from({ length: 21 * 21 }, (_, i) => {
-    const x = i % 21
-    const y = Math.floor(i / 21)
-    const finder = (cx: number, cy: number) => x >= cx && x < cx + 7 && y >= cy && y < cy + 7
-    if (finder(0, 0) || finder(14, 0) || finder(0, 14)) {
-      const lx = x % 14 === x ? x : x - 14
-      const ly = y % 14 === y ? y : y - 14
-      const ring = lx === 0 || lx === 6 || ly === 0 || ly === 6
-      const core = lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4
-      return ring || core
-    }
-    return ((x * 7 + y * 13 + x * y) % 5) < 2
-  })
-  return (
-    <svg viewBox="0 0 21 21" className="size-40" role="img" aria-label="VietQR payment code (demo)">
-      <rect width="21" height="21" fill="#f2f7fa" />
-      {cells.map((on, i) => (on ? <rect key={i} x={i % 21} y={Math.floor(i / 21)} width="1" height="1" fill="#0b141b" /> : null))}
-    </svg>
-  )
-}
-
+/**
+ * Exit lane / counter POS (SRS FR-OPS-02, FR-PAY-01/03/07/08, UC-02): find the vehicle, request the fee
+ * (deposit deducted, Exit Window checked), take cash or show a VNPay/MoMo QR, then lift the barrier.
+ * Keyboard: F5 cash, F8 check gateway, Space lift barrier, Esc next vehicle.
+ */
 export default function StaffCheckoutPage() {
-  const c = demoCheckout
-  const gross = c.tariff.reduce((s, l) => s + l.amount, 0)
-  const [waived, setWaived] = useState(false)
-  const net = waived ? 0 : gross + c.deposit.amount
+  const myLots = useMyStaffLots()
+  const lotKey = myLots.data?.[0]?.id
+  const [params, setParams] = useSearchParams()
+  const [lookup, setLookup] = useState('')
+  const [quote, setQuote] = useState<CheckoutQuoteDTO | null>(null)
+  const [qr, setQr] = useState<PaymentDTO | null>(null)
   const [tendered, setTendered] = useState(0)
-  const [paidByQr, setPaidByQr] = useState(false)
-  const [qrIssuedAt, setQrIssuedAt] = useState(() => Date.now())
-  const [phone, setPhone] = useState(c.receiptPhone)
-  const [cleared, setCleared] = useState(false)
+  const [exitPlate, setExitPlate] = useState('')
+  const [photoChecked, setPhotoChecked] = useState(false)
+  const [allowMismatch, setAllowMismatch] = useState(false)
+  const [overrideReason, setOverrideReason] = useState('')
+  const [cleared, setCleared] = useState<{ plate: string; refund: number } | null>(null)
+  const [searching, setSearching] = useState(false)
   const cashRef = useRef<HTMLInputElement>(null)
   const now = useNow(1000)
-  const qrLeft = Math.max(0, Math.ceil((qrIssuedAt + QR_TTL_MS - now) / 1000))
-  const change = tendered - net
-  const settled = paidByQr || net === 0 || tendered >= net
+
+  const requestQuote = useQuote()
+  const payCash = usePayCash()
+  const payOnline = usePayOnline()
+  const cancelRequest = useCancelPaymentRequest()
+  const checkout = useCheckout()
+
+  const session = quote?.session
+  const due = quote?.amountDue ?? 0
+  const change = tendered - due
+  const qrLeft = qr?.callbackDeadline ? Math.max(0, Math.ceil((Date.parse(qr.callbackDeadline) - now) / 1000)) : 0
+  const blocking = quote?.alerts.filter((a) => a.blocking) ?? []
+
+  /** Fee request for a session (moves it to "Chờ thanh toán", or to Paid when nothing is due). */
+  const loadQuote = useCallback(
+    (sessionId: number, plate?: string) =>
+      requestQuote.mutate(
+        { sessionId, plateNumber: plate || undefined },
+        {
+          onSuccess: (q) => {
+            setQuote(q)
+            setQr(null)
+            setTendered(0)
+          },
+          onError: (e) => toast.error(getErrorMessage(e)),
+        },
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the mutation object changes every render
+    [],
+  )
+
+  // Opened from the gate dashboard: /staff/checkout?session=123
+  const sessionParam = params.get('session')
+  useEffect(() => {
+    if (sessionParam) loadQuote(Number(sessionParam))
+  }, [sessionParam, loadQuote])
+
+  const find = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!lotKey || !lookup.trim()) return
+    setSearching(true)
+    try {
+      const value = lookup.trim()
+      const found = await gateService.lookup(lotKey, /^SS/i.test(value) ? { code: value.toUpperCase() } : { plate: value })
+      setExitPlate(found.hasPlate ? found.plateNumber : '')
+      setParams({ session: String(found.id) })
+    } catch (e) {
+      toast.error(getErrorMessage(e))
+    } finally {
+      setSearching(false)
+    }
+  }
 
   const reset = useCallback(() => {
+    setQuote(null)
+    setQr(null)
     setTendered(0)
-    setPaidByQr(false)
-    setWaived(false)
-    setCleared(false)
-    setQrIssuedAt(Date.now())
-  }, [])
+    setCleared(null)
+    setLookup('')
+    setExitPlate('')
+    setPhotoChecked(false)
+    setAllowMismatch(false)
+    setOverrideReason('')
+    setParams({})
+  }, [setParams])
 
-  const confirm = useCallback(() => {
-    if (cleared) return
-    if (!settled) {
-      toast.error('Payment not settled', { description: `Collect ${vnd(net - tendered)} more, or wait for the VietQR push.` })
+  const takeCash = () => {
+    if (!session) return
+    payCash.mutate(
+      { sessionId: session.id, amount: tendered },
+      {
+        onSuccess: (p) => {
+          toast.success(`Cash ${vnd(p.amount)} recorded`, { description: change > 0 ? `Give back ${vnd(change)}.` : undefined })
+          loadQuote(session.id, exitPlate)
+        },
+        onError: (e) => toast.error(getErrorMessage(e)),
+      },
+    )
+  }
+
+  const showQr = (provider: PaymentProvider) => {
+    if (!session) return
+    payOnline.mutate(
+      { sessionId: session.id, provider },
+      { onSuccess: setQr, onError: (e) => toast.error(getErrorMessage(e)) },
+    )
+  }
+
+  /** FR-PAY-08: ask the gateway whether the guest's QR payment went through. */
+  const checkGateway = useCallback(async () => {
+    if (!qr || !session) return
+    try {
+      const result = await paymentService.check(qr.id)
+      if (result.outcome === 'Applied' || result.outcome === 'AlreadyProcessed') {
+        toast.success(`${qr.provider}: payment received`)
+        loadQuote(session.id, exitPlate)
+      } else if (result.outcome === 'Refunded') {
+        toast.info('The QR payment came after another payment and was refunded automatically.')
+        loadQuote(session.id, exitPlate)
+      } else {
+        toast.info(result.message ?? 'Still waiting for the gateway.', { description: qrLeft === 0 ? 'You may take cash instead (BR-11).' : undefined })
+      }
+    } catch (e) {
+      toast.error(getErrorMessage(e))
+    }
+  }, [exitPlate, loadQuote, qr, qrLeft, session])
+
+  const liftBarrier = useCallback(() => {
+    if (!session || cleared) return
+    if (session.status !== 'Paid') {
+      toast.error('Payment not settled', { description: `Collect ${vnd(due)} first, or wait for the QR payment.` })
       return
     }
-    setCleared(true)
-    toast.success(`Barrier lifted for ${c.plate}`, {
-      description: `${paidByQr ? 'Paid by VietQR' : net === 0 ? 'Fee waived' : `Cash ${vnd(tendered)}, change ${vnd(Math.max(0, change))}`}. Demo only: no barrier is connected.`,
-    })
-  }, [c.plate, change, cleared, net, paidByQr, settled, tendered])
-
-  const checkGateway = useCallback(() => {
-    setPaidByQr(true)
-    toast.success('NAPAS gateway: payment received', { description: `${vnd(net)} via VietQR. Demo only.` })
-  }, [net])
-
-  const toggleWaiver = useCallback(() => {
-    setWaived((w) => !w)
-    toast.info(waived ? 'Waiver removed' : 'Waiver applied', { description: 'A waiver needs Manager approval once the approval API exists.' })
-  }, [waived])
+    checkout.mutate(
+      {
+        sessionId: session.id,
+        request: { plateNumber: exitPlate || undefined, photoChecked, allowPlateMismatch: allowMismatch, overrideReason: overrideReason || undefined },
+      },
+      {
+        onSuccess: (r) => {
+          if (!r.barrierOpen) {
+            toast.error('Barrier held', { description: r.alerts.map((a) => a.message).join(' ') })
+            return
+          }
+          setCleared({ plate: r.session.plateNumber || r.session.code, refund: r.depositRefund })
+          toast.success(`Barrier lifted for ${r.session.plateNumber || r.session.code}`, {
+            description: r.depositRefund > 0 ? `${vnd(r.depositRefund)} of the deposit is refunded to the customer.` : undefined,
+          })
+        },
+        onError: (e) => toast.error(getErrorMessage(e)),
+      },
+    )
+  }, [allowMismatch, checkout, cleared, due, exitPlate, overrideReason, photoChecked, session])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -96,290 +187,270 @@ export default function StaffCheckoutPage() {
         cashRef.current?.focus()
       } else if (e.key === 'F8') {
         e.preventDefault()
-        checkGateway()
-      } else if (e.key === 'F9') {
-        e.preventDefault()
-        toggleWaiver()
+        void checkGateway()
       } else if (e.code === 'Space' && !(e.target instanceof HTMLButtonElement)) {
         e.preventDefault()
-        confirm()
+        liftBarrier()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [checkGateway, confirm, reset, toggleWaiver])
+  }, [checkGateway, liftBarrier, reset])
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wider text-slate-700 uppercase">
-        <span className="text-slate-950">Active transaction session</span>
-        <span className="font-mono text-amber-500">TXN-ID #{c.txnId}</span>
+        <span className="text-slate-950">Exit lane POS</span>
+        {session && <span className="font-mono text-amber-500">Session #{session.code}</span>}
         <span className="flex items-center gap-1.5 text-indigo-700">
-          <ShieldCheck className="size-4" aria-hidden /> Anti-passback guard active
+          <ShieldCheck className="size-4" aria-hidden /> Entry/exit plate check active
         </span>
         <span className="ml-auto flex items-center gap-1.5">
-          <Wifi className="size-4 text-indigo-700" aria-hidden /> Gate-arm-01: {cleared ? 'raised' : 'ready'}
+          <Wifi className="size-4 text-indigo-700" aria-hidden /> Barrier: {cleared ? 'raised' : 'ready'}
         </span>
-        <DemoTag />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        {/* Left column: vehicle and tariff */}
-        <div className="space-y-6">
-          <Panel>
-            <SectionTitle icon={<Car />} aside={<span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">Matched ({c.matchScore}%)</span>}>
-              Active vehicle profile
-            </SectionTitle>
-            <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
-              <div>
-                <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Registered plate</p>
-                <p className="mt-1 font-mono text-4xl font-bold tracking-[0.12em] text-slate-950">{c.plate}</p>
-                <p className="mt-1 text-sm text-amber-500">{c.vehicle}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Clearance lane</p>
-                <p className="font-mono text-xl font-bold text-slate-950">{c.lane}</p>
-                <p className="text-xs font-bold tracking-wider text-indigo-700 uppercase">{c.laneName}</p>
-              </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <figure>
-                <figcaption className="mb-1.5 flex justify-between text-xs font-bold tracking-wider text-slate-700 uppercase">
-                  Entry snapshot <span className="font-mono">{formatClock(c.checkIn)}</span>
-                </figcaption>
-                <CameraFrame image={c.entryImage} alt="Entry camera snapshot" bottomLeft="CAM-01-ENTRY" />
-              </figure>
-              <figure>
-                <figcaption className="mb-1.5 flex justify-between text-xs font-bold tracking-wider text-indigo-700 uppercase">
-                  Exit live capture <span className="font-mono">{formatClock(c.exitAt)}</span>
-                </figcaption>
-                <CameraFrame image={c.exitImage} alt="Exit camera live capture" bottomLeft="● Live OCR" />
-              </figure>
-            </div>
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg bg-slate-50 py-2">
-                <dt className="text-xs font-bold text-slate-700 uppercase">Check-in</dt>
-                <dd className="font-mono font-bold text-slate-950">{formatClock(c.checkIn)}</dd>
-              </div>
-              <div className="rounded-lg bg-slate-50 py-2">
-                <dt className="text-xs font-bold text-slate-700 uppercase">Exit present</dt>
-                <dd className="font-mono font-bold text-slate-950">{formatClock(c.exitAt)}</dd>
-              </div>
-              <div className="rounded-lg bg-amber-50 py-2">
-                <dt className="text-xs font-bold text-amber-500 uppercase">Total dwell</dt>
-                <dd className="font-mono font-bold text-amber-500">{formatMinutes((c.exitAt - c.checkIn) / 60_000)}</dd>
-              </div>
-            </dl>
-          </Panel>
+      <Panel>
+        <form className="flex flex-wrap items-center gap-3" onSubmit={find}>
+          <label className="relative min-w-0 flex-1">
+            <span className="sr-only">Plate or session code</span>
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-slate-500" aria-hidden />
+            <Input value={lookup} onChange={(e) => setLookup(e.target.value.toUpperCase())} placeholder="Plate read at the exit, or session code (SS…)" className="pl-8 font-mono uppercase" />
+          </label>
+          <Button type="submit" disabled={!lotKey || searching || !lookup.trim()}>
+            <Search /> Find vehicle
+          </Button>
+        </form>
+      </Panel>
 
-          <Panel>
-            <SectionTitle icon={<ReceiptText />} aside={<span className="font-mono text-xs text-slate-700">Rate card: {c.rateCard}</span>}>
-              Tariff calculation breakdown
-            </SectionTitle>
-            <ul className="divide-y divide-slate-200">
-              {c.tariff.map((l) => (
-                <li key={l.label} className="flex items-center justify-between gap-4 py-3">
-                  <div>
-                    <p className="font-medium text-slate-950">{l.label}</p>
-                    <p className="text-sm text-slate-700">{l.detail}</p>
-                  </div>
-                  <span className="font-mono text-sm font-bold text-slate-950">{vnd(l.amount)}</span>
-                </li>
-              ))}
-              <li className="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-3 py-3">
-                <span className="font-semibold text-slate-950 uppercase">Total gross dwell fee</span>
-                <span className="font-mono text-sm font-bold text-slate-950">{vnd(gross)}</span>
-              </li>
-              <li className="flex items-center justify-between gap-4 py-3">
+      {!session ? (
+        <Panel>
+          <p className="py-10 text-center text-slate-700">
+            {requestQuote.isPending ? 'Calculating the fee…' : 'Find a vehicle by plate or session code, or open one from the gate dashboard.'}
+          </p>
+        </Panel>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+          {/* Left column: vehicle and fee */}
+          <div className="space-y-6">
+            <Panel>
+              <SectionTitle icon={<Car />} aside={<span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">{session.status}</span>}>
+                Vehicle
+              </SectionTitle>
+              <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
                 <div>
-                  <p className="flex items-center gap-1.5 font-medium text-indigo-700">
-                    <QrCode className="size-4" aria-hidden /> {c.deposit.label}
+                  <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Entry plate</p>
+                  <p className="mt-1 font-mono text-4xl font-bold tracking-[0.12em] text-slate-950">{session.plateNumber || 'NO PLATE'}</p>
+                  <p className="mt-1 text-sm text-amber-500">
+                    {session.vehicleTypeName} • {session.sessionType === 'Reservation' ? `Reservation ${session.reservationCode}` : session.sessionType ?? 'Walk-in'}
                   </p>
-                  <p className="text-sm text-slate-700">{c.deposit.detail}</p>
                 </div>
-                <span className="font-mono text-sm font-bold text-indigo-700">−{vnd(Math.abs(c.deposit.amount))}</span>
-              </li>
-            </ul>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
-              <div>
-                <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Net final fee payable</p>
-                <p className="text-sm text-slate-700">{waived ? 'Waiver applied • pending Manager approval' : 'All taxes included • Ready for settlement'}</p>
-              </div>
-              <p className={cn('font-mono text-4xl font-bold text-amber-500', waived && 'text-slate-500')}>{vnd(net)}</p>
-            </div>
-          </Panel>
-        </div>
-
-        {/* Right column: payment and barrier */}
-        <div className="space-y-6">
-          <Panel>
-            <SectionTitle icon={<Banknote />} aside={<span className="text-xs font-semibold text-slate-700">Active provider: <span className="text-amber-500">NAPAS 24/7 gateway</span></span>}>
-              Payment channel collector
-            </SectionTitle>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="flex flex-col items-center rounded-xl bg-slate-50 p-4">
-                <div className="flex w-full items-center justify-between text-xs font-bold">
-                  <span className="rounded bg-indigo-100 px-2 py-0.5 text-indigo-700 uppercase">VietQR Pro</span>
-                  <span className={cn('font-mono', paidByQr ? 'text-emerald-700' : qrLeft > 0 ? 'text-indigo-700' : 'text-rose-700')}>
-                    {paidByQr ? 'Paid' : qrLeft > 0 ? `${qrLeft}s countdown` : 'Expired'}
-                  </span>
-                </div>
-                <div className={cn('mt-4 rounded-xl bg-[#060f16] p-3 ring-1 ring-slate-200', (paidByQr || qrLeft === 0) && 'opacity-40')}>
-                  <QrGlyph />
-                  <p className="mt-2 text-center font-mono text-xs font-bold tracking-wider text-slate-950">VIETCOMBANK • LOT-SGC</p>
-                </div>
-                <div className="mt-4 flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
-                  <RefreshCw className={cn('size-4 text-indigo-700', !paidByQr && 'animate-spin [animation-duration:3s]')} aria-hidden />
-                  <div className="min-w-0 flex-1 leading-tight">
-                    <p className="text-sm font-semibold text-slate-950">Polling webhook</p>
-                    <p className="font-mono text-xs text-slate-700">Listening on port 8443</p>
-                  </div>
-                  {qrLeft === 0 && !paidByQr ? (
-                    <Button size="sm" variant="secondary" onClick={() => setQrIssuedAt(Date.now())}>
-                      Reissue
-                    </Button>
-                  ) : (
-                    <span className={cn('rounded px-1.5 py-0.5 font-mono text-[11px] font-bold', paidByQr ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700')}>
-                      {paidByQr ? 'Received' : 'Awaiting push'}
-                    </span>
-                  )}
+                <div className="text-right">
+                  <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Bay / zone</p>
+                  <p className="font-mono text-xl font-bold text-slate-950">{session.slotCode ?? session.zoneName ?? '—'}</p>
                 </div>
               </div>
-
-              <div className="rounded-xl bg-slate-50 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="font-display text-lg font-bold text-slate-950 uppercase">Cash tender desk</p>
-                  <Key>F5 Keypad</Key>
+              <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg bg-slate-50 py-2">
+                  <dt className="text-xs font-bold text-slate-700 uppercase">Check-in</dt>
+                  <dd className="font-mono font-bold text-slate-950">{formatClock(Date.parse(session.entryTime))}</dd>
                 </div>
-                <p className="mt-3 text-xs font-bold tracking-wider text-slate-700 uppercase">Fast denominations</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {FAST_NOTES.map((note) => (
-                    <button
-                      key={note}
-                      type="button"
-                      onClick={() => setTendered(note)}
-                      className={cn(
-                        'rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors',
-                        tendered === note ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100',
-                      )}
-                    >
-                      {formatNumber(note)}
-                    </button>
-                  ))}
+                <div className="rounded-lg bg-slate-50 py-2">
+                  <dt className="text-xs font-bold text-slate-700 uppercase">Now</dt>
+                  <dd className="font-mono font-bold text-slate-950">{formatClock(now)}</dd>
                 </div>
-                <label htmlFor="cash-received" className="mt-4 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                  Cash received (VND)
-                </label>
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-[#060f16] p-2 ring-1 ring-slate-200">
-                  <input
-                    id="cash-received"
-                    ref={cashRef}
-                    inputMode="numeric"
-                    value={tendered ? formatNumber(tendered) : ''}
-                    placeholder="0"
-                    onChange={(e) => setTendered(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                    className="min-w-0 flex-1 bg-transparent px-2 font-mono text-xl font-bold text-slate-950 focus-visible:outline-none"
-                  />
-                  <Button size="sm" variant="ghost" onClick={() => setTendered(0)}>
-                    Clear
+                <div className="rounded-lg bg-amber-50 py-2">
+                  <dt className="text-xs font-bold text-amber-500 uppercase">Dwell</dt>
+                  <dd className="font-mono font-bold text-amber-500">{formatMinutes(quote.durationMinutes)}</dd>
+                </div>
+              </dl>
+              <div className="mt-4 space-y-2">
+                <label className="block text-xs font-bold tracking-wider text-slate-700 uppercase" htmlFor="exit-plate">Plate read at the exit</label>
+                <div className="flex gap-2">
+                  <Input id="exit-plate" value={exitPlate} onChange={(e) => setExitPlate(e.target.value.toUpperCase())} className="font-mono uppercase" />
+                  <Button variant="secondary" onClick={() => loadQuote(session.id, exitPlate)} disabled={requestQuote.isPending}>
+                    <RefreshCw /> Recheck
                   </Button>
                 </div>
-                <dl className="mt-3 space-y-1.5 rounded-lg bg-white p-3 text-sm ring-1 ring-slate-200">
-                  <div className="flex justify-between">
-                    <dt className="text-slate-700">Payable net</dt>
-                    <dd className="font-mono font-bold text-slate-950">{vnd(net)}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-slate-700">Tendered</dt>
-                    <dd className="font-mono font-bold text-indigo-700">{vnd(tendered)}</dd>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md bg-[#060f16] px-2 py-2">
-                    <dt className="text-xs font-bold text-amber-500 uppercase">{change >= 0 ? 'Change to return' : 'Still due'}</dt>
-                    <dd className={cn('font-mono text-lg font-bold', change >= 0 ? 'text-amber-500' : 'text-rose-700')}>{vnd(Math.abs(change))}</dd>
-                  </div>
-                </dl>
-                <p className="mt-2 flex justify-between font-mono text-[11px] font-bold uppercase">
-                  <span className="text-slate-700">Drawer #01: engaged</span>
-                  <span className="text-amber-500">Vault sync: verified</span>
+              </div>
+            </Panel>
+
+            <Panel>
+              <SectionTitle icon={<ReceiptText />} aside={<span className="font-mono text-xs text-slate-700">{quote.pricingRuleId ? `Rule #${quote.pricingRuleId} v${quote.pricingRuleVersion}` : 'Default tariff'}</span>}>
+                Fee breakdown
+              </SectionTitle>
+              <ul className="divide-y divide-slate-200">
+                {quote.days.map((d) => (
+                  <li key={d.date} className="flex items-center justify-between gap-4 py-3">
+                    <div>
+                      <p className="font-medium text-slate-950">{d.date}</p>
+                      <p className="text-sm text-slate-700">{formatMinutes(d.minutes)} • {d.blocks} block{d.blocks === 1 ? '' : 's'}{d.capped ? ' • daily cap' : ''}</p>
+                    </div>
+                    <span className="font-mono text-sm font-bold text-slate-950">{vnd(d.amount)}</span>
+                  </li>
+                ))}
+                {quote.days.length === 0 && (
+                  <li className="py-3 text-sm text-slate-700">{quote.zeroFeeReason === 'Whitelist' ? 'Whitelisted plate: free (BR-16).' : 'Inside the free period: 0 VND (BR-09).'}</li>
+                )}
+                <FeeLine label="Parking fee" value={quote.fee} />
+                {quote.lostTicketFee > 0 && <FeeLine label="Lost ticket fine" value={quote.lostTicketFee} />}
+                {quote.exitWindowLateFee > 0 && <FeeLine label="Exit Window missed (BR-10)" value={quote.exitWindowLateFee} />}
+                {quote.depositApplied > 0 && <FeeLine label="Reservation deposit" value={-quote.depositApplied} tone="text-indigo-700" />}
+                {quote.alreadyPaid > 0 && <FeeLine label="Already paid" value={-quote.alreadyPaid} tone="text-indigo-700" />}
+              </ul>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+                <div>
+                  <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Amount due</p>
+                  <p className="text-sm text-slate-700">
+                    {quote.depositRefund > 0 ? `${vnd(quote.depositRefund)} of the deposit is refunded at exit (BR-03)` : session.status === 'Paid' ? 'Settled' : 'Ready for payment'}
+                  </p>
+                </div>
+                <p className="font-mono text-4xl font-bold text-amber-500">{vnd(due)}</p>
+              </div>
+            </Panel>
+          </div>
+
+          {/* Right column: payment and barrier */}
+          <div className="space-y-6">
+            <Panel>
+              <SectionTitle icon={<Banknote />}>Payment</SectionTitle>
+              {due === 0 ? (
+                <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 ring-1 ring-emerald-200">
+                  Nothing to collect{quote.zeroFeeReason ? ` (${quote.zeroFeeReason})` : ''}: the barrier may open.
                 </p>
-              </div>
-            </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="flex flex-col items-center rounded-xl bg-slate-50 p-4">
+                    <div className="flex w-full items-center justify-between text-xs font-bold">
+                      <span className="rounded bg-indigo-100 px-2 py-0.5 text-indigo-700 uppercase">{qr?.provider ?? 'Dynamic QR'}</span>
+                      {qr && <span className={cn('font-mono', qrLeft > 0 ? 'text-indigo-700' : 'text-rose-700')}>{qrLeft > 0 ? `${qrLeft}s wait` : 'Switch allowed'}</span>}
+                    </div>
+                    {qr?.payUrl ? (
+                      <>
+                        <QrCode value={qr.payUrl} label={`${qr.provider} payment QR`} className="mt-4 w-44 ring-1 ring-slate-200" />
+                        <a href={qr.payUrl} target="_blank" rel="noreferrer" className="mt-2 text-xs font-semibold text-indigo-700 underline">Open payment page</a>
+                        <Button size="sm" variant="secondary" className="mt-3" onClick={() => void checkGateway()}>
+                          <RefreshCw /> Check gateway (F8)
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="mt-4 grid w-full gap-2">
+                        <Button variant="gold" disabled={payOnline.isPending} onClick={() => showQr('VNPay')}>
+                          <QrIcon /> VNPay QR
+                        </Button>
+                        <Button className="bg-[#a50064] text-white hover:bg-[#c2187a]" disabled={payOnline.isPending} onClick={() => showQr('MoMo')}>
+                          <QrIcon /> MoMo QR
+                        </Button>
+                        <p className="text-center text-xs text-slate-700">The guest scans it with their banking or MoMo app.</p>
+                      </div>
+                    )}
+                  </div>
 
-            <form
-              className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 px-4 py-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                toast.success(`Receipt sent to ${phone}`, { description: 'Demo only: no SMS or Zalo message is sent.' })
-              }}
-            >
-              <ReceiptText className="size-5 text-slate-500" aria-hidden />
-              <div className="min-w-0 flex-1 leading-tight">
-                <p className="text-sm font-semibold text-slate-950 uppercase">Electronic tax invoice / receipt</p>
-                <p className="text-xs text-slate-700">Forward PDF receipt directly to driver</p>
-              </div>
-              <label className="sr-only" htmlFor="receipt-phone">Driver phone</label>
-              <Input id="receipt-phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-48 font-mono" />
-              <Button type="submit" variant="secondary" disabled={!phone.trim()}>
-                <Send /> Send
-              </Button>
-            </form>
-          </Panel>
-
-          <Panel>
-            <SectionTitle
-              icon={<Lock />}
-              aside={
-                <span className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-700 uppercase">
-                  <span className="size-1.5 rounded-full bg-indigo-400" aria-hidden /> Enforcer status: {cleared ? 'cleared' : 'ready'}
-                </span>
-              }
-            >
-              Direct hardware clearance controls
-            </SectionTitle>
-            {cleared ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-100 px-5 py-4 ring-1 ring-emerald-300">
-                <p className="font-display text-lg font-bold text-emerald-800">Barrier raised • {c.plate} cleared to exit</p>
-                <Button variant="success" onClick={reset}>
-                  Next vehicle
-                </Button>
-              </div>
-            ) : (
-              <Button variant="gold" className="h-auto min-h-16 w-full rounded-xl py-3 font-display text-lg tracking-wide whitespace-normal uppercase" onClick={confirm}>
-                <Lock className="size-5!" />
-                <span className="font-mono">[Space]</span> Confirm payment &amp; lift barrier
-                <ArrowUp className="size-5!" />
-              </Button>
-            )}
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {[
-                { key: 'F5', label: 'Cash override', run: () => cashRef.current?.focus() },
-                { key: 'F8', label: 'Check gateway', run: checkGateway },
-                { key: 'F9', label: waived ? 'Remove waiver' : 'Apply waiver', run: toggleWaiver },
-                { key: 'ESC', label: 'Abort TXN', run: reset, danger: true },
-              ].map((a) => (
-                <button
-                  key={a.key}
-                  type="button"
-                  onClick={a.run}
-                  className={cn(
-                    'rounded-lg px-2 py-2.5 text-center text-sm font-semibold transition-colors',
-                    a.danger ? 'bg-rose-100 text-rose-800 hover:bg-rose-200' : 'bg-slate-50 text-slate-950 hover:bg-slate-100',
-                  )}
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="font-display text-lg font-bold text-slate-950 uppercase">Cash</p>
+                      <Key>F5</Key>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {[due, ...FAST_NOTES.filter((n) => n > due)].slice(0, 4).map((note) => (
+                        <button
+                          key={note}
+                          type="button"
+                          onClick={() => setTendered(note)}
+                          className={cn('rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors', tendered === note ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100')}
+                        >
+                          {formatNumber(note)}
+                        </button>
+                      ))}
+                    </div>
+                    <label htmlFor="cash-received" className="mt-4 block text-xs font-bold tracking-wider text-slate-700 uppercase">Cash received (VND)</label>
+                    <input
+                      id="cash-received"
+                      ref={cashRef}
+                      inputMode="numeric"
+                      value={tendered ? formatNumber(tendered) : ''}
+                      placeholder="0"
+                      onChange={(e) => setTendered(Number(e.target.value.replace(/\D/g, '')) || 0)}
+                      className="mt-2 w-full rounded-lg bg-[#060f16] px-3 py-2 font-mono text-xl font-bold text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
+                    />
+                    <p className="mt-2 flex justify-between text-sm">
+                      <span className="text-slate-700">{change >= 0 ? 'Change' : 'Still due'}</span>
+                      <span className={cn('font-mono font-bold', change >= 0 ? 'text-amber-500' : 'text-rose-700')}>{vnd(Math.abs(change))}</span>
+                    </p>
+                    <Button className="mt-3 w-full" disabled={tendered < due || payCash.isPending} onClick={takeCash}>
+                      <Banknote /> Take cash
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {session.status === 'PendingPayment' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => cancelRequest.mutate(session.id, { onSuccess: () => { toast.info('Payment request cancelled: the vehicle stays parked.'); reset() } })}
                 >
-                  <span className={cn('block font-mono text-xs font-bold', a.danger ? 'text-rose-700' : 'text-amber-500')}>[{a.key}]</span>
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 flex flex-wrap justify-between gap-2 rounded-lg bg-[#060f16] px-3 py-2 font-mono text-[11px] text-slate-700 uppercase">
-              <span>
-                Barrier position sensor: {cleared ? 'raised (90.0°)' : 'lowered (0.0°)'} <span className="text-indigo-700">• Safety interlock: active</span>
-              </span>
-              <span>Inductive loop #2: occupied by {c.plate}</span>
-            </p>
-          </Panel>
+                  <Undo2 /> Customer backed up (cancel payment)
+                </Button>
+              )}
+            </Panel>
+
+            <Panel>
+              <SectionTitle icon={<Lock />}>Barrier</SectionTitle>
+              {blocking.length > 0 && !cleared && (
+                <div className="mb-3 space-y-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">
+                  {blocking.map((a) => (
+                    <p key={a.code} className="flex items-start gap-2 text-sm text-rose-800">
+                      <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden /> {a.message}
+                    </p>
+                  ))}
+                  {blocking.some((a) => a.code !== 'PLATE_MISMATCH') && (
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-900">
+                      <Checkbox checked={photoChecked} onChange={(e) => setPhotoChecked(e.target.checked)} /> I compared the entry and exit photos
+                    </label>
+                  )}
+                  {blocking.some((a) => a.code === 'PLATE_MISMATCH') && (
+                    <>
+                      <label className="flex items-center gap-2 text-sm font-medium text-slate-900">
+                        <Checkbox checked={allowMismatch} onChange={(e) => setAllowMismatch(e.target.checked)} /> Let it pass despite the plate difference
+                      </label>
+                      {allowMismatch && <Input value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} placeholder="Reason (required)" />}
+                    </>
+                  )}
+                </div>
+              )}
+              {cleared ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-100 px-5 py-4 ring-1 ring-emerald-300">
+                  <p className="font-display text-lg font-bold text-emerald-800">
+                    Barrier raised • {cleared.plate} cleared to exit{cleared.refund > 0 ? ` • refund ${vnd(cleared.refund)}` : ''}
+                  </p>
+                  <Button variant="success" onClick={reset}>Next vehicle</Button>
+                </div>
+              ) : (
+                <Button
+                  variant="gold"
+                  className="h-auto min-h-16 w-full rounded-xl py-3 font-display text-lg tracking-wide whitespace-normal uppercase"
+                  disabled={checkout.isPending}
+                  onClick={liftBarrier}
+                >
+                  <Lock className="size-5!" />
+                  <span className="font-mono">[Space]</span> {session.status === 'Paid' ? 'Lift barrier' : `Collect ${vnd(due)} first`}
+                  <ArrowUp className="size-5!" />
+                </Button>
+              )}
+            </Panel>
+          </div>
         </div>
-      </div>
+      )}
     </div>
+  )
+}
+
+function FeeLine({ label, value, tone }: { label: string; value: number; tone?: string }) {
+  return (
+    <li className="flex items-center justify-between gap-4 py-3">
+      <span className={cn('font-medium text-slate-950', tone)}>{label}</span>
+      <span className={cn('font-mono text-sm font-bold text-slate-950', tone)}>{value < 0 ? `−${vnd(-value)}` : vnd(value)}</span>
+    </li>
   )
 }

@@ -2559,3 +2559,48 @@
 .cx-map__mine .cx-link {
   margin-left: auto;
 }
+
+/* ---- Bay reservation and deposit payment (ReserveBayPanel, CustomerBookingsPage) ---- */
+.cx-reserve {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cx-reserve__title,
+.cx-reserve__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.cx-reserve__title svg,
+.cx-reserve__meta svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--cx-gold);
+}
+
+.cx-reserve__pay {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* MoMo brand magenta, darkened for white text contrast */
+.cx-btn--momo {
+  background: #a50064;
+  color: #ffffff;
+}
+
+.cx-btn--momo:hover:not(:disabled) {
+  background: #c2187a;
+}
+
+.cx-pass__qr {
+  width: min(100%, 13rem);
+  margin: 0 auto;
+}

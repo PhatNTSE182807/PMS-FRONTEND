@@ -41,6 +41,20 @@ export const queryKeys = {
     capacity: () => [...queryKeys.parking.all, 'capacity'] as const,
     staffLots: (userId: string | undefined) => [...queryKeys.parking.all, 'staff-lots', userId] as const,
   },
+  /** The customer's reservations and the lots they can book. */
+  reservations: {
+    all: ['reservations'] as const,
+    mine: () => [...queryKeys.reservations.all, 'mine'] as const,
+    qr: (id: number) => [...queryKeys.reservations.all, 'qr', id] as const,
+    lots: () => [...queryKeys.reservations.all, 'lots'] as const,
+  },
+  /** Entry/exit lanes of one lot (Staff). */
+  gate: {
+    all: ['gate'] as const,
+    gates: (lotId: string) => [...queryKeys.gate.all, 'gates', lotId] as const,
+    counters: (lotId: string) => [...queryKeys.gate.all, 'counters', lotId] as const,
+    sessions: (lotId: string) => [...queryKeys.gate.all, 'sessions', lotId] as const,
+  },
   layout: {
     all: ['layout'] as const,
     templates: () => [...queryKeys.layout.all, 'templates'] as const,

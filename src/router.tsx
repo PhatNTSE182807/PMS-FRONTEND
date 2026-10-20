@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { CustomerShell } from '@/components/customer/CustomerShell'
 import { AdminLayout } from '@/components/layout/AdminLayout'
@@ -26,6 +26,7 @@ const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerRes
 const ManagerApprovalsPage = lazy(() => import('@/pages/management/ManagerApprovalsPage'))
 const ManagerPricingPage = lazy(() => import('@/pages/management/ManagerPricingPage'))
 const ManagerStaffPage = lazy(() => import('@/pages/management/ManagerStaffPage'))
+const PaymentReturnPage = lazy(() => import('@/pages/PaymentReturnPage'))
 const StaffGatePage = lazy(() => import('@/pages/staff/StaffGatePage'))
 const StaffCheckoutPage = lazy(() => import('@/pages/staff/StaffCheckoutPage'))
 const StaffExceptionsPage = lazy(() => import('@/pages/staff/StaffExceptionsPage'))
@@ -41,6 +42,15 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
     ],
+  },
+  // VNPay / MoMo send the browser back here (public: Guests pay lane QRs on their phones too).
+  {
+    path: '/payment/return/:provider',
+    element: (
+      <Suspense fallback={null}>
+        <PaymentReturnPage />
+      </Suspense>
+    ),
   },
   // Signed-in customer area with its own navigation bar.
   {
