@@ -5,10 +5,11 @@ import { getErrorMessage } from '@/api/apiError'
 import { Button } from '@/components/ui/button'
 import { Checkbox, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { QrCode } from '@/components/ui/qr-code'
-import { useCancelEntry, useCheckIn, useConfirmEntry, useGates } from '@/hooks/useGate'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useCancelEntry, useCheckIn, useConfirmEntry, useGates, useReservationLookup } from '@/hooks/useGate'
 import { useVehicleTypes } from '@/hooks/useProfile'
 import { cn } from '@/lib/utils'
-import type { CheckInRequest, CheckInResultDTO, GateAlertDTO } from '@/types/operations.dto'
+import type { CheckInRequest, CheckInResultDTO, GateAlertDTO, GateReservationLookupDTO } from '@/types/operations.dto'
 import { Panel, SectionTitle } from './StaffBits'
 
 /** Alerts the Staff can clear on the next attempt, and the request flag that clears each one. */
@@ -21,13 +22,16 @@ const OVERRIDES: Partial<Record<string, { flag: keyof CheckInRequest; label: str
   RESERVATION_INVALID: { flag: 'ignoreReservation', label: 'Enter as a walk-in' },
 }
 
-const EMPTY: CheckInRequest = { plateNumber: '', anprConfidence: undefined, reservationQr: '', reservationCode: '' }
+const EMPTY: CheckInRequest = { plateNumber: '', anprConfidence: undefined }
+
+const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 /**
- * Entry lane console (SRS FR-OPS-01, 4.2.1): plate from ANPR or typed, reservation QR / code, then every
- * gate check runs on the server. A blocked entry lists the alerts; the Staff clears the ones they may
- * override, with a reason. Once the barrier opens the session waits for the loop sensor (or the Staff's
- * "Vehicle passed" press when the sensor is down).
+ * Entry lane console (SRS FR-OPS-01, 4.2.1). The Staff scans the reservation QR or types its code first:
+ * the booking and its vehicle show at once and fill the plate and vehicle type. Walk-ins leave it empty and
+ * type the plate. Every gate check then runs on the server; a blocked entry lists the alerts and the Staff
+ * clears the ones they may override, with a reason. The lot's entry lane is picked automatically. Once the
+ * barrier opens the session waits for the loop sensor (or the Staff's "Vehicle passed" press).
  */
 export function EntryLaneConsole({ lotId }: { lotId: string }) {
   const gates = useGates(lotId)
@@ -37,8 +41,26 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
   const cancel = useCancelEntry()
   const [form, setForm] = useState<CheckInRequest>(EMPTY)
   const [result, setResult] = useState<CheckInResultDTO | null>(null)
+  // Reservation QR payload or RSV… code, looked up as the Staff types or scans
+  const [entry, setEntry] = useState('')
+  const lookupEntry = useDebouncedValue(entry.trim(), 350)
+  const lookup = useReservationLookup(lotId, lookupEntry)
+  const found = entry.trim() && lookupEntry === entry.trim() ? lookup.data ?? null : null
+  const [filledFor, setFilledFor] = useState<number | null>(null)
 
-  const entryGates = (gates.data ?? []).filter((g) => g.direction !== 'Out')
+  // A newly found booking fills the plate and vehicle type (adjusting state while rendering, not in an effect)
+  if (found && found.reservation.id !== filledFor) {
+    setFilledFor(found.reservation.id)
+    setForm((f) => ({
+      ...f,
+      noPlate: false,
+      plateNumber: found.reservation.plateNumber ?? f.plateNumber,
+      anprConfidence: undefined,
+      vehicleTypeId: found.vehicleTypeId || f.vehicleTypeId,
+    }))
+  }
+
+  const entryGate = (gates.data ?? []).find((g) => g.direction !== 'Out')
   const types = vehicleTypes.data ?? []
   const set = <K extends keyof CheckInRequest>(key: K, value: CheckInRequest[K]) => setForm((f) => ({ ...f, [key]: value }))
   const blocking = result?.outcome === 'Blocked' ? result.alerts.filter((a) => a.blocking) : []
@@ -47,13 +69,15 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    const reservationEntry = entry.trim()
+    const isCode = /^RSV/i.test(reservationEntry)
     const request: CheckInRequest = {
       ...form,
-      gateId: form.gateId ?? entryGates[0]?.id,
+      gateId: entryGate?.id,
       vehicleTypeId: form.vehicleTypeId ?? types[0]?.id,
       plateNumber: form.noPlate ? undefined : form.plateNumber?.trim(),
-      reservationQr: form.reservationQr?.trim() || undefined,
-      reservationCode: form.reservationCode?.trim() || undefined,
+      reservationQr: reservationEntry && !isCode ? reservationEntry : undefined,
+      reservationCode: reservationEntry && isCode ? reservationEntry.toUpperCase() : undefined,
       overrideReason: form.overrideReason?.trim() || undefined,
     }
     checkIn.mutate(request, {
@@ -67,7 +91,9 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
 
   const next = () => {
     setResult(null)
-    setForm((f) => ({ ...EMPTY, gateId: f.gateId, vehicleTypeId: f.vehicleTypeId }))
+    setEntry('')
+    setFilledFor(null)
+    setForm((f) => ({ ...EMPTY, vehicleTypeId: f.vehicleTypeId }))
   }
 
   const session = result?.outcome === 'Created' ? result.session : null
@@ -144,24 +170,30 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
         </div>
       ) : (
         <form className="space-y-3" onSubmit={submit}>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="lane-gate">Lane</Label>
-              <NativeSelect id="lane-gate" value={form.gateId ?? entryGates[0]?.id ?? ''} onChange={(e) => set('gateId', Number(e.target.value))}>
-                {entryGates.map((g) => (
-                  <option key={g.id} value={g.id}>{g.code} • {g.name}</option>
-                ))}
-              </NativeSelect>
-            </div>
-            <div>
-              <Label htmlFor="lane-type">Vehicle type</Label>
-              <NativeSelect id="lane-type" value={form.vehicleTypeId ?? types[0]?.id ?? ''} onChange={(e) => set('vehicleTypeId', Number(e.target.value))}>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </NativeSelect>
-            </div>
+          <div>
+            <Label htmlFor="lane-reservation">Check-in code or QR (leave empty for a walk-in)</Label>
+            <Input
+              id="lane-reservation"
+              value={entry}
+              onChange={(e) => setEntry(/^rsv(?!\.)/i.test(e.target.value) ? e.target.value.toUpperCase() : e.target.value)}
+              placeholder="RSV… or scan the QR"
+              className="font-mono"
+              autoComplete="off"
+            />
           </div>
+
+          {entry.trim().length >= 6 && (
+            found ? (
+              <ReservationCard info={found} />
+            ) : lookup.isError && lookupEntry === entry.trim() ? (
+              <p className="flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-800 ring-1 ring-rose-200">
+                <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden /> {getErrorMessage(lookup.error)}
+              </p>
+            ) : (
+              <p className="text-sm text-slate-600">Looking up the reservation…</p>
+            )
+          )}
+
           <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
             <div>
               <Label htmlFor="lane-plate">Plate (ANPR or typed)</Label>
@@ -179,19 +211,17 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
               />
             </div>
           </div>
+          <div>
+            <Label htmlFor="lane-type">Vehicle type</Label>
+            <NativeSelect id="lane-type" value={form.vehicleTypeId ?? types[0]?.id ?? ''} onChange={(e) => set('vehicleTypeId', Number(e.target.value))}>
+              {types.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </NativeSelect>
+          </div>
           <label className="flex items-center gap-2 text-sm text-slate-800">
             <Checkbox checked={Boolean(form.noPlate)} onChange={(e) => set('noPlate', e.target.checked)} /> No plate (bicycle, e-bike): ticket and photo only
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="lane-qr">Reservation QR (scanned)</Label>
-              <Input id="lane-qr" value={form.reservationQr ?? ''} onChange={(e) => set('reservationQr', e.target.value)} placeholder="rsv.…" className="font-mono" />
-            </div>
-            <div>
-              <Label htmlFor="lane-code">or reservation code</Label>
-              <Input id="lane-code" value={form.reservationCode ?? ''} onChange={(e) => set('reservationCode', e.target.value.toUpperCase())} placeholder="RSV…" className="font-mono uppercase" />
-            </div>
-          </div>
 
           {blocking.length > 0 && (
             <div className="space-y-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">
@@ -216,6 +246,46 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
         </form>
       )}
     </Panel>
+  )
+}
+
+/** The booking behind the scanned QR / typed code: who, which car, which bay, and whether it may enter now. */
+function ReservationCard({ info }: { info: GateReservationLookupDTO }) {
+  const r = info.reservation
+  const car = [info.vehicleBrand, info.vehicleModel].filter(Boolean).join(' ')
+  return (
+    <div className={cn('space-y-3 rounded-xl p-4 ring-1', info.canCheckIn ? 'bg-emerald-50 ring-emerald-200' : 'bg-rose-50 ring-rose-200')}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Reservation {r.code}</p>
+          <p className="mt-1 font-mono text-2xl font-bold tracking-[0.12em] text-slate-950">{r.plateNumber ?? '—'}</p>
+          <p className="mt-0.5 truncate text-sm text-slate-700">
+            {[car || null, info.vehicleColor, info.vehicleTypeName].filter(Boolean).join(' • ') || 'Vehicle details unavailable'}
+          </p>
+        </div>
+        <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase', info.canCheckIn ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}>
+          {r.status}
+        </span>
+      </div>
+      <dl className="grid grid-cols-3 gap-2 text-sm">
+        <div>
+          <dt className="text-xs text-slate-600">Customer</dt>
+          <dd className="truncate font-medium text-slate-900">{info.customerName ?? '—'}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-slate-600">Bay</dt>
+          <dd className="font-mono font-medium text-slate-900">{r.slotCode ?? '—'}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-slate-600">Check-in window</dt>
+          <dd className="font-mono font-medium text-slate-900">{clock(r.checkInFrom)}–{clock(r.checkInUntil)}</dd>
+        </div>
+      </dl>
+      <p className={cn('flex items-start gap-2 text-sm font-medium', info.canCheckIn ? 'text-emerald-700' : 'text-rose-800')}>
+        {info.canCheckIn ? <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden /> : <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />}
+        {info.canCheckIn ? 'Ready to check in: plate and vehicle type filled from the booking.' : info.problem}
+      </p>
+    </div>
   )
 }
 

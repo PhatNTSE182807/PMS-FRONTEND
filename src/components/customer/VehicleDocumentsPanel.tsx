@@ -27,12 +27,12 @@ import {
 } from '@/types/vehicleDocument.dto'
 import '@/styles/vehicle-documents.css'
 
-const PAPERS: { type: VehicleDocumentType; title: string; local: string }[] = [
-  { type: 'RegistrationCertificate', title: 'Registration certificate', local: 'Cà vẹt xe' },
-  { type: 'CitizenId', title: 'Citizen ID card', local: 'CCCD' },
+const PAPERS: { type: VehicleDocumentType; title: string }[] = [
+  { type: 'RegistrationCertificate', title: 'Registration certificate' },
+  { type: 'CitizenId', title: 'Citizen ID card' },
 ]
 
-const SIDE_LABEL: Record<VehicleDocumentSide, string> = { Front: 'Front · Mặt trước', Back: 'Back · Mặt sau' }
+const SIDE_LABEL: Record<VehicleDocumentSide, string> = { Front: 'Front', Back: 'Back' }
 
 const formatSize = (bytes: number) =>
   bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -186,7 +186,7 @@ export function VerificationResult({
           if (fields.length === 0) return null
           return (
             <div key={paper.type} className="vd-fields">
-              <span className="vd-fields__title">{paper.title} · {paper.local}</span>
+              <span className="vd-fields__title">{paper.title}</span>
               <table>
                 <thead>
                   <tr>
@@ -226,7 +226,7 @@ export function VerificationResult({
               onClick={() => void openFile(d.documentId)}
               title={d.isAvailable ? 'Open the uploaded file' : 'Deleted after the decision (BR-26)'}
             >
-              <Eye aria-hidden /> {d.documentType === 'CitizenId' ? 'CCCD' : 'Cà vẹt'} · {d.side}
+              <Eye aria-hidden /> {d.documentType === 'CitizenId' ? 'Citizen ID' : 'Registration'} · {d.side}
             </button>
           ))}
         </div>
@@ -289,7 +289,7 @@ export function VehicleDocumentsPanel({
       {PAPERS.map((paper) => (
         <div key={paper.type} className="vd-paper">
           <div className="cx-doc-head">
-            <span>{paper.title} ({paper.local})</span>
+            <span>{paper.title}</span>
             <span>
               {(['Front', 'Back'] as const).filter((side) => draft.slots[slotKey(paper.type, side)].file).length}/2 sides
             </span>

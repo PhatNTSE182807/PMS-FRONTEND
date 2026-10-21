@@ -123,6 +123,22 @@ export interface ReservationQrDTO {
   validUntil: string
 }
 
+/** GateReservationLookupModel: what the entry lane shows once a reservation QR or code is entered. */
+export interface GateReservationLookupDTO {
+  reservation: ReservationDTO
+  vehicleTypeId: number
+  vehicleTypeName: string | null
+  vehicleBrand: string | null
+  vehicleModel: string | null
+  vehicleColor: string | null
+  customerName: string | null
+  /** Confirmed, inside the check-in window and the vehicle is not parked anywhere. */
+  canCheckIn: boolean
+  /** Why it cannot check in right now (null when it can). */
+  problem: string | null
+  openSessionCode: string | null
+}
+
 /** GateAlertModel */
 export interface GateAlertDTO {
   code: string

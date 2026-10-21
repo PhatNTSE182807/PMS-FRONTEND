@@ -32,7 +32,7 @@ const TABS: { status: VerificationStatus; label: string }[] = [
   { status: 'AutoVerified', label: 'Auto-verified' },
 ]
 
-const PAPER_LABEL = { RegistrationCertificate: 'Cà vẹt', CitizenId: 'CCCD' } as const
+const PAPER_LABEL = { RegistrationCertificate: 'Registration', CitizenId: 'Citizen ID' } as const
 
 const stamp = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 
@@ -310,9 +310,9 @@ export default function StaffVehicleVerificationPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wider text-slate-700 uppercase">
         <span className="flex items-center gap-1.5 text-slate-950">
-          <ScanText className="size-4 text-amber-500" aria-hidden /> Vehicle verification · Xác minh phương tiện
+          <ScanText className="size-4 text-amber-500" aria-hidden /> Vehicle verification
         </span>
-        <span className="normal-case">Registration certificate (cà vẹt) and Citizen ID (CCCD) checks that OCR could not verify</span>
+        <span className="normal-case">Registration certificate and Citizen ID checks that OCR could not verify</span>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">

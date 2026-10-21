@@ -54,6 +54,7 @@ export const queryKeys = {
     gates: (lotId: string) => [...queryKeys.gate.all, 'gates', lotId] as const,
     counters: (lotId: string) => [...queryKeys.gate.all, 'counters', lotId] as const,
     sessions: (lotId: string) => [...queryKeys.gate.all, 'sessions', lotId] as const,
+    reservation: (lotId: string, entry: string) => [...queryKeys.gate.all, 'reservation', lotId, entry] as const,
   },
   layout: {
     all: ['layout'] as const,

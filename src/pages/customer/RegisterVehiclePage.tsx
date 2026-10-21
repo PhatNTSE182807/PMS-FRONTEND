@@ -86,7 +86,7 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
         type="button"
         className="cx-icon-btn"
         aria-label={`Papers of ${vehicle.licensePlate}`}
-        title="Upload & verify papers (cà vẹt, CCCD)"
+        title="Upload & verify papers"
         onClick={onPapers}
       >
         <FileCheck2 aria-hidden />
@@ -226,7 +226,7 @@ export default function RegisterVehiclePage() {
 
             <div className="cx-form">
               <div className="cx-field">
-                <label className="cx-field__label" htmlFor="vehicle-plate">Official license plate number (Biển số xe)</label>
+                <label className="cx-field__label" htmlFor="vehicle-plate">Official license plate number</label>
                 <div className="cx-plate-input">
                   <span className="cx-plate-input__country">
                     <span className="cx-plate-input__flag" aria-hidden="true" /> VN
@@ -375,13 +375,13 @@ export default function RegisterVehiclePage() {
                 <span className="cx-card__icon cx-card__icon--gold"><ClipboardCheck aria-hidden /></span>
                 <h2 className="cx-card__title" id="certificate-title">Registration Certificate</h2>
               </div>
-              <span className="cx-label">Cà vẹt xe</span>
+              <span className="cx-label">Vehicle papers</span>
             </div>
 
             <div className="cx-form">
               <p className="cx-note">
                 <Info aria-hidden />
-                Add the front and back of the registration certificate (cà vẹt) and of your Citizen ID card (CCCD).
+                Add the front and back of the registration certificate and of your Citizen ID card.
                 We read them automatically and compare them with this form and your profile; anything unclear goes to
                 our Staff. Your plate works at the gates as soon as you register.
               </p>

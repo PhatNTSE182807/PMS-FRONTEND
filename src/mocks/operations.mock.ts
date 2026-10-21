@@ -9,6 +9,7 @@ import type {
   CreateReservationRequest,
   GateAlertDTO,
   GateDTO,
+  GateReservationLookupDTO,
   ParkingSessionDTO,
   PaymentCallbackResultDTO,
   PaymentDTO,
@@ -46,7 +47,7 @@ const RULES = {
   anprThreshold: 0.85,
 }
 /** A plate the demo blacklist knows, so the Staff screen can show the alert. */
-const DEMO_BLACKLIST: Record<string, string> = { '29A66666': 'Nợ phí gửi xe (demo)' }
+const DEMO_BLACKLIST: Record<string, string> = { '29A66666': 'Unpaid parking fees (demo)' }
 
 const iso = (t: number) => new Date(t).toISOString()
 const now = () => Date.now()
@@ -100,7 +101,7 @@ function sweep() {
   for (const r of reservations) {
     if (r.status === 'PendingDeposit' && r.depositDueAt && Date.parse(r.depositDueAt) <= t) {
       r.status = 'Expired'
-      r.cancelReason = 'Quá hạn thanh toán cọc'
+      r.cancelReason = 'Deposit not paid in time'
       r.pendingPayment = null
     } else if (r.status === 'Confirmed' && Date.parse(r.checkInUntil) <= t) {
       r.status = 'NoShow'
@@ -123,14 +124,14 @@ function refreshFlags(r: MockReservation) {
 
 function ownReservation(id: number) {
   const r = reservations.find((x) => x.id === id)
-  if (!r) mockFail(404, 'Không tìm thấy đặt chỗ. Reservation not found.')
+  if (!r) mockFail(404, 'Reservation not found.')
   return r
 }
 
 function checkArrival(arrival: number) {
-  if (Number.isNaN(arrival) || arrival <= now()) mockFail(400, 'Giờ đến phải ở tương lai. The arrival time must be in the future.')
+  if (Number.isNaN(arrival) || arrival <= now()) mockFail(400, 'The arrival time must be in the future.')
   if (arrival > now() + RULES.maxLeadHours * 60 * MINUTE)
-    mockFail(400, `Chỉ đặt trước tối đa ${RULES.maxLeadHours} giờ (BR-01). Arrival must be within ${RULES.maxLeadHours} hours.`)
+    mockFail(400, `Arrival must be within ${RULES.maxLeadHours} hours.`)
 }
 
 /** Slot ids of the demo 3D model are floorIndex * 1000 + bay number (layout.mock); the code is rebuilt from it. */
@@ -201,11 +202,11 @@ function applyPayment(payment: PaymentDTO): PaymentCallbackResultDTO {
     if (r && r.status === 'PendingDeposit') {
       r.status = 'Confirmed'
       r.confirmedAt = iso(now())
-      return { signatureValid: true, outcome: 'Applied', message: 'Giao dịch thành công', payment }
+      return { signatureValid: true, outcome: 'Applied', message: 'Transaction successful', payment }
     }
-    refund(payment, payment.amount, 'Hoàn cọc đến muộn / trùng')
+    refund(payment, payment.amount, 'Late or duplicate deposit refund')
     if (r) r.refundAmount += payment.amount
-    return { signatureValid: true, outcome: 'Refunded', message: 'Thanh toán đến muộn hoặc bị trùng nên đã được hoàn tự động.', payment }
+    return { signatureValid: true, outcome: 'Refunded', message: 'The payment came late or twice and was refunded.', payment }
   }
   const s = sessions.find((x) => x.id === payment.sessionId)
   if (s && s.status === 'PendingPayment') {
@@ -216,10 +217,10 @@ function applyPayment(payment: PaymentDTO): PaymentCallbackResultDTO {
       payment.exitWindowEndsAt = s.exitWindowEndsAt
       payment.exitPass = `exit.demo.${s.code}`
     }
-    return { signatureValid: true, outcome: 'Applied', message: 'Giao dịch thành công', payment }
+    return { signatureValid: true, outcome: 'Applied', message: 'Transaction successful', payment }
   }
-  refund(payment, payment.amount, 'Hoàn thanh toán trùng')
-  return { signatureValid: true, outcome: 'Refunded', message: 'Thanh toán trùng đã được hoàn tự động.', payment }
+  refund(payment, payment.amount, 'Duplicate payment refund')
+  return { signatureValid: true, outcome: 'Refunded', message: 'The duplicate payment was refunded automatically.', payment }
 }
 
 export const reservationMock = {
@@ -236,16 +237,18 @@ export const reservationMock = {
     return mockResponse(() => {
       sweep()
       const vehicle = vehicles.find((v) => v.vehicleId === request.vehicleId)
-      if (!vehicle) mockFail(400, 'Xe không thuộc tài khoản của bạn. This vehicle is not on your account.')
-      if (/motor/i.test(vehicle.vehicleType)) mockFail(400, 'Loại xe này không được đặt chỗ trước (BR-01). This vehicle type cannot be reserved.')
+      if (!vehicle) mockFail(400, 'This vehicle is not on your account.')
+      if (/motor/i.test(vehicle.vehicleType)) mockFail(400, 'This vehicle type cannot be reserved.')
       const arrival = Date.parse(request.arrivalTime)
       checkArrival(arrival)
-      const active = reservations.filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed')
-      if (active.length >= 2) mockFail(400, 'Mỗi tài khoản chỉ có tối đa 2 đặt chỗ hiệu lực. Reservation limit reached.')
-      if (active.some((r) => r.vehicleId === vehicle.vehicleId)) mockFail(400, 'Xe này đã có một đặt chỗ hiệu lực. This vehicle already has an active reservation.')
+      // BR-07: a checked-in booking still counts, and the vehicle is matched by plate
+      const active = reservations.filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn')
+      if (active.length >= 2) mockFail(400, 'Each account can have at most 2 active reservations.')
+      if (active.some((r) => r.vehicleId === vehicle.vehicleId || normalize(r.plateNumber ?? '') === normalize(vehicle.licensePlate)))
+        mockFail(400, `Vehicle ${vehicle.licensePlate} already has an active reservation.`)
       const slotId = Number(request.slotId)
       if (reservations.some((r) => r.lotKey === request.parkingLotId && r.slotId === slotId && (r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn')))
-        mockFail(409, 'Slot này vừa được người khác giữ chỗ. This slot was just taken by someone else.')
+        mockFail(409, 'This slot was just taken by someone else.')
 
       const lot = findMockLot(request.parkingLotId)
       const created: MockReservation = {
@@ -284,7 +287,7 @@ export const reservationMock = {
   update: (id: number, request: UpdateReservationRequest) =>
     mockResponse(() => {
       const r = refreshFlags(ownReservation(id))
-      if (!r.canChange) mockFail(400, 'Đã quá hạn đổi hoặc đặt chỗ chưa xác nhận. This reservation can no longer be changed.')
+      if (!r.canChange) mockFail(400, 'This reservation can no longer be changed.')
       if (request.arrivalTime) {
         const arrival = Date.parse(request.arrivalTime)
         checkArrival(arrival)
@@ -307,11 +310,11 @@ export const reservationMock = {
       } else if (r.status === 'Confirmed') {
         const amount = r.refundIfCancelledNow
         r.status = 'Cancelled'
-        refundDeposit(r, amount, 'Hoàn cọc hủy')
+        refundDeposit(r, amount, 'Cancellation refund')
       } else {
-        mockFail(400, 'Không thể hủy đặt chỗ này. This reservation can no longer be cancelled.')
+        mockFail(400, 'This reservation can no longer be cancelled.')
       }
-      r.cancelReason = reason || 'Khách hủy'
+      r.cancelReason = reason || 'Cancelled by the customer'
       r.cancelledBy = 'User'
       return refreshFlags(r)
     }),
@@ -319,14 +322,14 @@ export const reservationMock = {
   qr: (id: number) =>
     mockResponse<ReservationQrDTO>(() => {
       const r = ownReservation(id)
-      if (r.status !== 'Confirmed') mockFail(400, 'Mã QR chỉ có sau khi đặt cọc thành công. The QR code is issued once the deposit is paid.')
+      if (r.status !== 'Confirmed') mockFail(400, 'The QR code is issued once the deposit is paid.')
       return { reservationId: r.id, code: r.code, qrPayload: `rsv.demo.${r.id}`, validFrom: r.checkInFrom, validUntil: r.checkInUntil }
     }),
 
   payDeposit: (id: number, provider: PaymentProvider) =>
     mockResponse(() => {
       const r = refreshFlags(ownReservation(id))
-      if (r.status !== 'PendingDeposit') mockFail(400, 'Đặt chỗ không còn chờ cọc. This reservation is not waiting for a deposit.')
+      if (r.status !== 'PendingDeposit') mockFail(400, 'This reservation is not waiting for a deposit.')
       const payment = newPayment(r.depositAmount, provider, 'Deposit', 'App', { reservationId: r.id })
       r.pendingPayment = payment
       return payment
@@ -340,10 +343,10 @@ export const paymentMock = {
   handleReturn: (_provider: string, params: Record<string, string>) =>
     mockResponse<PaymentCallbackResultDTO>(() => {
       const payment = payments.find((p) => p.code === params.code)
-      if (!payment) return { signatureValid: false, outcome: 'NotFound', message: 'Không tìm thấy giao dịch demo.', payment: null }
+      if (!payment) return { signatureValid: false, outcome: 'NotFound', message: 'Demo payment not found.', payment: null }
       if (params.cancel === '1') {
         payment.status = 'Failed'
-        return { signatureValid: true, outcome: 'Failed', message: 'Khách hàng hủy giao dịch', payment }
+        return { signatureValid: true, outcome: 'Failed', message: 'The customer cancelled the transaction', payment }
       }
       return applyPayment(payment)
     }),
@@ -351,7 +354,7 @@ export const paymentMock = {
   get: (id: number) =>
     mockResponse(() => {
       const payment = payments.find((p) => p.id === id)
-      if (!payment) mockFail(404, 'Không tìm thấy giao dịch. Payment not found.')
+      if (!payment) mockFail(404, 'Payment not found.')
       return payment
     }),
 
@@ -359,7 +362,7 @@ export const paymentMock = {
   check: (id: number) =>
     mockResponse(() => {
       const payment = payments.find((p) => p.id === id)
-      if (!payment) mockFail(404, 'Không tìm thấy giao dịch. Payment not found.')
+      if (!payment) mockFail(404, 'Payment not found.')
       return applyPayment(payment)
     }),
 }
@@ -394,7 +397,7 @@ const open = (s: MockSession) => s.status === 'PendingEntry' || inside(s)
 
 function findSession(id: number) {
   const s = sessions.find((x) => x.id === id)
-  if (!s) mockFail(404, 'Không tìm thấy phiên gửi xe. Session not found.')
+  if (!s) mockFail(404, 'Session not found.')
   return s
 }
 
@@ -431,10 +434,10 @@ function quote(s: MockSession, exitPlate: string | undefined, mutate: boolean): 
     s.zeroFeeReason = zeroFeeReason
   }
   const alerts: GateAlertDTO[] = []
-  if (!s.hasPlate) alerts.push({ code: 'PHOTO_CHECK_REQUIRED', message: 'Xe không biển số: đối chiếu ảnh vào – ra.', blocking: true, canOverride: true, relatedSessionId: null })
+  if (!s.hasPlate) alerts.push({ code: 'PHOTO_CHECK_REQUIRED', message: 'Plate-less vehicle: compare the entry and exit photos.', blocking: true, canOverride: true, relatedSessionId: null })
   else if (exitPlate && normalize(exitPlate) !== normalize(s.plateNumber)) {
     if (mutate) s.plateMismatch = true
-    alerts.push({ code: 'PLATE_MISMATCH', message: `Biển số ra ${exitPlate} khác biển số vào ${s.plateNumber}.`, blocking: true, canOverride: true, relatedSessionId: null })
+    alerts.push({ code: 'PLATE_MISMATCH', message: `Exit plate ${exitPlate} differs from entry plate ${s.plateNumber}.`, blocking: true, canOverride: true, relatedSessionId: null })
   }
   return {
     session: { ...s },
@@ -466,8 +469,8 @@ export const gateMock = {
     mockResponse<GateDTO[]>(() => {
       void lotId
       return [
-        { id: 1, code: 'IN-1', name: 'Làn vào 1', direction: 'In' },
-        { id: 2, code: 'OUT-1', name: 'Làn ra 1', direction: 'Out' },
+        { id: 1, code: 'IN-1', name: 'Entry lane 1', direction: 'In' },
+        { id: 2, code: 'OUT-1', name: 'Exit lane 1', direction: 'Out' },
       ]
     }),
 
@@ -485,13 +488,12 @@ export const gateMock = {
     mockResponse(() => {
       const list = lotSessions(lotId).filter(open)
       const found = query.code ? list.find((s) => s.code === query.code?.trim()) : list.find((s) => normalize(s.plateNumber) === normalize(query.plate))
-      if (!found) mockFail(404, 'Không có phiên gửi xe đang mở. No open session found.')
+      if (!found) mockFail(404, 'No open session found.')
       return strip(found)
     }),
 
   checkIn: (lotId: string, request: CheckInRequest) =>
     mockResponse<CheckInResultDTO>(() => {
-      const list = lotSessions(lotId)
       const alerts: GateAlertDTO[] = []
       const overrides: string[] = []
       const alert = (codeName: string, message: string, cleared = false, canOverride = true, relatedSessionId: number | null = null) => {
@@ -500,37 +502,39 @@ export const gateMock = {
       }
       const plate = request.noPlate ? '' : (request.plateNumber ?? '').trim().toUpperCase()
       const key = normalize(plate)
-      if (!request.noPlate && !key) alert('PLATE_REQUIRED', 'Chưa có biển số; nhập tay hoặc chọn xe không biển số.', false, false)
+      if (!request.noPlate && !key) alert('PLATE_REQUIRED', 'Enter the plate or mark the vehicle as plate-less.', false, false)
       const confidence = request.anprConfidence == null ? 1 : request.anprConfidence > 1 ? request.anprConfidence / 100 : request.anprConfidence
       if (!request.noPlate && confidence < RULES.anprThreshold)
-        alert('LOW_CONFIDENCE', `ANPR chỉ tin cậy ${Math.round(confidence * 100)}%; kiểm tra lại biển số.`, request.plateConfirmed)
+        alert('LOW_CONFIDENCE', `ANPR is only ${Math.round(confidence * 100)}% confident; check the plate.`, request.plateConfirmed)
 
       let reservation: MockReservation | undefined
       if (!request.ignoreReservation && (request.reservationQr || request.reservationCode)) {
         const id = request.reservationQr?.startsWith('rsv.demo.') ? Number(request.reservationQr.slice(9)) : NaN
         reservation = reservations.find((r) => r.id === id || r.code === request.reservationCode?.trim())
         if (!reservation || reservation.status !== 'Confirmed') {
-          alert('RESERVATION_INVALID', 'Không tìm thấy đặt chỗ hợp lệ. Enter as walk-in instead.', false, true)
+          alert('RESERVATION_INVALID', reservation?.status === 'CheckedIn' ? 'This reservation has already checked in.' : 'Reservation not found or not confirmed. Enter as walk-in instead.', false, true)
           reservation = undefined
         } else if (now() < Date.parse(reservation.checkInFrom) || now() > Date.parse(reservation.checkInUntil)) {
-          alert('RESERVATION_OUTSIDE_WINDOW', 'Ngoài cửa sổ đến: chờ hoặc vào như vãng lai (đặt chỗ vẫn giữ).', false, true)
+          alert('RESERVATION_OUTSIDE_WINDOW', 'Outside the check-in window: wait, or enter as walk-in (the booking is kept).', false, true)
           reservation = undefined
         } else if (key && normalize(reservation.plateNumber ?? '') !== key) {
-          alert('RESERVATION_PLATE_MISMATCH', 'Biển số không khớp đặt chỗ; xác minh xe cùng tài khoản, cùng loại.', request.allowPlateMismatch)
+          alert('RESERVATION_PLATE_MISMATCH', 'The plate differs from the booking; verify it is a vehicle of the same account and type.', request.allowPlateMismatch)
         }
       }
 
-      if (key) {
-        const dup = list.find((s) => open(s) && s.hasPlate && normalize(s.plateNumber) === key)
-        if (dup) alert('DUPLICATE_SESSION', `Biển số đang có phiên mở ${dup.code}.`, false, false, dup.id)
-        if (DEMO_BLACKLIST[key]) alert('BLACKLISTED', `Biển số trong Blacklist: ${DEMO_BLACKLIST[key]}.`, request.allowBlacklisted)
+      // One vehicle is parked in one place: check every lot, by the typed plate and the booked one
+      const bookedKey = normalize(reservation?.plateNumber ?? '')
+      if (key || bookedKey) {
+        const dup = sessions.find((s) => open(s) && s.hasPlate && [key, bookedKey].filter(Boolean).includes(normalize(s.plateNumber)))
+        if (dup) alert('DUPLICATE_SESSION', `This vehicle is already parked (open session ${dup.code}).`, false, false, dup.id)
+        if (key && DEMO_BLACKLIST[key]) alert('BLACKLISTED', `Blacklisted plate: ${DEMO_BLACKLIST[key]}.`, request.allowBlacklisted)
       }
 
       const kind: 'car' | 'motorbike' = request.noPlate || request.vehicleTypeId === 3 ? 'motorbike' : 'car'
       const zone = counters(lotId).find((c) => (kind === 'car' ? c.vehicleTypeId === 1 : c.vehicleTypeId === 3))
-      if (!reservation && zone?.isFull) alert('ZONE_FULL', `${zone.zoneName} đã hết chỗ.`, request.allowWhenFull)
+      if (!reservation && zone?.isFull) alert('ZONE_FULL', `${zone.zoneName} is full.`, request.allowWhenFull)
 
-      if (overrides.length > 0 && !request.overrideReason?.trim()) mockFail(400, 'Cho xe vào khi có cảnh báo phải ghi lý do. Give a reason for the override.')
+      if (overrides.length > 0 && !request.overrideReason?.trim()) mockFail(400, 'Give a reason for the override.')
       if (alerts.some((a) => a.blocking)) return { outcome: 'Blocked', barrierOpen: false, alerts, session: null, ticket: null }
 
       const session: MockSession = {
@@ -570,10 +574,46 @@ export const gateMock = {
       return { outcome: 'Created', barrierOpen: true, alerts, session: strip(session), ticket: `tkt.demo.${session.code}` }
     }),
 
+  /** Entry lane: the booking behind a scanned QR or typed code, with the booked vehicle. */
+  async lookupReservation(lotId: string, query: { code?: string; qr?: string }): Promise<GateReservationLookupDTO> {
+    const vehicles = await profileMock.getVehicles()
+    return mockResponse(() => {
+      sweep()
+      const id = query.qr?.trim().startsWith('rsv.demo.') ? Number(query.qr.trim().slice(9)) : NaN
+      const wanted = query.code?.trim().toUpperCase()
+      if (!query.qr?.trim() && !wanted) mockFail(400, 'Scan the reservation QR or type its code.')
+      if (query.qr?.trim() && Number.isNaN(id)) mockFail(400, 'This reservation QR is not genuine.')
+      const r = reservations.find((x) => x.id === id || (wanted && x.code === wanted))
+      if (!r) mockFail(404, 'Reservation not found.')
+      if (r.lotKey !== lotId && String(r.parkingLotId) !== lotId) mockFail(400, 'This reservation is for another parking lot.')
+      const vehicle = vehicles.find((v) => v.vehicleId === r.vehicleId)
+      const parked = sessions.find((s) => open(s) && s.hasPlate && normalize(s.plateNumber) === normalize(r.plateNumber ?? ''))
+      let problem: string | null = null
+      if (r.status === 'CheckedIn') problem = 'This reservation has already checked in.'
+      else if (r.status !== 'Confirmed') problem = `This reservation is ${r.status} and cannot check in.`
+      else if (parked) problem = `This vehicle is already parked (session ${parked.code}).`
+      else if (now() < Date.parse(r.checkInFrom)) problem = 'Too early: check-in has not opened yet.'
+      else if (now() > Date.parse(r.checkInUntil)) problem = 'The hold has ended; the vehicle can only enter as a walk-in.'
+      const { lotKey: _lot, ...reservation } = refreshFlags(r)
+      return {
+        reservation,
+        vehicleTypeId: 1,
+        vehicleTypeName: vehicle?.vehicleType ?? 'Car',
+        vehicleBrand: vehicle?.brand ?? null,
+        vehicleModel: vehicle?.model ?? null,
+        vehicleColor: vehicle?.color ?? null,
+        customerName: 'Demo customer',
+        canCheckIn: problem == null,
+        problem,
+        openSessionCode: parked?.code ?? null,
+      }
+    })
+  },
+
   confirmEntry: (sessionId: number) =>
     mockResponse(() => {
       const s = findSession(sessionId)
-      if (s.status !== 'PendingEntry') mockFail(400, `Phiên đang ${s.status}.`)
+      if (s.status !== 'PendingEntry') mockFail(400, `The session is ${s.status}.`)
       s.status = 'Active'
       s.entryConfirmedAt = iso(now())
       const r = reservations.find((x) => x.id === s.reservationId)
@@ -584,7 +624,7 @@ export const gateMock = {
   cancelEntry: (sessionId: number) =>
     mockResponse(() => {
       const s = findSession(sessionId)
-      if (s.status !== 'PendingEntry') mockFail(400, `Phiên đang ${s.status}.`)
+      if (s.status !== 'PendingEntry') mockFail(400, `The session is ${s.status}.`)
       s.status = 'Cancelled'
       return strip(s)
     }),
@@ -594,7 +634,7 @@ export const gateMock = {
   cancelPayment: (sessionId: number) =>
     mockResponse(() => {
       const s = findSession(sessionId)
-      if (s.status !== 'PendingPayment') mockFail(400, 'Phiên không ở trạng thái chờ thanh toán.')
+      if (s.status !== 'PendingPayment') mockFail(400, 'The session is not waiting for payment.')
       s.status = 'Active'
       return strip(s)
     }),
@@ -603,8 +643,8 @@ export const gateMock = {
     mockResponse(() => {
       const s = findSession(sessionId)
       const q = quote(s, undefined, true)
-      if (q.amountDue <= 0) mockFail(400, 'Phiên đã được thanh toán hoặc phí 0đ. Nothing is due.')
-      if (amount < q.amountDue) mockFail(400, `Số tiền nhận ít hơn số phải trả (${q.amountDue}đ).`)
+      if (q.amountDue <= 0) mockFail(400, 'Nothing is due.')
+      if (amount < q.amountDue) mockFail(400, `Received less than the ${q.amountDue} VND due.`)
       const payment = newPayment(q.amountDue, 'VNPay', 'ParkingFee', prepaid ? 'Kiosk' : 'Lane', { sessionId: s.id })
       payment.provider = null
       payment.method = 'Cash'
@@ -615,7 +655,7 @@ export const gateMock = {
     mockResponse(() => {
       const s = findSession(sessionId)
       const q = quote(s, undefined, true)
-      if (q.amountDue <= 0) mockFail(400, 'Phiên đã được thanh toán hoặc phí 0đ. Nothing is due.')
+      if (q.amountDue <= 0) mockFail(400, 'Nothing is due.')
       return newPayment(q.amountDue, provider, 'ParkingFee', prepaid ? 'Kiosk' : 'Lane', { sessionId: s.id })
     }),
 
@@ -623,7 +663,7 @@ export const gateMock = {
     mockResponse<CheckoutResultDTO>(() => {
       const s = findSession(sessionId)
       const q = quote(s, request.plateNumber, true)
-      if (s.status !== 'Paid') mockFail(400, `Còn phải trả ${q.amountDue}đ.`)
+      if (s.status !== 'Paid') mockFail(400, `${q.amountDue} VND is still due.`)
       const left = q.alerts.filter((a) => a.blocking && !(a.code === 'PLATE_MISMATCH' ? request.allowPlateMismatch : request.photoChecked))
       if (left.length) return { session: strip(s), barrierOpen: false, depositRefund: 0, alerts: left }
       s.status = 'Completed'
@@ -633,7 +673,7 @@ export const gateMock = {
       if (r && r.status === 'CheckedIn') {
         r.status = 'Completed'
         depositRefund = q.depositRefund
-        refundDeposit(r, depositRefund, 'Hoàn phần dư cọc')
+        refundDeposit(r, depositRefund, 'Deposit remainder refund')
       }
       return { session: strip(s), barrierOpen: true, depositRefund, alerts: [] }
     }),

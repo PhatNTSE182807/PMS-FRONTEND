@@ -7,6 +7,7 @@ import type {
   CheckoutRequest,
   CheckoutResultDTO,
   GateDTO,
+  GateReservationLookupDTO,
   ParkingSessionDTO,
   PaymentDTO,
   PaymentProvider,
@@ -37,6 +38,13 @@ export const gateService = {
   /** Exit lane: the open session of a plate or a session code. */
   lookup(lotId: string, query: { plate?: string; code?: string; ticket?: string }): Promise<ParkingSessionDTO> {
     return mocked() ? gateMock.lookup(lotId, query) : http.get<ParkingSessionDTO>(`${lotPath(lotId)}/sessions/lookup`, { params: query })
+  },
+
+  /** Entry lane: the booking behind a scanned QR (`qr`) or a typed code, with the booked vehicle. */
+  lookupReservation(lotId: string, query: { code?: string; qr?: string }): Promise<GateReservationLookupDTO> {
+    return mocked()
+      ? gateMock.lookupReservation(lotId, query)
+      : http.get<GateReservationLookupDTO>(`${lotPath(lotId)}/reservations/lookup`, { params: query })
   },
 
   /** Runs every gate check: "Created" opens the barrier, "Blocked" lists what the Staff must resolve. */

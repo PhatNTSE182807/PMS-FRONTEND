@@ -74,3 +74,19 @@ export const useCancelPaymentRequest = () => useGateMutation((sessionId: number)
 export const usePayCash = () => useGateMutation(({ sessionId, amount, prepaid }: { sessionId: number; amount: number; prepaid?: boolean }) => gateService.payCash(sessionId, amount, prepaid))
 export const usePayOnline = () => useGateMutation(({ sessionId, provider, prepaid }: { sessionId: number; provider: PaymentProvider; prepaid?: boolean }) => gateService.payOnline(sessionId, provider, prepaid))
 export const useCheckout = () => useGateMutation(({ sessionId, request }: { sessionId: number; request: CheckoutRequest }) => gateService.checkout(sessionId, request))
+
+/**
+ * Entry lane: looks the reservation up as soon as a QR is scanned or a code typed. Anything starting
+ * with "RSV" is a code; anything else is the signed QR payload.
+ */
+export function useReservationLookup(lotId: string | undefined, entry: string) {
+  const value = entry.trim()
+  const isCode = /^RSV/i.test(value)
+  return useQuery({
+    queryKey: queryKeys.gate.reservation(lotId ?? '', value),
+    queryFn: () => gateService.lookupReservation(lotId!, isCode ? { code: value } : { qr: value }),
+    enabled: Boolean(lotId) && value.length >= 6,
+    retry: false,
+    staleTime: 10_000,
+  })
+}
