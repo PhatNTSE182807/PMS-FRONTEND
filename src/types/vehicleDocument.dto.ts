@@ -1,30 +1,15 @@
 /* Mirrors PMS.Application.Models.VehicleDocuments (VehicleDocumentsController /Users/profile/vehicles/{id}/documents). */
 
-/** Registration certificate (cà vẹt) or Citizen ID card (CCCD). */
+/** Vehicle registration certificate or Citizen ID card. */
 export type VehicleDocumentType = 'RegistrationCertificate' | 'CitizenId'
 export type VehicleDocumentSide = 'Front' | 'Back'
 
 /**
- * Draft: files being uploaded. Pending/Processing: the OCR job is running. AutoVerified: every field matched
- * with high confidence. NeedsReview: Staff decide. Approved/Rejected: final.
+ * Draft: files being uploaded. NeedsReview: submitted, Staff compare the papers by eye.
+ * Approved / Rejected: Staff decision. Pending, Processing and AutoVerified only appear on old checks
+ * made while papers were read by OCR (read them as NeedsReview / Approved).
  */
 export type VerificationStatus = 'Draft' | 'Pending' | 'Processing' | 'AutoVerified' | 'NeedsReview' | 'Approved' | 'Rejected'
-
-export type FieldResult = 'Match' | 'Mismatch' | 'Unreadable'
-
-/** One compared field: what was typed (or is in the profile) against what OCR read on the paper. */
-export interface VerificationFieldDTO {
-  document: VehicleDocumentType
-  /** plate, brand, model, color, ownerName, citizenId, fullName or dateOfBirth */
-  field: string
-  label: string
-  expected?: string | null
-  read?: string | null
-  result: FieldResult
-  /** 0..1 */
-  confidence: number
-  note?: string | null
-}
 
 export interface VehicleDocumentFileDTO {
   documentId: string
@@ -44,37 +29,47 @@ export interface VehicleVerificationDTO {
   licensePlate?: string | null
   status: VerificationStatus
   statusReason?: string | null
-  confidence?: number | null
-  fields: VerificationFieldDTO[]
   documents: VehicleDocumentFileDTO[]
-  /** "RegistrationCertificate/Back"-style entries still needed before submitting. */
+  /** "CitizenId/Back"-style entries still needed before submitting. */
   missingDocuments: string[]
   createdAt: string
   submittedAt?: string | null
-  processedAt?: string | null
   decidedAt?: string | null
   reviewNote?: string | null
   filesDeleteAt?: string | null
   filesDeletedAt?: string | null
 }
 
-export const DOCUMENT_SLOTS: { type: VehicleDocumentType; side: VehicleDocumentSide }[] = [
-  { type: 'RegistrationCertificate', side: 'Front' },
-  { type: 'RegistrationCertificate', side: 'Back' },
-  { type: 'CitizenId', side: 'Front' },
-  { type: 'CitizenId', side: 'Back' },
+/** Every file a registration needs: the front of the registration certificate, both sides of the Citizen ID card. */
+export const DOCUMENT_SLOTS: { type: VehicleDocumentType; side: VehicleDocumentSide; label: string }[] = [
+  { type: 'RegistrationCertificate', side: 'Front', label: 'Registration certificate · Front' },
+  { type: 'CitizenId', side: 'Front', label: 'Citizen ID card · Front' },
+  { type: 'CitizenId', side: 'Back', label: 'Citizen ID card · Back' },
 ]
+
+/** Readable name of one uploaded file, e.g. "Citizen ID card · Back". */
+export const documentLabel = (type: VehicleDocumentType, side: VehicleDocumentSide) =>
+  `${type === 'CitizenId' ? 'Citizen ID card' : 'Registration certificate'} · ${side}`
 
 /** Accepted by the API: JPEG, PNG or PDF up to 10 MB. */
 export const DOCUMENT_ACCEPT = 'image/jpeg,image/png,application/pdf'
 export const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
 
+/** Waiting for a Staff decision (legacy OCR statuses included). */
+export const isWaitingForStaff = (status: VerificationStatus | null | undefined) =>
+  status === 'NeedsReview' || status === 'Pending' || status === 'Processing'
+
+/** Approved by Staff (or by OCR before it was removed): the vehicle can be booked. */
+export const isApproved = (status: VerificationStatus | null | undefined) => status === 'Approved' || status === 'AutoVerified'
+
 /* Staff review (VehicleVerificationsController /vehicle-verifications, roles Staff, Manager, Admin). */
 
-/** A check in the Staff review queue, with the account and vehicle data it was compared against. */
+/** A registration in the Staff review queue, with the account and vehicle data to compare the papers with. */
 export interface VehicleVerificationReviewDTO extends VehicleVerificationDTO {
   customerName?: string | null
   customerCitizenId?: string | null
+  /** "YYYY-MM-DD" from the customer's profile. */
+  customerDateOfBirth?: string | null
   vehicleType?: string | null
   brand?: string | null
   model?: string | null
@@ -83,7 +78,7 @@ export interface VehicleVerificationReviewDTO extends VehicleVerificationDTO {
   ownerCitizenId?: string | null
 }
 
-/** Staff decision on a NeedsReview check; `note` is required when rejecting (shown to the customer). */
+/** Staff decision on a waiting registration; `note` is required when rejecting (shown to the customer). */
 export interface ReviewVehicleVerificationRequest {
   approve: boolean
   note?: string | null

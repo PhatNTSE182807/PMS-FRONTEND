@@ -22,7 +22,7 @@ export const STAFF_NAV: AdminNavItem[] = [
   { to: '/staff/checkout', label: 'Payment & Checkout POS', icon: CreditCard },
   { to: '/staff/exceptions', label: 'Exceptions & Alerts', icon: TriangleAlert },
   { to: '/staff/cash-tally', label: 'End-of-Day Cash Tally', icon: Vault },
-  { to: '/staff/verifications', label: 'Vehicle Verification', icon: ScanText },
+  { to: '/staff/verifications', label: 'Vehicle Registrations', icon: ScanText },
 ]
 
 export const ADMIN_NAV: AdminNavItem[] = [

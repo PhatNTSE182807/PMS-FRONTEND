@@ -38,7 +38,10 @@ interface ReserveBayPanelProps {
 export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelProps) {
   const now = useNow(1000)
   const { data: vehicles = [] } = useVehicles()
-  const cars = useMemo(() => vehicles.filter((v) => v.isActive !== false && !/motor/i.test(v.vehicleType)), [vehicles])
+  const allCars = useMemo(() => vehicles.filter((v) => v.isActive !== false && !/motor/i.test(v.vehicleType)), [vehicles])
+  // Only a car whose papers Staff approved can be booked (the API refuses the others)
+  const cars = useMemo(() => allCars.filter((v) => v.verificationStatus === 'Approved'), [allCars])
+  const waitingCars = allCars.length - cars.length
   const [vehicleId, setVehicleId] = useState('')
   const [arrival, setArrival] = useState(() => toLocalInput(defaultArrival()))
   const [held, setHeld] = useState<ReservationDTO | null>(null)
@@ -99,13 +102,18 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
       <label className="cx-field">
         <span className="cx-field__label">Vehicle</span>
         <select className="cx-input" value={chosenVehicle} onChange={(e) => setVehicleId(e.target.value)} disabled={cars.length === 0}>
-          {cars.length === 0 && <option value="">No car in your profile yet</option>}
+          {cars.length === 0 && <option value="">{allCars.length ? 'No approved car yet' : 'No car in your profile yet'}</option>}
           {cars.map((v) => (
             <option key={v.vehicleId} value={v.vehicleId}>
               {v.licensePlate} • {v.brand} {v.model}
             </option>
           ))}
         </select>
+        {waitingCars > 0 && (
+          <span className="cx-field__hint">
+            {waitingCars} {waitingCars === 1 ? 'car is' : 'cars are'} not listed: waiting for Staff to approve the papers.
+          </span>
+        )}
       </label>
       <label className="cx-field">
         <span className="cx-field__label">
@@ -125,7 +133,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
         <CircleCheck aria-hidden /> {create.isPending ? 'Holding the bay…' : `Reserve bay ${slotCode} • 30,000 VND deposit`}
       </button>
       {cars.length === 0 && (
-        <Link to="/me/vehicles" className="cx-link">Register a car to book</Link>
+        <Link to="/me/vehicles" className="cx-link">{allCars.length ? 'Check your vehicle papers' : 'Register a car to book'}</Link>
       )}
     </div>
   )

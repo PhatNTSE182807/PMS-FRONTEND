@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useAddVehicle, useDeleteVehicle, useProfile, useSetDefaultVehicle, useVehicles, useVehicleTypes } from '@/hooks/useProfile'
 import { useVehicleDocumentDraft } from '@/hooks/useVehicleDocuments'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
+import { DOCUMENT_SLOTS } from '@/types/vehicleDocument.dto'
 
 /** Used while the vehicle-type list loads, or if it cannot be fetched (same ids as the backend seed). */
 const FALLBACK_TYPES: VehicleTypeDTO[] = [
@@ -53,10 +54,19 @@ function swatchColor(name: string): string {
   return match ?? '#41484c'
 }
 
+/** Registration status chip of a vehicle in the fleet list. */
+const REGISTRATION_CHIP: Record<string, { label: string; className: string }> = {
+  Approved: { label: 'Approved', className: '' },
+  NeedsReview: { label: 'Pending review', className: 'cx-chip--gold' },
+  Rejected: { label: 'Rejected', className: 'cx-chip--red' },
+  missing: { label: 'Papers missing', className: 'cx-chip--red' },
+}
+
 function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () => void }) {
   const setDefault = useSetDefaultVehicle()
   const remove = useDeleteVehicle()
   const Icon = KIND_ICON[vehicleKind({ name: vehicle.vehicleType })]
+  const chip = REGISTRATION_CHIP[vehicle.verificationStatus && vehicle.verificationStatus !== 'Draft' ? vehicle.verificationStatus : 'missing']
 
   return (
     <div className="cx-mini-vehicle">
@@ -64,6 +74,7 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
       <div className="cx-mini-vehicle__text">
         <strong>{vehicleTitle(vehicle)}</strong>
         <span className="cx-mono">{vehicle.licensePlate}</span>
+        <span className={`cx-chip ${chip.className}`} title={vehicle.verificationNote ?? undefined}>{chip.label}</span>
       </div>
       {vehicle.isDefault ? (
         <span className="cx-chip cx-chip--gold"><Star aria-hidden /> Primary</span>
@@ -86,7 +97,7 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
         type="button"
         className="cx-icon-btn"
         aria-label={`Papers of ${vehicle.licensePlate}`}
-        title="Upload & verify papers"
+        title="Papers and review status"
         onClick={onPapers}
       >
         <FileCheck2 aria-hidden />
@@ -124,7 +135,7 @@ export default function RegisterVehiclePage() {
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [error, setError] = useState('')
-  // Cà vẹt + CCCD photos, and the vehicle they belong to (null: the one being registered)
+  // Registration certificate + Citizen ID photos, and the vehicle they belong to (null: the one being registered)
   const papers = useVehicleDocumentDraft()
   const [papersVehicle, setPapersVehicle] = useState<VehicleDTO | null>(null)
   const typeId = form.vehicleTypeId || types[0]?.id
@@ -137,7 +148,9 @@ export default function RegisterVehiclePage() {
   const citizenId = (form.citizenId ?? profile?.citizenId ?? '').trim()
   const citizenIdValid = CITIZEN_ID_PATTERN.test(citizenId)
 
-  const filled = [plateValid, Boolean(type), Boolean(form.brand.trim()), Boolean(form.model.trim()), Boolean(form.color.trim()), citizenIdValid, form.consent]
+  // The papers panel holds a fresh set only while it is not showing an existing vehicle
+  const newPapersComplete = papersVehicle === null && papers.complete
+  const filled = [plateValid, Boolean(type), Boolean(form.brand.trim()), Boolean(form.model.trim()), Boolean(form.color.trim()), citizenIdValid, newPapersComplete, form.consent]
   const progress = Math.round((filled.filter(Boolean).length / filled.length) * 100)
 
   const submit = (e: FormEvent) => {
@@ -146,11 +159,12 @@ export default function RegisterVehiclePage() {
     if (!plateValid) return setError('Enter a valid Vietnamese plate number, for example 51K-992.88.')
     if (!form.brand.trim() || !form.model.trim()) return setError('Enter the manufacturer and the model.')
     if (!citizenIdValid) return setError('Enter the 12-digit Citizen ID of the owner on the vehicle papers.')
+    // Every registration needs its papers: Staff compare them before the vehicle can be used
+    if (papersVehicle !== null)
+      return setError('The papers panel shows another vehicle. Click "New vehicle" and add the papers for this one.')
+    if (!papers.complete)
+      return setError('Add the front of the registration certificate and both sides of the Citizen ID card.')
     if (!form.consent) return setError('Please confirm that you own or are authorised to drive this vehicle.')
-    // Photos chosen for an existing vehicle stay with it; only a fresh set goes with the new vehicle
-    const withPapers = papersVehicle === null && papers.chosen > 0
-    if (withPapers && !papers.complete)
-      return setError('Add the front and back of both papers, or remove them and upload them later.')
 
     addVehicle.mutate(
       {
@@ -164,20 +178,14 @@ export default function RegisterVehiclePage() {
       },
       {
         onSuccess: async (vehicle) => {
-          toast.success(`${vehicle.licensePlate} registered. Gates will recognise it on your next visit.`)
           setForm(EMPTY_FORM)
-          if (!withPapers) {
-            if (papersVehicle) papers.reset()
-            setPapersVehicle(null)
-            return
-          }
-          // Then the papers: upload with progress, submit, and follow the OCR result on this panel
+          // Then the papers: upload with progress, submit to Staff, and follow the decision on this panel
           setPapersVehicle(vehicle)
           try {
-            await papers.uploadAndVerify(vehicle.vehicleId)
-            toast.success('Papers uploaded. Reading them now…')
+            await papers.uploadAndSubmit(vehicle.vehicleId)
+            toast.success(`${vehicle.licensePlate} registered. Staff will check its papers before it can be booked.`)
           } catch (err) {
-            setError(getErrorMessage(err, 'The vehicle is registered, but its papers could not be uploaded. Try again below.'))
+            setError(getErrorMessage(err, 'The vehicle is saved, but its papers could not be uploaded. Send them again below.'))
           }
         },
         onError: (err) => setError(getErrorMessage(err, 'Could not register the vehicle.')),
@@ -318,7 +326,7 @@ export default function RegisterVehiclePage() {
               </div>
 
               <div className="cx-field">
-                <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID (CCCD)</label>
+                <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID</label>
                 <div className="cx-control">
                   <span className="cx-control__icon"><IdCard aria-hidden /></span>
                   <input
@@ -381,9 +389,9 @@ export default function RegisterVehiclePage() {
             <div className="cx-form">
               <p className="cx-note">
                 <Info aria-hidden />
-                Add the front and back of the registration certificate and of your Citizen ID card.
-                We read them automatically and compare them with this form and your profile; anything unclear goes to
-                our Staff. Your plate works at the gates as soon as you register.
+                Required: the front of the registration certificate and both sides of your Citizen ID card.
+                Our Staff compare them with this form and your profile, then approve the vehicle. You can book
+                with it once it is approved.
               </p>
 
               <VehicleDocumentsPanel
@@ -411,7 +419,7 @@ export default function RegisterVehiclePage() {
                   Vehicle <strong>{[form.brand, form.model].map((s) => s.trim()).filter(Boolean).join(' ') || '—'}</strong>
                 </div>
                 <div className="cx-summary__row">
-                  Papers <strong className={papers.complete ? 'is-teal' : undefined}>{papersVehicle ? '—' : `${papers.chosen}/4 sides`}</strong>
+                  Papers <strong className={newPapersComplete ? 'is-teal' : undefined}>{papersVehicle ? '—' : `${papers.chosen}/${DOCUMENT_SLOTS.length} files`}</strong>
                 </div>
                 <div className="cx-summary__progress">
                   <span style={{ width: `${progress}%` }} />
@@ -431,7 +439,7 @@ export default function RegisterVehiclePage() {
               </div>
 
               <p className="cx-fine">
-                <ShieldCheck aria-hidden /> Once registered, barrier gates recognise your plate automatically and open in under a second.
+                <ShieldCheck aria-hidden /> Once Staff approve the vehicle, barrier gates recognise your plate automatically.
               </p>
             </div>
           </section>

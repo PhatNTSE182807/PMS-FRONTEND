@@ -7,33 +7,35 @@ import { vehicleVerificationRealtime } from '@/api/vehicleVerificationRealtime'
 import {
   DOCUMENT_MAX_BYTES,
   DOCUMENT_SLOTS,
+  isWaitingForStaff,
   type VehicleDocumentSide,
   type VehicleDocumentType,
   type VehicleVerificationDTO,
 } from '@/types/vehicleDocument.dto'
 
-const RUNNING = new Set(['Pending', 'Processing'])
-
 /**
- * The vehicle's latest paper check. While OCR runs it refreshes on every SignalR push and, as a
- * fallback (and in demo mode, which has no hub), every 1.5 s.
+ * The vehicle's latest paper check. While it waits for Staff it refreshes on every SignalR push
+ * (the vehicle list too, since it shows the registration status) and, without a hub (demo mode),
+ * every 10 s.
  */
 export function useVehicleVerification(vehicleId: string | null) {
   const queryClient = useQueryClient()
+  const live = vehicleVerificationRealtime.isAvailable()
   const query = useQuery({
     queryKey: queryKeys.vehicleDocuments.latest(vehicleId ?? ''),
     queryFn: () => vehicleDocumentService.getLatest(vehicleId!),
     enabled: Boolean(vehicleId),
-    refetchInterval: (q) => (RUNNING.has(q.state.data?.status ?? '') ? 1500 : false),
+    refetchInterval: (q) => (!live && isWaitingForStaff(q.state.data?.status) ? 10_000 : false),
   })
 
   useEffect(() => {
-    if (!vehicleId || !vehicleVerificationRealtime.isAvailable()) return
+    if (!vehicleId || !live) return
     return vehicleVerificationRealtime.subscribe((event) => {
-      if (event.vehicleId.toLowerCase() === vehicleId.toLowerCase())
-        void queryClient.invalidateQueries({ queryKey: queryKeys.vehicleDocuments.latest(vehicleId) })
+      if (event.vehicleId.toLowerCase() !== vehicleId.toLowerCase()) return
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vehicleDocuments.latest(vehicleId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile.vehicles() })
     })
-  }, [vehicleId, queryClient])
+  }, [vehicleId, live, queryClient])
 
   return query
 }
@@ -63,8 +65,9 @@ const emptySlots = () =>
   Object.fromEntries(DOCUMENT_SLOTS.map((s) => [slotKey(s.type, s.side), EMPTY_SLOT])) as Record<SlotKey, DocumentSlotState>
 
 /**
- * The four photos chosen on the page (cà vẹt front/back, CCCD front/back), kept in the browser until
- * `uploadAndVerify` sends them to a vehicle, shows each upload's progress and submits the check.
+ * The three photos chosen on the page (registration certificate front, Citizen ID front and back),
+ * kept in the browser until `uploadAndSubmit` sends them to a vehicle, shows each upload's progress
+ * and submits them to the Staff review queue.
  */
 export function useVehicleDocumentDraft() {
   const queryClient = useQueryClient()
@@ -106,11 +109,11 @@ export function useVehicleDocumentDraft() {
   const hasNew = Object.values(slots).some((s) => s.file && !s.uploaded)
 
   /**
-   * Uploads the chosen photos, then submits the check. Photos already sent are skipped only while
-   * the server still holds them in an open draft; after a decision every side starts a new check.
-   * Returns the check, or throws with a readable message.
+   * Uploads the chosen photos, then submits them for Staff review. Photos already sent are skipped
+   * only while the server still holds them in an open draft; after a rejection every photo starts a
+   * new check. Returns the check, or throws with a readable message.
    */
-  const uploadAndVerify = useCallback(
+  const uploadAndSubmit = useCallback(
     async (vehicleId: string): Promise<VehicleVerificationDTO> => {
       setBusy(true)
       try {
@@ -132,6 +135,8 @@ export function useVehicleDocumentDraft() {
 
         const latest = await vehicleDocumentService.submit(vehicleId)
         queryClient.setQueryData(queryKeys.vehicleDocuments.latest(vehicleId), latest)
+        // The vehicle list shows the new "waiting for Staff" status
+        void queryClient.invalidateQueries({ queryKey: queryKeys.profile.vehicles() })
         return latest
       } finally {
         setBusy(false)
@@ -140,7 +145,7 @@ export function useVehicleDocumentDraft() {
     [patch, queryClient],
   )
 
-  return { slots, choose, reset, chosen, complete, hasNew, busy, uploadAndVerify }
+  return { slots, choose, reset, chosen, complete, hasNew, busy, uploadAndSubmit }
 }
 
 export type VehicleDocumentDraft = ReturnType<typeof useVehicleDocumentDraft>

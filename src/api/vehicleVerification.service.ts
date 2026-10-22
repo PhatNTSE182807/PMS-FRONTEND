@@ -11,9 +11,9 @@ const base = '/vehicle-verifications'
 // Served by the same PMS.API service as the customer's paper upload, so it follows the profile mock switch
 const mocked = () => isMockService('profile')
 
-/** Staff review of vehicle paper checks that OCR could not verify (SRS FR-VER-03/04). */
+/** Staff review of new vehicle registrations: compare the papers, then approve or reject (SRS FR-VER-03/04). */
 export const vehicleVerificationService = {
-  /** Checks with the given status (the API defaults to NeedsReview), oldest first. */
+  /** Registrations with the given status: NeedsReview (default, oldest first), Approved or Rejected (newest first). */
   getQueue(status: VerificationStatus = 'NeedsReview'): Promise<VehicleVerificationReviewDTO[]> {
     return mocked()
       ? vehicleVerificationMock.getQueue(status)
@@ -37,7 +37,7 @@ export const vehicleVerificationService = {
     }
   },
 
-  /** Approves or rejects a NeedsReview check; the API refuses a rejection without a note. */
+  /** Approves or rejects a waiting registration; the API refuses a rejection without a note. */
   review(verificationId: string, request: ReviewVehicleVerificationRequest): Promise<VehicleVerificationReviewDTO> {
     return mocked()
       ? vehicleVerificationMock.review(verificationId, request)

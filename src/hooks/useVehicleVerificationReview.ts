@@ -25,7 +25,7 @@ function useReviewRealtime() {
   return live
 }
 
-/** Checks with `status`, oldest first. Live through SignalR; polled every 10 s without a hub. */
+/** Registrations with `status` (waiting ones oldest first). Live through SignalR; polled every 10 s without a hub. */
 export function useVerificationQueue(status: VerificationStatus) {
   const live = useReviewRealtime()
   return useQuery({
@@ -35,7 +35,7 @@ export function useVerificationQueue(status: VerificationStatus) {
   })
 }
 
-/** One check with its OCR fields, photos and the account and vehicle data it was compared against. */
+/** One registration with its photos and the account and vehicle data to compare them with. */
 export function useVerificationDetail(verificationId: string | null) {
   return useQuery({
     queryKey: queryKeys.vehicleVerifications.detail(verificationId ?? ''),

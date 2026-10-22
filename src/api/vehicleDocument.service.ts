@@ -7,7 +7,7 @@ const base = SERVICE_PATHS.profile
 const mocked = () => isMockService('profile')
 const documentsUrl = (vehicleId: string) => `${base}/vehicles/${vehicleId}/documents`
 
-/** Upload of a vehicle's papers (cà vẹt + CCCD) and their OCR verification. Same backend service as the profile. */
+/** Upload of a vehicle's papers (registration certificate + Citizen ID) for Staff review. Same backend service as the profile. */
 export const vehicleDocumentService = {
   /** The vehicle's latest check, or null when no papers were uploaded yet. */
   getLatest(vehicleId: string): Promise<VehicleVerificationDTO | null> {
@@ -16,7 +16,7 @@ export const vehicleDocumentService = {
       : http.get<VehicleVerificationDTO | null>(documentsUrl(vehicleId))
   },
 
-  /** Uploads (or replaces) one side; `onProgress` receives 0..100. */
+  /** Uploads (or replaces) one paper side; `onProgress` receives 0..100. */
   upload(
     vehicleId: string,
     type: VehicleDocumentType,
@@ -34,7 +34,7 @@ export const vehicleDocumentService = {
     })
   },
 
-  /** Submits the four sides; OCR runs in the background. */
+  /** Submits the uploaded papers to the Staff review queue. */
   submit(vehicleId: string): Promise<VehicleVerificationDTO> {
     return mocked()
       ? vehicleDocumentMock.submit(vehicleId)

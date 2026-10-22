@@ -1958,6 +1958,28 @@
   color: var(--cx-on-variant);
 }
 
+/* Registration status chip under the plate: approved, pending review, rejected or papers missing */
+.cx-mini-vehicle__text .cx-chip {
+  display: flex;
+  width: fit-content;
+  margin-top: 0.3rem;
+  font-size: 0.62rem;
+  color: #6fdba8;
+}
+
+.cx-mini-vehicle__text .cx-chip--gold {
+  color: var(--cx-gold);
+}
+
+.cx-mini-vehicle__text .cx-chip--red {
+  color: var(--cx-error);
+}
+
+.cx-chip--red {
+  background: rgba(255, 180, 171, 0.12);
+  color: var(--cx-error);
+}
+
 /* ---------- Footer ---------- */
 .cx-footer {
   padding: 2.5rem 0 2rem;

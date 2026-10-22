@@ -34,6 +34,7 @@ let vehicles: VehicleDTO[] = [
     citizenId: DEMO_CITIZEN_ID,
     isDefault: true,
     isActive: true,
+    verificationStatus: 'Approved',
     createdAt: now,
   },
   {
@@ -47,6 +48,7 @@ let vehicles: VehicleDTO[] = [
     citizenId: DEMO_CITIZEN_ID,
     isDefault: false,
     isActive: true,
+    verificationStatus: 'Approved',
     createdAt: now,
   },
 ]
@@ -91,6 +93,9 @@ function toVehicle(command: CreateVehicleCommand, existing?: VehicleDTO): Vehicl
     citizenId: command.citizenId?.trim() || existing?.citizenId || currentProfile().citizenId,
     isDefault: command.isDefault,
     isActive: true,
+    // A new vehicle has no papers yet; an edit keeps the registration status
+    verificationStatus: existing?.verificationStatus ?? null,
+    verificationNote: existing?.verificationNote ?? null,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
     updatedAt: existing ? new Date().toISOString() : null,
   }
@@ -98,6 +103,11 @@ function toVehicle(command: CreateVehicleCommand, existing?: VehicleDTO): Vehicl
 
 function applyDefault(vehicleId: string) {
   vehicles = vehicles.map((v) => ({ ...v, isDefault: v.vehicleId === vehicleId }))
+}
+
+/** Called by the papers mock when a check is submitted or decided, like the API's status on the vehicle list. */
+export function setDemoVehicleRegistration(vehicleId: string, status: VehicleDTO['verificationStatus'], note: string | null = null) {
+  vehicles = vehicles.map((v) => (v.vehicleId === vehicleId ? { ...v, verificationStatus: status, verificationNote: note } : v))
 }
 
 export const profileMock = {

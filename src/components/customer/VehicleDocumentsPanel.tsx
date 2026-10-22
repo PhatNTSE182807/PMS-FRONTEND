@@ -4,13 +4,12 @@ import {
   CircleAlert,
   CircleCheck,
   CircleHelp,
+  Clock,
   CloudUpload,
   Eye,
   FileText,
-  Loader2,
   RefreshCw,
-  ScanText,
-  ShieldAlert,
+  Send,
   ShieldCheck,
   X,
 } from 'lucide-react'
@@ -19,20 +18,23 @@ import { vehicleDocumentService } from '@/api/vehicleDocument.service'
 import { slotKey, useVehicleVerification, type DocumentSlotState, type VehicleDocumentDraft } from '@/hooks/useVehicleDocuments'
 import {
   DOCUMENT_ACCEPT,
-  type FieldResult,
+  DOCUMENT_SLOTS,
+  documentLabel,
+  isApproved,
+  isWaitingForStaff,
   type VehicleDocumentSide,
   type VehicleDocumentType,
   type VehicleVerificationDTO,
-  type VerificationStatus,
 } from '@/types/vehicleDocument.dto'
 import '@/styles/vehicle-documents.css'
 
-const PAPERS: { type: VehicleDocumentType; title: string }[] = [
-  { type: 'RegistrationCertificate', title: 'Registration certificate' },
-  { type: 'CitizenId', title: 'Citizen ID card' },
+/** The papers asked for, each with the sides needed: only the front of the registration certificate. */
+const PAPERS: { type: VehicleDocumentType; title: string; hint: string }[] = [
+  { type: 'RegistrationCertificate', title: 'Registration certificate', hint: 'Front side only' },
+  { type: 'CitizenId', title: 'Citizen ID card', hint: 'Front and back' },
 ]
 
-const SIDE_LABEL: Record<VehicleDocumentSide, string> = { Front: 'Front', Back: 'Back' }
+const sidesOf = (type: VehicleDocumentType) => DOCUMENT_SLOTS.filter((s) => s.type === type).map((s) => s.side)
 
 const formatSize = (bytes: number) =>
   bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -57,6 +59,7 @@ function DocumentSlot({
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const id = `doc-${type}-${side}`
+  const label = documentLabel(type, side)
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault()
@@ -81,6 +84,7 @@ function DocumentSlot({
         accept={DOCUMENT_ACCEPT}
         className="vd-slot__input"
         disabled={disabled}
+        aria-label={`Upload ${label}`}
         onChange={(e) => {
           onChoose(e.target.files?.[0] ?? null)
           e.target.value = ''
@@ -90,16 +94,16 @@ function DocumentSlot({
       {state.file ? (
         <>
           <div className="vd-slot__preview">
-            {state.previewUrl ? <img src={state.previewUrl} alt={`${type} ${side} preview`} /> : <FileText aria-hidden />}
+            {state.previewUrl ? <img src={state.previewUrl} alt={`${label} preview`} /> : <FileText aria-hidden />}
             {state.uploaded && <span className="vd-slot__badge" title="Uploaded"><CircleCheck aria-hidden /></span>}
           </div>
           <div className="vd-slot__meta">
-            <span className="vd-slot__side">{SIDE_LABEL[side]}</span>
+            <span className="vd-slot__side">{side} side</span>
             <span className="vd-slot__name" title={state.file.name}>{state.file.name}</span>
             <span className="vd-slot__size">{formatSize(state.file.size)}</span>
           </div>
           {!disabled && !state.uploaded && (
-            <button type="button" className="vd-slot__remove" aria-label={`Remove ${side.toLowerCase()} side`} onClick={() => onChoose(null)}>
+            <button type="button" className="vd-slot__remove" aria-label={`Remove ${label}`} onClick={() => onChoose(null)}>
               <X aria-hidden />
             </button>
           )}
@@ -112,7 +116,7 @@ function DocumentSlot({
       ) : (
         <label htmlFor={id} className="vd-slot__empty">
           <CloudUpload aria-hidden />
-          <strong>{SIDE_LABEL[side]}</strong>
+          <strong>{side} side</strong>
           <small>Drop or click · JPEG, PNG, PDF ≤ 10 MB</small>
         </label>
       )}
@@ -121,41 +125,24 @@ function DocumentSlot({
   )
 }
 
-const STATUS_VIEW: Record<VerificationStatus, { title: string; tone: 'ok' | 'warn' | 'bad' | 'busy' | 'muted'; icon: typeof ShieldCheck }> = {
-  Draft: { title: 'Papers not submitted yet', tone: 'muted', icon: CircleHelp },
-  Pending: { title: 'Queued for reading…', tone: 'busy', icon: Loader2 },
-  Processing: { title: 'Reading your papers (OCR)…', tone: 'busy', icon: Loader2 },
-  AutoVerified: { title: 'Verified automatically', tone: 'ok', icon: ShieldCheck },
-  NeedsReview: { title: 'Waiting for Staff review', tone: 'warn', icon: ShieldAlert },
-  Approved: { title: 'Approved by Staff', tone: 'ok', icon: ShieldCheck },
-  Rejected: { title: 'Rejected', tone: 'bad', icon: CircleAlert },
+type Tone = 'ok' | 'warn' | 'bad' | 'muted'
+
+/** Banner of a registration's status, as the customer sees it. */
+function statusView(status: VehicleVerificationDTO['status']): { title: string; tone: Tone; icon: typeof ShieldCheck } {
+  if (isApproved(status)) return { title: 'Approved by Staff', tone: 'ok', icon: ShieldCheck }
+  if (isWaitingForStaff(status)) return { title: 'Waiting for Staff review', tone: 'warn', icon: Clock }
+  if (status === 'Rejected') return { title: 'Registration rejected', tone: 'bad', icon: CircleAlert }
+  return { title: 'Papers not submitted yet', tone: 'muted', icon: CircleHelp }
 }
 
-const RESULT_VIEW: Record<FieldResult, { label: string; className: string }> = {
-  Match: { label: 'Matched', className: 'vd-chip--ok' },
-  Mismatch: { label: 'Mismatch', className: 'vd-chip--bad' },
-  Unreadable: { label: 'Unreadable', className: 'vd-chip--warn' },
-}
-
-/**
- * The OCR outcome: overall status, then every compared field per paper.
- * `loadFile` fetches an uploaded file; it defaults to the customer's own endpoint, and the Staff
- * review screen passes the reviewer endpoint instead.
- */
-export function VerificationResult({
-  verification,
-  loadFile,
-}: {
-  verification: VehicleVerificationDTO
-  loadFile?: (documentId: string) => Promise<Blob>
-}) {
-  const view = STATUS_VIEW[verification.status]
+/** The registration status of a vehicle: the decision, the Staff note and the uploaded files. */
+export function RegistrationStatus({ verification }: { verification: VehicleVerificationDTO }) {
+  const view = statusView(verification.status)
   const Icon = view.icon
-  const running = view.tone === 'busy'
 
   const openFile = async (documentId: string) => {
     try {
-      const blob = loadFile ? await loadFile(documentId) : await vehicleDocumentService.getFile(verification.vehicleId, documentId)
+      const blob = await vehicleDocumentService.getFile(verification.vehicleId, documentId)
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank', 'noopener')
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
@@ -167,53 +154,13 @@ export function VerificationResult({
   return (
     <div className={`vd-result vd-result--${view.tone}`} aria-live="polite">
       <div className="vd-result__head">
-        <Icon className={running ? 'vd-spin' : undefined} aria-hidden />
+        <Icon aria-hidden />
         <div>
           <strong>{view.title}</strong>
           {verification.statusReason && <p>{verification.statusReason}</p>}
           {verification.reviewNote && <p>Staff note: {verification.reviewNote}</p>}
         </div>
-        {verification.confidence != null && !running && (
-          <span className="vd-result__confidence" title="Lowest confidence among the compared fields">
-            {Math.round(verification.confidence * 100)}%
-          </span>
-        )}
       </div>
-
-      {verification.fields.length > 0 &&
-        PAPERS.map((paper) => {
-          const fields = verification.fields.filter((f) => f.document === paper.type)
-          if (fields.length === 0) return null
-          return (
-            <div key={paper.type} className="vd-fields">
-              <span className="vd-fields__title">{paper.title}</span>
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Field</th>
-                    <th scope="col">{paper.type === 'CitizenId' ? 'Profile' : 'Entered'}</th>
-                    <th scope="col">Read on paper</th>
-                    <th scope="col">Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fields.map((f) => (
-                    <tr key={f.field} title={f.note ?? undefined}>
-                      <th scope="row">{f.label}</th>
-                      <td>{f.expected || '—'}</td>
-                      <td className="vd-mono">{f.read || '—'}</td>
-                      <td>
-                        <span className={`vd-chip ${RESULT_VIEW[f.result].className}`}>{RESULT_VIEW[f.result].label}</span>
-                        {f.result !== 'Unreadable' && <span className="vd-confidence">{Math.round(f.confidence * 100)}%</span>}
-                        {f.note && <small className="vd-note">{f.note}</small>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        })}
 
       {verification.documents.length > 0 && (
         <div className="vd-files">
@@ -224,9 +171,9 @@ export function VerificationResult({
               className="vd-file"
               disabled={!d.isAvailable}
               onClick={() => void openFile(d.documentId)}
-              title={d.isAvailable ? 'Open the uploaded file' : 'Deleted after the decision (BR-26)'}
+              title={d.isAvailable ? 'Open the uploaded file' : 'Deleted 30 days after the decision'}
             >
-              <Eye aria-hidden /> {d.documentType === 'CitizenId' ? 'Citizen ID' : 'Registration'} · {d.side}
+              <Eye aria-hidden /> {documentLabel(d.documentType, d.side)}
             </button>
           ))}
         </div>
@@ -235,7 +182,7 @@ export function VerificationResult({
       {verification.filesDeleteAt && (
         <p className="vd-fine">
           {verification.filesDeletedAt
-            ? `Photos deleted on ${formatDate(verification.filesDeletedAt)}; the result is kept.`
+            ? `Photos deleted on ${formatDate(verification.filesDeletedAt)}; the decision is kept.`
             : `Photos are deleted on ${formatDate(verification.filesDeleteAt)}, 30 days after the decision.`}
         </p>
       )}
@@ -244,8 +191,8 @@ export function VerificationResult({
 }
 
 /**
- * Upload of the registration certificate (cà vẹt) and Citizen ID card (CCCD), front and back, with
- * previews and progress, and the OCR verification result of `vehicleId` once it has one.
+ * Upload of the papers a vehicle registration needs: the front of the registration certificate and
+ * both sides of the Citizen ID card, with previews and progress, then the Staff decision on `vehicleId`.
  * Without a vehicle (a new registration) the photos wait in the browser until the page submits.
  */
 export function VehicleDocumentsPanel({
@@ -260,14 +207,15 @@ export function VehicleDocumentsPanel({
   onClearVehicle?: () => void
 }) {
   const { data: verification } = useVehicleVerification(vehicleId)
-  const running = verification?.status === 'Pending' || verification?.status === 'Processing'
-  const locked = draft.busy || running
+  // Waiting or approved papers cannot be replaced; a rejection asks for new photos
+  const settled = isWaitingForStaff(verification?.status) || isApproved(verification?.status)
+  const locked = draft.busy || settled
 
-  const verifyNow = async () => {
+  const submitNow = async () => {
     if (!vehicleId) return
     try {
-      await draft.uploadAndVerify(vehicleId)
-      toast.success('Papers uploaded. Reading them now…')
+      await draft.uploadAndSubmit(vehicleId)
+      toast.success('Papers sent. Staff will review your vehicle shortly.')
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not upload the papers.'))
     }
@@ -286,36 +234,41 @@ export function VehicleDocumentsPanel({
         </div>
       )}
 
-      {PAPERS.map((paper) => (
-        <div key={paper.type} className="vd-paper">
-          <div className="cx-doc-head">
-            <span>{paper.title}</span>
-            <span>
-              {(['Front', 'Back'] as const).filter((side) => draft.slots[slotKey(paper.type, side)].file).length}/2 sides
-            </span>
-          </div>
-          <div className="vd-slots">
-            {(['Front', 'Back'] as const).map((side) => (
-              <DocumentSlot
-                key={side}
-                type={paper.type}
-                side={side}
-                state={draft.slots[slotKey(paper.type, side)]}
-                disabled={locked}
-                onChoose={(file) => draft.choose(slotKey(paper.type, side), file)}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+      {verification && verification.status !== 'Draft' && <RegistrationStatus verification={verification} />}
 
-      {vehicleId && draft.hasNew && (
-        <button type="button" className="cx-btn cx-btn--light vd-verify" disabled={!draft.complete || locked} onClick={() => void verifyNow()}>
-          <ScanText aria-hidden /> {draft.busy ? 'Uploading…' : draft.complete ? 'Upload & verify papers' : `Add all 4 sides (${draft.chosen}/4)`}
+      {!settled &&
+        PAPERS.map((paper) => {
+          const sides = sidesOf(paper.type)
+          return (
+            <div key={paper.type} className="vd-paper">
+              <div className="cx-doc-head">
+                <span>{paper.title}</span>
+                <span>
+                  {paper.hint} · {sides.filter((side) => draft.slots[slotKey(paper.type, side)].file).length}/{sides.length}
+                </span>
+              </div>
+              <div className="vd-slots">
+                {sides.map((side) => (
+                  <DocumentSlot
+                    key={side}
+                    type={paper.type}
+                    side={side}
+                    state={draft.slots[slotKey(paper.type, side)]}
+                    disabled={locked}
+                    onChoose={(file) => draft.choose(slotKey(paper.type, side), file)}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+
+      {vehicleId && !settled && (
+        <button type="button" className="cx-btn cx-btn--light vd-verify" disabled={!draft.complete || locked} onClick={() => void submitNow()}>
+          <Send aria-hidden />{' '}
+          {draft.busy ? 'Uploading…' : draft.complete ? 'Send papers for review' : `Add all papers (${draft.chosen}/${DOCUMENT_SLOTS.length})`}
         </button>
       )}
-
-      {verification && verification.status !== 'Draft' && <VerificationResult verification={verification} />}
     </div>
   )
 }

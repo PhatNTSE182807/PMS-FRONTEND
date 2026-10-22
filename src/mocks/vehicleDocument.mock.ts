@@ -1,22 +1,17 @@
-import { profileMock } from '@/mocks/profile.mock'
-import type { VehicleDTO } from '@/types/profile.dto'
+import { setDemoVehicleRegistration } from '@/mocks/profile.mock'
 import type {
-  FieldResult,
   VehicleDocumentFileDTO,
   VehicleDocumentSide,
   VehicleDocumentType,
   VehicleVerificationDTO,
-  VerificationFieldDTO,
 } from '@/types/vehicleDocument.dto'
-import { DOCUMENT_MAX_BYTES, DOCUMENT_SLOTS } from '@/types/vehicleDocument.dto'
+import { DOCUMENT_MAX_BYTES, DOCUMENT_SLOTS, isApproved, isWaitingForStaff } from '@/types/vehicleDocument.dto'
 import { delay, mockFail, mockId, mockResponse } from './mockApi'
 
 /**
- * Demo "backend" for vehicle papers. OCR is simulated deterministically from the file names, so every
- * outcome can be shown without a server:
- * - default: the papers match the vehicle and the profile → AutoVerified
- * - a file name containing "mismatch" → the plate on the cà vẹt differs → NeedsReview
- * - a file name containing "blur" → nothing readable on that paper → NeedsReview, or Rejected when both are
+ * Demo "backend" for vehicle papers, following the API rules: upload the registration certificate
+ * (front) and Citizen ID card (front and back), submit, and the check waits for Staff (NeedsReview)
+ * until the Staff review mock approves or rejects it.
  */
 interface StoredFile {
   dto: VehicleDocumentFileDTO
@@ -45,100 +40,11 @@ function snapshot(stored: StoredVerification): VehicleVerificationDTO {
   return { ...stored.dto, documents, missingDocuments }
 }
 
-/** Colour family the demo "reads" on the cà vẹt, printed in Vietnamese like the real paper. */
-function vietnameseColour(colour: string): string {
-  const c = colour.toLowerCase()
-  if (c.includes('white')) return 'TRẮNG'
-  if (c.includes('black')) return 'ĐEN'
-  if (c.includes('red')) return 'ĐỎ'
-  if (c.includes('blue') || c.includes('green')) return 'XANH'
-  if (c.includes('silver') || c.includes('grey') || c.includes('gray')) return 'BẠC'
-  return colour.toUpperCase()
-}
-
-function field(
-  document: VehicleDocumentType,
-  name: string,
-  label: string,
-  expected: string | null | undefined,
-  read: string | null,
-  result: FieldResult,
-  confidence: number,
-  note?: string,
-): VerificationFieldDTO {
-  return { document, field: name, label, expected, read, result, confidence: read ? confidence : 0, note }
-}
-
-/** The simulated OCR + comparison, following the backend rules (VehicleDocumentVerifier). */
-async function runOcr(stored: StoredVerification, vehicle: VehicleDTO | undefined) {
-  const profile = await profileMock.getProfile()
-  const names = [...stored.files.values()].map((f) => (f.dto.fileName ?? '').toLowerCase())
-  const blurry = (type: VehicleDocumentType) =>
-    [...stored.files.values()].some((f) => f.dto.documentType === type && (f.dto.fileName ?? '').toLowerCase().includes('blur'))
-  const mismatch = names.some((n) => n.includes('mismatch'))
-  const certificateBlurry = blurry('RegistrationCertificate')
-  const cardBlurry = blurry('CitizenId')
-  const ownName = profile.fullName.toUpperCase()
-  const ownedBySomeoneElse = Boolean(vehicle?.citizenId && vehicle.citizenId !== profile.citizenId)
-
-  const cert = (name: string, label: string, expected: string | undefined, read: string, matches = true) =>
-    certificateBlurry
-      ? field('RegistrationCertificate', name, label, expected, null, 'Unreadable', 0, 'Too blurry to read reliably.')
-      : field('RegistrationCertificate', name, label, expected, read, matches ? 'Match' : 'Mismatch', 0.93)
-
-  const plate = vehicle?.licensePlate ?? ''
-  const fields: VerificationFieldDTO[] = [
-    cert('plate', 'Plate number', plate, mismatch ? plate.replace(/\d$/, (d) => String((Number(d) + 1) % 10)) : plate, !mismatch),
-    cert('brand', 'Brand', vehicle?.brand, (vehicle?.brand ?? '').toUpperCase()),
-    cert('model', 'Model', vehicle?.model, (vehicle?.model ?? '').toUpperCase()),
-    cert('color', 'Colour', vehicle?.color, vietnameseColour(vehicle?.color ?? '')),
-    ownedBySomeoneElse && !certificateBlurry
-      ? field('RegistrationCertificate', 'ownerName', 'Owner name', null, 'TRẦN VĂN BÌNH', 'Mismatch', 0.92,
-          "The vehicle is registered to another person's Citizen ID; Staff will check the owner.")
-      : cert('ownerName', 'Owner name', profile.fullName, ownName),
-    cardBlurry
-      ? field('CitizenId', 'citizenId', 'Citizen ID number', profile.citizenId, null, 'Unreadable', 0, 'Too blurry to read reliably.')
-      : field('CitizenId', 'citizenId', 'Citizen ID number', profile.citizenId, profile.citizenId ?? '', 'Match', 0.96),
-    cardBlurry
-      ? field('CitizenId', 'fullName', 'Full name', profile.fullName, null, 'Unreadable', 0, 'Too blurry to read reliably.')
-      : field('CitizenId', 'fullName', 'Full name', profile.fullName, ownName, 'Match', 0.94),
-  ]
-
-  const now = new Date()
-  const problems = fields.filter((f) => f.result !== 'Match' || f.confidence < 0.85)
-  let status: VehicleVerificationDTO['status'] = 'AutoVerified'
-  let statusReason: string | null = null
-  if (certificateBlurry && cardBlurry) {
-    status = 'Rejected'
-    statusReason = 'The photos could not be read. Upload sharp, well-lit photos of the whole registration certificate and Citizen ID card.'
-  } else if (problems.length > 0) {
-    status = 'NeedsReview'
-    const list = (result: FieldResult) => problems.filter((p) => p.result === result).map((p) => p.label)
-    statusReason = `Sent to Staff review; ${[
-      list('Mismatch').length ? `does not match: ${list('Mismatch').join(', ')}` : '',
-      list('Unreadable').length ? `could not be read: ${list('Unreadable').join(', ')}` : '',
-    ]
-      .filter(Boolean)
-      .join('; ')}.`
-  }
-
-  const decided = status === 'AutoVerified' || status === 'Rejected'
-  stored.dto = {
-    ...stored.dto,
-    status,
-    statusReason,
-    fields,
-    confidence: Math.min(...fields.map((f) => f.confidence)),
-    processedAt: now.toISOString(),
-    decidedAt: decided ? now.toISOString() : null,
-    filesDeleteAt: decided ? new Date(now.getTime() + RETENTION_DAYS * 86_400_000).toISOString() : null,
-  }
-}
-
 function draftFor(vehicleId: string): StoredVerification {
   const current = verifications.get(vehicleId)
-  if (current?.dto.status === 'Pending' || current?.dto.status === 'Processing')
-    mockFail(400, 'Your papers are being checked. Wait for the result before uploading again.')
+  if (isWaitingForStaff(current?.dto.status))
+    mockFail(400, 'Your papers are waiting for Staff review. Wait for the decision before uploading again.')
+  if (isApproved(current?.dto.status)) mockFail(400, 'This vehicle is already approved.')
   if (current?.dto.status === 'Draft') return current
 
   const fresh: StoredVerification = {
@@ -146,7 +52,6 @@ function draftFor(vehicleId: string): StoredVerification {
       verificationId: mockId('ver'),
       vehicleId,
       status: 'Draft',
-      fields: [],
       documents: [],
       missingDocuments: [],
       createdAt: new Date().toISOString(),
@@ -154,6 +59,7 @@ function draftFor(vehicleId: string): StoredVerification {
     files: new Map(),
   }
   verifications.set(vehicleId, fresh)
+  setDemoVehicleRegistration(vehicleId, 'Draft')
   return fresh
 }
 
@@ -177,10 +83,14 @@ export function demoSubmittedChecks(): DemoSubmittedCheck[] {
         stored.dto = {
           ...stored.dto,
           status: approve ? 'Approved' : 'Rejected',
+          statusReason: approve
+            ? 'Papers checked by Staff. The vehicle can be booked and is recognised at the gates.'
+            : 'Staff could not approve these papers. Upload new photos to try again.',
           reviewNote: note,
           decidedAt: now.toISOString(),
           filesDeleteAt: new Date(now.getTime() + RETENTION_DAYS * 86_400_000).toISOString(),
         }
+        setDemoVehicleRegistration(stored.dto.vehicleId, approve ? 'Approved' : 'Rejected', note)
       },
     }))
 }
@@ -200,6 +110,8 @@ export const vehicleDocumentMock = {
     file: File,
     onProgress?: (percent: number) => void,
   ): Promise<VehicleVerificationDTO> {
+    if (!DOCUMENT_SLOTS.some((s) => s.type === type && s.side === side))
+      mockFail(400, 'Only the front of the registration certificate is needed.')
     if (!ACCEPTED_TYPES.includes(file.type)) mockFail(400, 'Only JPEG, PNG or PDF files are accepted.')
     if (file.size > DOCUMENT_MAX_BYTES) mockFail(400, 'The file is larger than 10 MB.')
     for (const percent of [15, 40, 70, 100]) {
@@ -225,22 +137,21 @@ export const vehicleDocumentMock = {
     }, 100)
   },
 
-  /** Queues the "OCR": Processing after a moment, the result a couple of seconds later (like the Hangfire job). */
+  /** Sends the papers straight to the Staff queue, like the API. */
   submit: (vehicleId: string) =>
     mockResponse(() => {
       const stored = verifications.get(vehicleId)
       if (stored?.dto.status !== 'Draft') mockFail(400, 'Upload the registration certificate and Citizen ID photos first.')
       const missing = snapshot(stored).missingDocuments
-      if (missing.length > 0) mockFail(400, `Upload every side first; missing: ${missing.join(', ')}.`)
+      if (missing.length > 0) mockFail(400, `Upload every paper first; missing: ${missing.join(', ')}.`)
 
-      stored.dto = { ...stored.dto, status: 'Pending', submittedAt: new Date().toISOString() }
-      void (async () => {
-        await delay(700)
-        stored.dto = { ...stored.dto, status: 'Processing' }
-        const vehicles = await profileMock.getVehicles()
-        await delay(1600)
-        await runOcr(stored, vehicles.find((v) => v.vehicleId === vehicleId))
-      })()
+      stored.dto = {
+        ...stored.dto,
+        status: 'NeedsReview',
+        statusReason: 'Waiting for Staff to compare your papers with this vehicle.',
+        submittedAt: new Date().toISOString(),
+      }
+      setDemoVehicleRegistration(vehicleId, 'NeedsReview')
       return snapshot(stored)
     }),
 

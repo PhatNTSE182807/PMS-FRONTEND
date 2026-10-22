@@ -12,6 +12,13 @@ export interface VehicleDTO {
   citizenId?: string | null
   isDefault: boolean
   isActive: boolean
+  /**
+   * Registration status from the latest paper check: null (papers not submitted), Draft, NeedsReview
+   * (waiting for Staff), Approved or Rejected. Only an approved vehicle can be booked.
+   */
+  verificationStatus?: 'Draft' | 'NeedsReview' | 'Approved' | 'Rejected' | null
+  /** Staff note on the latest decision (the reason when rejected). */
+  verificationNote?: string | null
   createdAt: string
   updatedAt?: string | null
 }
