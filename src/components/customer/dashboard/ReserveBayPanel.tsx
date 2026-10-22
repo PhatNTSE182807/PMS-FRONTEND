@@ -1,29 +1,15 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarClock, CircleCheck, Timer, Wallet } from 'lucide-react'
+import { CircleCheck, Timer, Wallet } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
+import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { useNow } from '@/hooks/useNow'
 import { useVehicles } from '@/hooks/useProfile'
 import { useCreateReservation, usePayDeposit } from '@/hooks/useReservations'
+import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
-
-/** BR-01: arrival at most 2 hours after booking. */
-const MAX_LEAD_MINUTES = 120
-
-/** "YYYY-MM-DDTHH:mm" in local time, for <input type="datetime-local">. */
-function toLocalInput(time: number) {
-  const d = new Date(time)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-/** Next quarter hour, at least 15 minutes ahead. */
-function defaultArrival() {
-  const t = Date.now() + 15 * 60_000
-  return Math.ceil(t / (15 * 60_000)) * 15 * 60_000
-}
 
 interface ReserveBayPanelProps {
   lotKey: string
@@ -32,8 +18,9 @@ interface ReserveBayPanelProps {
 }
 
 /**
- * Books the selected bay (SRS FR-RSV-02): pick the car and the arrival time, hold the slot, then pay
- * the deposit with VNPay or MoMo before the deadline. Two drivers on one bay: the first holder wins.
+ * Books the selected bay (SRS FR-RSV-02): pick the car, the booking type and the date and time
+ * (Scheduled: arrival and departure; pay as you go: arrival only), then pay the deposit with VNPay or
+ * MoMo before the deadline. Overlapping bookings of one bay: the first one wins.
  */
 export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelProps) {
   const now = useNow(1000)
@@ -43,7 +30,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   const cars = useMemo(() => allCars.filter((v) => v.verificationStatus === 'Approved'), [allCars])
   const waitingCars = allCars.length - cars.length
   const [vehicleId, setVehicleId] = useState('')
-  const [arrival, setArrival] = useState(() => toLocalInput(defaultArrival()))
+  const [times, setTimes] = useState(() => defaultBookingTimes(Date.now()))
   const [held, setHeld] = useState<ReservationDTO | null>(null)
   const create = useCreateReservation()
   const pay = usePayDeposit()
@@ -52,17 +39,27 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   const heldHere = held && String(held.slotId) === slotId ? held : null
 
   const reserve = () => {
-    const arrivalTime = new Date(arrival)
-    if (Number.isNaN(arrivalTime.getTime())) {
-      toast.error('Pick a valid arrival time.')
+    // Checked here too, so a time that slipped into the past while the form was open is caught
+    const checked = checkBookingTimes(times, Date.now())
+    if (!checked.ok) {
+      toast.error(checked.error)
       return
     }
     create.mutate(
-      { parkingLotId: lotKey, slotId, vehicleId: chosenVehicle, arrivalTime: arrivalTime.toISOString() },
+      {
+        parkingLotId: lotKey,
+        slotId,
+        vehicleId: chosenVehicle,
+        arrivalTime: checked.arrivalTime,
+        bookingMode: times.mode,
+        departureTime: checked.departureTime,
+      },
       {
         onSuccess: (reservation) => {
           setHeld(reservation)
-          toast.success(`Bay ${slotCode} is held for you`, { description: `Pay the ${formatNumber(reservation.depositAmount)} VND deposit within 10 minutes to confirm it.` })
+          toast.success(`Bay ${slotCode} is booked for ${describeWindow(reservation.arrivalTime, reservation.departureTime, Date.now())}`, {
+            description: `Pay the ${formatNumber(reservation.depositAmount)} VND deposit within 10 minutes to confirm it.`,
+          })
         },
         onError: (error) => toast.error(getErrorMessage(error)),
       },
@@ -77,8 +74,9 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
     return (
       <div className="cx-reserve" aria-live="polite">
         <p className="cx-reserve__title">
-          <CircleCheck aria-hidden /> Bay <strong>{heldHere.slotCode}</strong> held • #{heldHere.code}
+          <CircleCheck aria-hidden /> Bay <strong>{heldHere.slotCode}</strong> booked • #{heldHere.code}
         </p>
+        <p className="cx-reserve__meta">{describeWindow(heldHere.arrivalTime, heldHere.departureTime, now)}</p>
         <p className="cx-reserve__meta">
           <Timer aria-hidden /> Pay the <strong>{formatNumber(heldHere.depositAmount)} VND</strong> deposit within{' '}
           <span className="cx-mono">{Math.floor(left / 60_000)}:{String(Math.floor((left % 60_000) / 1000)).padStart(2, '0')}</span>
@@ -115,22 +113,9 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           </span>
         )}
       </label>
-      <label className="cx-field">
-        <span className="cx-field__label">
-          <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Expected arrival
-        </span>
-        <input
-          type="datetime-local"
-          className="cx-input"
-          value={arrival}
-          min={toLocalInput(now)}
-          max={toLocalInput(now + MAX_LEAD_MINUTES * 60_000)}
-          onChange={(e) => setArrival(e.target.value)}
-        />
-        <span className="cx-field__hint">At most 2 hours from now; check-in opens 15 minutes before and closes 15 minutes after.</span>
-      </label>
+      <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`reserve-${slotId}`} disabled={create.isPending} />
       <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled={!chosenVehicle || create.isPending} onClick={reserve}>
-        <CircleCheck aria-hidden /> {create.isPending ? 'Holding the bay…' : `Reserve bay ${slotCode} • 30,000 VND deposit`}
+        <CircleCheck aria-hidden /> {create.isPending ? 'Booking the bay…' : `Reserve bay ${slotCode} • 30,000 VND deposit`}
       </button>
       {cars.length === 0 && (
         <Link to="/me/vehicles" className="cx-link">{allCars.length ? 'Check your vehicle papers' : 'Register a car to book'}</Link>

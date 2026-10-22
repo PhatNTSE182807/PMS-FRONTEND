@@ -98,20 +98,81 @@ export interface ReservationDTO {
   /** BR-04: what cancelling now would refund. */
   refundIfCancelledNow: number
   pendingPayment: PaymentDTO | null
+  parkingLotAddress?: string | null
+  parkingLotDistrict?: string | null
+  /** Brand and model of the booked vehicle, e.g. "Toyota Camry". */
+  vehicleLabel?: string | null
+  bookingMode: BookingMode
+  /** Planned departure of a Scheduled booking (null for pay-as-you-go). */
+  departureTime: string | null
+  /** The bay is locked (Reserved) for this booking now; bookings further ahead lock it shortly before arrival. */
+  isSlotHeld: boolean
 }
+
+/** Scheduled: arrival and departure picked. PayAsYouGo: arrival picked, leave whenever. Both pay the real time. */
+export type BookingMode = 'Scheduled' | 'PayAsYouGo'
 
 /** Lot and slot ids are the frontend's string ids; the service sends them as numbers. */
 export interface CreateReservationRequest {
   parkingLotId: string
   slotId: string
   vehicleId: string
-  /** ISO time with offset. */
+  /** ISO time with offset; in the future, at most 30 days ahead. */
   arrivalTime: string
+  bookingMode: BookingMode
+  /** ISO time; required for Scheduled, ignored for pay-as-you-go. */
+  departureTime?: string | null
 }
 
 export interface UpdateReservationRequest {
   arrivalTime?: string
   slotId?: string
+  bookingMode?: BookingMode
+  departureTime?: string | null
+}
+
+/** CurrentTariffModel: the price list the running fee follows. */
+export interface CurrentTariffDTO {
+  graceMinutes: number
+  /** 60 = per started hour. */
+  blockMinutes: number
+  blockPrice: number
+  maxDailyFee: number | null
+}
+
+/**
+ * ExitPassModel: every parked vehicle has one from check-in on. The exit lane scans `token` to find the
+ * session and charges `amountDue`; after a prepayment it opens the barrier until `validUntil`.
+ */
+export interface ExitPassDTO {
+  sessionId: number
+  sessionCode: string
+  token: string
+  prepaid: boolean
+  validUntil: string | null
+  amountDue: number
+}
+
+/** CurrentSessionModel: a vehicle of the customer inside a lot right now (GET /parking-sessions/current). */
+export interface CurrentSessionDTO {
+  session: ParkingSessionDTO
+  lotName: string | null
+  lotAddress: string | null
+  lotDistrict: string | null
+  entryGateName: string | null
+  /** How the entry was identified. */
+  entryMethod: 'Plate' | 'Reservation' | 'Manual'
+  vehicleLabel: string | null
+  bookingMode: BookingMode | null
+  plannedDeparture: string | null
+  elapsedMinutes: number
+  feeSoFar: number
+  depositApplied: number
+  alreadyPaid: number
+  amountDue: number
+  tariff: CurrentTariffDTO
+  pendingPayment: PaymentDTO | null
+  exitPass: ExitPassDTO
 }
 
 /** ReservationQrModel */

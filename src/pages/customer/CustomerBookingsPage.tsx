@@ -15,9 +15,11 @@ import {
   Wallet,
   Zap,
 } from 'lucide-react'
+import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { QrCode } from '@/components/ui/qr-code'
 import { useNow } from '@/hooks/useNow'
 import { useCancelReservation, useMyReservations, usePayDeposit, useReservationQr, useUpdateReservation } from '@/hooks/useReservations'
+import { checkBookingTimes, describeWindow, toLocalInput, type BookingTimes } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
 import type { PaymentProvider, ReservationDTO, ReservationStatus } from '@/types/operations.dto'
 
@@ -69,11 +71,14 @@ function relativeDay(ts: number, now: number) {
 
 const countdown = (ms: number) => `${Math.floor(ms / 60_000)}m ${String(Math.floor((ms % 60_000) / 1000)).padStart(2, '0')}s`
 
-/** "YYYY-MM-DDTHH:mm" local, for <input type="datetime-local">. */
-function toLocalInput(iso: string) {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+/** The booking's current times as form values (a pay-as-you-go booking proposes a two-hour window if switched). */
+function timesOf(booking: ReservationDTO): BookingTimes {
+  const arrival = Date.parse(booking.arrivalTime)
+  return {
+    mode: booking.bookingMode ?? 'PayAsYouGo',
+    arrival: toLocalInput(arrival),
+    departure: toLocalInput(booking.departureTime ? Date.parse(booking.departureTime) : arrival + 2 * 3_600_000),
+  }
 }
 
 function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: number }) {
@@ -81,7 +86,8 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
   const cancel = useCancelReservation()
   const update = useUpdateReservation()
   const [editing, setEditing] = useState(false)
-  const [arrival, setArrival] = useState(() => toLocalInput(booking.arrivalTime))
+  const [times, setTimes] = useState<BookingTimes>(() => timesOf(booking))
+  const [timeError, setTimeError] = useState('')
   const windowOpen = now >= Date.parse(booking.checkInFrom)
   const msLeft = Math.max(0, Date.parse(windowOpen ? booking.checkInUntil : booking.checkInFrom) - now)
 
@@ -123,7 +129,8 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
             <span className="cx-label">Arrival time</span>
             <strong className="cx-tile__value is-teal">{time.format(Date.parse(booking.arrivalTime))}</strong>
             <span className="cx-tile__sub">
-              {relativeDay(Date.parse(booking.arrivalTime), now)} • {time.format(Date.parse(booking.checkInFrom))}–{time.format(Date.parse(booking.checkInUntil))}
+              {describeWindow(booking.arrivalTime, booking.departureTime, now)}
+              {booking.bookingMode === 'PayAsYouGo' ? ' (pay as you go)' : ''}
             </span>
           </div>
           <div className="cx-tile">
@@ -135,26 +142,40 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
 
         {editing ? (
           <form
-            className="cx-booking__actions"
+            className="cx-booking__edit"
             onSubmit={(e) => {
               e.preventDefault()
-              update.mutate({ id: booking.id, request: { arrivalTime: new Date(arrival).toISOString() } }, { onSuccess: () => setEditing(false) })
+              const checked = checkBookingTimes(times, Date.now())
+              if (!checked.ok) return setTimeError(checked.error)
+              setTimeError('')
+              update.mutate(
+                { id: booking.id, request: { arrivalTime: checked.arrivalTime, bookingMode: times.mode, departureTime: checked.departureTime } },
+                { onSuccess: () => setEditing(false) },
+              )
             }}
           >
-            <label className="cx-field" style={{ flex: '1 1 14rem' }}>
-              <span className="cx-field__label">New arrival time</span>
-              <input type="datetime-local" className="cx-input" value={arrival} onChange={(e) => setArrival(e.target.value)} />
-            </label>
-            <button type="submit" className="cx-btn cx-btn--teal" disabled={update.isPending}>Save</button>
-            <button type="button" className="cx-btn" onClick={() => setEditing(false)}>Keep</button>
+            <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`edit-${booking.id}`} disabled={update.isPending} />
+            {timeError && <p className="cx-error" role="alert">{timeError}</p>}
+            <div className="cx-booking__actions">
+              <button type="submit" className="cx-btn cx-btn--teal" disabled={update.isPending}>Save</button>
+              <button type="button" className="cx-btn" onClick={() => setEditing(false)}>Keep</button>
+            </div>
           </form>
         ) : (
           <div className="cx-booking__actions">
             <Link to="/me#map" className="cx-btn cx-btn--teal">
               <Car aria-hidden /> View on the 3D map
             </Link>
-            <button type="button" className="cx-btn" disabled={!booking.canChange} onClick={() => setEditing(true)}>
-              <SlidersHorizontal aria-hidden /> Change arrival time
+            <button
+              type="button"
+              className="cx-btn"
+              disabled={!booking.canChange}
+              onClick={() => {
+                setTimes(timesOf(booking))
+                setEditing(true)
+              }}
+            >
+              <SlidersHorizontal aria-hidden /> Change date &amp; time
             </button>
             <button type="button" className="cx-btn cx-btn--danger cx-booking__cancel" disabled={!booking.canCancel || cancel.isPending} onClick={confirmCancel}>
               <CircleX aria-hidden /> Cancel reservation

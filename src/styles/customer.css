@@ -2626,3 +2626,151 @@
   width: min(100%, 13rem);
   margin: 0 auto;
 }
+
+/* Previous / next page of the parking history */
+.cx-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--cx-on-variant);
+}
+
+.cx-spin {
+  animation: cx-spin 1s linear infinite;
+}
+
+@keyframes cx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Booking date & time ---------- */
+.cx-booking-time {
+  display: grid;
+  gap: 0.85rem;
+}
+
+/* Scheduled / pay as you go */
+.cx-mode {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem;
+}
+
+.cx-mode__option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--cx-outline);
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.cx-mode__option svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  color: var(--cx-on-variant);
+}
+
+.cx-mode__option strong {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.cx-mode__option small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--cx-on-variant);
+}
+
+.cx-mode__option.is-active {
+  border-color: var(--cx-gold);
+  background: rgba(233, 195, 73, 0.08);
+}
+
+.cx-mode__option.is-active svg {
+  color: var(--cx-gold);
+}
+
+.cx-mode__option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cx-booking__edit {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1.5rem;
+  max-width: 34rem;
+}
+
+.cx-booking__edit .cx-booking__actions {
+  margin-top: 0;
+}
+
+/* ---------- Active session: prepay and exit pass ---------- */
+.cx-prepay {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--cx-outline);
+  border-radius: 0.75rem;
+}
+
+.cx-prepay__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cx-prepay__row .cx-btn {
+  flex: 1 1 8rem;
+}
+
+.cx-pass-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(3, 8, 12, 0.72);
+}
+
+.cx-pass {
+  width: min(22rem, 100%);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: var(--cx-container-high);
+  text-align: center;
+}
+
+.cx-pass__qr {
+  width: min(15rem, 100%);
+  margin: 1rem auto;
+}
+
+.cx-pass__status {
+  margin: 0.25rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--cx-on-variant);
+}
+
+.cx-empty-card {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  padding: 1.25rem 0 0.5rem;
+  color: var(--cx-on-variant);
+}

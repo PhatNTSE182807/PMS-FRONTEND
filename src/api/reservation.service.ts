@@ -48,15 +48,25 @@ export const reservationService = {
       slotId: Number(request.slotId),
       vehicleId: request.vehicleId,
       arrivalTime: request.arrivalTime,
+      bookingMode: request.bookingMode,
+      departureTime: request.bookingMode === 'Scheduled' ? request.departureTime : null,
     })
   },
 
+  /** Change the arrival, the departure / booking mode and/or the bay (before the change deadline). */
   update(id: number, request: UpdateReservationRequest): Promise<ReservationDTO> {
     if (mocked()) return reservationMock.update(id, request)
     return http.put<ReservationDTO>(`${base}/${id}`, {
       arrivalTime: request.arrivalTime,
       slotId: request.slotId ? Number(request.slotId) : undefined,
+      bookingMode: request.bookingMode,
+      departureTime: request.departureTime,
     })
+  },
+
+  /** The next booking that has not started (dashboard card), or null. */
+  getUpcoming(): Promise<ReservationDTO | null> {
+    return mocked() ? reservationMock.upcoming() : http.get<ReservationDTO | null>(`${base}/upcoming`)
   },
 
   cancel(id: number, reason?: string): Promise<ReservationDTO> {

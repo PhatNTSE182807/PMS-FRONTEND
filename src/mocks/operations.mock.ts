@@ -1,12 +1,15 @@
-import { findMockLot } from '@/mocks/parkingLots.mock'
+import { findMockLot, MOCK_PARKING_LOTS } from '@/mocks/parkingLots.mock'
 import { profileMock } from '@/mocks/profile.mock'
 import type {
+  BookingMode,
   CheckInRequest,
   CheckInResultDTO,
   CheckoutQuoteDTO,
   CheckoutRequest,
   CheckoutResultDTO,
   CreateReservationRequest,
+  CurrentSessionDTO,
+  ExitPassDTO,
   GateAlertDTO,
   GateDTO,
   GateReservationLookupDTO,
@@ -29,7 +32,9 @@ import { mockFail, mockResponse } from './mockApi'
 
 const MINUTE = 60_000
 const RULES = {
-  maxLeadHours: 2,
+  maxLeadDays: 30,
+  minStayMinutes: 30,
+  maxStayHours: 24,
   depositMinutes: 10,
   earlyMinutes: 15,
   holdMinutes: 15,
@@ -63,6 +68,8 @@ interface MockReservation extends ReservationDTO {
 interface MockSession extends ParkingSessionDTO {
   lotKey: string
   vehicleKind: 'car' | 'motorbike'
+  /** Parked by the signed-in demo driver (shows on the customer dashboard). */
+  ownedByCustomer?: boolean
 }
 
 const reservations: MockReservation[] = []
@@ -130,8 +137,32 @@ function ownReservation(id: number) {
 
 function checkArrival(arrival: number) {
   if (Number.isNaN(arrival) || arrival <= now()) mockFail(400, 'The arrival time must be in the future.')
-  if (arrival > now() + RULES.maxLeadHours * 60 * MINUTE)
-    mockFail(400, `Arrival must be within ${RULES.maxLeadHours} hours.`)
+  if (arrival > now() + RULES.maxLeadDays * 24 * 60 * MINUTE) mockFail(400, `Arrival can be at most ${RULES.maxLeadDays} days ahead.`)
+}
+
+/** Same rules as the API: a Scheduled booking needs a departure 30 min to 24 h after arrival; pay-as-you-go has none. */
+function checkDeparture(mode: BookingMode, arrival: number, departureIso: string | null | undefined): number | null {
+  if (mode === 'PayAsYouGo') return null
+  const departure = departureIso ? Date.parse(departureIso) : NaN
+  if (Number.isNaN(departure)) mockFail(400, 'Pick a departure time for a scheduled booking, or book pay-as-you-go.')
+  if (departure < arrival + RULES.minStayMinutes * MINUTE) mockFail(400, `The departure must be at least ${RULES.minStayMinutes} minutes after arrival.`)
+  if (departure > arrival + RULES.maxStayHours * 60 * MINUTE)
+    mockFail(400, `A scheduled booking can last at most ${RULES.maxStayHours} hours; book pay-as-you-go for longer stays.`)
+  return departure
+}
+
+const activeStatus = (r: ReservationDTO) => r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn'
+
+/** NFR-15 over time: a window runs from check-in opening to the departure; pay-as-you-go is open-ended. */
+function checkSlotFree(lotKey: string, slotId: number, arrival: number, departure: number | null, except?: number) {
+  const from = arrival - RULES.earlyMinutes * MINUTE
+  for (const r of reservations) {
+    if (r.id === except || r.lotKey !== lotKey || r.slotId !== slotId || !activeStatus(r)) continue
+    const otherFrom = Date.parse(r.arrivalTime) - RULES.earlyMinutes * MINUTE
+    const otherTo = r.bookingMode === 'Scheduled' && r.departureTime ? Date.parse(r.departureTime) : null
+    if ((departure === null || otherFrom < departure) && (otherTo === null || from < otherTo))
+      mockFail(409, 'This bay is already booked for part of that time. Pick another time or bay.')
+  }
 }
 
 /** Slot ids of the demo 3D model are floorIndex * 1000 + bay number (layout.mock); the code is rebuilt from it. */
@@ -241,14 +272,15 @@ export const reservationMock = {
       if (/motor/i.test(vehicle.vehicleType)) mockFail(400, 'This vehicle type cannot be reserved.')
       const arrival = Date.parse(request.arrivalTime)
       checkArrival(arrival)
+      const mode: BookingMode = request.bookingMode ?? 'PayAsYouGo'
+      const departure = checkDeparture(mode, arrival, request.departureTime)
       // BR-07: a checked-in booking still counts, and the vehicle is matched by plate
       const active = reservations.filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn')
       if (active.length >= 2) mockFail(400, 'Each account can have at most 2 active reservations.')
       if (active.some((r) => r.vehicleId === vehicle.vehicleId || normalize(r.plateNumber ?? '') === normalize(vehicle.licensePlate)))
         mockFail(400, `Vehicle ${vehicle.licensePlate} already has an active reservation.`)
       const slotId = Number(request.slotId)
-      if (reservations.some((r) => r.lotKey === request.parkingLotId && r.slotId === slotId && (r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn')))
-        mockFail(409, 'This slot was just taken by someone else.')
+      checkSlotFree(request.parkingLotId, slotId, arrival, departure)
 
       const lot = findMockLot(request.parkingLotId)
       const created: MockReservation = {
@@ -278,6 +310,13 @@ export const reservationMock = {
         canCancel: true,
         refundIfCancelledNow: 0,
         pendingPayment: null,
+        parkingLotAddress: lot?.address ?? null,
+        parkingLotDistrict: null,
+        vehicleLabel: [vehicle.brand, vehicle.model].filter(Boolean).join(' '),
+        bookingMode: mode,
+        departureTime: departure === null ? null : iso(departure),
+        // Like the API: the bay is locked two hours before arrival
+        isSlotHeld: arrival - 120 * MINUTE <= now(),
       }
       reservations.push(created)
       return refreshFlags(created)
@@ -288,18 +327,34 @@ export const reservationMock = {
     mockResponse(() => {
       const r = refreshFlags(ownReservation(id))
       if (!r.canChange) mockFail(400, 'This reservation can no longer be changed.')
-      if (request.arrivalTime) {
-        const arrival = Date.parse(request.arrivalTime)
-        checkArrival(arrival)
-        r.arrivalTime = iso(arrival)
-        r.checkInFrom = iso(arrival - RULES.earlyMinutes * MINUTE)
-        r.checkInUntil = iso(arrival + RULES.holdMinutes * MINUTE)
-      }
+      const arrival = request.arrivalTime ? Date.parse(request.arrivalTime) : Date.parse(r.arrivalTime)
+      checkArrival(arrival)
+      const mode: BookingMode = request.bookingMode ?? r.bookingMode
+      const departure = checkDeparture(mode, arrival, request.departureTime ?? r.departureTime)
+      const slotId = request.slotId ? Number(request.slotId) : (r.slotId ?? 0)
+      checkSlotFree(r.lotKey, slotId, arrival, departure, r.id)
+
+      r.arrivalTime = iso(arrival)
+      r.checkInFrom = iso(arrival - RULES.earlyMinutes * MINUTE)
+      r.checkInUntil = iso(arrival + RULES.holdMinutes * MINUTE)
+      r.bookingMode = mode
+      r.departureTime = departure === null ? null : iso(departure)
+      r.isSlotHeld = arrival - 120 * MINUTE <= now()
       if (request.slotId) {
-        r.slotId = Number(request.slotId)
-        r.slotCode = slotCode(r.slotId)
+        r.slotId = slotId
+        r.slotCode = slotCode(slotId)
       }
       return refreshFlags(r)
+    }),
+
+  /** The soonest booking that has not started. */
+  upcoming: () =>
+    mockResponse<ReservationDTO | null>(() => {
+      sweep()
+      const next = reservations
+        .filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed')
+        .sort((a, b) => Date.parse(a.arrivalTime) - Date.parse(b.arrivalTime))[0]
+      return next ? refreshFlags(next) : null
     }),
 
   cancel: (id: number, reason?: string) =>
@@ -372,7 +427,7 @@ export const paymentMock = {
 const CAPACITY = { car: 40, motorbike: 20 }
 
 function seedLot(lotKey: string) {
-  if (sessions.some((s) => s.lotKey === lotKey)) return
+  if (sessions.some((s) => s.lotKey === lotKey && !s.ownedByCustomer)) return
   const base = { lotKey, parkingLotId: lotNumber(lotKey), entryGateId: 1, hasPlate: true, zoneId: null, zoneName: null, slotId: null, slotCode: null, reservationId: null, reservationCode: null, isCustomerAccount: false, paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false, plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null }
   const seed: [string, number, 'car' | 'motorbike'][] = [
     ['51A-888.68', 140, 'car'],
@@ -458,9 +513,10 @@ function quote(s: MockSession, exitPlate: string | undefined, mutate: boolean): 
   }
 }
 
-const strip = ({ lotKey: _lot, vehicleKind: _kind, ...dto }: MockSession): ParkingSessionDTO => {
+const strip = ({ lotKey: _lot, vehicleKind: _kind, ownedByCustomer: _own, ...dto }: MockSession): ParkingSessionDTO => {
   void _lot
   void _kind
+  void _own
   return dto
 }
 
@@ -676,5 +732,88 @@ export const gateMock = {
         refundDeposit(r, depositRefund, 'Deposit remainder refund')
       }
       return { session: strip(s), barrierOpen: true, depositRefund, alerts: [] }
+    }),
+}
+
+/* ---------------------------------------------------------------- the customer's parked vehicles */
+
+/** The demo driver's default car is parked at the first demo lot (seeded once per page load). */
+async function customerSessions(): Promise<MockSession[]> {
+  if (!sessions.some((s) => s.ownedByCustomer)) {
+    const vehicles = await profileMock.getVehicles()
+    const car = vehicles.find((v) => v.isDefault) ?? vehicles[0]
+    if (car) {
+      const lot = MOCK_PARKING_LOTS[0]
+      const entry = now() - 165 * MINUTE
+      sessions.push({
+        lotKey: lot.id, vehicleKind: 'car', ownedByCustomer: true,
+        id: nextId(), code: code('SS'), parkingLotId: lotNumber(lot.id), status: 'Active', sessionType: 'WalkIn',
+        plateNumber: car.licensePlate, hasPlate: true, vehicleTypeId: car.vehicleTypeId, vehicleTypeName: car.vehicleType,
+        entryTime: iso(entry), entryConfirmedAt: iso(entry), entryGateId: 1, zoneId: 2, zoneName: 'Level 2 · Cars',
+        slotId: 1014, slotCode: 'L2-14', reservationId: null, reservationCode: null, isCustomerAccount: true,
+        paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false,
+        plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null,
+      })
+    }
+  }
+  return sessions.filter((s) => s.ownedByCustomer && inside(s))
+}
+
+function exitPassOf(s: MockSession, amountDue: number): ExitPassDTO {
+  const prepaid = s.status === 'Paid' && Boolean(s.exitWindowEndsAt) && Date.parse(s.exitWindowEndsAt!) > now()
+  return { sessionId: s.id, sessionCode: s.code, token: `exit.demo.${s.code}`, prepaid, validUntil: prepaid ? s.exitWindowEndsAt : null, amountDue: prepaid ? 0 : amountDue }
+}
+
+export const customerSessionMock = {
+  async current(): Promise<CurrentSessionDTO[]> {
+    const mine = await customerSessions()
+    const vehicles = await profileMock.getVehicles()
+    const labelOf = (plate: string) => {
+      const v = vehicles.find((x) => normalize(x.licensePlate) === normalize(plate))
+      return v ? [v.brand, v.model].filter(Boolean).join(' ') : null
+    }
+    return mockResponse(() =>
+      mine.map((s) => {
+        const q = quote(s, undefined, false)
+        const lot = findMockLot(s.lotKey)
+        const pendingPayment = payments.find((p) => p.sessionId === s.id && p.status === 'Pending' && p.payUrl) ?? null
+        return {
+          session: strip(s),
+          lotName: lot?.name ?? 'Demo lot',
+          lotAddress: lot?.address ?? null,
+          lotDistrict: null,
+          entryGateName: 'Entry lane 1',
+          entryMethod: s.reservationId ? 'Reservation' : 'Plate',
+          vehicleLabel: labelOf(s.plateNumber),
+          bookingMode: null,
+          plannedDeparture: null,
+          elapsedMinutes: Math.floor((now() - Date.parse(s.entryTime)) / MINUTE),
+          feeSoFar: q.fee + q.lostTicketFee + q.exitWindowLateFee,
+          depositApplied: q.depositApplied,
+          alreadyPaid: q.alreadyPaid,
+          amountDue: q.amountDue,
+          tariff: { graceMinutes: RULES.graceMinutes, blockMinutes: RULES.blockMinutes, blockPrice: RULES.carBlock, maxDailyFee: RULES.carDailyCap },
+          pendingPayment,
+          exitPass: exitPassOf(s, q.amountDue),
+        } satisfies CurrentSessionDTO
+      }),
+    )
+  },
+
+  async exitPass(sessionId: number): Promise<ExitPassDTO> {
+    await customerSessions()
+    return mockResponse(() => {
+      const s = findSession(sessionId)
+      return exitPassOf(s, quote(s, undefined, false).amountDue)
+    })
+  },
+
+  /** Like the API: a fee request, then a VNPay / MoMo payment from the app (an Exit Window once paid). */
+  prepay: (sessionId: number, provider: PaymentProvider) =>
+    mockResponse(() => {
+      const s = findSession(sessionId)
+      const q = quote(s, undefined, true)
+      if (q.amountDue <= 0) mockFail(400, 'Nothing is due.')
+      return newPayment(q.amountDue, provider, 'ParkingFee', 'App', { sessionId: s.id })
     }),
 }

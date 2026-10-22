@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
 import { useProfile, useVehicles } from '@/hooks/useProfile'
 
-/** Customer home at /me: live terminals and the customer's own fleet (plus demo session data). */
+/** Customer home at /me: the parked vehicle, the next booking, live terminals, the fleet and the history. */
 export default function CustomerDashboardPage() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
@@ -68,8 +68,8 @@ export default function CustomerDashboardPage() {
       </section>
 
       <div className="cx-row-2">
-        <ActiveSessionCard vehicle={defaultVehicle} />
-        <ReservationCard vehicle={defaultVehicle} />
+        <ActiveSessionCard />
+        <ReservationCard />
       </div>
 
       <ZoneMap lots={lots} isLoading={capacity.isPending} lotId={selectedLotId} onLotChange={setLotId} />
@@ -79,7 +79,7 @@ export default function CustomerDashboardPage() {
         <UtilitiesCard />
       </div>
 
-      <RecentSessions plates={vehicles.map((v) => v.licensePlate)} />
+      <RecentSessions />
     </>
   )
 }

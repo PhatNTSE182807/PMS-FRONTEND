@@ -35,6 +35,16 @@ export function useMyReservations() {
   })
 }
 
+/** The next booking that has not started (dashboard card); refreshed with the other reservation queries. */
+export function useUpcomingReservation() {
+  const live = parkingOpsRealtime.isAvailable('booking')
+  return useQuery({
+    queryKey: queryKeys.reservations.upcoming(),
+    queryFn: reservationService.getUpcoming,
+    refetchInterval: live ? false : RESERVATIONS_REFRESH_MS,
+  })
+}
+
 export function useReservationQr(reservation: ReservationDTO | undefined) {
   return useQuery({
     queryKey: queryKeys.reservations.qr(reservation?.id ?? 0),

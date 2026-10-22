@@ -1,4 +1,5 @@
 import type { CustomerListQuery, ManagedStaffQuery, StaffListQuery } from '@/types/identity.dto'
+import type { ParkingHistoryQuery } from '@/types/parkingHistory.dto'
 import type { RevenueBreakdownQuery, RevenueFilterQuery } from '@/types/report.dto'
 
 /** React Query cache keys, grouped by service so invalidation can target one service. */
@@ -45,8 +46,19 @@ export const queryKeys = {
   reservations: {
     all: ['reservations'] as const,
     mine: () => [...queryKeys.reservations.all, 'mine'] as const,
+    upcoming: () => [...queryKeys.reservations.all, 'upcoming'] as const,
     qr: (id: number) => [...queryKeys.reservations.all, 'qr', id] as const,
     lots: () => [...queryKeys.reservations.all, 'lots'] as const,
+  },
+  /** The customer's vehicles parked right now (running fee, exit pass). */
+  parkingSessions: {
+    all: ['parking-sessions'] as const,
+    current: () => [...queryKeys.parkingSessions.all, 'current'] as const,
+  },
+  /** The customer's finished parking sessions (history and e-receipts). */
+  parkingHistory: {
+    all: ['parking-history'] as const,
+    page: (query: ParkingHistoryQuery) => [...queryKeys.parkingHistory.all, 'page', query] as const,
   },
   /** Entry/exit lanes of one lot (Staff). */
   gate: {
