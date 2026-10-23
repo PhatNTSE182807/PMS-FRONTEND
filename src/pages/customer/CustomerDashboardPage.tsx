@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigation } from 'lucide-react'
 import { FleetCard } from '@/components/customer/dashboard/FleetCard'
+import { NotificationCard } from '@/components/customer/dashboard/NotificationCard'
 import { RecentSessions } from '@/components/customer/dashboard/RecentSessions'
 import { ActiveSessionCard, ReservationCard } from '@/components/customer/dashboard/SessionCards'
 import { UtilitiesCard } from '@/components/customer/dashboard/UtilitiesCard'
@@ -78,6 +79,8 @@ export default function CustomerDashboardPage() {
         <FleetCard vehicles={vehicles} isLoading={vehiclesQuery.isPending} />
         <UtilitiesCard />
       </div>
+
+      <NotificationCard />
 
       <RecentSessions />
     </>

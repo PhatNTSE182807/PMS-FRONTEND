@@ -15,10 +15,11 @@ export type ParkingOpsEvent =
   | { type: 'ZoneCounterChanged'; lotId: number; zoneId: number; availableSpaces: number; occupiedSpaces: number; totalCapacity: number }
   | { type: 'OpsAlert'; lotId: number; code: string; message: string; sessionId: number | null }
   | { type: 'GateRequestChanged'; lotId: number; requestId: number; kind: 'CheckIn' | 'CheckOut'; status: string }
+  | { type: 'NotificationCreated'; notification: { id: number; type: string; title: string; message: string; refType: string | null; refId: string | null; eventAt: string | null; data: Record<string, string>; createdAt: string; readAt: string | null; isRead: boolean }; unreadCount: number }
 
 type Listener = (event: ParkingOpsEvent) => void
 
-const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert', 'GateRequestChanged']
+const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert', 'GateRequestChanged', 'NotificationCreated']
 
 const listeners = new Set<Listener>()
 const joinedLots = new Map<string, number>()

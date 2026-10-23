@@ -6,6 +6,7 @@ import { LOGO_SRC } from '@/components/ParkingLogo'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { initials } from './customerFormat'
+import { NotificationBell } from './NotificationBell'
 import '@/styles/customer.css'
 
 /** Hash links scroll to a dashboard section; the others are pages of their own. */
@@ -70,6 +71,7 @@ export function CustomerShell() {
           </nav>
 
           <div className="cx-nav__actions">
+            <NotificationBell />
             <Link to="/me/profile" className="cx-nav__user">
               <span className="cx-avatar">{avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}</span>
               <span className="cx-nav__user-text">

@@ -62,6 +62,12 @@ export const queryKeys = {
     all: ['parking-history'] as const,
     page: (query: ParkingHistoryQuery) => [...queryKeys.parkingHistory.all, 'page', query] as const,
   },
+  /** Customer notification bell (vehicle approved/rejected, check-in, check-out). */
+  notifications: {
+    all: ['notifications'] as const,
+    list: () => [...queryKeys.notifications.all, 'list'] as const,
+    unreadCount: () => [...queryKeys.notifications.all, 'unread-count'] as const,
+  },
   /** Check-in / check-out requests from the customer app. */
   gateRequests: {
     all: ['gate-requests'] as const,
