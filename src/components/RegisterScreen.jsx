@@ -242,10 +242,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
         </button>
       </p>
 
-      <div className="auth-shell__demo">
-        <span className="auth-shell__demo-label">Demo access</span>
-        <button type="button" onClick={fillSampleData}>Fill sample data</button>
-      </div>
 
       {isTermsOpen && (
         <div className="auth-shell__backdrop" onClick={() => setIsTermsOpen(false)}>

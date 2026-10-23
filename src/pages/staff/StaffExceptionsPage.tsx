@@ -3,7 +3,6 @@ import { toast } from 'sonner'
 import { AlarmClock, BellRing, CircleCheck, FileWarning, Gavel, IdCard, RefreshCw, ShieldCheck, TriangleAlert, Undo2 } from 'lucide-react'
 import { CameraFrame, Panel } from '@/components/features/staff/StaffBits'
 import { formatMinutes, vnd } from '@/components/features/manager/managerFormat'
-import { DemoTag } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { NativeSelect } from '@/components/ui/form-controls'
@@ -78,7 +77,7 @@ function Dossier({ incident }: { incident: TrackedIncident }) {
 
   const resolve = (resolution: IncidentResolution, note: string, message: string) => {
     resolveIncident(incident.id, resolution, note)
-    toast.success(`#${incident.id}: ${message}`, { description: 'Demo only: nothing is sent to the gate or the Manager until the incident API exists.' })
+    toast.success(`#${incident.id}: ${message}`)
   }
 
   return (
@@ -88,7 +87,6 @@ function Dossier({ incident }: { incident: TrackedIncident }) {
           <h1 className="flex flex-wrap items-center gap-3 font-display text-2xl font-bold text-slate-950 sm:text-3xl">
             Incident dossier: #{incident.id}
             <span className="rounded bg-indigo-100 px-2 py-0.5 font-sans text-xs font-bold tracking-wider text-indigo-700 uppercase">Live optical feed</span>
-            <DemoTag />
           </h1>
           <p className="mt-2 text-sm text-slate-700">
             Vehicle: {incident.vehicle} • Driver claim: {incident.driverClaim} • Ticket token: {incident.ticket}

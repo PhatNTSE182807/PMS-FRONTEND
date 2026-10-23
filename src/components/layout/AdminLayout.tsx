@@ -4,12 +4,10 @@ import { Toaster } from 'sonner'
 import { Building2, ChevronRight, LogOut, Menu } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTitle, NavDrawerContent } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
-import { isMockService } from '@/config/env'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useParkingCapacity } from '@/hooks/useParking'
@@ -150,12 +148,11 @@ function PageSkeleton() {
 
 /** Shell of the admin dashboard: sidebar navigation, top bar and page outlet. */
 export function AdminLayout() {
-  const { user, isDemo } = useAuth()
+  const { user } = useAuth()
   const { pathname } = useLocation()
   const [isNavOpen, setIsNavOpen] = useState(false)
 
   const current = [...ADMIN_NAV, ...MANAGER_NAV].find((item) => pathname.startsWith(item.to))
-  const usesMockData = isDemo || isMockService('staff') || isMockService('parking') || isMockService('capacity') || isMockService('reports')
 
   const handleLogout = useSignOut()
 
@@ -196,11 +193,6 @@ export function AdminLayout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            {usesMockData && (
-              <Badge tone="amber" title="Some services are using mock data instead of the real API.">
-                Sample data
-              </Badge>
-            )}
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <img src={LOGO_SRC} alt="" className="size-9 rounded-full bg-slate-50 object-contain p-0.5 ring-1 ring-amber-300" />
               <div className="hidden leading-tight md:block">

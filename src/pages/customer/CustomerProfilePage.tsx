@@ -249,7 +249,6 @@ export default function CustomerProfilePage() {
                   <p className="cx-card__subtitle">Update your contact details and default gate credentials.</p>
                 </div>
               </div>
-              <span className="cx-label cx-mono">SEC-01</span>
             </div>
 
             {profileQuery.isPending ? (
@@ -322,10 +321,8 @@ export default function CustomerProfilePage() {
                 <span className="cx-card__icon cx-card__icon--gold"><ShieldCheck aria-hidden /></span>
                 <div>
                   <h2 className="cx-card__title" id="security-title">Security &amp; Password Management</h2>
-                  <p className="cx-eyebrow cx-mono" style={{ marginTop: '0.25rem' }}>FR-AUTH-12 compliant</p>
                 </div>
               </div>
-              <span className="cx-label cx-mono">SEC-02</span>
             </div>
 
             <form className="cx-form" onSubmit={savePassword} noValidate>

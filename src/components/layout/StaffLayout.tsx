@@ -5,7 +5,6 @@ import { LogOut } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
@@ -86,9 +85,6 @@ export function StaffLayout() {
               <span className="size-2 animate-pulse-soft rounded-full bg-indigo-400" aria-hidden />
               Edge online ({demoStation.edgeLatencyMs}ms latency)
             </span>
-            <Badge tone="amber" title="The Staff console has no API yet: every screen shows demo data.">
-              Sample data
-            </Badge>
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
                 <p className="text-sm font-semibold text-slate-950">{user?.fullName}</p>

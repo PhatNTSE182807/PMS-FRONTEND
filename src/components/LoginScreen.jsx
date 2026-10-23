@@ -133,23 +133,7 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
         </button>
       </p>
 
-      {/* Mock sessions, so the app can be explored without the backend */}
-      <div className="auth-shell__demo">
-        <span className="auth-shell__demo-label">Demo access</span>
-        <button type="button" onClick={fillDemoAccount} title="Fill demo email and password">Auto-fill</button>
-        <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_DRIVER))} title="Open the driver dashboard with mock data">
-          Driver →
-        </button>
-        <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_ADMIN))} title="Open the admin dashboard with mock data">
-          Admin →
-        </button>
-        {import.meta.env.DEV && (
-          <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_MANAGER))}>Manager →</button>
-        )}
-        {import.meta.env.DEV && (
-          <button type="button" onClick={() => onLoginSuccess(startDemo(DEMO_STAFF))} title="Open the gate attendant console with mock data">Staff →</button>
-        )}
-      </div>
+
 
       {isForgotPasswordOpen && (
         <div className="auth-shell__backdrop" onClick={() => setIsForgotPasswordOpen(false)}>

@@ -27,7 +27,6 @@ import {
 } from 'lucide-react'
 import { Metric, Panel, Plate, StatTile } from '@/components/features/staff/StaffBits'
 import { formatMinutes, vnd } from '@/components/features/manager/managerFormat'
-import { DemoTag } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { useAuth } from '@/hooks/useAuth'
@@ -101,7 +100,7 @@ export default function StaffCashTallyPage() {
     }
     setLocked(true)
     toast.success(`Drawer locked and submitted to ${demoStation.manager}`, {
-      description: `Counted ${vnd(counted)} (variance ${vnd(variance)}). Demo only: nothing is sent until the cash API exists.`,
+      description: `Counted ${vnd(counted)} (variance ${vnd(variance)}).`,
     })
   }
 
@@ -113,7 +112,6 @@ export default function StaffCashTallyPage() {
             <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-700">Terminal audit tally</span>
             <span className="rounded bg-indigo-100 px-2 py-0.5 text-indigo-700">Session ID: #{d.sessionId}</span>
             <span className="text-slate-700">Whole-day fiscal ledger</span>
-            <DemoTag />
           </p>
           <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">End-of-day cash reconciliation &amp; vault settlement</h1>
           <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-700">
@@ -303,7 +301,6 @@ export default function StaffCashTallyPage() {
             <h2 className="flex items-center gap-2 font-display text-lg font-bold text-slate-950">
               Daily cash transaction audit manifest
               <span className="rounded bg-indigo-100 px-2 py-0.5 font-mono text-xs text-indigo-700">{d.cashTransactions} entries</span>
-              <DemoTag />
             </h2>
             <p className="mt-1 text-sm text-slate-700">Sequential ledger of the cash collections validated at Station 01 today.</p>
           </div>

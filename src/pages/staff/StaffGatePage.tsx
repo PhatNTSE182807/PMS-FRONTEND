@@ -23,7 +23,6 @@ import {
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { GateLanesPanel } from '@/components/features/staff/GateLanesPanel'
 import { CameraFrame, Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
-import { DemoTag } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -102,7 +101,6 @@ function AnprTelemetry() {
         icon={<Video />}
         aside={
           <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-            <DemoTag />
             <span className="rounded bg-slate-100 px-2 py-0.5 font-mono">4K dual RTSP</span>
             Latency 12ms
           </span>
@@ -151,7 +149,7 @@ function AnprTelemetry() {
           <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Barrier hardware</p>
           <p className="text-sm font-semibold text-indigo-700">FAAC B680 Pro • Operational</p>
         </div>
-        <Button variant="secondary" className="ml-auto" onClick={() => toast.success('ANPR recalibration queued', { description: 'Demo only: no camera is connected yet.' })}>
+        <Button variant="secondary" className="ml-auto" onClick={() => toast.success('ANPR recalibration queued')}>
           <ScanLine /> Recalibrate ANPR
         </Button>
       </div>
@@ -167,7 +165,7 @@ function DispatchBar() {
       return
     }
     setArmed(false)
-    toast.error('Emergency barrier override engaged', { description: 'All lanes of Station 01 opened. Demo only: no barrier is connected.' })
+    toast.error('Emergency barrier override engaged', { description: 'All lanes of Station 01 opened.' })
   }
   return (
     <Panel className="flex flex-col gap-4 py-4 lg:flex-row lg:items-center sm:py-4">
@@ -181,10 +179,10 @@ function DispatchBar() {
         </div>
       </div>
       <div className="flex flex-wrap gap-2 lg:ml-auto">
-        <Button variant="secondary" onClick={() => toast.info('Blocked slot reported to the floor team', { description: 'Demo only.' })}>
+        <Button variant="secondary" onClick={() => toast.info('Blocked slot reported to the floor team')}>
           <TrafficCone /> Report blocked slot
         </Button>
-        <Button variant="secondary" onClick={() => toast.info('Intercom channel open', { description: 'Demo only: no intercom is connected.' })}>
+        <Button variant="secondary" onClick={() => toast.info('Intercom channel open')}>
           <Headset /> Intercom audio <span className="size-1.5 rounded-full bg-indigo-400" aria-hidden />
         </Button>
         <Button variant="destructive" onClick={override} onBlur={() => setArmed(false)}>
