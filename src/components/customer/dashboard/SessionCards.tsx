@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarClock, CircleCheck, Clock, Hourglass, LogIn, LogOut, Navigation, QrCode as QrIcon, ScanLine, ShieldAlert, ShieldCheck, Wallet, X } from 'lucide-react'
+import { CalendarClock, CircleCheck, Clock, CreditCard, Hourglass, LogIn, LogOut, Navigation, QrCode as QrIcon, ScanLine, ShieldAlert, ShieldCheck, Wallet, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { QrCode } from '@/components/ui/qr-code'
@@ -237,6 +237,9 @@ export function ActiveSessionCard() {
             <a className="cx-link" href={current.pendingPayment.payUrl}>Continue the {current.pendingPayment.provider} payment you started</a>
           )}
           <div className="cx-prepay__row">
+            <button type="button" className="cx-btn cx-btn--wallet" disabled={prepay.isPending || current.amountDue <= 0} onClick={() => pay('Wallet')}>
+              <CreditCard aria-hidden /> Pay with XXIV Wallet
+            </button>
             <button type="button" className="cx-btn cx-btn--gold" disabled={prepay.isPending || current.amountDue <= 0} onClick={() => pay('VNPay')}>
               <Wallet aria-hidden /> VNPay
             </button>
@@ -251,7 +254,7 @@ export function ActiveSessionCard() {
       <div className="cx-session__actions">
         {!pass.prepaid && (
           <button type="button" className="cx-btn cx-btn--teal" disabled={current.amountDue <= 0} onClick={() => setChoosing(true)}>
-            <ScanLine aria-hidden /> {current.amountDue > 0 ? 'Prepay with VNPay or MoMo' : 'Nothing to pay yet'}
+            <ScanLine aria-hidden /> {current.amountDue > 0 ? 'Prepay parking fee' : 'Nothing to pay yet'}
           </button>
         )}
         <button type="button" className="cx-btn cx-btn--gold" onClick={() => setShowPass(true)}>
@@ -401,8 +404,11 @@ export function ReservationCard() {
           </>
         ) : pending ? (
           <>
-            <button type="button" className="cx-btn cx-btn--gold" style={{ flex: 1 }} disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'VNPay' })}>
-              <Wallet aria-hidden /> Pay deposit with VNPay
+            <button type="button" className="cx-btn cx-btn--wallet" style={{ flex: 1 }} disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'Wallet' })}>
+              <CreditCard aria-hidden /> Pay with XXIV Wallet
+            </button>
+            <button type="button" className="cx-btn cx-btn--gold" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'VNPay' })}>
+              <Wallet aria-hidden /> VNPay
             </button>
             <button type="button" className="cx-btn cx-btn--momo" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'MoMo' })}>
               <Wallet aria-hidden /> MoMo

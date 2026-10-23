@@ -37,11 +37,17 @@ export function useCurrentSessions() {
 /** Starts a VNPay / MoMo prepayment of the fee so far and sends the browser to the gateway. */
 export function usePrepaySession() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ sessionId, provider }: { sessionId: number; provider: PaymentProvider }) =>
       parkingSessionService.prepay(sessionId, provider),
     onSuccess: (payment) => {
-      if (!payment.payUrl) return
+      if (!payment.payUrl) {
+        toast.success('Parking fee successfully paid using XXIV Wallet! Exit pass issued.')
+        window.dispatchEvent(new Event('xxiv-wallet-updated'))
+        void queryClient.invalidateQueries({ queryKey: queryKeys.parkingSessions.all })
+        return
+      }
       // The demo gateway is this app's own return page: stay in the SPA so the in-memory demo data survives
       const url = new URL(payment.payUrl, window.location.href)
       if (url.origin === window.location.origin) navigate(`${url.pathname}${url.search}`)

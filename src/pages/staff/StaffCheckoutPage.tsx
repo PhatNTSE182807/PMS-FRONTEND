@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowUp, Banknote, Car, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
+import { ArrowUp, Banknote, Car, CreditCard, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
@@ -125,7 +125,17 @@ export default function StaffCheckoutPage() {
     if (!session) return
     payOnline.mutate(
       { sessionId: session.id, provider },
-      { onSuccess: setQr, onError: (e) => toast.error(getErrorMessage(e)) },
+      {
+        onSuccess: (p) => {
+          if (!p.payUrl) {
+            toast.success(`Paid ${vnd(p.amount)} via XXIV Wallet!`)
+            loadQuote(session.id, exitPlate)
+          } else {
+            setQr(p)
+          }
+        },
+        onError: (e) => toast.error(getErrorMessage(e)),
+      },
     )
   }
 
@@ -335,6 +345,11 @@ export default function StaffCheckoutPage() {
                       </>
                     ) : (
                       <div className="mt-4 grid w-full gap-2">
+                        {session.customerId && (
+                          <Button className="bg-[#059669] text-white hover:bg-[#047857]" disabled={payOnline.isPending} onClick={() => showQr('Wallet')}>
+                            <CreditCard /> Charge XXIV Wallet
+                          </Button>
+                        )}
                         <Button variant="gold" disabled={payOnline.isPending} onClick={() => showQr('VNPay')}>
                           <QrIcon /> VNPay QR
                         </Button>

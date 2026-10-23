@@ -33,7 +33,10 @@ export default function PaymentReturnPage() {
     sent.current = true
     paymentService
       .handleReturn(provider, demoChoice === 'cancel' ? { ...params, cancel: '1' } : params)
-      .then(setResult)
+      .then((res) => {
+        setResult(res)
+        window.dispatchEvent(new Event('xxiv-wallet-updated'))
+      })
       .catch((e: unknown) => setError(getErrorMessage(e)))
   }, [demoChoice, params, provider])
 
@@ -97,7 +100,9 @@ export default function PaymentReturnPage() {
                   {success
                     ? payment?.purpose === 'Deposit'
                       ? 'Deposit paid: your bay is confirmed'
-                      : 'Parking fee paid'
+                      : payment?.purpose === 'WalletTopUp'
+                        ? 'Wallet top-up successful: balance updated'
+                        : 'Parking fee paid'
                     : refunded
                       ? 'Payment received after the deadline: refunded'
                       : !result.signatureValid

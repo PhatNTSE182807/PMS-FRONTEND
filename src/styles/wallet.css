@@ -1,0 +1,626 @@
+/* =========================================================
+   USER XXIV WALLET & HEADER BALANCE STYLES
+   Matches the "XXIV Sovereign Telemetry" design tone (.cx)
+========================================================= */
+
+/* Header User & Balance Section */
+.cx-nav__user-block {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+}
+
+.cx-nav__user-block:hover {
+  background: var(--cx-container);
+}
+
+.cx-nav__user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.cx-nav__user-name-link {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cx-on-surface);
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.cx-nav__user-name-link:hover {
+  color: var(--cx-gold);
+}
+
+.cx-nav__user-balance-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--cx-gold);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.cx-nav__user-balance-btn:hover {
+  filter: brightness(1.25);
+}
+
+.cx-nav__user-balance-btn:active {
+  transform: scale(0.98);
+}
+
+.cx-nav__wallet-icon {
+  width: 0.825rem;
+  height: 0.825rem;
+  flex-shrink: 0;
+  stroke-width: 2.2;
+}
+
+.cx-nav__wallet-amount {
+  letter-spacing: 0.01em;
+  font-family: var(--cx-mono-font);
+}
+
+/* =========================================================
+   WALLET MODAL OVERLAY & DIALOG
+========================================================= */
+.cx-wallet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(4, 10, 15, 0.82);
+  backdrop-filter: blur(10px);
+  animation: cx-wallet-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cx-wallet-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cx-wallet-dialog {
+  width: min(540px, 95vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 1rem;
+  background: #0f1820;
+  border: 1px solid rgba(116, 141, 146, 0.22);
+  box-shadow:
+    0 25px 60px -15px rgba(0, 0, 0, 0.85),
+    0 0 35px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  animation: cx-wallet-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(116, 141, 146, 0.3) transparent;
+}
+
+.cx-wallet-dialog::-webkit-scrollbar {
+  width: 5px;
+}
+.cx-wallet-dialog::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cx-wallet-dialog::-webkit-scrollbar-thumb {
+  background: rgba(116, 141, 146, 0.25);
+  border-radius: 4px;
+}
+
+@keyframes cx-wallet-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Modal Header */
+.cx-wallet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cx-wallet-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cx-wallet-header__badge {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.65rem;
+  background: rgba(233, 195, 73, 0.08);
+  border: 1px solid rgba(233, 195, 73, 0.35);
+  color: var(--cx-gold);
+  flex-shrink: 0;
+}
+
+.cx-wallet-header__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.cx-wallet-header__title {
+  font-family: var(--cx-headline-font);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.cx-wallet-header__title-sub {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--cx-muted);
+}
+
+.cx-wallet-header__desc {
+  font-size: 0.78rem;
+  color: var(--cx-muted);
+}
+
+.cx-wallet-header__close {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--cx-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cx-wallet-header__close:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+}
+
+/* Telemetry Balance Overview Card */
+.cx-wallet-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  border-radius: 0.75rem;
+  background: #151f28;
+  border: 1px solid rgba(116, 141, 146, 0.18);
+}
+
+.cx-wallet-summary__left {
+  display: flex;
+  flex-direction: column;
+}
+
+.cx-wallet-summary__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #7f8e9a;
+  text-transform: uppercase;
+}
+
+.cx-wallet-summary__amount {
+  font-family: var(--cx-headline-font);
+  font-size: 2.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+  margin: 0.25rem 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.cx-wallet-summary__symbol {
+  color: var(--cx-gold);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.cx-wallet-summary__status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.cx-wallet-summary__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cx-emerald);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  flex-shrink: 0;
+}
+
+.cx-wallet-summary__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.cx-wallet-summary__hold-amount {
+  font-family: var(--cx-headline-font);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0.25rem 0 0.2rem;
+}
+
+.cx-wallet-summary__limit {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cx-gold);
+}
+
+/* Tabs: Deposit & Withdraw */
+.cx-wallet-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 0.55rem;
+  background: #141d25;
+  border: 1px solid rgba(116, 141, 146, 0.16);
+}
+
+.cx-wallet-tab-btn {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--cx-muted);
+  font-family: var(--cx-headline-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cx-wallet-tab-btn:hover {
+  color: var(--cx-on-surface);
+}
+
+.cx-wallet-tab-btn--active {
+  background: #253443;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Form Sections */
+.cx-wallet-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cx-wallet-section__title {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #c0c7cd;
+}
+
+/* Quick preset buttons */
+.cx-wallet-presets {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.45rem;
+}
+
+.cx-wallet-preset {
+  padding: 0.55rem 0.35rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(116, 141, 146, 0.2);
+  background: #172129;
+  color: #dae4ed;
+  font-family: var(--cx-headline-font);
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cx-wallet-preset:hover {
+  background: #1e2c36;
+  border-color: rgba(116, 141, 146, 0.35);
+}
+
+.cx-wallet-preset--active {
+  border-color: var(--cx-gold) !important;
+  color: var(--cx-gold) !important;
+  background: rgba(233, 195, 73, 0.08) !important;
+  box-shadow: 0 0 10px rgba(233, 195, 73, 0.12);
+}
+
+/* Input container */
+.cx-wallet-input-container {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.5rem;
+  background: #111a21;
+  border: 1px solid rgba(116, 141, 146, 0.22);
+  transition: border-color 0.15s ease;
+}
+
+.cx-wallet-input-container:focus-within {
+  border-color: var(--cx-gold);
+}
+
+.cx-wallet-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: var(--cx-mono-font);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.cx-wallet-input-suffix {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #7f8e9a;
+}
+
+/* Payment Methods (VNPay & MoMo only) */
+.cx-wallet-methods {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+}
+
+.cx-wallet-method {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(116, 141, 146, 0.22);
+  background: #172129;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cx-wallet-method:hover {
+  background: #1e2c37;
+  border-color: rgba(116, 141, 146, 0.35);
+}
+
+.cx-wallet-method--active {
+  border-color: var(--cx-gold) !important;
+  background: rgba(233, 195, 73, 0.07) !important;
+}
+
+.cx-wallet-radio {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(116, 141, 146, 0.4);
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.cx-wallet-method--active .cx-wallet-radio {
+  border-color: var(--cx-gold);
+}
+
+.cx-wallet-radio__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--cx-gold);
+}
+
+.cx-wallet-method__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.35rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.cx-wallet-method__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+/* Action Confirm Button */
+.cx-wallet-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  height: 2.85rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--cx-gold);
+  color: #0b141b;
+  font-family: var(--cx-headline-font);
+  font-size: 0.925rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  margin-top: 0.25rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.cx-wallet-submit:hover {
+  background: #f7d560;
+}
+
+.cx-wallet-submit:active {
+  transform: scale(0.99);
+}
+
+/* Recent Transaction Ledger */
+.cx-wallet-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.cx-wallet-history__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cx-wallet-history__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #dae4ed;
+  text-transform: uppercase;
+}
+
+.cx-wallet-history__more {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--cx-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.cx-wallet-history__more:hover {
+  color: var(--cx-on-surface);
+}
+
+.cx-wallet-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cx-wallet-history__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.5rem;
+  background: #162028;
+  border: 1px solid rgba(116, 141, 146, 0.12);
+}
+
+.cx-wallet-history__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cx-wallet-history__icon--deposit {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--cx-emerald);
+}
+
+.cx-wallet-history__icon--deduct {
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--cx-amber);
+}
+
+.cx-wallet-history__details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.cx-wallet-history__item-title {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #dae4ed;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cx-wallet-history__item-sub {
+  font-size: 0.72rem;
+  color: var(--cx-muted);
+}
+
+.cx-wallet-history__values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.cx-wallet-history__amount {
+  font-family: var(--cx-headline-font);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cx-wallet-history__amount--deposit {
+  color: var(--cx-emerald);
+}
+
+.cx-wallet-history__amount--deduct {
+  color: #ffffff;
+}
+
+.cx-wallet-history__status {
+  font-size: 0.7rem;
+  color: var(--cx-muted);
+}
+
+/* Footer security reassurance */
+.cx-wallet-footer {
+  font-size: 0.72rem;
+  color: #6c7985;
+  text-align: center;
+  padding-top: 0.35rem;
+}

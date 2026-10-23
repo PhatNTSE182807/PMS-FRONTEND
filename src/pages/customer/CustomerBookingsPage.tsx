@@ -5,6 +5,7 @@ import {
   Car,
   CircleX,
   Clock,
+  CreditCard,
   Headset,
   MapPin,
   ScanLine,
@@ -233,14 +234,17 @@ function PendingDeposit({ booking, now }: { booking: ReservationDTO; now: number
         <strong>{vnd(booking.depositAmount)}</strong>
         <span className="cx-upcoming__due"><Timer aria-hidden /> {left > 0 ? `Pay within ${countdown(left)}` : 'Expired'}</span>
       </div>
-      <div className="cx-reserve__pay" style={{ minWidth: '14rem' }}>
+      <div className="cx-reserve__pay" style={{ minWidth: '16rem' }}>
+        <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
+          <CreditCard aria-hidden /> Pay with XXIV Wallet
+        </button>
         <button type="button" className="cx-btn cx-btn--gold" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')}>
           <Wallet aria-hidden /> VNPay
         </button>
         <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
           <Wallet aria-hidden /> MoMo
         </button>
-        <button type="button" className="cx-link" style={{ gridColumn: '1 / -1' }} disabled={cancel.isPending} onClick={() => cancel.mutate({ id: booking.id, reason: 'Given up before paying' })}>
+        <button type="button" className="cx-link" style={{ width: '100%', textAlign: 'center' }} disabled={cancel.isPending} onClick={() => cancel.mutate({ id: booking.id, reason: 'Given up before paying' })}>
           Give up this booking
         </button>
       </div>
@@ -274,7 +278,7 @@ export default function CustomerBookingsPage() {
     <>
       <header className="cx-page-head">
         <div>
-          <span className="cx-eyebrow"><span className="cx-dot cx-dot--gold" aria-hidden="true" /> Slot reservations • Deposits via VNPay / MoMo</span>
+          <span className="cx-eyebrow"><span className="cx-dot cx-dot--gold" aria-hidden="true" /> Slot reservations • Deposits via XXIV Wallet / VNPay / MoMo</span>
           <h1 className="cx-page-title">My Bookings &amp; Reservations</h1>
           <p className="cx-page-lead">Track reservations, pay deposits, show your check-in QR and review your history. Up to 2 active reservations per account.</p>
         </div>

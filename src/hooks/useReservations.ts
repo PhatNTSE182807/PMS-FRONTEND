@@ -106,10 +106,16 @@ export function useCancelReservation() {
 /** Starts the deposit payment and sends the browser to the gateway (or the demo return page). */
 export function usePayDeposit() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, provider }: { id: number; provider: PaymentProvider }) => reservationService.payDeposit(id, provider),
     onSuccess: (payment) => {
-      if (!payment.payUrl) return
+      if (!payment.payUrl) {
+        toast.success('Deposit successfully paid using XXIV Wallet!')
+        window.dispatchEvent(new Event('xxiv-wallet-updated'))
+        void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+        return
+      }
       // The demo gateway is this app's own return page: stay in the SPA so the in-memory demo data survives
       const url = new URL(payment.payUrl, window.location.href)
       if (url.origin === window.location.origin) navigate(`${url.pathname}${url.search}`)

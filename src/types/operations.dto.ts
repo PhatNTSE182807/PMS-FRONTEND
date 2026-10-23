@@ -27,9 +27,41 @@ export type SessionStatus =
   | 'EmergencyExit'
   | 'Cancelled'
 
-export type PaymentProvider = 'VNPay' | 'MoMo'
+export type PaymentProvider = 'VNPay' | 'MoMo' | 'Wallet'
 export type PaymentStatus = 'Pending' | 'Succeeded' | 'Failed' | 'Expired' | 'RefundPending' | 'Refunded'
-export type PaymentPurpose = 'Deposit' | 'ParkingFee' | 'Refund'
+export type PaymentPurpose = 'Deposit' | 'ParkingFee' | 'Refund' | 'WalletTopUp'
+
+export interface WalletTransactionDTO {
+  id: string
+  title: string
+  subtitle: string
+  amount: number
+  status: string
+  type: 'deposit' | 'withdraw'
+  method: string
+  createdAt: string
+}
+
+export interface WalletDTO {
+  balance: number
+  holdAmount: number
+  currency: string
+  status: string
+  recentTransactions: WalletTransactionDTO[]
+}
+
+export interface TopUpWalletRequest {
+  amount: number
+  provider?: PaymentProvider
+  returnUrl?: string
+}
+
+export interface WithdrawWalletRequest {
+  amount: number
+  method?: 'bank' | 'momo'
+  bankName?: string
+  bankAccount?: string
+}
 
 /** PaymentResponseModel */
 export interface PaymentDTO {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CircleCheck, Timer, Wallet } from 'lucide-react'
+import { CircleCheck, CreditCard, Timer, Wallet } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { useNow } from '@/hooks/useNow'
@@ -83,6 +83,9 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           {left === 0 && ' (expired)'}
         </p>
         <div className="cx-reserve__pay">
+          <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
+            <CreditCard aria-hidden /> Pay with XXIV Wallet
+          </button>
           <button type="button" className="cx-btn cx-btn--gold" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')}>
             <Wallet aria-hidden /> VNPay
           </button>

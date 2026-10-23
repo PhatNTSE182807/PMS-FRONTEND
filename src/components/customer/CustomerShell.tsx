@@ -1,13 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { LogOut, Shield } from 'lucide-react'
+import { CreditCard, LogOut, Shield } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { LOGO_SRC } from '@/components/ParkingLogo'
-import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
+import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useWallet, formatVndBalance } from '@/hooks/useWallet'
 import { initials } from './customerFormat'
 import { NotificationBell } from './NotificationBell'
+import { UserWalletModal } from './UserWalletModal'
 import '@/styles/customer.css'
+import '@/styles/wallet.css'
 
 /** Hash links scroll to a dashboard section; the others are pages of their own. */
 const LINKS = [
@@ -25,6 +28,8 @@ export function CustomerShell() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const { pathname, hash } = useLocation()
+  const { balance } = useWallet()
+  const [isWalletOpen, setIsWalletOpen] = useState(false)
 
   // React Router does not follow #anchors: scroll to the section, or to the top on a new page.
   useEffect(() => {
@@ -72,13 +77,25 @@ export function CustomerShell() {
 
           <div className="cx-nav__actions">
             <NotificationBell />
-            <Link to="/me/profile" className="cx-nav__user">
-              <span className="cx-avatar">{avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}</span>
-              <span className="cx-nav__user-text">
-                <span className="cx-nav__user-name">{name}</span>
-                <span className="cx-nav__user-role">{roleLabel(user?.role)} • Connected</span>
-              </span>
-            </Link>
+            <div className="cx-nav__user-block">
+              <Link to="/me/profile" className="cx-avatar" title="User Profile">
+                {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
+              </Link>
+              <div className="cx-nav__user-text">
+                <Link to="/me/profile" className="cx-nav__user-name-link" title="User Profile">
+                  {name}
+                </Link>
+                <button
+                  type="button"
+                  className="cx-nav__user-balance-btn"
+                  onClick={() => setIsWalletOpen(true)}
+                  title="XXIV E-Wallet (Click to view balance, deposit & withdraw)"
+                >
+                  <CreditCard className="cx-nav__wallet-icon" aria-hidden="true" />
+                  <span className="cx-nav__wallet-amount">{formatVndBalance(balance)}</span>
+                </button>
+              </div>
+            </div>
             <button type="button" className="cx-btn cx-btn--ghost" onClick={handleLogout}>
               <LogOut aria-hidden /> Logout
             </button>
@@ -115,7 +132,10 @@ export function CustomerShell() {
         </div>
       </footer>
 
+      <UserWalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} />
+
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
   )
 }
+
