@@ -62,6 +62,12 @@ export const queryKeys = {
     all: ['parking-history'] as const,
     page: (query: ParkingHistoryQuery) => [...queryKeys.parkingHistory.all, 'page', query] as const,
   },
+  /** Check-in / check-out requests from the customer app. */
+  gateRequests: {
+    all: ['gate-requests'] as const,
+    mine: () => [...queryKeys.gateRequests.all, 'mine'] as const,
+    queue: (lotId: string, kind: string) => [...queryKeys.gateRequests.all, 'queue', lotId, kind] as const,
+  },
   /** Entry/exit lanes of one lot (Staff). */
   gate: {
     all: ['gate'] as const,

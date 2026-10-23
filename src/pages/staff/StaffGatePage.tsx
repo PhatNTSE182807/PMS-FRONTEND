@@ -21,7 +21,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
-import { EntryLaneConsole } from '@/components/features/staff/EntryLaneConsole'
+import { GateLanesPanel } from '@/components/features/staff/GateLanesPanel'
 import { CameraFrame, Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
 import { DemoTag } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -308,7 +308,7 @@ export default function StaffGatePage() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
         <AnprTelemetry />
         {lotKey ? (
-          <EntryLaneConsole lotId={lotKey} />
+          <GateLanesPanel lotId={lotKey} />
         ) : (
           <Panel>
             <SectionTitle icon={<LogIn />}>Entry lane</SectionTitle>

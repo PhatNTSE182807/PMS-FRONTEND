@@ -4,8 +4,8 @@ import { session } from '@/lib/session'
 
 /**
  * Server → client events of PMS.API ParkingOpsHub (/api/hubs/parking-ops). Customers receive their own
- * reservation and payment changes; Staff and Managers join a lot and receive its sessions, payments,
- * zone counters and alerts.
+ * reservation, payment and check-in / check-out request changes; Staff and Managers join a lot and
+ * receive its sessions, payments, zone counters, gate requests and alerts.
  */
 export type ParkingOpsEvent =
   | { type: 'ReservationChanged'; reservationId: number; lotId: number; status: string; slotId: number | null }
@@ -14,10 +14,11 @@ export type ParkingOpsEvent =
   | { type: 'SessionChanged'; lotId: number; sessionId: number; status: string; plateNumber: string }
   | { type: 'ZoneCounterChanged'; lotId: number; zoneId: number; availableSpaces: number; occupiedSpaces: number; totalCapacity: number }
   | { type: 'OpsAlert'; lotId: number; code: string; message: string; sessionId: number | null }
+  | { type: 'GateRequestChanged'; lotId: number; requestId: number; kind: 'CheckIn' | 'CheckOut'; status: string }
 
 type Listener = (event: ParkingOpsEvent) => void
 
-const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert']
+const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert', 'GateRequestChanged']
 
 const listeners = new Set<Listener>()
 const joinedLots = new Map<string, number>()

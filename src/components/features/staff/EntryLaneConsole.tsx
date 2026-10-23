@@ -32,8 +32,9 @@ const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour:
  * type the plate. Every gate check then runs on the server; a blocked entry lists the alerts and the Staff
  * clears the ones they may override, with a reason. The lot's entry lane is picked automatically. Once the
  * barrier opens the session waits for the loop sensor (or the Staff's "Vehicle passed" press).
+ * `embedded` drops the panel frame, for use inside the lanes panel (manual / walk-in entry).
  */
-export function EntryLaneConsole({ lotId }: { lotId: string }) {
+export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; embedded?: boolean }) {
   const gates = useGates(lotId)
   const vehicleTypes = useVehicleTypes()
   const checkIn = useCheckIn(lotId)
@@ -98,20 +99,7 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
 
   const session = result?.outcome === 'Created' ? result.session : null
 
-  return (
-    <Panel>
-      <SectionTitle
-        icon={<LogIn />}
-        aside={
-          <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase', session ? 'bg-emerald-100 text-emerald-700' : blocking.length ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700')}>
-            {session ? (session.status === 'PendingEntry' ? 'Barrier open' : session.status) : blocking.length ? 'Barrier held' : 'Ready'}
-          </span>
-        }
-      >
-        Entry lane
-      </SectionTitle>
-
-      {session ? (
+  const body = session ? (
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
             <div>
@@ -244,10 +232,29 @@ export function EntryLaneConsole({ lotId }: { lotId: string }) {
             <DoorOpen /> {blocking.length ? 'Check again' : 'Check in & open barrier'}
           </Button>
         </form>
-      )}
+      )
+
+  if (embedded) return <div>{body}</div>
+
+  return (
+    <Panel>
+      <SectionTitle
+        icon={<LogIn />}
+        aside={
+          <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase', session ? 'bg-emerald-100 text-emerald-700' : blocking.length ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700')}>
+            {session ? (session.status === 'PendingEntry' ? 'Barrier open' : session.status) : blocking.length ? 'Barrier held' : 'Ready'}
+          </span>
+        }
+      >
+        Entry lane
+      </SectionTitle>
+      {body}
     </Panel>
   )
 }
+
+/** Reused by the lanes panel for the alerts of an app request. */
+export { AlertRow }
 
 /** The booking behind the scanned QR / typed code: who, which car, which bay, and whether it may enter now. */
 function ReservationCard({ info }: { info: GateReservationLookupDTO }) {

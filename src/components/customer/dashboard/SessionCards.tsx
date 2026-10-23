@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarClock, CircleCheck, Clock, Navigation, QrCode as QrIcon, ScanLine, ShieldCheck, Wallet, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { CalendarClock, CircleCheck, Clock, Hourglass, LogIn, LogOut, Navigation, QrCode as QrIcon, ScanLine, ShieldAlert, ShieldCheck, Wallet, X } from 'lucide-react'
+import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { QrCode } from '@/components/ui/qr-code'
+import { useCancelGateRequest, useMyGateRequests, useRequestCheckIn, useRequestCheckOut } from '@/hooks/useGateRequests'
 import { useCurrentSessions, usePrepaySession } from '@/hooks/useParkingSessions'
 import { useCancelReservation, usePayDeposit, useUpcomingReservation, useUpdateReservation } from '@/hooks/useReservations'
 import { useNow } from '@/hooks/useNow'
 import { checkBookingTimes, describeWindow, relativeDay, toLocalInput, type BookingTimes } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
+import type { GateRequestDTO } from '@/types/gateRequest.dto'
 import type { CurrentSessionDTO, ExitPassDTO, PaymentProvider, ReservationDTO } from '@/types/operations.dto'
 
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -56,14 +60,70 @@ function ExitPassDialog({ pass, plate, onClose }: { pass: ExitPassDTO; plate: st
   )
 }
 
+/** A refusal stays on the card this long, so the customer can read Staff's reason. */
+const REFUSAL_VISIBLE_MS = 30 * 60_000
+
+/**
+ * The latest request for this booking or parked vehicle, while it matters: waiting at the lane, or
+ * refused recently (with Staff's reason). Completed requests show through the cards themselves.
+ */
+function useLatestRequest(match: (r: GateRequestDTO) => boolean, now: number) {
+  const { data: requests = [] } = useMyGateRequests()
+  const latest = requests.find(match)
+  if (!latest) return null
+  if (latest.status === 'Waiting') return latest
+  if (latest.status === 'Refused' && latest.handledAt && now - Date.parse(latest.handledAt) < REFUSAL_VISIBLE_MS) return latest
+  return null
+}
+
+/** "Waiting for Staff at the entry lane…" with Cancel, or Staff's refusal. */
+function GateRequestNotice({ request }: { request: GateRequestDTO }) {
+  const cancel = useCancelGateRequest()
+  const lane = request.kind === 'CheckIn' ? 'entry' : 'exit'
+  // The API's "problem" is written for the Staff; an unpaid exit gets the customer's own wording
+  const hint =
+    request.kind === 'CheckOut' && request.sessionStatus && request.sessionStatus !== 'Paid'
+      ? 'Not paid yet: prepay above, or pay the Staff at the exit lane.'
+      : request.problem
+  if (request.status === 'Refused') {
+    return (
+      <p className="cx-gate-request cx-gate-request--refused" role="status">
+        <ShieldAlert aria-hidden />
+        <span>
+          Staff did not open the {lane} barrier{request.note ? `: ${request.note}` : '.'}
+        </span>
+      </p>
+    )
+  }
+  return (
+    <p className="cx-gate-request" role="status" aria-live="polite">
+      <Hourglass aria-hidden />
+      <span>
+        Waiting for Staff at the {lane} lane to check your vehicle and open the barrier
+        {hint ? `. ${hint}` : '…'}
+      </span>
+      <button
+        type="button"
+        className="cx-link"
+        disabled={cancel.isPending}
+        onClick={() => cancel.mutate(request.id, { onError: (e) => toast.error(getErrorMessage(e, 'Could not cancel the request.')) })}
+      >
+        Cancel
+      </button>
+    </p>
+  )
+}
+
 /** The car parked right now (GET /parking-sessions/current): running fee, prepay with VNPay or MoMo, exit pass. */
 export function ActiveSessionCard() {
   const now = useNow(30_000)
   const { data: sessions = [], isPending } = useCurrentSessions()
   const prepay = usePrepaySession()
+  const checkOut = useRequestCheckOut()
   const [choosing, setChoosing] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const current = sessions[0]
+  const exitRequest = useLatestRequest((r) => r.kind === 'CheckOut' && r.sessionId === current?.session.id, now)
 
   if (isPending) return <article className="cx-card cx-card--accent-gold"><div className="cx-skeleton" style={{ height: '18rem' }} /></article>
 
@@ -91,6 +151,11 @@ export function ActiveSessionCard() {
   const pass = current.exitPass
   const address = [current.lotAddress, current.lotDistrict].filter(Boolean).join(', ')
   const pay = (provider: PaymentProvider) => prepay.mutate({ sessionId: s.id, provider })
+  const askCheckOut = () =>
+    checkOut.mutate(s.id, {
+      onSuccess: () => toast.success('Check-out requested', { description: 'Drive to the exit lane: Staff will check your vehicle and open the barrier.' }),
+      onError: (e) => toast.error(getErrorMessage(e, 'Could not request the check-out.')),
+    })
 
   return (
     <article className="cx-card cx-card--accent-gold" id="session">
@@ -192,7 +257,18 @@ export function ActiveSessionCard() {
         <button type="button" className="cx-btn cx-btn--gold" onClick={() => setShowPass(true)}>
           <QrIcon aria-hidden /> View exit gate pass
         </button>
+        <button
+          type="button"
+          className="cx-btn cx-btn--teal"
+          disabled={checkOut.isPending || exitRequest?.status === 'Waiting'}
+          title={pass.prepaid || current.amountDue <= 0 ? undefined : 'Prepay first, or pay the Staff at the exit lane'}
+          onClick={askCheckOut}
+        >
+          <LogOut aria-hidden /> {exitRequest?.status === 'Waiting' ? 'Check-out requested' : 'Check out'}
+        </button>
       </div>
+
+      {exitRequest && <GateRequestNotice request={exitRequest} />}
 
       {showPass && <ExitPassDialog pass={pass} plate={s.plateNumber} onClose={() => setShowPass(false)} />}
     </article>
@@ -216,6 +292,8 @@ export function ReservationCard() {
   const update = useUpdateReservation()
   const cancel = useCancelReservation()
   const payDeposit = usePayDeposit()
+  const checkIn = useRequestCheckIn()
+  const entryRequest = useLatestRequest((r) => r.kind === 'CheckIn' && r.reservationId === booking?.id, now)
   const [editing, setEditing] = useState(false)
   const [times, setTimes] = useState<BookingTimes | null>(null)
   const [error, setError] = useState('')
@@ -242,6 +320,13 @@ export function ReservationCard() {
   const pending = booking.status === 'PendingDeposit'
   const depositDue = booking.depositDueAt ? Date.parse(booking.depositDueAt) : null
   const location = [booking.parkingLotAddress, booking.parkingLotDistrict].filter(Boolean).join(', ')
+  // The entry lane accepts the booking from 15 minutes before arrival until the hold ends
+  const windowOpen = booking.status === 'Confirmed' && now >= Date.parse(booking.checkInFrom) && now <= Date.parse(booking.checkInUntil)
+  const askCheckIn = () =>
+    checkIn.mutate(booking.id, {
+      onSuccess: () => toast.success('Check-in requested', { description: 'Drive to the entry lane: Staff will check your vehicle and open the barrier.' }),
+      onError: (e) => toast.error(getErrorMessage(e, 'Could not request the check-in.')),
+    })
 
   const save = () => {
     if (!times) return
@@ -328,8 +413,17 @@ export function ReservationCard() {
           <>
             <button
               type="button"
-              className="cx-btn"
+              className="cx-btn cx-btn--gold"
               style={{ flex: 1 }}
+              disabled={!windowOpen || checkIn.isPending || entryRequest?.status === 'Waiting'}
+              title={windowOpen ? undefined : `Check-in opens at ${timeFormat.format(Date.parse(booking.checkInFrom))}`}
+              onClick={askCheckIn}
+            >
+              <LogIn aria-hidden /> {entryRequest?.status === 'Waiting' ? 'Check-in requested' : 'Check in'}
+            </button>
+            <button
+              type="button"
+              className="cx-btn"
               disabled={!booking.canChange}
               title={booking.canChange ? undefined : 'Changes close 30 minutes before arrival'}
               onClick={() => {
@@ -346,6 +440,7 @@ export function ReservationCard() {
           </>
         )}
       </div>
+      {entryRequest && <GateRequestNotice request={entryRequest} />}
       <Link to="/me/bookings" className="cx-link" style={{ marginTop: '0.75rem' }}>All my bookings</Link>
     </article>
   )

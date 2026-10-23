@@ -22,6 +22,7 @@ import type {
   UpdateReservationRequest,
   ZoneCounterDTO,
 } from '@/types/operations.dto'
+import type { ApproveGateRequestRequest, GateRequestDecisionDTO, GateRequestDTO, GateRequestKind } from '@/types/gateRequest.dto'
 import { mockFail, mockResponse } from './mockApi'
 
 /*
@@ -64,6 +65,8 @@ const code = (prefix: string) => `${prefix}${Date.now().toString(36).toUpperCase
 
 interface MockReservation extends ReservationDTO {
   lotKey: string
+  /** Another customer's booking, seeded for the Staff lane demo: never shown to the demo driver. */
+  staffDemo?: boolean
 }
 interface MockSession extends ParkingSessionDTO {
   lotKey: string
@@ -73,6 +76,8 @@ interface MockSession extends ParkingSessionDTO {
 }
 
 const reservations: MockReservation[] = []
+/** The demo driver's own bookings (the Staff demo seeds other customers' bookings in the same list). */
+const customerReservations = () => reservations.filter((r) => !r.staffDemo)
 const sessions: MockSession[] = []
 const payments: PaymentDTO[] = []
 
@@ -130,7 +135,7 @@ function refreshFlags(r: MockReservation) {
 }
 
 function ownReservation(id: number) {
-  const r = reservations.find((x) => x.id === id)
+  const r = customerReservations().find((x) => x.id === id)
   if (!r) mockFail(404, 'Reservation not found.')
   return r
 }
@@ -258,7 +263,7 @@ export const reservationMock = {
   mine: () =>
     mockResponse(() => {
       sweep()
-      return reservations.map(refreshFlags).sort((a, b) => Date.parse(b.arrivalTime) - Date.parse(a.arrivalTime))
+      return customerReservations().map(refreshFlags).sort((a, b) => Date.parse(b.arrivalTime) - Date.parse(a.arrivalTime))
     }),
 
   get: (id: number) => mockResponse(() => (sweep(), refreshFlags(ownReservation(id)))),
@@ -275,7 +280,7 @@ export const reservationMock = {
       const mode: BookingMode = request.bookingMode ?? 'PayAsYouGo'
       const departure = checkDeparture(mode, arrival, request.departureTime)
       // BR-07: a checked-in booking still counts, and the vehicle is matched by plate
-      const active = reservations.filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn')
+      const active = customerReservations().filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn')
       if (active.length >= 2) mockFail(400, 'Each account can have at most 2 active reservations.')
       if (active.some((r) => r.vehicleId === vehicle.vehicleId || normalize(r.plateNumber ?? '') === normalize(vehicle.licensePlate)))
         mockFail(400, `Vehicle ${vehicle.licensePlate} already has an active reservation.`)
@@ -351,7 +356,7 @@ export const reservationMock = {
   upcoming: () =>
     mockResponse<ReservationDTO | null>(() => {
       sweep()
-      const next = reservations
+      const next = customerReservations()
         .filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed')
         .sort((a, b) => Date.parse(a.arrivalTime) - Date.parse(b.arrivalTime))[0]
       return next ? refreshFlags(next) : null
@@ -815,5 +820,271 @@ export const customerSessionMock = {
       const q = quote(s, undefined, true)
       if (q.amountDue <= 0) mockFail(400, 'Nothing is due.')
       return newPayment(q.amountDue, provider, 'ParkingFee', 'App', { sessionId: s.id })
+    }),
+}
+
+/* ---------------------------------------------------------------- check-in / check-out requests from the app */
+
+interface MockGateRequest extends GateRequestDTO {
+  lotKey: string
+  /** Sent by the signed-in demo driver (the others are seeded for the Staff demo). */
+  mine: boolean
+}
+
+const gateRequests: MockGateRequest[] = []
+const seededRequestLots = new Set<string>()
+/** In demo mode no Staff is watching the driver's requests: a simulated one handles them after this delay. */
+const DEMO_STAFF_DELAY_MS = 15_000
+
+/** Live fields (session status, payment, what would block the barrier) are read at every call, like the API. */
+function requestDto(g: MockGateRequest): GateRequestDTO {
+  const { lotKey: _lot, mine: _mine, ...dto } = g
+  const r = reservations.find((x) => x.id === g.reservationId)
+  const s = sessions.find((x) => x.id === g.sessionId)
+  let problem: string | null = null
+  if (g.status === 'Waiting') {
+    if (g.kind === 'CheckIn') {
+      if (!r) problem = 'The booking no longer exists.'
+      else if (r.status !== 'Confirmed') problem = `The booking is ${r.status}.`
+      else if (now() < Date.parse(r.checkInFrom)) problem = 'Too early: the check-in window has not opened.'
+      else if (now() > Date.parse(r.checkInUntil)) problem = 'The hold has ended: only a walk-in entry is possible.'
+    } else if (!s) problem = 'The parking session no longer exists.'
+    else if (s.status !== 'Paid') problem = 'Not paid yet: take the fee at the POS before opening the barrier.'
+    else if (s.exitWindowEndsAt && now() > Date.parse(s.exitWindowEndsAt)) problem = 'The Exit Window has passed: an extra fee is due (BR-10).'
+  }
+  return {
+    ...dto,
+    reservationStatus: r?.status ?? dto.reservationStatus,
+    slotCode: s?.slotCode ?? r?.slotCode ?? dto.slotCode,
+    sessionCode: s?.code ?? null,
+    sessionStatus: s?.status ?? null,
+    entryTime: s?.entryTime ?? null,
+    paidAmount: s?.paidAmount ?? 0,
+    exitWindowEndsAt: s?.exitWindowEndsAt ?? null,
+    problem,
+  }
+}
+
+function newRequest(fields: Partial<MockGateRequest> & Pick<MockGateRequest, 'lotKey' | 'kind' | 'mine'>): MockGateRequest {
+  const lot = findMockLot(fields.lotKey)
+  const request: MockGateRequest = {
+    id: nextId(), status: 'Waiting', parkingLotId: lotNumber(fields.lotKey), lotName: lot?.name ?? 'Demo lot',
+    plateNumber: null, vehicleLabel: null, vehicleColor: null, vehicleTypeId: 1, vehicleTypeName: 'Car',
+    customerName: null, customerPhone: null, reservationId: null, reservationCode: null, reservationStatus: null,
+    arrivalTime: null, checkInFrom: null, checkInUntil: null, slotCode: null, sessionId: null, sessionCode: null,
+    sessionStatus: null, entryTime: null, paidAmount: 0, exitWindowEndsAt: null, problem: null,
+    createdAt: iso(now()), handledAt: null, note: null,
+    ...fields,
+  }
+  gateRequests.push(request)
+  return request
+}
+
+/** A confirmed booking inside its check-in window, for the seeded Staff queue. */
+function seedBooking(lotKey: string, plate: string, label: string, arrivalInMinutes: number): MockReservation {
+  const lot = findMockLot(lotKey)
+  const arrival = now() + arrivalInMinutes * MINUTE
+  const slotId = 2000 + (nextId() % 40)
+  const r: MockReservation = {
+    lotKey, id: nextId(), code: code('RSV'), status: 'Confirmed', parkingLotId: lotNumber(lotKey),
+    parkingLotName: lot?.name ?? 'Demo lot', zoneId: 3, zoneName: 'Level 3 · Cars', slotId, slotCode: slotCode(slotId),
+    vehicleId: `demo-${normalize(plate)}`, plateNumber: plate, arrivalTime: iso(arrival),
+    checkInFrom: iso(arrival - RULES.earlyMinutes * MINUTE), checkInUntil: iso(arrival + RULES.holdMinutes * MINUTE),
+    depositAmount: RULES.deposit, depositDueAt: null, refundAmount: 0, cancelReason: null, cancelledBy: null,
+    createdAt: iso(now() - 60 * MINUTE), confirmedAt: iso(now() - 55 * MINUTE), canChange: false, canCancel: true,
+    refundIfCancelledNow: 0, pendingPayment: null, parkingLotAddress: lot?.address ?? null, parkingLotDistrict: null,
+    vehicleLabel: label, bookingMode: 'PayAsYouGo', departureTime: null, isSlotHeld: true, staffDemo: true,
+  }
+  reservations.push(r)
+  return r
+}
+
+/** The Staff demo starts with two arrivals and two departures waiting (once per lot and page load). */
+function seedRequests(lotKey: string) {
+  if (seededRequestLots.has(lotKey)) return
+  seededRequestLots.add(lotKey)
+  const cars = lotSessions(lotKey).filter((s) => inside(s) && s.vehicleKind === 'car' && !s.ownedByCustomer)
+
+  const arrivals: [string, string, string, string, number][] = [
+    ['51K-246.80', 'Mazda CX-5', 'Red', 'Lê Thị Hoa', 4],
+    ['30H-135.79', 'Toyota Vios', 'White', 'Trần Minh Khoa', 1],
+  ]
+  for (const [plate, label, color, customer, minutesAgo] of arrivals) {
+    const r = seedBooking(lotKey, plate, label, 5)
+    newRequest({
+      lotKey, kind: 'CheckIn', mine: false, plateNumber: plate, vehicleLabel: label, vehicleColor: color, customerName: customer,
+      customerPhone: '0901 234 567', reservationId: r.id, reservationCode: r.code, arrivalTime: r.arrivalTime,
+      checkInFrom: r.checkInFrom, checkInUntil: r.checkInUntil, createdAt: iso(now() - minutesAgo * MINUTE),
+    })
+  }
+
+  // One departure already paid in the app (opens at once), one not paid yet (Staff must take the fee)
+  const departures: [MockSession | undefined, string, string, number][] = [
+    [cars[0], 'Phạm Quốc Bảo', 'Honda City', 3],
+    [cars[1], 'Ngô Thanh Tâm', 'Kia Morning', 2],
+  ]
+  departures.forEach(([s, customer, label, minutesAgo], i) => {
+    if (!s) return
+    if (i === 0) {
+      s.paidAmount = quote(s, undefined, false).fee
+      s.status = 'Paid'
+      s.exitWindowEndsAt = iso(now() + 12 * MINUTE)
+    }
+    newRequest({
+      lotKey, kind: 'CheckOut', mine: false, plateNumber: s.plateNumber, vehicleLabel: label, customerName: customer,
+      customerPhone: '0912 345 678', sessionId: s.id, createdAt: iso(now() - minutesAgo * MINUTE),
+    })
+  })
+}
+
+function findRequest(id: number) {
+  const g = gateRequests.find((x) => x.id === id)
+  if (!g) mockFail(404, 'Request not found.')
+  return g
+}
+
+/** Opens the barrier through the lane mock (same rules as the entry and exit lanes). */
+async function approveRequest(g: MockGateRequest, request: ApproveGateRequestRequest): Promise<GateRequestDecisionDTO> {
+  if (g.status !== 'Waiting') mockFail(400, g.status === 'Cancelled' ? 'The customer cancelled this request.' : 'This request was already handled.')
+  if (g.kind === 'CheckIn') {
+    const result = await gateMock.checkIn(g.lotKey, {
+      gateId: request.gateId, plateNumber: g.plateNumber ?? undefined, vehicleTypeId: g.vehicleTypeId ?? 1,
+      reservationCode: g.reservationCode ?? undefined, plateConfirmed: request.plateConfirmed ?? true,
+      allowWhenFull: request.allowWhenFull, allowPlateMismatch: request.allowPlateMismatch, overrideReason: request.overrideReason,
+    })
+    if (result.outcome === 'Created' && result.session) {
+      g.status = 'Completed'
+      g.sessionId = result.session.id
+      g.handledAt = iso(now())
+      const s = sessions.find((x) => x.id === result.session!.id)
+      if (s && g.mine) s.ownedByCustomer = true
+    }
+    return { request: requestDto(g), barrierOpen: result.barrierOpen, checkIn: result, checkOut: null, alerts: result.alerts.filter((a) => a.blocking) }
+  }
+  const result = await gateMock.checkout(g.sessionId!, {
+    gateId: request.gateId, plateNumber: g.plateNumber ?? undefined, photoChecked: request.plateConfirmed ?? true,
+    allowPlateMismatch: request.allowPlateMismatch, overrideReason: request.overrideReason,
+  })
+  if (result.barrierOpen) {
+    g.status = 'Completed'
+    g.handledAt = iso(now())
+  }
+  return { request: requestDto(g), barrierOpen: result.barrierOpen, checkIn: null, checkOut: result, alerts: result.alerts.filter((a) => a.blocking) }
+}
+
+/** Demo only: a simulated Staff member opens the barrier (and the sensor confirms), or refuses when unpaid. */
+function handleLater(g: MockGateRequest) {
+  setTimeout(() => {
+    if (g.status !== 'Waiting') return
+    const problem = requestDto(g).problem
+    if (problem) {
+      g.status = 'Refused'
+      g.handledAt = iso(now())
+      g.note = g.kind === 'CheckOut' ? 'Please pay the parking fee in the app first, then press Check out again.' : problem
+      return
+    }
+    void approveRequest(g, {})
+      .then(async (decision) => {
+        if (decision.checkIn?.session) await gateMock.confirmEntry(decision.checkIn.session.id)
+      })
+      .catch(() => {
+        g.status = 'Refused'
+        g.handledAt = iso(now())
+        g.note = 'The gate could not open; please talk to the Staff at the lane.'
+      })
+  }, DEMO_STAFF_DELAY_MS)
+}
+
+export const gateRequestMock = {
+  /** Same checks as the API: confirmed, inside the window, vehicle not parked; pressing twice keeps one place. */
+  async requestCheckIn(reservationId: number): Promise<GateRequestDTO> {
+    const profile = await profileMock.getProfile()
+    return mockResponse(() => {
+      sweep()
+      const r = ownReservation(reservationId)
+      if (r.status !== 'Confirmed') mockFail(400, r.status === 'CheckedIn' ? 'This booking has already checked in.' : `This booking is ${r.status} and cannot check in.`)
+      if (now() < Date.parse(r.checkInFrom)) mockFail(400, `Too early: check-in opens ${RULES.earlyMinutes} minutes before your arrival time.`)
+      if (now() > Date.parse(r.checkInUntil)) mockFail(400, 'The hold has ended; the vehicle can only enter as a walk-in at the lane.')
+      if (sessions.some((s) => open(s) && normalize(s.plateNumber) === normalize(r.plateNumber ?? ''))) mockFail(400, 'This vehicle is already parked.')
+      const waiting = gateRequests.find((g) => g.reservationId === r.id && g.kind === 'CheckIn' && g.status === 'Waiting')
+      if (waiting) return requestDto(waiting)
+      const g = newRequest({
+        lotKey: r.lotKey, kind: 'CheckIn', mine: true, plateNumber: r.plateNumber, vehicleLabel: r.vehicleLabel ?? null,
+        customerName: profile.fullName, customerPhone: profile.phoneNumber, reservationId: r.id, reservationCode: r.code,
+        arrivalTime: r.arrivalTime, checkInFrom: r.checkInFrom, checkInUntil: r.checkInUntil, slotCode: r.slotCode,
+      })
+      handleLater(g)
+      return requestDto(g)
+    })
+  },
+
+  async requestCheckOut(sessionId: number): Promise<GateRequestDTO> {
+    const profile = await profileMock.getProfile()
+    const mineNow = await customerSessions()
+    return mockResponse(() => {
+      const s = mineNow.find((x) => x.id === sessionId)
+      if (!s) mockFail(404, 'Parking session not found.')
+      if (!inside(s)) mockFail(400, 'This vehicle is not parked.')
+      const waiting = gateRequests.find((g) => g.sessionId === s.id && g.kind === 'CheckOut' && g.status === 'Waiting')
+      if (waiting) return requestDto(waiting)
+      const g = newRequest({
+        lotKey: s.lotKey, kind: 'CheckOut', mine: true, plateNumber: s.plateNumber, customerName: profile.fullName,
+        customerPhone: profile.phoneNumber, sessionId: s.id, reservationId: s.reservationId, reservationCode: s.reservationCode,
+      })
+      handleLater(g)
+      return requestDto(g)
+    })
+  },
+
+  mine: () =>
+    mockResponse(() =>
+      gateRequests
+        .filter((g) => g.mine && now() - Date.parse(g.createdAt) < 12 * 60 * MINUTE)
+        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+        .map(requestDto),
+    ),
+
+  cancel: (requestId: number) =>
+    mockResponse(() => {
+      const g = findRequest(requestId)
+      if (!g.mine) mockFail(404, 'Request not found.')
+      if (g.status !== 'Waiting') mockFail(400, 'Staff already handled this request.')
+      g.status = 'Cancelled'
+      g.handledAt = iso(now())
+      return requestDto(g)
+    }),
+
+  /** Waiting requests of the lot, oldest first; ones handled at the lane without the app are closed. */
+  queue: (lotId: string, kind: GateRequestKind) =>
+    mockResponse(() => {
+      seedRequests(lotId)
+      sweep()
+      for (const g of gateRequests.filter((x) => x.lotKey === lotId && x.status === 'Waiting')) {
+        const r = reservations.find((x) => x.id === g.reservationId)
+        const s = sessions.find((x) => x.id === g.sessionId)
+        const stale = g.kind === 'CheckIn' ? r?.status !== 'Confirmed' : !s || !inside(s)
+        if (stale) {
+          g.status = 'Cancelled'
+          g.handledAt = iso(now())
+          g.note = 'Handled at the lane without the app request.'
+        }
+      }
+      return gateRequests
+        .filter((g) => g.lotKey === lotId && g.kind === kind && g.status === 'Waiting')
+        .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+        .map(requestDto)
+    }),
+
+  approve: (requestId: number, request: ApproveGateRequestRequest) => approveRequest(findRequest(requestId), request),
+
+  refuse: (requestId: number, reason: string) =>
+    mockResponse(() => {
+      if (!reason.trim()) mockFail(400, 'Give the customer a reason for refusing.')
+      const g = findRequest(requestId)
+      if (g.status !== 'Waiting') mockFail(400, 'This request was already handled.')
+      g.status = 'Refused'
+      g.handledAt = iso(now())
+      g.note = reason.trim()
+      return requestDto(g)
     }),
 }
