@@ -33,7 +33,7 @@ import { useChangePassword, useProfile, useUpdateProfile, useVehicles } from '@/
 import { isValidPassword, PASSWORD_RULE_HINT, PASSWORD_RULE_MESSAGE, PASSWORD_RULES } from '@/lib/password'
 import type { UserProfileDTO } from '@/types/profile.dto'
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   id: string
@@ -133,7 +133,6 @@ export default function CustomerProfilePage() {
   const isDirty =
     profile !== undefined &&
     (form.fullName !== profile.fullName ||
-      form.email !== profile.email ||
       form.phoneNumber !== profile.phoneNumber ||
       form.citizenId !== (profile.citizenId ?? ''))
 
@@ -141,9 +140,9 @@ export default function CustomerProfilePage() {
     e.preventDefault()
     setFormError('')
     if (!form.fullName.trim()) return setFormError('Full name is required.')
-    if (!EMAIL_PATTERN.test(form.email.trim())) return setFormError('Please enter a valid email address.')
     if (!form.phoneNumber.trim()) return setFormError('Phone number is required.')
-    if (form.citizenId.trim() && !/^\d{12}$/.test(form.citizenId.trim())) return setFormError('Citizen ID must have exactly 12 digits.')
+    if (!form.citizenId.trim()) return setFormError('Citizen ID (CCCD) is required.')
+    if (!/^\d{12}$/.test(form.citizenId.trim())) return setFormError('Citizen ID must have exactly 12 digits.')
 
     updateProfile.mutate(
       {
@@ -271,8 +270,10 @@ export default function CustomerProfilePage() {
                   icon={Mail}
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  disabled
+                  readOnly
                   autoComplete="email"
+                  aside={<span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem' }}>Cannot be changed</span>}
                 />
                 <Field
                   id="profile-phone"
@@ -286,7 +287,7 @@ export default function CustomerProfilePage() {
                 />
                 <Field
                   id="profile-citizen-id"
-                  label="Citizen ID (CCCD)"
+                  label="Citizen ID (CCCD) *"
                   icon={IdCard}
                   inputMode="numeric"
                   maxLength={12}
@@ -295,6 +296,7 @@ export default function CustomerProfilePage() {
                   value={form.citizenId}
                   onChange={(e) => setForm({ ...form, citizenId: e.target.value.replace(/\D/g, '') })}
                   autoComplete="off"
+                  aside={!profile?.citizenId ? <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cx-gold, #f59e0b)' }}>Required to register vehicles</span> : undefined}
                 />
                 {formError && <p className="cx-error" role="alert">{formError}</p>}
                 <div className="cx-actions">

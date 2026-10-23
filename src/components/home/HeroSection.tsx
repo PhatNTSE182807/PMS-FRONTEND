@@ -1,13 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Boxes, Gauge, Navigation, ShieldCheck, SlidersHorizontal, Zap } from 'lucide-react'
-import { formatNumber } from '@/lib/format'
+import { Boxes, Gauge, ShieldCheck, SlidersHorizontal, Zap } from 'lucide-react'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
-import { isOperating, lotSpaces, systemTotals } from './capacityStats'
-import { useCountUp } from './useHomeEffects'
 
-function LiveNumber({ value }: { value: number }) {
-  return <>{formatNumber(useCountUp(value))}</>
-}
+
 
 interface HeroSectionProps {
   lots: ParkingLotCapacityDTO[]
@@ -16,11 +11,7 @@ interface HeroSectionProps {
   reserveTo: string
 }
 
-export function HeroSection({ lots, isLoading, reserveTo }: HeroSectionProps) {
-  const totals = systemTotals(lots)
-  const occupancy = totals.totalSpaces > 0 ? ((totals.totalSpaces - totals.freeSpaces) / totals.totalSpaces) * 100 : 0
-  // The lot with the most free spaces is the one we'd route a driver to.
-  const best = lots.filter(isOperating).sort((a, b) => lotSpaces(b).free - lotSpaces(a).free)[0]
+export function HeroSection({ lots: _lots, isLoading: _isLoading, reserveTo }: HeroSectionProps) {
 
   return (
     <section className="home-hero" id="top">
@@ -38,8 +29,7 @@ export function HeroSection({ lots, isLoading, reserveTo }: HeroSectionProps) {
 
           <h1 className="home-hero__title">
             Next-generation
-            <span className="home-hero__title-accent">sovereign parking</span>
-            telemetry
+            <span className="home-hero__title-accent">Parking System</span>
           </h1>
 
           <p className="home-hero__lead">
@@ -70,57 +60,6 @@ export function HeroSection({ lots, isLoading, reserveTo }: HeroSectionProps) {
             </li>
           </ul>
         </div>
-
-        <aside className="home-hud" aria-label="Live network status" aria-busy={isLoading}>
-          <div className="home-hud__header">
-            <span className="home-hud__feed">
-              <span className="home-dot home-dot--live" aria-hidden="true" />
-              Gateway telemetry feed
-            </span>
-            <span className="home-hud__lock">Live</span>
-          </div>
-
-          <div className="home-hud__stats">
-            <div className="home-hud__stat">
-              <span className="home-hud__stat-label">Free bays now</span>
-              <span className="home-hud__stat-value home-hud__stat-value--gold">
-                <LiveNumber value={totals.freeSpaces} />
-              </span>
-              <span className="home-hud__stat-note">of {formatNumber(totals.totalSpaces)} in the network</span>
-            </div>
-            <div className="home-hud__stat">
-              <span className="home-hud__stat-label">Terminals open</span>
-              <span className="home-hud__stat-value">
-                <LiveNumber value={totals.openLots} />
-              </span>
-              <span className="home-hud__stat-note">{Math.round(occupancy)}% occupied</span>
-            </div>
-          </div>
-
-          <div
-            className="home-hud__meter"
-            role="meter"
-            aria-label="Network occupancy"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(occupancy)}
-          >
-            <span className="home-hud__meter-fill" style={{ width: `${Math.min(100, occupancy)}%` }} />
-          </div>
-
-          <div className="home-hud__route">
-            <Navigation aria-hidden />
-            <span className="home-hud__route-text">
-              <span className="home-hud__route-title">
-                {best ? `Guidance: ${best.name}` : isLoading ? 'Connecting to gateways...' : 'No terminal open'}
-              </span>
-              <span className="home-hud__route-sub">
-                {best ? `${formatNumber(lotSpaces(best).free)} bays free • most space right now` : 'Waiting for live data'}
-              </span>
-            </span>
-            <span className="home-hud__live">LIVE</span>
-          </div>
-        </aside>
       </div>
     </section>
   )

@@ -129,7 +129,7 @@ export const profileMock = {
 
   updateProfile: (command: UpdateProfileCommand) =>
     mockResponse(() => {
-      const { citizenId, ...details } = command
+      const { citizenId, email, ...details } = command
       profileOverrides = { ...profileOverrides, ...details, ...(citizenId?.trim() ? { citizenId: citizenId.trim() } : {}) }
       return currentProfile()
     }),
@@ -140,9 +140,11 @@ export const profileMock = {
 
   addVehicle: (command: CreateVehicleCommand) =>
     mockResponse(() => {
+      const profile = currentProfile()
+      if (!profile.citizenId?.trim()) mockFail(400, 'Please save your Citizen ID (CCCD) in your profile before registering a vehicle.')
       const plate = command.licensePlate.trim().toUpperCase()
       if (vehicles.some((v) => v.licensePlate === plate)) mockFail(400, `Vehicle ${plate} is already registered.`)
-      const vehicle = toVehicle(command)
+      const vehicle = toVehicle({ ...command, citizenId: profile.citizenId })
       vehicles = [...vehicles, vehicle]
       if (command.isDefault || vehicles.length === 1) applyDefault(vehicle.vehicleId)
       return findVehicle(vehicle.vehicleId)

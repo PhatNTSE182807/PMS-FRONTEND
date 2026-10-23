@@ -71,12 +71,12 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
       return;
     }
 
-    // Derive username from email prefix or sanitized name (backend allows 5-20 characters)
+    // Derive username from email prefix or sanitized name (max 20 characters)
     const userName = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'user_' + Date.now().toString().slice(-4);
 
     registerMutation.mutate(
       {
-        userName: userName.length < 5 ? `${userName}123` : userName,
+        userName: userName,
         fullName: fullName.trim(),
         email: email.trim(),
         password: password,

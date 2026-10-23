@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
+  AlertTriangle,
   BadgeCheck,
   CircleCheck,
   ClipboardCheck,
@@ -43,8 +44,7 @@ const KIND_DESCRIPTION = {
 /** Vietnamese plates: 51K-992.88, 30E-1234, 59X1-123.45 (spaces and missing separators allowed). */
 const PLATE_PATTERN = /^\d{2}[A-Z]{1,2}\d?[-\s]?\d{3,4}(\.?\d{2})?$/
 
-// citizenId stays null until edited, so the field shows the account's own Citizen ID
-const EMPTY_FORM = { licensePlate: '', vehicleTypeId: 0, brand: '', model: '', color: '', citizenId: null as string | null, isDefault: false, consent: false }
+const EMPTY_FORM = { licensePlate: '', vehicleTypeId: 0, brand: '', model: '', color: '', isDefault: false, consent: false }
 const CITIZEN_ID_PATTERN = /^\d{12}$/
 
 /** Best guess at a CSS colour for the swatch next to the colour name ("Gentian Blue" -> blue). */
@@ -172,9 +172,10 @@ export default function RegisterVehiclePage() {
   const plateValid = PLATE_PATTERN.test(plate)
   // The first vehicle always becomes the primary one.
   const isDefault = vehicles.length === 0 || form.isDefault
-  // Owner on the vehicle papers; defaults to the account's own Citizen ID
-  const citizenId = (form.citizenId ?? profile?.citizenId ?? '').trim()
-  const citizenIdValid = CITIZEN_ID_PATTERN.test(citizenId)
+  // Owner Citizen ID is automatically retrieved from the account profile
+  const hasProfileCitizenId = Boolean(profile?.citizenId && CITIZEN_ID_PATTERN.test(profile.citizenId.trim()))
+  const citizenId = (profile?.citizenId ?? '').trim()
+  const citizenIdValid = hasProfileCitizenId
 
   // The papers panel holds a fresh set only while it is not showing an existing vehicle
   const newPapersComplete = papersVehicle === null && papers.complete
@@ -184,9 +185,11 @@ export default function RegisterVehiclePage() {
   const submit = (e: FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!hasProfileCitizenId)
+      return setError('Please enter and save your Citizen ID (CCCD) in your profile before registering a vehicle.')
     if (!plateValid) return setError('Enter a valid Vietnamese plate number, for example 51K-992.88.')
     if (!form.brand.trim() || !form.model.trim()) return setError('Enter the manufacturer and the model.')
-    if (!citizenIdValid) return setError('Enter the 12-digit Citizen ID of the owner on the vehicle papers.')
+    if (!citizenIdValid) return setError('Valid 12-digit Citizen ID is required from your profile.')
     // Every registration needs its papers: Staff compare them before the vehicle can be used
     if (papersVehicle !== null)
       return setError('The papers panel shows another vehicle. Click "New vehicle" and add the papers for this one.')
@@ -261,6 +264,36 @@ export default function RegisterVehiclePage() {
             </div>
 
             <div className="cx-form">
+              {!hasProfileCitizenId && (
+                <div
+                  role="alert"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '0.5rem',
+                    background: 'rgba(234, 179, 8, 0.12)',
+                    border: '1px solid rgba(234, 179, 8, 0.35)',
+                    color: '#eab308',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <AlertTriangle style={{ flexShrink: 0, width: '1.25rem', height: '1.25rem' }} aria-hidden />
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-main, #f1f5f9)' }}>
+                      <strong>Citizen ID (CCCD) required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
+                    </span>
+                  </div>
+                  <Link
+                    to="/profile"
+                    className="cx-btn cx-btn--sm"
+                    style={{ whiteSpace: 'nowrap', textDecoration: 'none' }}
+                  >
+                    Update Profile
+                  </Link>
+                </div>
+              )}
               <div className="cx-field">
                 <label className="cx-field__label" htmlFor="vehicle-plate">Official license plate number</label>
                 <div className="cx-plate-input">
@@ -354,23 +387,26 @@ export default function RegisterVehiclePage() {
               </div>
 
               <div className="cx-field">
-                <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID</label>
+                <div className="cx-field__label-row">
+                  <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID (CCCD)</label>
+                  <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem' }}>From user profile</span>
+                </div>
                 <div className="cx-control">
                   <span className="cx-control__icon"><IdCard aria-hidden /></span>
                   <input
                     id="vehicle-citizen-id"
-                    className="cx-input cx-input--with-icon"
-                    inputMode="numeric"
-                    maxLength={12}
-                    autoComplete="off"
-                    placeholder="12 digits"
+                    className="cx-input cx-input--with-icon cx-mono"
+                    readOnly
+                    disabled
                     value={citizenId}
-                    onChange={(e) => setForm({ ...form, citizenId: e.target.value.replace(/\D/g, '') })}
+                    placeholder={hasProfileCitizenId ? undefined : 'No Citizen ID saved in profile'}
                     aria-describedby="vehicle-citizen-id-hint"
                   />
                 </div>
                 <p className="cx-field__hint" id="vehicle-citizen-id-hint">
-                  The owner named on the vehicle papers. Filled in with your own Citizen ID; change it if the vehicle is in someone else's name.
+                  {hasProfileCitizenId
+                    ? 'Automatically retrieved from your profile. Vehicles must be registered under your verified Citizen ID.'
+                    : 'No Citizen ID found in your profile. Please save your CCCD in your user profile first.'}
                 </p>
               </div>
 
@@ -457,7 +493,7 @@ export default function RegisterVehiclePage() {
               {error && <p className="cx-error" role="alert">{error}</p>}
 
               <div className="cx-submit-row">
-                <button type="submit" className="cx-btn cx-btn--light" disabled={addVehicle.isPending || papers.busy}>
+                <button type="submit" className="cx-btn cx-btn--light" disabled={addVehicle.isPending || papers.busy || !hasProfileCitizenId}>
                   <ScanLine aria-hidden />{' '}
                   {addVehicle.isPending ? 'Registering...' : papers.busy ? 'Uploading papers...' : 'Submit registration'}
                 </button>
