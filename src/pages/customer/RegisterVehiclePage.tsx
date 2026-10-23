@@ -21,7 +21,7 @@ import { KIND_ICON, vehicleKind, vehicleTitle } from '@/components/customer/cust
 import { VehicleDocumentsPanel } from '@/components/customer/VehicleDocumentsPanel'
 import { useAuth } from '@/hooks/useAuth'
 import { useAddVehicle, useDeleteVehicle, useProfile, useSetDefaultVehicle, useVehicles, useVehicleTypes } from '@/hooks/useProfile'
-import { useVehicleDocumentDraft } from '@/hooks/useVehicleDocuments'
+import { useRejectedVehicles, useVehicleDocumentDraft } from '@/hooks/useVehicleDocuments'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
 import { DOCUMENT_SLOTS } from '@/types/vehicleDocument.dto'
 
@@ -117,6 +117,34 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
       >
         <Trash2 aria-hidden />
       </button>
+    </div>
+  )
+}
+
+const decidedOn = (iso: string | null | undefined) =>
+  iso ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : ''
+
+/**
+ * Registrations Staff rejected: those vehicles were removed from the fleet, so they are listed apart
+ * with Staff's reason. Registering the same plate again makes the entry go away.
+ */
+function RejectedRegistrations() {
+  const { data: rejected = [] } = useRejectedVehicles()
+  if (rejected.length === 0) return null
+  return (
+    <div className="vd-rejected" role="status">
+      <p className="vd-rejected__title">Rejected registrations</p>
+      {rejected.map((r) => (
+        <div key={r.verificationId} className="vd-rejected__item">
+          <div className="vd-rejected__head">
+            <strong className="vd-mono">{r.licensePlate}</strong>
+            {(r.brand || r.model) && <span>{[r.brand, r.model].filter(Boolean).join(' ')}</span>}
+            <span className="cx-chip cx-chip--red">Rejected {decidedOn(r.decidedAt)}</span>
+          </div>
+          {r.reviewNote && <p>Staff note: {r.reviewNote}</p>}
+          <p className="vd-rejected__hint">This vehicle was removed from your fleet. Register it again with new photos.</p>
+        </div>
+      ))}
     </div>
   )
 }
@@ -456,6 +484,7 @@ export default function RegisterVehiclePage() {
                 <MiniVehicle key={v.vehicleId} vehicle={v} onPapers={() => openPapers(v)} />
               ))}
             </div>
+            <RejectedRegistrations />
           </section>
         </div>
       </div>

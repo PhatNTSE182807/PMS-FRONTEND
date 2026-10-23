@@ -40,16 +40,21 @@ export interface VehicleVerificationDTO {
   filesDeletedAt?: string | null
 }
 
-/** Every file a registration needs: the front of the registration certificate, both sides of the Citizen ID card. */
+/**
+ * Every file a registration needs: one photo of the registration certificate (cà vẹt) and one of the
+ * Citizen ID card (CCCD). Each is sent as the "Front" side; backs are not asked for.
+ */
 export const DOCUMENT_SLOTS: { type: VehicleDocumentType; side: VehicleDocumentSide; label: string }[] = [
-  { type: 'RegistrationCertificate', side: 'Front', label: 'Registration certificate · Front' },
-  { type: 'CitizenId', side: 'Front', label: 'Citizen ID card · Front' },
-  { type: 'CitizenId', side: 'Back', label: 'Citizen ID card · Back' },
+  { type: 'RegistrationCertificate', side: 'Front', label: 'Registration certificate (cà vẹt)' },
+  { type: 'CitizenId', side: 'Front', label: 'Citizen ID card (CCCD)' },
 ]
 
-/** Readable name of one uploaded file, e.g. "Citizen ID card · Back". */
+/**
+ * Readable name of one uploaded file, e.g. "Citizen ID card". Older registrations may still hold a
+ * back photo, which keeps its side in the name.
+ */
 export const documentLabel = (type: VehicleDocumentType, side: VehicleDocumentSide) =>
-  `${type === 'CitizenId' ? 'Citizen ID card' : 'Registration certificate'} · ${side}`
+  `${type === 'CitizenId' ? 'Citizen ID card' : 'Registration certificate'}${side === 'Back' ? ' · Back' : ''}`
 
 /** Accepted by the API: JPEG, PNG or PDF up to 10 MB. */
 export const DOCUMENT_ACCEPT = 'image/jpeg,image/png,application/pdf'
@@ -82,4 +87,15 @@ export interface VehicleVerificationReviewDTO extends VehicleVerificationDTO {
 export interface ReviewVehicleVerificationRequest {
   approve: boolean
   note?: string | null
+}
+
+/** A registration Staff rejected: the vehicle left the fleet; `reviewNote` says why (GET /Users/profile/rejected-vehicles). */
+export interface RejectedVehicleDTO {
+  verificationId: string
+  vehicleId: string
+  licensePlate: string
+  brand?: string | null
+  model?: string | null
+  reviewNote?: string | null
+  decidedAt?: string | null
 }

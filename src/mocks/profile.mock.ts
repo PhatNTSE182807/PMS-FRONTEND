@@ -101,6 +101,20 @@ function toVehicle(command: CreateVehicleCommand, existing?: VehicleDTO): Vehicl
   }
 }
 
+/**
+ * Called by the papers mock when Staff reject a registration: like the API, the vehicle leaves the
+ * fleet and another one becomes primary. Returns the removed vehicle (for the rejection notice).
+ */
+export function removeDemoVehicle(vehicleId: string): VehicleDTO | undefined {
+  const removed = vehicles.find((v) => v.vehicleId === vehicleId)
+  vehicles = vehicles.filter((v) => v.vehicleId !== vehicleId)
+  if (removed?.isDefault && vehicles.length > 0) applyDefault(vehicles[vehicles.length - 1].vehicleId)
+  return removed
+}
+
+/** Plates of the demo fleet right now (a re-registered plate hides its rejection notice). */
+export const demoVehiclePlates = () => vehicles.map((v) => v.licensePlate)
+
 function applyDefault(vehicleId: string) {
   vehicles = vehicles.map((v) => ({ ...v, isDefault: v.vehicleId === vehicleId }))
 }

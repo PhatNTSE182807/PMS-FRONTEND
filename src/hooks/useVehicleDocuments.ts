@@ -40,6 +40,30 @@ export function useVehicleVerification(vehicleId: string | null) {
   return query
 }
 
+/**
+ * Registrations Staff rejected recently: their vehicles were removed from the fleet, and the note says
+ * why. A rejection pushed by the hub refreshes it and the vehicle list right away.
+ */
+export function useRejectedVehicles() {
+  const queryClient = useQueryClient()
+  const live = vehicleVerificationRealtime.isAvailable()
+  const query = useQuery({
+    queryKey: queryKeys.vehicleDocuments.rejected(),
+    queryFn: vehicleDocumentService.getRecentlyRejected,
+  })
+
+  useEffect(() => {
+    if (!live) return
+    return vehicleVerificationRealtime.subscribe((event) => {
+      if (event.status !== 'Rejected') return
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vehicleDocuments.rejected() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile.vehicles() })
+    })
+  }, [live, queryClient])
+
+  return query
+}
+
 export type SlotKey = `${VehicleDocumentType}/${VehicleDocumentSide}`
 export const slotKey = (type: VehicleDocumentType, side: VehicleDocumentSide): SlotKey => `${type}/${side}`
 

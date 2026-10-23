@@ -434,3 +434,52 @@
 
   color: var(--cx-on-surface);
 }
+
+/* Registrations Staff rejected (vehicle removed from the fleet), under "Your fleet". */
+.vd-rejected {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.vd-rejected__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cx-muted);
+}
+
+.vd-rejected__item {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 0.6rem;
+  background: rgba(239, 68, 68, 0.06);
+  font-size: 0.8125rem;
+  color: var(--cx-on-variant);
+}
+
+.vd-rejected__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vd-rejected__head strong {
+  color: var(--cx-on-surface);
+}
+
+.vd-rejected__head .cx-chip {
+  margin-left: auto;
+}
+
+.vd-rejected__item p {
+  margin: 0.35rem 0 0;
+}
+
+.vd-rejected__hint {
+  color: var(--cx-muted);
+}

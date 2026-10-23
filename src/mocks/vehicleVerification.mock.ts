@@ -89,7 +89,6 @@ function seed(
     status: VerificationStatus
     certificateLines: string[]
     cardLines: string[]
-    cardBackLines?: string[]
     blurCard?: boolean
     reviewNote?: string
   },
@@ -101,7 +100,6 @@ function seed(
   const files = [
     file(`${id}-cf`, 'RegistrationCertificate', 'Front', paperPhoto('RegistrationCertificate', options.certificateLines), uploadedAt),
     file(`${id}-if`, 'CitizenId', 'Front', paperPhoto('CitizenId', options.cardLines, options.blurCard), uploadedAt),
-    file(`${id}-ib`, 'CitizenId', 'Back', paperPhoto('CitizenId', options.cardBackLines ?? ['Đặc điểm nhận dạng: nốt ruồi', 'Ngày cấp: 05/08/2022']), uploadedAt),
   ]
   return {
     files,

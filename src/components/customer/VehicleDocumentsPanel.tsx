@@ -28,10 +28,10 @@ import {
 } from '@/types/vehicleDocument.dto'
 import '@/styles/vehicle-documents.css'
 
-/** The papers asked for, each with the sides needed: only the front of the registration certificate. */
+/** The papers asked for: one photo of each. */
 const PAPERS: { type: VehicleDocumentType; title: string; hint: string }[] = [
-  { type: 'RegistrationCertificate', title: 'Registration certificate', hint: 'Front side only' },
-  { type: 'CitizenId', title: 'Citizen ID card', hint: 'Front and back' },
+  { type: 'RegistrationCertificate', title: 'Registration certificate (cà vẹt)', hint: 'One photo' },
+  { type: 'CitizenId', title: 'Citizen ID card (CCCD)', hint: 'One photo' },
 ]
 
 const sidesOf = (type: VehicleDocumentType) => DOCUMENT_SLOTS.filter((s) => s.type === type).map((s) => s.side)

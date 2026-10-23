@@ -14,6 +14,8 @@ export const queryKeys = {
   vehicleDocuments: {
     all: ['vehicle-documents'] as const,
     latest: (vehicleId: string) => [...queryKeys.vehicleDocuments.all, 'latest', vehicleId] as const,
+    /** Recently rejected registrations (their vehicles were removed). */
+    rejected: () => [...queryKeys.vehicleDocuments.all, 'rejected'] as const,
   },
   /** Staff review queue of new vehicle registrations. */
   vehicleVerifications: {

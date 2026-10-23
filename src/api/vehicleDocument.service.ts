@@ -1,6 +1,6 @@
 import { isMockService, SERVICE_PATHS } from '@/config/env'
 import { vehicleDocumentMock } from '@/mocks/vehicleDocument.mock'
-import type { VehicleDocumentSide, VehicleDocumentType, VehicleVerificationDTO } from '@/types/vehicleDocument.dto'
+import type { RejectedVehicleDTO, VehicleDocumentSide, VehicleDocumentType, VehicleVerificationDTO } from '@/types/vehicleDocument.dto'
 import { axiosClient, http, toApiError } from './axiosClient'
 
 const base = SERVICE_PATHS.profile
@@ -39,6 +39,11 @@ export const vehicleDocumentService = {
     return mocked()
       ? vehicleDocumentMock.submit(vehicleId)
       : http.post<VehicleVerificationDTO>(`${documentsUrl(vehicleId)}/submit`)
+  },
+
+  /** Registrations Staff rejected in the last 30 days (vehicle removed, plate not registered again). */
+  getRecentlyRejected(): Promise<RejectedVehicleDTO[]> {
+    return mocked() ? vehicleDocumentMock.getRecentlyRejected() : http.get<RejectedVehicleDTO[]>(`${base}/rejected-vehicles`)
   },
 
   /** The bytes of one uploaded file (the endpoint needs the bearer token, so it cannot be a plain link). */

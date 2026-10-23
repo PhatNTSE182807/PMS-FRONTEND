@@ -1,5 +1,6 @@
-import { setDemoVehicleRegistration } from '@/mocks/profile.mock'
+import { demoVehiclePlates, removeDemoVehicle, setDemoVehicleRegistration } from '@/mocks/profile.mock'
 import type {
+  RejectedVehicleDTO,
   VehicleDocumentFileDTO,
   VehicleDocumentSide,
   VehicleDocumentType,
@@ -25,6 +26,8 @@ interface StoredVerification {
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
 const RETENTION_DAYS = 30
+/** Registrations Staff rejected in this demo session (their vehicles were removed), newest first. */
+let rejected: RejectedVehicleDTO[] = []
 const verifications = new Map<string, StoredVerification>()
 
 const slotKey = (type: VehicleDocumentType, side: VehicleDocumentSide) => `${type}/${side}`
@@ -85,12 +88,29 @@ export function demoSubmittedChecks(): DemoSubmittedCheck[] {
           status: approve ? 'Approved' : 'Rejected',
           statusReason: approve
             ? 'Papers checked by Staff. The vehicle can be booked and is recognised at the gates.'
-            : 'Staff could not approve these papers. Upload new photos to try again.',
+            : 'Staff rejected these papers, so the vehicle was removed from your account. Register it again with new photos.',
           reviewNote: note,
           decidedAt: now.toISOString(),
           filesDeleteAt: new Date(now.getTime() + RETENTION_DAYS * 86_400_000).toISOString(),
         }
-        setDemoVehicleRegistration(stored.dto.vehicleId, approve ? 'Approved' : 'Rejected', note)
+        if (approve) {
+          setDemoVehicleRegistration(stored.dto.vehicleId, 'Approved', note)
+          return
+        }
+        // Like the API: a rejected vehicle is not registered, so it leaves the fleet
+        const vehicle = removeDemoVehicle(stored.dto.vehicleId)
+        rejected = [
+          {
+            verificationId: stored.dto.verificationId,
+            vehicleId: stored.dto.vehicleId,
+            licensePlate: vehicle?.licensePlate ?? stored.dto.licensePlate ?? '',
+            brand: vehicle?.brand,
+            model: vehicle?.model,
+            reviewNote: note,
+            decidedAt: now.toISOString(),
+          },
+          ...rejected,
+        ]
       },
     }))
 }
@@ -111,7 +131,7 @@ export const vehicleDocumentMock = {
     onProgress?: (percent: number) => void,
   ): Promise<VehicleVerificationDTO> {
     if (!DOCUMENT_SLOTS.some((s) => s.type === type && s.side === side))
-      mockFail(400, 'Only the front of the registration certificate is needed.')
+      mockFail(400, 'One photo of each paper is enough: the registration certificate and the Citizen ID card.')
     if (!ACCEPTED_TYPES.includes(file.type)) mockFail(400, 'Only JPEG, PNG or PDF files are accepted.')
     if (file.size > DOCUMENT_MAX_BYTES) mockFail(400, 'The file is larger than 10 MB.')
     for (const percent of [15, 40, 70, 100]) {
@@ -154,6 +174,13 @@ export const vehicleDocumentMock = {
       setDemoVehicleRegistration(vehicleId, 'NeedsReview')
       return snapshot(stored)
     }),
+
+  /** Rejections whose plate was not registered again, like GET /Users/profile/rejected-vehicles. */
+  getRecentlyRejected: () =>
+    mockResponse(() => {
+      const plates = new Set(demoVehiclePlates())
+      return rejected.filter((r) => !plates.has(r.licensePlate))
+    }, 200),
 
   getFile: async (vehicleId: string, documentId: string): Promise<Blob> => {
     await delay(150)
