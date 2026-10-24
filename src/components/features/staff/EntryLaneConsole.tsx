@@ -16,7 +16,7 @@ import { Panel, SectionTitle } from './StaffBits'
 const OVERRIDES: Partial<Record<string, { flag: keyof CheckInRequest; label: string }>> = {
   LOW_CONFIDENCE: { flag: 'plateConfirmed', label: 'I checked the plate against the camera image' },
   BLACKLISTED: { flag: 'allowBlacklisted', label: 'Let the blacklisted vehicle in' },
-  ZONE_FULL: { flag: 'allowWhenFull', label: 'Let it in although the zone is full (BR-19)' },
+  ZONE_FULL: { flag: 'allowWhenFull', label: 'Let it in although the zone is full' },
   RESERVATION_PLATE_MISMATCH: { flag: 'allowPlateMismatch', label: 'Same account, same vehicle type: accept the changed vehicle' },
   RESERVATION_OUTSIDE_WINDOW: { flag: 'ignoreReservation', label: 'Enter as a walk-in (the booking is kept)' },
   RESERVATION_INVALID: { flag: 'ignoreReservation', label: 'Enter as a walk-in' },

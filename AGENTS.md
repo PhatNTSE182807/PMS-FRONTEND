@@ -119,7 +119,7 @@ Defaults are configurable; the full table is SRS section 5.
 | BR-20 overdue / abandoned vehicle | 24 h / 7 days |
 | BR-22 price version = the one valid at entry; daily cap per calendar day; round up to 1,000 VND; free period only if total stay ≤ it | — |
 | BR-25 / BR-26 review deadline; keep registration photos / gate photos | 24 h; 30 / 90 days |
-| BR-28 account form (5 fields), Vietnamese phone `0` + 9 digits, unique email and phone | see section 10 for the password rule |
+| BR-28 account form (5 fields), Vietnamese phone `0` + 9 digits, unique email and phone | password: 6+ characters, 1 upper-case letter, 1 special character (team rule, section 10) |
 
 The six fee examples at the end of SRS section 5 are the acceptance tests for pricing; keep a
 unit test for each.
@@ -272,9 +272,11 @@ git checkout features/<name>               # keep working on the branch afterwar
 
 Keep this list current; it is the first place to look when code and SRS disagree.
 
-- Password rule: the team chose at least 6 characters with one upper-case letter and one special
-  character (`src/lib/password.ts`, same rule in the backend), instead of BR-28 (8+ characters
-  with upper, lower and digit).
+- Password rule (confirmed by the team on 2026-10-24, keep it): at least 6 characters with at
+  least one upper-case letter and at least one special character, for every account. It replaces
+  BR-28's rule (8+ characters with upper, lower and digit); do not switch to the SRS version.
+  The single source is `src/lib/password.ts` (`PASSWORD_RULES`, `isValidPassword`); the backend
+  uses the same rule in `UserValidatorConfiguration`.
 - Some screens run on demo data until their API exists (as of 2026-10-24): manager approvals and
   pricing, staff exceptions / incidents and cash tally, revenue reports. Re-check with the
   commands in section 7 before relying on this line.
@@ -285,8 +287,3 @@ Keep this list current; it is the first place to look when code and SRS disagree
 - `src/components/OtpLoginScreen.jsx` and other OTP code are out of scope in v1.4 (no OTP / 2FA).
 - The user wallet (`api/wallet.service.ts`, `hooks/useWallet.ts`) is a team addition: the SRS
   lists an internal wallet as out of scope (2.5), but it is in active use for payments.
-- Rule 7 is not met yet (as of 2026-10-24): UI text still shows BR codes in
-  `components/customer/dashboard/ZoneMap.tsx`, `components/features/staff/EntryLaneConsole.tsx`,
-  `components/features/staff/GateLanesPanel.tsx`, `hooks/useReservations.ts`,
-  `pages/customer/CustomerBookingsPage.tsx`, `pages/staff/StaffCheckoutPage.tsx` and the mocks
-  `mocks/managerOps.mock.ts`, `mocks/operations.mock.ts`. Remove them when you touch these files.

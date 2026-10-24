@@ -96,7 +96,7 @@ export function useCancelReservation() {
     mutationFn: ({ id, reason }: { id: number; reason?: string }) => reservationService.cancel(id, reason),
     onSuccess: (r) =>
       toast.success(`Reservation ${r.code} cancelled`, {
-        description: r.refundAmount > 0 ? `${r.refundAmount.toLocaleString('en-US')} VND is refunded to your payment source.` : 'No deposit refund (BR-04).',
+        description: r.refundAmount > 0 ? `${r.refundAmount.toLocaleString('en-US')} VND is refunded to your payment source.` : 'The deposit is not refunded.',
       }),
     onError: (error) => toast.error(getErrorMessage(error)),
     onSettled: invalidate,

@@ -199,7 +199,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                       : selected.status !== 'AVAILABLE'
                         ? 'Not available'
                         : selectedFloor.kind !== 'car'
-                          ? 'Only car bays can be reserved (BR-01)'
+                          ? 'Only car bays can be reserved'
                           : 'This lot has no published layout yet'}
                   </button>
                 )}

@@ -850,7 +850,7 @@ function requestDto(g: MockGateRequest): GateRequestDTO {
       else if (now() > Date.parse(r.checkInUntil)) problem = 'The hold has ended: only a walk-in entry is possible.'
     } else if (!s) problem = 'The parking session no longer exists.'
     else if (s.status !== 'Paid') problem = 'Not paid yet: take the fee at the POS before opening the barrier.'
-    else if (s.exitWindowEndsAt && now() > Date.parse(s.exitWindowEndsAt)) problem = 'The Exit Window has passed: an extra fee is due (BR-10).'
+    else if (s.exitWindowEndsAt && now() > Date.parse(s.exitWindowEndsAt)) problem = 'The exit window has passed: an extra fee is due.'
   }
   return {
     ...dto,
