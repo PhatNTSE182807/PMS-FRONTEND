@@ -28,17 +28,15 @@ import { DOCUMENT_SLOTS } from '@/types/vehicleDocument.dto'
 
 /** Used while the vehicle-type list loads, or if it cannot be fetched (same ids as the backend seed). */
 const FALLBACK_TYPES: VehicleTypeDTO[] = [
-  { id: 1, code: 'CAR', name: 'Sedan / Hatchback (Car)', sortOrder: 1 },
-  { id: 2, code: 'SUV', name: 'SUV / Crossover / 7-Seater', sortOrder: 2 },
-  { id: 3, code: 'MOTORBIKE', name: 'Motorbike / Scooter', sortOrder: 3 },
-  { id: 4, code: 'EV', name: 'Electric Vehicle (EV)', sortOrder: 4 },
+  { id: 1, code: 'CAR_4', name: '4-Seat Car', sortOrder: 1 },
+  { id: 2, code: 'CAR_7', name: '7-Seat Car', sortOrder: 2 },
+  { id: 3, code: 'MOTORBIKE', name: 'Motorbike', sortOrder: 3 },
 ]
 
 const KIND_DESCRIPTION = {
   car: 'Standard parking bay',
   suv: 'Wide bay, 7-seater friendly',
-  motorbike: 'Ground & basement 2',
-  ev: 'Charger-equipped bay',
+  motorbike: 'Motorbike floor',
 } as const
 
 /** Vietnamese plates: 51K-992.88, 30E-1234, 59X1-123.45 (spaces and missing separators allowed). */

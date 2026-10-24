@@ -15,7 +15,6 @@ import {
   TrendingUp,
   TriangleAlert,
   UserPlus,
-  Zap,
 } from 'lucide-react'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
@@ -35,8 +34,8 @@ import { demoReservations, type ApprovalKind } from '@/mocks/managerOps.mock'
 import { LOT_STATES, type ManagedLot } from '@/types/lot-management.dto'
 import type { CapacityVehicleType } from '@/types/parking.dto'
 
-const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike, EV_CHARGING: Zap }
-const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes', EV_CHARGING: 'EV' }
+const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
+const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes' }
 const KIND_ICON: Record<ApprovalKind, typeof Car> = {
   LOST_TICKET: ReceiptText,
   DEPOSIT_REFUND: RotateCcw,

@@ -13,7 +13,7 @@ import { MOCK_PARKING_LOTS, toLotSummary, type MockParkingLot } from './parkingL
 import { createRandom, hashString, jitter, randomInt } from './random'
 import { staffMock } from './users.mock'
 
-type SlotType = Exclude<CapacityVehicleType, 'EV_CHARGING'>
+type SlotType = CapacityVehicleType
 
 interface ZoneState {
   zoneId: string
@@ -30,7 +30,6 @@ interface LotState {
   lot: MockParkingLot
   status: ParkingLotStatus
   zones: ZoneState[]
-  evOccupied: number
   flow: HourlyFlowDTO[]
   lastUpdated: number
 }
@@ -111,7 +110,6 @@ function buildLotState(lot: MockParkingLot): LotState {
     lot,
     status: isMaintenance ? 'MAINTENANCE' : 'OPEN',
     zones,
-    evOccupied: Math.round(lot.evChargers * (0.4 + random() * 0.5)),
     flow: buildFlow(lot, random),
     lastUpdated: Date.now(),
   }
@@ -137,15 +135,6 @@ function capacityOf(lotState: LotState, type: SlotType): VehicleCapacityDetail {
 function toDto(lotState: LotState): ParkingLotCapacityDTO {
   const { lot } = lotState
   const capacityByVehicle: VehicleCapacityDetail[] = [capacityOf(lotState, 'CAR'), capacityOf(lotState, 'MOTORBIKE')]
-  if (lot.evChargers > 0) {
-    capacityByVehicle.push({
-      vehicleType: 'EV_CHARGING',
-      totalSlots: lot.evChargers,
-      occupiedSlots: lotState.evOccupied,
-      maintenanceSlots: 0,
-      availableSlots: lot.evChargers - lotState.evOccupied,
-    })
-  }
   const slots = parkingSlots(capacityByVehicle)
 
   return {
@@ -185,11 +174,6 @@ function simulateTick() {
       if (applied > 0) arrivals += applied
       else departures -= applied
       zone.occupiedSlots = next
-    }
-
-    if (lotState.lot.evChargers > 0) {
-      const ev = lotState.evOccupied + Math.round(random() * 2 - 1)
-      lotState.evOccupied = Math.min(lotState.lot.evChargers, Math.max(0, ev))
     }
 
     const current = lotState.flow[lotState.flow.length - 1]

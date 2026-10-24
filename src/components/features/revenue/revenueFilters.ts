@@ -29,7 +29,6 @@ export const VEHICLE_TYPE_OPTIONS: { value: ReportVehicleType; label: string }[]
   { value: 'ALL', label: 'All vehicles' },
   { value: 'CAR', label: 'Car' },
   { value: 'MOTORBIKE', label: 'Motorbike' },
-  { value: 'BICYCLE', label: 'Bicycle / E-bike' },
 ]
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

@@ -208,7 +208,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
             </NativeSelect>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-800">
-            <Checkbox checked={Boolean(form.noPlate)} onChange={(e) => set('noPlate', e.target.checked)} /> No plate (bicycle, e-bike): ticket and photo only
+            <Checkbox checked={Boolean(form.noPlate)} onChange={(e) => set('noPlate', e.target.checked)} /> Plate unreadable or missing: ticket and photo only
           </label>
 
           {blocking.length > 0 && (

@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
-import { Bike, Car, Zap } from 'lucide-react'
+import { Bike, Car } from 'lucide-react'
 import { formatNumber } from '@/lib/format'
 import type { CapacityVehicleType, ParkingLotCapacityDTO } from '@/types/parking.dto'
 import { LEVEL_LABEL, STATUS_LABEL, isOperating, lotSpaces, occupancyLevel } from './capacityStats'
 import { useCountUp, useReveal } from './useHomeEffects'
 
-const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike, EV_CHARGING: Zap }
-const VEHICLE_SHORT: Record<CapacityVehicleType, string> = { CAR: 'Car', MOTORBIKE: 'Motorbike', EV_CHARGING: 'EV' }
+const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
+const VEHICLE_SHORT: Record<CapacityVehicleType, string> = { CAR: 'Car', MOTORBIKE: 'Motorbike' }
 
 function FreeCount({ value }: { value: number }) {
   return <span className="home-terminal__free-value">{formatNumber(useCountUp(value, 600))}</span>

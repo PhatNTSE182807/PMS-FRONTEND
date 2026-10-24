@@ -64,18 +64,17 @@ function capacityMix(lot: ManagedLot) {
     lot.zones.reduce((s, z) => s + ids.reduce((t, id) => t + (z.vehicleCapacities[id] ?? 0), 0), 0)
   const cars = sum(['CAR_4', 'CAR_7'])
   const bikes = sum(['MOTORBIKE'])
-  const bicycles = sum(['BICYCLE'])
-  const total = cars + bikes + bicycles || 1
-  return { cars, bikes, bicycles, carShare: (cars / total) * 100, bikeShare: (bikes / total) * 100 }
+  const total = cars + bikes || 1
+  return { cars, bikes, carShare: (cars / total) * 100, bikeShare: (bikes / total) * 100 }
 }
 
 /** Downloads the visible lots as CSV (opens in Excel). */
 function exportLots(rows: ManagedLot[], managerName: (id: string) => string) {
   const quote = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
-  const header = ['Code', 'Name', 'Address', 'Status', 'Capacity', 'Zones', 'Cars', 'Bikes', 'Bicycles', 'Manager']
+  const header = ['Code', 'Name', 'Address', 'Status', 'Capacity', 'Zones', 'Cars', 'Motorbikes', 'Manager']
   const lines = rows.map((l) => {
     const mix = capacityMix(l)
-    return [l.code, l.name, l.address, LOT_STATES[l.status], l.capacity, l.zones.length, mix.cars, mix.bikes, mix.bicycles, managerName(l.managerUserId)]
+    return [l.code, l.name, l.address, LOT_STATES[l.status], l.capacity, l.zones.length, mix.cars, mix.bikes, managerName(l.managerUserId)]
       .map(quote)
       .join(',')
   })
@@ -347,8 +346,7 @@ export default function ParkingLotsPage() {
                               </div>
                               <p className="mt-1.5 flex gap-3 text-xs text-slate-700">
                                 <span><strong className="text-slate-900">{mix.cars.toLocaleString('en-US')}</strong> Cars</span>
-                                <span><strong className="text-slate-900">{mix.bikes.toLocaleString('en-US')}</strong> Bikes</span>
-                                <span><strong className="text-slate-900">{mix.bicycles.toLocaleString('en-US')}</strong> Bicycles</span>
+                                <span><strong className="text-slate-900">{mix.bikes.toLocaleString('en-US')}</strong> Motorbikes</span>
                               </p>
                             </TableCell>
                             <TableCell>

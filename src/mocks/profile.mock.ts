@@ -11,11 +11,11 @@ import type {
 } from '@/types/profile.dto'
 import { mockFail, mockId, mockResponse } from './mockApi'
 
+/** The only vehicle types the system accepts: 4-seat cars, 7-seat cars and motorbikes (same codes as the API). */
 const vehicleTypes: VehicleTypeDTO[] = [
-  { id: 1, code: 'CAR', name: 'Sedan / Hatchback (Car)', sortOrder: 1 },
-  { id: 2, code: 'SUV', name: 'SUV / Crossover / 7-Seater', sortOrder: 2 },
-  { id: 3, code: 'MOTORBIKE', name: 'Motorbike / Scooter', sortOrder: 3 },
-  { id: 4, code: 'EV', name: 'Electric Vehicle (EV)', sortOrder: 4 },
+  { id: 1, code: 'CAR_4', name: '4-Seat Car', description: 'Sedan / hatchback up to 5 seats', sortOrder: 1 },
+  { id: 2, code: 'CAR_7', name: '7-Seat Car', description: 'SUV / MPV up to 7 seats', sortOrder: 2 },
+  { id: 3, code: 'MOTORBIKE', name: 'Motorbike', description: 'Two-wheeled motorcycles', sortOrder: 3 },
 ]
 
 const now = new Date().toISOString()

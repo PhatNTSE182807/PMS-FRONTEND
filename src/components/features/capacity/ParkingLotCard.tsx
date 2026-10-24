@@ -1,4 +1,4 @@
-import { Bike, Car, Layers, MapPin, UserRound, Zap, type LucideIcon } from 'lucide-react'
+import { Bike, Car, Layers, MapPin, UserRound, type LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -12,12 +12,10 @@ import { LOT_STATUS_STYLES } from './occupancyStyles'
 const VEHICLE_ROWS: Record<CapacityVehicleType, { label: string; icon: LucideIcon }> = {
   CAR: { label: 'Car zone', icon: Car },
   MOTORBIKE: { label: 'Motorbike zone', icon: Bike },
-  EV_CHARGING: { label: 'EV charging', icon: Zap },
 }
 
 function CapacityRow({ detail }: { detail: VehicleCapacityDetail }) {
   const { label, icon: Icon } = VEHICLE_ROWS[detail.vehicleType]
-  const isCharger = detail.vehicleType === 'EV_CHARGING'
   const rate = occupancyRate(detail.occupiedSlots, detail.totalSlots)
 
   return (
@@ -28,19 +26,13 @@ function CapacityRow({ detail }: { detail: VehicleCapacityDetail }) {
           {label}
         </span>
         <span className="text-slate-900 tabular-nums">
-          {formatNumber(detail.occupiedSlots)} / {formatNumber(detail.totalSlots)} {isCharger ? 'chargers' : 'slots'}
+          {formatNumber(detail.occupiedSlots)} / {formatNumber(detail.totalSlots)} slots
         </span>
       </div>
       <OccupancyBar percentage={rate} />
       <p className="text-xs text-slate-500">
-        {isCharger ? (
-          <>{formatNumber(detail.occupiedSlots)} chargers in use · {formatNumber(detail.availableSlots)} free</>
-        ) : (
-          <>
-            <span className="font-medium text-slate-700">{formatNumber(detail.availableSlots)}</span> slots free
-            {detail.maintenanceSlots > 0 && ` · ${formatNumber(detail.maintenanceSlots)} under maintenance`}
-          </>
-        )}
+        <span className="font-medium text-slate-700">{formatNumber(detail.availableSlots)}</span> slots free
+        {detail.maintenanceSlots > 0 && ` · ${formatNumber(detail.maintenanceSlots)} under maintenance`}
       </p>
     </div>
   )

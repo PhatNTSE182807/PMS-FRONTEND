@@ -16,11 +16,10 @@ import { MOCK_PARKING_LOTS, type MockParkingLot } from './parkingLots.mock'
 import { createRandom, hashString, jitter } from './random'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const BICYCLE_FEE = 2_000
 /** Blended monthly pass price per subscriber (mostly motorbikes, some cars). */
 const MONTHLY_PASS_PRICE = 400_000
 /** How subscription revenue splits across vehicle types (car passes cost ~12× more). */
-const SUBSCRIPTION_SHARE = { car: 0.6, motorbike: 0.38, bicycle: 0.02 }
+const SUBSCRIPTION_SHARE = { car: 0.62, motorbike: 0.38 }
 /** Ranges longer than this are charted per month instead of per day. */
 const MAX_DAILY_POINTS = 62
 const MAX_RANGE_DAYS = 400
@@ -31,10 +30,8 @@ interface DailyMetrics {
   lot: MockParkingLot
   motorbikeCount: number
   carCount: number
-  bicycleCount: number
   carRevenue: number
   motorbikeRevenue: number
-  bicycleRevenue: number
   walkInRevenue: number
   subscriptionRevenue: number
   totalRevenue: number
@@ -88,26 +85,22 @@ function rawDailyMetrics(lot: MockParkingLot, date: string) {
 
   const motorbikeCount = Math.round(lot.dailyMotorbikes * volume * jitter(random, 0.12))
   const carCount = Math.round(lot.dailyCars * volume * jitter(random, 0.15))
-  const bicycleCount = Math.round(lot.dailyBicycles * volume * jitter(random, 0.2))
   const subscriptionRevenue = Math.round(((lot.monthlySubscribers * MONTHLY_PASS_PRICE) / 30) * dayFraction * jitter(random, 0.08))
 
   const carWalkIn = Math.round(carCount * lot.carFee * jitter(random, 0.05))
   const motorbikeWalkIn = Math.round(motorbikeCount * lot.motorbikeFee * jitter(random, 0.05))
-  const bicycleWalkIn = bicycleCount * BICYCLE_FEE
 
   const metrics = {
     date,
     motorbikeCount,
     carCount,
-    bicycleCount,
     carRevenue: carWalkIn + Math.round(subscriptionRevenue * SUBSCRIPTION_SHARE.car),
     motorbikeRevenue: motorbikeWalkIn + Math.round(subscriptionRevenue * SUBSCRIPTION_SHARE.motorbike),
-    bicycleRevenue: bicycleWalkIn + Math.round(subscriptionRevenue * SUBSCRIPTION_SHARE.bicycle),
-    walkInRevenue: carWalkIn + motorbikeWalkIn + bicycleWalkIn,
+    walkInRevenue: carWalkIn + motorbikeWalkIn,
     subscriptionRevenue,
     totalRevenue: 0,
     // Every walk-in exit is a transaction, plus the day's share of pass renewals.
-    transactions: motorbikeCount + carCount + bicycleCount + Math.round((lot.monthlySubscribers / 30) * dayFraction),
+    transactions: motorbikeCount + carCount + Math.round((lot.monthlySubscribers / 30) * dayFraction),
   }
   metrics.totalRevenue = metrics.walkInRevenue + subscriptionRevenue
   // Today's figures keep growing, so only closed days are cached.
@@ -120,10 +113,10 @@ function dailyMetrics(lot: MockParkingLot, date: string, vehicleType: RevenueFil
   const raw = rawDailyMetrics(lot, date)
   if (!vehicleType || vehicleType === 'ALL') return { ...raw, lot }
 
-  const keep = { CAR: 'car', MOTORBIKE: 'motorbike', BICYCLE: 'bicycle' } as const
+  const keep = { CAR: 'car', MOTORBIKE: 'motorbike' } as const
   const kind = keep[vehicleType]
-  const count = kind === 'car' ? raw.carCount : kind === 'motorbike' ? raw.motorbikeCount : raw.bicycleCount
-  const revenue = kind === 'car' ? raw.carRevenue : kind === 'motorbike' ? raw.motorbikeRevenue : raw.bicycleRevenue
+  const count = kind === 'car' ? raw.carCount : raw.motorbikeCount
+  const revenue = kind === 'car' ? raw.carRevenue : raw.motorbikeRevenue
   const subscriptionRevenue = Math.round(raw.subscriptionRevenue * SUBSCRIPTION_SHARE[kind])
 
   return {
@@ -131,10 +124,8 @@ function dailyMetrics(lot: MockParkingLot, date: string, vehicleType: RevenueFil
     lot,
     carCount: kind === 'car' ? raw.carCount : 0,
     motorbikeCount: kind === 'motorbike' ? raw.motorbikeCount : 0,
-    bicycleCount: kind === 'bicycle' ? raw.bicycleCount : 0,
     carRevenue: kind === 'car' ? revenue : 0,
     motorbikeRevenue: kind === 'motorbike' ? revenue : 0,
-    bicycleRevenue: kind === 'bicycle' ? revenue : 0,
     walkInRevenue: revenue - subscriptionRevenue,
     subscriptionRevenue,
     totalRevenue: revenue,
