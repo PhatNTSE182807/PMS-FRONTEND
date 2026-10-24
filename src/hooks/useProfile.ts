@@ -36,6 +36,22 @@ export function useUpdateProfile() {
   })
 }
 
+export function useUploadAvatar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => profileService.uploadAvatar(file),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(queryKeys.profile.me(), profile)
+      session.updateUser({
+        fullName: profile.fullName,
+        email: profile.email,
+        phoneNumber: profile.phoneNumber,
+        avatarUrl: profile.avatarUrl ?? undefined,
+      })
+    },
+  })
+}
+
 /** Vehicle mutations share one invalidation, because "default" changes touch several rows. */
 function useVehicleMutation<TVariables, TData>(mutationFn: (variables: TVariables) => Promise<TData>) {
   const queryClient = useQueryClient()

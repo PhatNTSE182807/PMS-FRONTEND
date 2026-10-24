@@ -63,3 +63,15 @@ export function initials(fullName: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase()
 }
+
+/** Resolves a relative media path (e.g. /uploads/avatars/...) to a full URL using the configured API base. */
+export function resolveMediaUrl(url?: string | null): string | undefined {
+  if (!url) return undefined
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url
+  }
+  // Remove trailing /api to get the origin
+  const apiRoot = (import.meta.env.VITE_API_BASE_URL || 'https://localhost:44391/api').replace(/\/api\/?$/, '')
+  return `${apiRoot}${url.startsWith('/') ? '' : '/'}${url}`
+}
+

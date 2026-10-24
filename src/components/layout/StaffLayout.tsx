@@ -11,6 +11,7 @@ import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useDemoIncidents } from '@/hooks/useDemoIncidents'
 import { cn } from '@/lib/utils'
+import { resolveMediaUrl } from '@/lib/format'
 import { demoStation } from '@/mocks/staffOps.mock'
 import { STAFF_NAV } from './adminNav'
 
@@ -92,7 +93,11 @@ export function StaffLayout() {
                   {demoStation.employeeCode} • {demoStation.title}
                 </p>
               </div>
-              <img src={LOGO_SRC} alt="" className="hidden size-9 rounded-full bg-slate-50 object-contain p-0.5 ring-1 ring-amber-300 sm:block" />
+              <img
+                src={resolveMediaUrl(user?.avatarUrl) || LOGO_SRC}
+                alt=""
+                className="hidden size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300 sm:block"
+              />
               <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={handleLogout}>
                 <LogOut />
               </Button>

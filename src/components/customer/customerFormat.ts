@@ -1,6 +1,9 @@
 import { Bike, Car, CarFront, type LucideIcon } from 'lucide-react'
 import { PASSWORD_RULES } from '@/lib/password'
+import { resolveMediaUrl } from '@/lib/format'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
+
+export { resolveMediaUrl }
 
 /** "Alex Nguyen" -> "AN" */
 export function initials(name: string): string {

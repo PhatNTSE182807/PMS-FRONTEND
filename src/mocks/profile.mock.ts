@@ -135,6 +135,18 @@ export const profileMock = {
       return currentProfile()
     }),
 
+  uploadAvatar: (file: File) =>
+    mockResponse(() => {
+      if (!file) mockFail(400, 'No file was uploaded.')
+      if (file.size > 2 * 1024 * 1024) mockFail(400, 'Avatar image must be smaller than 2 MB.')
+      const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      if (!allowed.includes(file.type)) mockFail(400, 'Only JPEG, PNG, GIF and WebP images are allowed.')
+      const avatarUrl = URL.createObjectURL(file)
+      profileOverrides = { ...profileOverrides, avatarUrl }
+      session.updateUser({ avatarUrl })
+      return currentProfile()
+    }),
+
   getVehicles: () => mockResponse(() => vehicles),
 
   getVehicleTypes: () => mockResponse(() => vehicleTypes),

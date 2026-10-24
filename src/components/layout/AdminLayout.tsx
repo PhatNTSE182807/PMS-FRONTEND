@@ -11,7 +11,7 @@ import { ErrorState } from '@/components/ui/states'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useParkingCapacity } from '@/hooks/useParking'
-import { formatNumber } from '@/lib/format'
+import { formatNumber, resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
 
@@ -194,7 +194,11 @@ export function AdminLayout() {
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
-              <img src={LOGO_SRC} alt="" className="size-9 rounded-full bg-slate-50 object-contain p-0.5 ring-1 ring-amber-300" />
+              <img
+                src={resolveMediaUrl(user?.avatarUrl) || LOGO_SRC}
+                alt=""
+                className="size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300"
+              />
               <div className="hidden leading-tight md:block">
                 <p className="text-sm font-semibold text-slate-950">{user?.fullName}</p>
                 <p className="text-xs font-bold tracking-wide text-amber-500 uppercase">{roleLabel(user?.role)}</p>

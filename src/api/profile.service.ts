@@ -24,6 +24,13 @@ export const profileService = {
     return mocked() ? profileMock.updateProfile(command) : http.put<UserProfileDTO>(base, command)
   },
 
+  uploadAvatar(file: File): Promise<UserProfileDTO> {
+    if (mocked()) return profileMock.uploadAvatar(file)
+    const form = new FormData()
+    form.append('file', file)
+    return http.post<UserProfileDTO>(`${base}/avatar`, form)
+  },
+
   getVehicles(): Promise<VehicleDTO[]> {
     return mocked() ? profileMock.getVehicles() : http.get<VehicleDTO[]>(`${base}/vehicles`)
   },

@@ -6,7 +6,7 @@ import { LOGO_SRC } from '@/components/ParkingLogo'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useWallet, formatVndBalance } from '@/hooks/useWallet'
-import { initials } from './customerFormat'
+import { initials, resolveMediaUrl } from './customerFormat'
 import { NotificationBell } from './NotificationBell'
 import { UserWalletModal } from './UserWalletModal'
 import '@/styles/customer.css'
@@ -39,7 +39,7 @@ export function CustomerShell() {
   }, [pathname, hash])
 
   const name = profile?.fullName || user?.fullName || user?.username || 'Driver'
-  const avatarUrl = profile?.avatarUrl || user?.avatarUrl
+  const avatarUrl = resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl)
 
   const isActive = (to: string, end?: boolean) => {
     const [path, anchor] = to.split('#')

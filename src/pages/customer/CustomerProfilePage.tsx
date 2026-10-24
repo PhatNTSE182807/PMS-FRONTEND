@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
+  Camera,
   Check,
   ChevronRight,
   Eye,
@@ -9,6 +10,7 @@ import {
   Info,
   KeyRound,
   Laptop,
+  Loader2,
   Lock,
   LogOut,
   Mail,
@@ -27,9 +29,10 @@ import {
   initials,
   memberCode,
   passwordScore,
+  resolveMediaUrl,
 } from '@/components/customer/customerFormat'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
-import { useChangePassword, useProfile, useUpdateProfile, useVehicles } from '@/hooks/useProfile'
+import { useChangePassword, useProfile, useUpdateProfile, useUploadAvatar, useVehicles } from '@/hooks/useProfile'
 import { isValidPassword, PASSWORD_RULE_HINT, PASSWORD_RULE_MESSAGE, PASSWORD_RULES } from '@/lib/password'
 import type { UserProfileDTO } from '@/types/profile.dto'
 
@@ -110,7 +113,38 @@ export default function CustomerProfilePage() {
   const profile = profileQuery.data
   const { data: vehicles = [] } = useVehicles()
   const updateProfile = useUpdateProfile()
+  const uploadAvatar = useUploadAvatar()
   const changePassword = useChangePassword()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarClick = () => {
+    if (uploadAvatar.isPending) return
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Avatar image must be smaller than 2 MB.')
+      return
+    }
+
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      toast.error('Only JPEG, PNG, GIF and WebP images are allowed.')
+      return
+    }
+
+    try {
+      await uploadAvatar.mutateAsync(file)
+      toast.success('Avatar updated successfully!')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to upload avatar.'))
+    }
+  }
 
   // Personal information form, filled once the profile arrives
   const [form, setForm] = useState({ fullName: '', email: '', phoneNumber: '', citizenId: '' })
@@ -196,9 +230,39 @@ export default function CustomerProfilePage() {
         <aside className="cx-stack">
           <section className="cx-card cx-profile-card" aria-label="Account summary">
             <div className="cx-profile-card__who">
-              <span className="cx-avatar cx-avatar--lg">
-                {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : initials(name)}
-              </span>
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className={`cx-avatar cx-avatar--lg cx-avatar--clickable ${uploadAvatar.isPending ? 'cx-avatar--loading' : ''}`}
+                  onClick={handleAvatarClick}
+                  disabled={uploadAvatar.isPending}
+                  title="Click to upload profile picture (Max 2 MB)"
+                  aria-label="Upload profile picture"
+                >
+                  {resolveMediaUrl(profile?.avatarUrl) ? (
+                    <img src={resolveMediaUrl(profile?.avatarUrl)} alt={name} />
+                  ) : (
+                    initials(name)
+                  )}
+                  <span className="cx-avatar-overlay">
+                    {uploadAvatar.isPending ? (
+                      <Loader2 className="cx-avatar-overlay__icon animate-spin" aria-hidden />
+                    ) : (
+                      <>
+                        <Camera className="cx-avatar-overlay__icon" aria-hidden />
+                        <span className="cx-avatar-overlay__text">Photo</span>
+                      </>
+                    )}
+                  </span>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  style={{ display: 'none' }}
+                  onChange={handleAvatarChange}
+                />
+              </div>
               <div>
                 <p className="cx-profile-card__name">{name}</p>
                 <p className="cx-profile-card__id">{memberCode(profile?.userId ?? user?.userId)}</p>
