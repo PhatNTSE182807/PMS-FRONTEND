@@ -184,7 +184,7 @@ export default function RegisterVehiclePage() {
     e.preventDefault()
     setError('')
     if (!hasProfileCitizenId)
-      return setError('Please enter and save your Citizen ID (CCCD) in your profile before registering a vehicle.')
+      return setError('Please enter and save your Citizen ID in your profile before registering a vehicle.')
     if (!plateValid) return setError('Enter a valid Vietnamese plate number, for example 51K-992.88.')
     if (!form.brand.trim() || !form.model.trim()) return setError('Enter the manufacturer and the model.')
     if (!citizenIdValid) return setError('Valid 12-digit Citizen ID is required from your profile.')
@@ -192,7 +192,7 @@ export default function RegisterVehiclePage() {
     if (papersVehicle !== null)
       return setError('The papers panel shows another vehicle. Click "New vehicle" and add the papers for this one.')
     if (!papers.complete)
-      return setError('Add the front of the registration certificate and both sides of the Citizen ID card.')
+      return setError('Add one photo of the registration certificate and one of the Citizen ID card.')
     if (!form.consent) return setError('Please confirm that you own or are authorised to drive this vehicle.')
 
     addVehicle.mutate(
@@ -280,7 +280,7 @@ export default function RegisterVehiclePage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <AlertTriangle style={{ flexShrink: 0, width: '1.25rem', height: '1.25rem' }} aria-hidden />
                     <span style={{ fontSize: '0.875rem', color: 'var(--text-main, #f1f5f9)' }}>
-                      <strong>Citizen ID (CCCD) required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
+                      <strong>Citizen ID required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
                     </span>
                   </div>
                   <Link
@@ -386,7 +386,7 @@ export default function RegisterVehiclePage() {
 
               <div className="cx-field">
                 <div className="cx-field__label-row">
-                  <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID (CCCD)</label>
+                  <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID</label>
                   <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem' }}>From user profile</span>
                 </div>
                 <div className="cx-control">
@@ -404,7 +404,7 @@ export default function RegisterVehiclePage() {
                 <p className="cx-field__hint" id="vehicle-citizen-id-hint">
                   {hasProfileCitizenId
                     ? 'Automatically retrieved from your profile. Vehicles must be registered under your verified Citizen ID.'
-                    : 'No Citizen ID found in your profile. Please save your CCCD in your user profile first.'}
+                    : 'No Citizen ID found in your profile. Please save it in your user profile first.'}
                 </p>
               </div>
 
@@ -451,7 +451,7 @@ export default function RegisterVehiclePage() {
             <div className="cx-form">
               <p className="cx-note">
                 <Info aria-hidden />
-                Required: the front of the registration certificate and both sides of your Citizen ID card.
+                Required: one photo of the registration certificate and one of your Citizen ID card.
                 Our Staff compare them with this form and your profile, then approve the vehicle. You can book
                 with it once it is approved.
               </p>

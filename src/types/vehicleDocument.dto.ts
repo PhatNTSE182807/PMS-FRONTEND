@@ -45,8 +45,8 @@ export interface VehicleVerificationDTO {
  * Citizen ID card (CCCD). Each is sent as the "Front" side; backs are not asked for.
  */
 export const DOCUMENT_SLOTS: { type: VehicleDocumentType; side: VehicleDocumentSide; label: string }[] = [
-  { type: 'RegistrationCertificate', side: 'Front', label: 'Registration certificate (cà vẹt)' },
-  { type: 'CitizenId', side: 'Front', label: 'Citizen ID card (CCCD)' },
+  { type: 'RegistrationCertificate', side: 'Front', label: 'Registration certificate' },
+  { type: 'CitizenId', side: 'Front', label: 'Citizen ID card' },
 ]
 
 /**

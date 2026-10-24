@@ -30,8 +30,8 @@ import '@/styles/vehicle-documents.css'
 
 /** The papers asked for: one photo of each. */
 const PAPERS: { type: VehicleDocumentType; title: string; hint: string }[] = [
-  { type: 'RegistrationCertificate', title: 'Registration certificate (cà vẹt)', hint: 'One photo' },
-  { type: 'CitizenId', title: 'Citizen ID card (CCCD)', hint: 'One photo' },
+  { type: 'RegistrationCertificate', title: 'Registration certificate', hint: 'One photo' },
+  { type: 'CitizenId', title: 'Citizen ID card', hint: 'One photo' },
 ]
 
 const sidesOf = (type: VehicleDocumentType) => DOCUMENT_SLOTS.filter((s) => s.type === type).map((s) => s.side)
@@ -98,7 +98,6 @@ function DocumentSlot({
             {state.uploaded && <span className="vd-slot__badge" title="Uploaded"><CircleCheck aria-hidden /></span>}
           </div>
           <div className="vd-slot__meta">
-            <span className="vd-slot__side">{side} side</span>
             <span className="vd-slot__name" title={state.file.name}>{state.file.name}</span>
             <span className="vd-slot__size">{formatSize(state.file.size)}</span>
           </div>
@@ -116,8 +115,8 @@ function DocumentSlot({
       ) : (
         <label htmlFor={id} className="vd-slot__empty">
           <CloudUpload aria-hidden />
-          <strong>{side} side</strong>
-          <small>Drop or click · JPEG, PNG, PDF ≤ 10 MB</small>
+          <strong>Drop a photo here or click to choose</strong>
+          <small>JPEG, PNG or PDF, up to 10 MB</small>
         </label>
       )}
       {state.error && <p className="vd-slot__error" role="alert">{state.error}</p>}
@@ -192,7 +191,7 @@ export function RegistrationStatus({ verification }: { verification: VehicleVeri
 
 /**
  * Upload of the papers a vehicle registration needs: the front of the registration certificate and
- * both sides of the Citizen ID card, with previews and progress, then the Staff decision on `vehicleId`.
+ * the Citizen ID card (one photo each), with previews and progress, then the Staff decision on `vehicleId`.
  * Without a vehicle (a new registration) the photos wait in the browser until the page submits.
  */
 export function VehicleDocumentsPanel({
