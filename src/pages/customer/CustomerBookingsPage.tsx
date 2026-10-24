@@ -94,7 +94,7 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
 
   const confirmCancel = () => {
     const refund = booking.refundIfCancelledNow
-    const message = refund > 0 ? `Cancel this reservation and refund ${vnd(refund)}?` : 'It is less than 30 minutes before arrival, so the deposit is not refunded (BR-04). Cancel anyway?'
+    const message = refund > 0 ? `Cancel this reservation and refund ${vnd(refund)}?` : 'It is less than 30 minutes before arrival, so the deposit is not refunded. Cancel anyway?'
     if (window.confirm(message)) cancel.mutate({ id: booking.id })
   }
 

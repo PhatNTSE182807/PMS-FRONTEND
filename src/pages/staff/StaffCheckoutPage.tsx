@@ -151,7 +151,7 @@ export default function StaffCheckoutPage() {
         toast.info('The QR payment came after another payment and was refunded automatically.')
         loadQuote(session.id, exitPlate)
       } else {
-        toast.info(result.message ?? 'Still waiting for the gateway.', { description: qrLeft === 0 ? 'You may take cash instead (BR-11).' : undefined })
+        toast.info(result.message ?? 'Still waiting for the gateway.', { description: qrLeft === 0 ? 'You may take cash instead.' : undefined })
       }
     } catch (e) {
       toast.error(getErrorMessage(e))
@@ -300,11 +300,11 @@ export default function StaffCheckoutPage() {
                   </li>
                 ))}
                 {quote.days.length === 0 && (
-                  <li className="py-3 text-sm text-slate-700">{quote.zeroFeeReason === 'Whitelist' ? 'Whitelisted plate: free (BR-16).' : 'Inside the free period: 0 VND (BR-09).'}</li>
+                  <li className="py-3 text-sm text-slate-700">{quote.zeroFeeReason === 'Whitelist' ? 'Whitelisted plate: free of charge.' : 'Inside the free period: 0 VND.'}</li>
                 )}
                 <FeeLine label="Parking fee" value={quote.fee} />
                 {quote.lostTicketFee > 0 && <FeeLine label="Lost ticket fine" value={quote.lostTicketFee} />}
-                {quote.exitWindowLateFee > 0 && <FeeLine label="Exit Window missed (BR-10)" value={quote.exitWindowLateFee} />}
+                {quote.exitWindowLateFee > 0 && <FeeLine label="Exit window missed" value={quote.exitWindowLateFee} />}
                 {quote.depositApplied > 0 && <FeeLine label="Reservation deposit" value={-quote.depositApplied} tone="text-indigo-700" />}
                 {quote.alreadyPaid > 0 && <FeeLine label="Already paid" value={-quote.alreadyPaid} tone="text-indigo-700" />}
               </ul>
@@ -312,7 +312,7 @@ export default function StaffCheckoutPage() {
                 <div>
                   <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Amount due</p>
                   <p className="text-sm text-slate-700">
-                    {quote.depositRefund > 0 ? `${vnd(quote.depositRefund)} of the deposit is refunded at exit (BR-03)` : session.status === 'Paid' ? 'Settled' : 'Ready for payment'}
+                    {quote.depositRefund > 0 ? `${vnd(quote.depositRefund)} of the deposit is refunded at exit` : session.status === 'Paid' ? 'Settled' : 'Ready for payment'}
                   </p>
                 </div>
                 <p className="font-mono text-4xl font-bold text-amber-500">{vnd(due)}</p>

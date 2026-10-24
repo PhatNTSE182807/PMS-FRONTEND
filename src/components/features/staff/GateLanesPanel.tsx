@@ -31,7 +31,7 @@ const REFUSE_REASONS: Record<GateRequestKind, string[]> = {
 
 /** Alerts the Staff can clear on the next "Open barrier", with the request flag that clears each one. */
 const OVERRIDES: Partial<Record<string, { flag: keyof ApproveGateRequestRequest; label: string }>> = {
-  ZONE_FULL: { flag: 'allowWhenFull', label: 'Let it in although the zone is full (BR-19)' },
+  ZONE_FULL: { flag: 'allowWhenFull', label: 'Let it in although the zone is full' },
   RESERVATION_PLATE_MISMATCH: { flag: 'allowPlateMismatch', label: 'Same account, same vehicle type: accept the changed vehicle' },
   PLATE_MISMATCH: { flag: 'allowPlateMismatch', label: 'Plates differ but it is the same vehicle' },
 }

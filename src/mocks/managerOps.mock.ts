@@ -92,12 +92,12 @@ export const demoApprovals: DemoApproval[] = [
   {
     id: 'REQ-8820', kind: 'DEPOSIT_REFUND', priority: 'NORMAL', title: 'Pre-Booking Deposit Full Refund',
     requestedBy: 'Customer Vuong Dinh Toan (#BK-9891)', receivedAt: loadedAt - 62 * MIN, amount: -50_000,
-    summary: 'Booking #BK-9891 was cancelled 2 hours before arrival, which complies with the full-refund rule (BR-04).',
+    summary: 'Booking #BK-9891 was cancelled 2 hours before arrival, so the deposit is refunded in full.',
     fees: [{ label: 'Deposit refund to VietQR source account', amount: -50_000 }],
     evidence: [
       { label: 'Booking', value: '#BK-9891' },
       { label: 'Cancelled', value: '2h before arrival' },
-      { label: 'Rule', value: 'BR-04 compliant' },
+      { label: 'Refund policy', value: 'Full refund' },
       { label: 'Refund channel', value: 'VietQR' },
     ],
   },
