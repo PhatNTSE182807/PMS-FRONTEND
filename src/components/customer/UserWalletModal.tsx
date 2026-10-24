@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { CreditCard, Loader2, Minus, Plus, X } from 'lucide-react'
+import { CreditCard, FlaskConical, Loader2, Minus, Plus, X } from 'lucide-react'
+import { usePaymentSimulation } from '@/hooks/usePaymentSimulation'
 import { useWallet, formatVndBalance, formatVndQuick } from '@/hooks/useWallet'
 import '@/styles/wallet.css'
 
@@ -12,6 +13,9 @@ const PRESET_AMOUNTS = [50000, 100000, 200000, 500000, 1000000]
 
 export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
   const { balance, holdAmount, transactions, loading, dailyTopUpLimit, topUpRemainingToday, minTopUp, deposit, withdraw } = useWallet()
+
+  // Development / testing only: credit the top-up without the VNPay / MoMo pages
+  const canSimulate = usePaymentSimulation()
 
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
   const [selectedAmount, setSelectedAmount] = useState<number>(200000)
@@ -248,10 +252,20 @@ export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
                 </>
               ) : (
                 <>
-                  <Plus size={18} strokeWidth={2.8} /> CONFIRM TOP-UP
+                  <Plus size={18} strokeWidth={2.8} /> Confirm
                 </>
               )}
             </button>
+            {canSimulate && (
+              <button
+                type="button"
+                className="cx-wallet-simulate"
+                disabled={loading || depositProblem !== null || !depositAmount}
+                onClick={() => void deposit(depositAmount, paymentMethod, { simulate: true })}
+              >
+                <FlaskConical size={16} /> Simulate successful payment
+              </button>
+            )}
           </form>
         )}
 

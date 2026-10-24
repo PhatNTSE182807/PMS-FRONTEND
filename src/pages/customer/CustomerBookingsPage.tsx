@@ -6,6 +6,7 @@ import {
   CircleX,
   Clock,
   CreditCard,
+  FlaskConical,
   Headset,
   MapPin,
   ScanLine,
@@ -19,7 +20,8 @@ import {
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { QrCode } from '@/components/ui/qr-code'
 import { useNow } from '@/hooks/useNow'
-import { useCancelReservation, useMyReservations, usePayDeposit, useReservationQr, useUpdateReservation } from '@/hooks/useReservations'
+import { usePaymentSimulation } from '@/hooks/usePaymentSimulation'
+import { useCancelReservation, useMyReservations, usePayDeposit, useReservationQr, useSimulateDeposit, useUpdateReservation } from '@/hooks/useReservations'
 import { checkBookingTimes, describeWindow, toLocalInput, type BookingTimes } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
 import type { PaymentProvider, ReservationDTO, ReservationStatus } from '@/types/operations.dto'
@@ -215,6 +217,9 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
 
 function PendingDeposit({ booking, now }: { booking: ReservationDTO; now: number }) {
   const pay = usePayDeposit()
+  // Development / testing only: confirm the deposit without the VNPay / MoMo pages
+  const canSimulate = usePaymentSimulation()
+  const simulate = useSimulateDeposit()
   const cancel = useCancelReservation()
   const left = Math.max(0, Date.parse(booking.depositDueAt ?? booking.createdAt) - now)
   const payWith = (provider: PaymentProvider) => pay.mutate({ id: booking.id, provider })
@@ -249,6 +254,11 @@ function PendingDeposit({ booking, now }: { booking: ReservationDTO; now: number
         <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
           <Wallet aria-hidden /> MoMo
         </button>
+        {canSimulate && (
+          <button type="button" className="cx-btn cx-btn--simulate" disabled={simulate.isPending || left === 0} onClick={() => simulate.mutate(booking.id)}>
+            <FlaskConical aria-hidden /> {simulate.isPending ? 'Simulating…' : 'Simulate successful payment'}
+          </button>
+        )}
         <button type="button" className="cx-link" style={{ width: '100%', textAlign: 'center' }} disabled={cancel.isPending} onClick={() => cancel.mutate({ id: booking.id, reason: 'Given up before paying' })}>
           Give up this booking
         </button>

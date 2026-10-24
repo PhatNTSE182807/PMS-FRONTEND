@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
+import { paymentService } from '@/api/payment.service'
 import { walletService } from '@/api/wallet.service'
 import { getErrorMessage } from '@/api/apiError'
 import { session } from '@/lib/session'
@@ -178,8 +179,12 @@ export function useWallet() {
     }
   }, [])
 
+  /**
+   * Tops the wallet up through VNPay / MoMo. With `simulate` (development / testing only) the payment is
+   * created on the server and completed at once, without the gateway pages.
+   */
   const deposit = useCallback(
-    async (amount: number, method: 'vnpay' | 'momo'): Promise<boolean> => {
+    async (amount: number, method: 'vnpay' | 'momo', options: { simulate?: boolean } = {}): Promise<boolean> => {
       if (amount <= 0 || isNaN(amount)) {
         toast.error('Please enter a valid amount.')
         return false
@@ -210,6 +215,16 @@ export function useWallet() {
             amount,
             provider: methodName,
           })
+
+          if (options.simulate) {
+            // Same server path as a gateway confirmation: the balance is credited by the API
+            await paymentService.simulateSuccess(res.id)
+            await fetchWallet()
+            setLoading(false)
+            toast.success(`Top-up of ${formatVndBalance(amount)} via ${methodName} succeeded (simulated).`)
+            return true
+          }
+
           if (!res.payUrl) throw new Error(`${methodName} did not return a payment page. Please try again.`)
 
           toast.loading(`Redirecting to ${methodName} payment gateway...`)

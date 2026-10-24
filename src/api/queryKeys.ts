@@ -44,6 +44,10 @@ export const queryKeys = {
     capacity: () => [...queryKeys.parking.all, 'capacity'] as const,
     staffLots: (userId: string | undefined) => [...queryKeys.parking.all, 'staff-lots', userId] as const,
   },
+  /** Server-wide payment settings. */
+  payments: {
+    simulation: () => ['payments', 'simulation'] as const,
+  },
   /** The customer's reservations and the lots they can book. */
   reservations: {
     all: ['reservations'] as const,

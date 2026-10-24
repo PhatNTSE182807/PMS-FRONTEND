@@ -2646,6 +2646,17 @@
   background: #c2187a;
 }
 
+/* Development / testing only: completes a payment without the gateway. Dashed so it never looks like a real payment method. */
+.cx-btn--simulate {
+  border: 1px dashed var(--cx-primary);
+  background: transparent;
+  color: var(--cx-primary);
+}
+
+.cx-btn--simulate:hover:not(:disabled) {
+  background: rgba(154, 205, 234, 0.08);
+}
+
 .cx-pass__qr {
   width: min(100%, 13rem);
   margin: 0 auto;
