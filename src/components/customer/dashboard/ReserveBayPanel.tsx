@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CircleCheck, CreditCard, ShieldCheck, Timer, Wallet, Zap } from 'lucide-react'
+import { CircleCheck, CreditCard, FlaskConical, ShieldCheck, Timer, Wallet, Zap } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { useNow } from '@/hooks/useNow'
 import { useVehicles } from '@/hooks/useProfile'
-import { useCreateReservation, usePayDeposit } from '@/hooks/useReservations'
+import { usePaymentSimulation } from '@/hooks/usePaymentSimulation'
+import { useCreateReservation, usePayDeposit, useSimulateDeposit } from '@/hooks/useReservations'
 import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
@@ -46,6 +47,9 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   const [payDeposit, setPayDeposit] = useState(true)
   const create = useCreateReservation()
   const pay = usePayDeposit()
+  // Development / testing only: confirm the deposit without the VNPay / MoMo pages
+  const canSimulate = usePaymentSimulation()
+  const simulate = useSimulateDeposit()
 
   const chosenVehicle = vehicleId || cars.find((v) => v.isDefault)?.vehicleId || cars[0]?.vehicleId || ''
   const heldHere = held && String(held.slotId) === slotId ? held : null
@@ -126,6 +130,16 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
             <Wallet aria-hidden /> MoMo
           </button>
+          {canSimulate && (
+            <button
+              type="button"
+              className="cx-btn cx-btn--simulate"
+              disabled={simulate.isPending || left === 0}
+              onClick={() => simulate.mutate(heldHere.id, { onSuccess: setHeld })}
+            >
+              <FlaskConical aria-hidden /> {simulate.isPending ? 'Simulating…' : 'Simulate successful payment'}
+            </button>
+          )}
         </div>
         <Link to="/me/bookings" className="cx-link">Open My Bookings</Link>
       </div>

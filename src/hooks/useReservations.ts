@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/apiError'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
+import { paymentService } from '@/api/payment.service'
 import { queryKeys } from '@/api/queryKeys'
 import { reservationService } from '@/api/reservation.service'
 import type { CreateReservationRequest, PaymentProvider, ReservationDTO, UpdateReservationRequest } from '@/types/operations.dto'
@@ -104,12 +105,37 @@ export function useCancelReservation() {
 }
 
 /** Starts the deposit payment and sends the browser to the gateway (or the demo return page). */
+/**
+ * Development / testing only: opens a VNPay deposit payment and completes it as if the gateway confirmed
+ * it, so the booking is confirmed without typing sandbox card details. Returns the updated reservation.
+ */
+export function useSimulateDeposit() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const payment = await reservationService.payDeposit(id, 'VNPay')
+      await paymentService.simulateSuccess(payment.id)
+      return reservationService.get(id)
+    },
+    onSuccess: (reservation) => {
+      toast.success(`Deposit paid (simulated): bay ${reservation.slotCode} is confirmed.`)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+}
+
 export function usePayDeposit() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, provider }: { id: number; provider: PaymentProvider }) => reservationService.payDeposit(id, provider),
-    onSuccess: (payment) => {
+    onSuccess: (payment, { provider }) => {
+      // VNPay / MoMo without keys on a test server: the payment exists but has no pay page
+      if (!payment.payUrl && provider !== 'Wallet') {
+        toast.error(`${provider} is not set up on this server. Use "Simulate successful payment" to test the booking.`)
+        return
+      }
       if (!payment.payUrl) {
         toast.success('Deposit successfully paid using XXIV Wallet!')
         window.dispatchEvent(new Event('xxiv-wallet-updated'))

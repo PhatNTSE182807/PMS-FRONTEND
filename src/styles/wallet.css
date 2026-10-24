@@ -101,7 +101,7 @@
   max-height: 92vh;
   overflow-y: auto;
   border-radius: 1rem;
-  background: #0f1820;
+  background: var(--cx-low);
   border: 1px solid rgba(116, 141, 146, 0.22);
   box-shadow:
     0 25px 60px -15px rgba(0, 0, 0, 0.85),
@@ -174,7 +174,7 @@
   font-family: var(--cx-headline-font);
   font-size: 1.05rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--cx-on-surface);
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
@@ -206,7 +206,7 @@
 
 .cx-wallet-header__close:hover {
   background: rgba(255, 255, 255, 0.07);
-  color: #ffffff;
+  color: var(--cx-on-surface);
 }
 
 /* Telemetry Balance Overview Card */
@@ -216,7 +216,7 @@
   justify-content: space-between;
   padding: 1.1rem 1.25rem;
   border-radius: 0.75rem;
-  background: #151f28;
+  background: var(--cx-container);
   border: 1px solid rgba(116, 141, 146, 0.18);
 }
 
@@ -229,7 +229,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #7f8e9a;
+  color: var(--cx-muted);
   text-transform: uppercase;
 }
 
@@ -237,7 +237,7 @@
   font-family: var(--cx-headline-font);
   font-size: 2.15rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--cx-on-surface);
   line-height: 1.1;
   margin: 0.25rem 0 0.5rem;
   letter-spacing: -0.02em;
@@ -254,7 +254,7 @@
   align-items: center;
   gap: 0.45rem;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--cx-muted);
 }
 
 .cx-wallet-summary__dot {
@@ -276,7 +276,7 @@
   font-family: var(--cx-headline-font);
   font-size: 1.15rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--cx-on-surface);
   margin: 0.25rem 0 0.2rem;
 }
 
@@ -292,7 +292,7 @@
   gap: 0.25rem;
   padding: 0.25rem;
   border-radius: 0.55rem;
-  background: #141d25;
+  background: var(--cx-lowest);
   border: 1px solid rgba(116, 141, 146, 0.16);
 }
 
@@ -315,8 +315,8 @@
 }
 
 .cx-wallet-tab-btn--active {
-  background: #253443;
-  color: #ffffff;
+  background: var(--cx-primary-container);
+  color: var(--cx-primary-fixed);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
@@ -330,7 +330,7 @@
 .cx-wallet-section__title {
   font-size: 0.825rem;
   font-weight: 600;
-  color: #c0c7cd;
+  color: var(--cx-on-variant);
 }
 
 /* Quick preset buttons */
@@ -344,8 +344,8 @@
   padding: 0.55rem 0.35rem;
   border-radius: 0.45rem;
   border: 1px solid rgba(116, 141, 146, 0.2);
-  background: #172129;
-  color: #dae4ed;
+  background: var(--cx-container);
+  color: var(--cx-on-surface);
   font-family: var(--cx-headline-font);
   font-size: 0.825rem;
   font-weight: 600;
@@ -356,7 +356,7 @@
 }
 
 .cx-wallet-preset:hover {
-  background: #1e2c36;
+  background: var(--cx-container-high);
   border-color: rgba(116, 141, 146, 0.35);
 }
 
@@ -373,7 +373,7 @@
   align-items: center;
   padding: 0.65rem 0.9rem;
   border-radius: 0.5rem;
-  background: #111a21;
+  background: var(--cx-lowest);
   border: 1px solid rgba(116, 141, 146, 0.22);
   transition: border-color 0.15s ease;
 }
@@ -387,7 +387,7 @@
   background: transparent;
   border: none;
   outline: none;
-  color: #ffffff;
+  color: var(--cx-on-surface);
   font-family: var(--cx-mono-font);
   font-size: 1rem;
   font-weight: 700;
@@ -396,7 +396,7 @@
 .cx-wallet-input-suffix {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #7f8e9a;
+  color: var(--cx-muted);
 }
 
 /* Daily top-up limit line under the amount, and its error state */
@@ -407,12 +407,39 @@
 }
 
 .cx-wallet-limit strong {
-  color: #e9c349;
+  color: var(--cx-gold);
 }
 
 .cx-wallet-limit--error {
-  color: #ff8a80;
+  color: var(--cx-error);
   font-weight: 600;
+}
+
+/* Development / testing only: credits the top-up without the gateway pages. Dashed so it never looks like a real payment method. */
+.cx-wallet-simulate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: -0.25rem;
+  padding: 0.65rem 1rem;
+  border: 1px dashed var(--cx-primary);
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--cx-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cx-wallet-simulate:hover:not(:disabled) {
+  background: rgba(154, 205, 234, 0.08);
+}
+
+.cx-wallet-simulate:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Payment Methods (VNPay & MoMo only) */
@@ -429,13 +456,13 @@
   padding: 0.65rem 0.9rem;
   border-radius: 0.5rem;
   border: 1px solid rgba(116, 141, 146, 0.22);
-  background: #172129;
+  background: var(--cx-container);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .cx-wallet-method:hover {
-  background: #1e2c37;
+  background: var(--cx-container-high);
   border-color: rgba(116, 141, 146, 0.35);
 }
 
@@ -480,7 +507,7 @@
 .cx-wallet-method__name {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--cx-on-surface);
   white-space: nowrap;
 }
 
@@ -495,7 +522,7 @@
   border: none;
   border-radius: 0.5rem;
   background: var(--cx-gold);
-  color: #0b141b;
+  color: var(--cx-on-gold);
   font-family: var(--cx-headline-font);
   font-size: 0.925rem;
   font-weight: 800;
@@ -507,7 +534,7 @@
 }
 
 .cx-wallet-submit:hover {
-  background: #f7d560;
+  background: var(--cx-gold-fixed);
 }
 
 .cx-wallet-submit:active {
@@ -543,7 +570,7 @@
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #dae4ed;
+  color: var(--cx-on-surface);
   text-transform: uppercase;
 }
 
@@ -573,7 +600,7 @@
   gap: 0.75rem;
   padding: 0.65rem 0.8rem;
   border-radius: 0.5rem;
-  background: #162028;
+  background: var(--cx-container);
   border: 1px solid rgba(116, 141, 146, 0.12);
 }
 
@@ -607,7 +634,7 @@
 .cx-wallet-history__item-title {
   font-size: 0.825rem;
   font-weight: 600;
-  color: #dae4ed;
+  color: var(--cx-on-surface);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -636,7 +663,7 @@
 }
 
 .cx-wallet-history__amount--deduct {
-  color: #ffffff;
+  color: var(--cx-on-surface);
 }
 
 .cx-wallet-history__status {
@@ -647,7 +674,7 @@
 /* Footer security reassurance */
 .cx-wallet-footer {
   font-size: 0.72rem;
-  color: #6c7985;
+  color: var(--cx-muted);
   text-align: center;
   padding-top: 0.35rem;
 }

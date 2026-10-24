@@ -22,6 +22,19 @@ export const paymentService = {
     return mocked() ? paymentMock.get(id) : http.get<PaymentDTO>(`${base}/${id}`)
   },
 
+  /**
+   * Whether the server allows simulated payments (development / testing only). Demo mode always does:
+   * its "gateway" is simulated anyway.
+   */
+  simulation(): Promise<{ enabled: boolean }> {
+    return mocked() ? Promise.resolve({ enabled: true }) : http.get<{ enabled: boolean }>(`${base}/simulation`)
+  },
+
+  /** Development / testing only: completes a pending VNPay / MoMo payment as if the gateway confirmed it. */
+  simulateSuccess(id: number): Promise<PaymentCallbackResultDTO> {
+    return mocked() ? paymentMock.check(id) : http.post<PaymentCallbackResultDTO>(`${base}/${id}/simulate-success`)
+  },
+
   /** FR-PAY-08: ask the gateway about a payment whose callback did not come. */
   check(id: number): Promise<PaymentCallbackResultDTO> {
     return mocked() ? paymentMock.check(id) : http.post<PaymentCallbackResultDTO>(`${base}/${id}/check`)
