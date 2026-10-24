@@ -3,6 +3,7 @@ import { profileMock } from '@/mocks/profile.mock'
 import type {
   ChangePasswordCommand,
   CreateVehicleCommand,
+  PlateAvailabilityDTO,
   UpdateProfileCommand,
   UpdateVehicleCommand,
   UserProfileDTO,
@@ -33,6 +34,14 @@ export const profileService = {
 
   getVehicles(): Promise<VehicleDTO[]> {
     return mocked() ? profileMock.getVehicles() : http.get<VehicleDTO[]>(`${base}/vehicles`)
+  },
+
+  checkPlateAvailability(plate: string, excludeVehicleId?: string): Promise<PlateAvailabilityDTO> {
+    return mocked()
+      ? profileMock.checkPlateAvailability(plate, excludeVehicleId)
+      : http.get<PlateAvailabilityDTO>(`${base}/vehicles/check-plate`, {
+          params: { plate, ...(excludeVehicleId ? { excludeVehicleId } : {}) },
+        })
   },
 
   getVehicleTypes(): Promise<VehicleTypeDTO[]> {

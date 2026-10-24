@@ -77,3 +77,10 @@ export interface ChangePasswordCommand {
   newPassword: string
   confirmPassword: string
 }
+
+export interface PlateAvailabilityDTO {
+  licensePlate: string
+  isAvailable: boolean
+  reason?: string | null
+}
+

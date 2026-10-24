@@ -9,6 +9,7 @@ export const queryKeys = {
     me: () => [...queryKeys.profile.all, 'me'] as const,
     vehicles: () => [...queryKeys.profile.all, 'vehicles'] as const,
     vehicleTypes: () => [...queryKeys.profile.all, 'vehicle-types'] as const,
+    checkPlate: (plate: string) => [...queryKeys.profile.all, 'check-plate', plate] as const,
   },
   /** Paper checks (registration certificate + Citizen ID) of the signed-in user's vehicles. */
   vehicleDocuments: {

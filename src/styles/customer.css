@@ -1764,8 +1764,17 @@
   color: var(--cx-muted);
 }
 
+.cx-plate-input.is-invalid {
+  border-color: rgba(239, 68, 68, 0.7);
+  background: rgba(239, 68, 68, 0.05);
+}
+
 .cx-plate-input__state.is-valid {
   color: var(--cx-primary);
+}
+
+.cx-plate-input__state.is-error {
+  color: #ef4444;
 }
 
 .cx-plate-input__state svg {

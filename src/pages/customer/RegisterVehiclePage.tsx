@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
+  AlertCircle,
   AlertTriangle,
   BadgeCheck,
   CircleCheck,
@@ -10,18 +11,21 @@ import {
   Gauge,
   IdCard,
   Info,
+  Loader2,
   ScanLine,
   ShieldCheck,
   SlidersHorizontal,
   Star,
   Tag,
   Trash2,
+  XCircle,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { KIND_ICON, vehicleKind, vehicleTitle } from '@/components/customer/customerFormat'
 import { VehicleDocumentsPanel } from '@/components/customer/VehicleDocumentsPanel'
 import { useAuth } from '@/hooks/useAuth'
-import { useAddVehicle, useDeleteVehicle, useProfile, useSetDefaultVehicle, useVehicles, useVehicleTypes } from '@/hooks/useProfile'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useAddVehicle, useCheckPlateAvailability, useDeleteVehicle, useProfile, useSetDefaultVehicle, useVehicles, useVehicleTypes } from '@/hooks/useProfile'
 import { useRejectedVehicles, useVehicleDocumentDraft } from '@/hooks/useVehicleDocuments'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
 import { DOCUMENT_SLOTS } from '@/types/vehicleDocument.dto'
@@ -168,6 +172,16 @@ export default function RegisterVehiclePage() {
   const type = types.find((t) => t.id === typeId)
   const plate = form.licensePlate.trim().toUpperCase()
   const plateValid = PLATE_PATTERN.test(plate)
+
+  const debouncedPlate = useDebouncedValue(plate, 350)
+  const shouldCheckPlate = PLATE_PATTERN.test(debouncedPlate)
+  const plateCheckQuery = useCheckPlateAvailability(debouncedPlate, shouldCheckPlate)
+
+  const isPlateChecking = plateValid && plateCheckQuery.isFetching
+  const isPlateTaken = plateValid && shouldCheckPlate && plateCheckQuery.data?.isAvailable === false
+  const plateErrorMsg = isPlateTaken ? (plateCheckQuery.data?.reason || 'This license plate is already registered.') : ''
+  const plateValidAndAvailable = plateValid && !isPlateTaken
+
   // The first vehicle always becomes the primary one.
   const isDefault = vehicles.length === 0 || form.isDefault
   // Owner Citizen ID is automatically retrieved from the account profile
@@ -177,7 +191,7 @@ export default function RegisterVehiclePage() {
 
   // The papers panel holds a fresh set only while it is not showing an existing vehicle
   const newPapersComplete = papersVehicle === null && papers.complete
-  const filled = [plateValid, Boolean(type), Boolean(form.brand.trim()), Boolean(form.model.trim()), Boolean(form.color.trim()), citizenIdValid, newPapersComplete, form.consent]
+  const filled = [plateValidAndAvailable, Boolean(type), Boolean(form.brand.trim()), Boolean(form.model.trim()), Boolean(form.color.trim()), citizenIdValid, newPapersComplete, form.consent]
   const progress = Math.round((filled.filter(Boolean).length / filled.length) * 100)
 
   const submit = (e: FormEvent) => {
@@ -186,6 +200,7 @@ export default function RegisterVehiclePage() {
     if (!hasProfileCitizenId)
       return setError('Please enter and save your Citizen ID in your profile before registering a vehicle.')
     if (!plateValid) return setError('Enter a valid Vietnamese plate number, for example 51K-992.88.')
+    if (isPlateTaken) return setError(plateErrorMsg || 'This license plate is already registered.')
     if (!form.brand.trim() || !form.model.trim()) return setError('Enter the manufacturer and the model.')
     if (!citizenIdValid) return setError('Valid 12-digit Citizen ID is required from your profile.')
     // Every registration needs its papers: Staff compare them before the vehicle can be used
@@ -294,7 +309,7 @@ export default function RegisterVehiclePage() {
               )}
               <div className="cx-field">
                 <label className="cx-field__label" htmlFor="vehicle-plate">Official license plate number</label>
-                <div className="cx-plate-input">
+                <div className={`cx-plate-input ${isPlateTaken ? 'is-invalid' : ''}`}>
                   <span className="cx-plate-input__country">
                     <span className="cx-plate-input__flag" aria-hidden="true" /> VN
                   </span>
@@ -308,13 +323,29 @@ export default function RegisterVehiclePage() {
                     maxLength={14}
                     aria-describedby="vehicle-plate-hint"
                   />
-                  <span className={`cx-plate-input__state ${plateValid ? 'is-valid' : ''}`} aria-hidden="true">
-                    <BadgeCheck />
+                  <span
+                    className={`cx-plate-input__state ${plateValidAndAvailable ? 'is-valid' : ''} ${isPlateTaken ? 'is-error' : ''}`}
+                    aria-hidden="true"
+                  >
+                    {isPlateChecking ? (
+                      <Loader2 className="animate-spin text-amber-500" />
+                    ) : isPlateTaken ? (
+                      <XCircle />
+                    ) : (
+                      <BadgeCheck />
+                    )}
                   </span>
                 </div>
-                <p className="cx-field__hint" id="vehicle-plate-hint">
-                  Vietnamese format: XXA-XXX.XX or XXA-XXXX. Spaces and separators are accepted.
-                </p>
+                {isPlateTaken ? (
+                  <p className="cx-field__error" style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <AlertCircle style={{ width: '0.9rem', height: '0.9rem', flexShrink: 0 }} />
+                    {plateErrorMsg}
+                  </p>
+                ) : (
+                  <p className="cx-field__hint" id="vehicle-plate-hint">
+                    Vietnamese format: XXA-XXX.XX or XXA-XXXX. Spaces and separators are accepted.
+                  </p>
+                )}
               </div>
 
               <div className="cx-field">

@@ -12,6 +12,16 @@ export function useVehicles() {
   return useQuery({ queryKey: queryKeys.profile.vehicles(), queryFn: profileService.getVehicles })
 }
 
+export function useCheckPlateAvailability(plate: string, enabled = true) {
+  const normalized = plate.trim().toUpperCase()
+  return useQuery({
+    queryKey: queryKeys.profile.checkPlate(normalized),
+    queryFn: () => profileService.checkPlateAvailability(normalized),
+    enabled: enabled && normalized.length >= 4,
+    staleTime: 10_000,
+  })
+}
+
 export function useVehicleTypes() {
   return useQuery({
     queryKey: queryKeys.profile.vehicleTypes(),

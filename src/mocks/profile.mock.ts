@@ -149,6 +149,28 @@ export const profileMock = {
 
   getVehicles: () => mockResponse(() => vehicles),
 
+  checkPlateAvailability: (plate: string, excludeVehicleId?: string) =>
+    mockResponse(() => {
+      const normalized = plate.trim().replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+      const existing = vehicles.find(
+        (v) =>
+          (!excludeVehicleId || v.vehicleId !== excludeVehicleId) &&
+          v.licensePlate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === normalized &&
+          v.isActive,
+      )
+      if (existing) {
+        return {
+          licensePlate: plate.trim().toUpperCase(),
+          isAvailable: false,
+          reason: 'This license plate is already registered by another account.',
+        }
+      }
+      return {
+        licensePlate: plate.trim().toUpperCase(),
+        isAvailable: true,
+      }
+    }),
+
   getVehicleTypes: () => mockResponse(() => vehicleTypes),
 
   addVehicle: (command: CreateVehicleCommand) =>
