@@ -99,18 +99,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
     );
   };
 
-  // Auto-fill demo info
-  const fillSampleData = () => {
-    setFullName('Alexander Vance');
-    setEmail('alex.vance@xxivparking.vn');
-    setPhoneNumber('0988123456');
-    setCitizenId('079099001234');
-    setPassword('Xxiv@2026');
-    setConfirmPassword('Xxiv@2026');
-    setAgreeTerms(true);
-    setErrorMsg('');
-  };
-
   const openTerms = (e) => {
     e.preventDefault();
     setIsTermsOpen(true);

@@ -345,7 +345,8 @@ export default function StaffCheckoutPage() {
                       </>
                     ) : (
                       <div className="mt-4 grid w-full gap-2">
-                        {session.customerId && (
+                        {/* The wallet can only be charged when the session belongs to a customer account */}
+                        {session.isCustomerAccount && (
                           <Button className="bg-[#059669] text-white hover:bg-[#047857]" disabled={payOnline.isPending} onClick={() => showQr('Wallet')}>
                             <CreditCard /> Charge XXIV Wallet
                           </Button>

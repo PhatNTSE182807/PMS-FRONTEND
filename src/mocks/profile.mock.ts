@@ -129,7 +129,8 @@ export const profileMock = {
 
   updateProfile: (command: UpdateProfileCommand) =>
     mockResponse(() => {
-      const { citizenId, email, ...details } = command
+      // The email is not changed from the profile form, so it is left out of the overrides
+      const { citizenId, email: _email, ...details } = command
       profileOverrides = { ...profileOverrides, ...details, ...(citizenId?.trim() ? { citizenId: citizenId.trim() } : {}) }
       return currentProfile()
     }),
