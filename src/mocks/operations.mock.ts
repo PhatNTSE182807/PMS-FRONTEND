@@ -44,7 +44,8 @@ const RULES = {
   depositHoldMinutes: 30,
   cancelRefundMinutes: 30,
   deposit: 30_000,
-  graceMinutes: 15,
+  /** No free period: the first block is owed from entry (team change to BR-22). */
+  graceMinutes: 0,
   blockMinutes: 60,
   carBlock: 20_000,
   carDailyCap: 150_000,
@@ -88,7 +89,8 @@ const payments: PaymentDTO[] = []
 
 function stayFee(kind: 'car' | 'motorbike', entry: number, exit: number) {
   const minutes = Math.max(0, Math.ceil((exit - entry) / MINUTE))
-  if (minutes <= RULES.graceMinutes) return { minutes, fee: 0, days: [] as CheckoutQuoteDTO['days'] }
+  // Leaving the minute of entry still costs the first block
+  if (exit <= entry) exit = entry + MINUTE
   const block = kind === 'car' ? RULES.carBlock : RULES.bikeBlock
   const blockMinutes = kind === 'car' ? RULES.blockMinutes : RULES.bikeBlockMinutes
   const cap = kind === 'car' ? RULES.carDailyCap : RULES.bikeDailyCap
@@ -493,7 +495,7 @@ function quote(s: MockSession, exitPlate: string | undefined, mutate: boolean): 
   const gross = settled ? s.finalFee : fee + lost + late
   const due = settled ? 0 : Math.max(0, gross - deposit - s.paidAmount)
   const depositApplied = Math.min(deposit, Math.max(0, gross - s.paidAmount))
-  const zeroFeeReason = s.sessionType === 'Whitelist' ? 'Whitelist' : fee === 0 && !settled ? 'GracePeriod' : due === 0 && deposit > 0 && s.paidAmount === 0 ? 'CoveredByDeposit' : s.zeroFeeReason
+  const zeroFeeReason = s.sessionType === 'Whitelist' ? 'Whitelist' : due === 0 && deposit > 0 && s.paidAmount === 0 ? 'CoveredByDeposit' : s.zeroFeeReason
   if (mutate && !settled) {
     if (s.status === 'Active' || s.status === 'Paid') s.status = 'PendingPayment'
     if (s.status === 'PendingPayment' && due === 0) {

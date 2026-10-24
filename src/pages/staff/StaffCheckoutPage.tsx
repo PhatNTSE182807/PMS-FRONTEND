@@ -300,7 +300,7 @@ export default function StaffCheckoutPage() {
                   </li>
                 ))}
                 {quote.days.length === 0 && (
-                  <li className="py-3 text-sm text-slate-700">{quote.zeroFeeReason === 'Whitelist' ? 'Whitelisted plate: free of charge.' : 'Inside the free period: 0 VND.'}</li>
+                  <li className="py-3 text-sm text-slate-700">{quote.zeroFeeReason === 'Whitelist' ? 'Whitelisted plate: free of charge.' : 'No parking fee for this stay.'}</li>
                 )}
                 <FeeLine label="Parking fee" value={quote.fee} />
                 {quote.lostTicketFee > 0 && <FeeLine label="Lost ticket fine" value={quote.lostTicketFee} />}
