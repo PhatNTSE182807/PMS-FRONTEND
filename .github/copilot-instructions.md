@@ -5,3 +5,5 @@
 - DTOs live in `src/types` and mirror the backend contracts; every service supports mock mode via `isMockService()`.
 - The admin dashboard uses Tailwind CSS scoped to `.admin-root`; the legacy cyber theme lives in the `legacy` cascade layer.
 - Run `npm run lint` and `npm run build` (which type-checks) to validate changes.
+
+- Read `AGENTS.md` at the repository root first: it holds the SRS v1.4 summary, the English-only and no-requirement-codes-in-UI rules, and the `features/<name>` → `develop` git workflow.
