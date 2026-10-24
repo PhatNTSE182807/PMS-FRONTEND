@@ -98,7 +98,7 @@ export const parkingHistoryMock = {
         lotPhone: '028 3823 4567',
         originalFee: item.finalFee,
         discountAmount: 0,
-        zeroFeeReason: item.finalFee === 0 ? 'Grace period (under 15 minutes)' : null,
+        zeroFeeReason: null,
         issuedAt: new Date().toISOString(),
         payments: [
           ...(item.depositApplied > 0

@@ -36,7 +36,7 @@ function seed(lotId: string): PricingRuleDTO[] {
       vehicleTypeId: type.id, vehicleTypeCode: type.code, vehicleTypeName: type.name,
       chargeModel: 'Block', entryFee: 0, firstBlockMinutes: null, firstBlockPrice: null,
       blockMinutes: block, blockPrice: price, dayStartTime: null, nightStartTime: null, dayPrice: null, nightPrice: null,
-      maxDailyFee: cap, graceMinutes: 15, overnightSurcharge: 0, overstayAfterHours: null, overstaySurchargePerDay: 0,
+      maxDailyFee: cap, graceMinutes: 0, overnightSurcharge: 0, overstayAfterHours: null, overstaySurchargePerDay: 0,
       lostTicketFee: lost, noShowFee: 0, currency: 'VND', priority: 0, effectiveFrom: '2026-01-01T00:00:00Z', effectiveTo: null,
       status: 'Active', versionNo: 1, createdAt: now, updatedAt: null,
     }
@@ -113,15 +113,17 @@ function simulate(rule: PricingRuleDTO, request: PricingSimulationRequest): Pric
   const duration = Math.max(0, Math.ceil((exit.getTime() - entry.getTime()) / 60_000))
   const days: PricingSimulationResult['days'] = []
   let gross = 0
-  const withinGrace = duration <= rule.graceMinutes
-  if (!withinGrace) {
+  // No free period: the first block is owed from entry, even for a stay of one minute
+  const withinGrace = false
+  const end = exit > entry ? exit : new Date(entry.getTime() + 60_000)
+  {
     // Split the stay at local midnights; the daily cap applies per calendar day
     let dayStart = entry
     let first = true
-    while (dayStart < exit) {
+    while (dayStart < end) {
       const midnight = new Date(dayStart)
       midnight.setHours(24, 0, 0, 0)
-      const dayEnd = exit < midnight ? exit : midnight
+      const dayEnd = end < midnight ? end : midnight
       let remaining = Math.ceil((dayEnd.getTime() - dayStart.getTime()) / 60_000)
       const minutes = remaining
       let cursor = new Date(dayStart)

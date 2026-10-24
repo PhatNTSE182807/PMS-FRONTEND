@@ -78,6 +78,13 @@ function Rule({ icon: Icon, label, value, unit, note, tone }: { icon: typeof Car
 
 const money = (value: number | null | undefined) => (value ?? 0).toLocaleString('en-US')
 
+/**
+ * What a vehicle owes the moment it enters: the first block's price, or one normal block (the day price
+ * for day/night rules, as a guide; the gate prices it by the hour of entry).
+ */
+const startingPrice = (rule: PricingRuleDTO) =>
+  rule.firstBlockPrice ?? (rule.chargeModel === 'DayNight' ? rule.dayPrice : rule.blockPrice) ?? 0
+
 /** One rule as the gates apply it, with its edit / activate / archive actions. */
 function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
   const [editing, setEditing] = useState(false)
@@ -120,17 +127,14 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <Rule icon={Hourglass} label="Grace period" value={String(rule.graceMinutes)} unit="min free" note="No charge if the vehicle leaves within this time." />
-        {rule.firstBlockMinutes != null && rule.firstBlockPrice != null && (
-          <Rule
-            icon={Clock}
-            label={`First block (${formatMinutes(rule.firstBlockMinutes)})`}
-            value={money(rule.firstBlockPrice)}
-            unit="VND"
-            tone="gold"
-            note="Billed once, on entry past the grace period."
-          />
-        )}
+        <Rule
+          icon={Hourglass}
+          label={`Starting price (${formatMinutes(rule.firstBlockMinutes ?? block)})`}
+          value={money(startingPrice(rule))}
+          unit="VND"
+          tone="gold"
+          note={rule.firstBlockMinutes != null ? 'First block, charged as soon as the vehicle enters.' : 'The first block, charged as soon as the vehicle enters.'}
+        />
         {dayNight ? (
           <>
             <Rule
@@ -152,10 +156,9 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
         ) : (
           <Rule
             icon={CalendarClock}
-            label={`${rule.firstBlockMinutes != null ? 'Each next' : 'Each'} ${formatMinutes(block)}`}
+            label={`Each next ${formatMinutes(block)}`}
             value={money(rule.blockPrice)}
             unit="VND"
-            tone={rule.firstBlockMinutes != null ? undefined : 'gold'}
             note="Charged per started block, the same at any hour."
           />
         )}
@@ -275,12 +278,6 @@ function Calculator({ lotId, types }: { lotId: string; types: VehicleTypeDTO[] }
             Billing ledger <span className="font-mono text-amber-500">{formatMinutes(result.durationMinutes)} stay</span>
           </p>
           <ul className="mt-3 space-y-2 text-sm">
-            {result.withinGrace && (
-              <li className="flex justify-between gap-3 text-slate-700">
-                Within the grace period
-                <span className="font-mono font-bold text-slate-950">{vnd(0)}</span>
-              </li>
-            )}
             {result.days.map((d) => (
               <li key={d.date} className="flex justify-between gap-3 text-slate-700">
                 <span>
@@ -325,7 +322,7 @@ function starterRule(type: VehicleTypeDTO): PricingRuleInput {
     name: `${type.name} standard`,
     vehicleTypeId: type.id,
     chargeModel: 'Block',
-    graceMinutes: 15,
+    graceMinutes: 0,
     firstBlockMinutes: null,
     firstBlockPrice: null,
     blockMinutes: bike ? 240 : 60,
@@ -373,9 +370,9 @@ function Pricing({ lot }: { lot: ManagedLot }) {
         <Kpi label="Opening hours" icon={<Clock />}>
           <p className="mt-3 font-display text-3xl font-bold text-slate-950">{lot.is24Hours ? '24/7' : `${lot.openTime} – ${lot.closeTime}`}</p>
         </Kpi>
-        <Kpi label="Grace period (cars)" icon={<Hourglass />}>
+        <Kpi label="Starting price (4-seat cars)" icon={<Hourglass />}>
           <p className="mt-3 font-display text-3xl font-bold text-slate-950">
-            {carRule ? `${carRule.graceMinutes} min` : '—'} <span className="text-sm font-medium text-slate-700">free</span>
+            {carRule ? vnd(startingPrice(carRule)) : '—'} <span className="text-sm font-medium text-slate-700">on entry</span>
           </p>
         </Kpi>
         <Kpi label="Day / night pricing" icon={<Sun />}>
@@ -436,7 +433,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
               <ShieldCheck className="size-5 text-indigo-700" aria-hidden /> How the gates charge
             </h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-700">
-              <li>✓ Leaving within the grace period is free; past it, the time is charged from the first minute.</li>
+              <li>✓ The first block (the first hour by default) is charged as soon as the vehicle enters: a stay is never free.</li>
               <li>✓ Each started block is charged in full; with day and night prices a block costs the price of the hour it starts in.</li>
               <li>✓ The daily cap applies per calendar day (midnight, Vietnam time); fees are rounded up to 1,000 VND.</li>
               <li>✓ Only Active rules are used; without one the system default price applies.</li>

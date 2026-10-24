@@ -113,7 +113,6 @@ export const demoCheckout = {
   exitImage: '/home/hero-garage.jpg',
   rateCard: 'LOT-SGC-REG',
   tariff: [
-    { label: 'Grace window • Initial 15 mins', detail: '09:15 - 09:30 • Complimentary courtesy', amount: 0 },
     { label: 'First 2 hours base block', detail: '09:15 - 11:15 • Standard concourse tier', amount: 70_000 },
     { label: 'Next 3h 13m incremental tariff', detail: '4 billing blocks × 25,000 VND', amount: 100_000 },
   ] satisfies TariffLine[],

@@ -10,7 +10,6 @@ import type { PricingChargeModel, PricingRuleDTO, PricingRuleInput } from '@/typ
 interface Draft {
   name: string
   chargeModel: PricingChargeModel
-  graceMinutes: string
   hasFirstBlock: boolean
   firstBlockMinutes: string
   firstBlockPrice: string
@@ -32,7 +31,6 @@ function toDraft(rule: PricingRuleDTO): Draft {
     name: rule.name,
     // "Hourly" is the same as one-hour blocks; "PerEntry" is not offered by this form
     chargeModel: rule.chargeModel === 'DayNight' ? 'DayNight' : 'Block',
-    graceMinutes: String(rule.graceMinutes),
     hasFirstBlock: rule.firstBlockMinutes != null && rule.firstBlockPrice != null,
     firstBlockMinutes: String(rule.firstBlockMinutes ?? 120),
     firstBlockPrice: String(rule.firstBlockPrice ?? ''),
@@ -59,7 +57,6 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
     return n
   }
   if (!d.name.trim()) errors.name = 'Rule name is required.'
-  const graceMinutes = whole('graceMinutes', 0, 'Grace period')
   const blockMinutes = whole('blockMinutes', 1, 'Block length')
   const blockPrice = d.chargeModel === 'Block' ? whole('blockPrice', 0, 'Block price') : 0
   const firstBlockMinutes = d.hasFirstBlock ? whole('firstBlockMinutes', 1, 'First block length') : null
@@ -77,7 +74,8 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
     input: {
       name: d.name.trim(),
       chargeModel: d.chargeModel,
-      graceMinutes,
+      // No free period: the first block is owed from entry
+      graceMinutes: 0,
       firstBlockMinutes,
       firstBlockPrice,
       blockMinutes,
@@ -175,14 +173,14 @@ export function PricingRuleEditor({
             {modelButton('DayNight', Sun, 'Day and night prices', 'Blocks starting in the day and at night cost differently.')}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="rule-grace" label="Grace period (min)" hint="Free if the vehicle leaves within this time." error={errors.graceMinutes}>
-              <Input id="rule-grace" inputMode="numeric" value={draft.graceMinutes} onChange={(e) => set('graceMinutes', e.target.value)} />
-            </Field>
-            <Field id="rule-block-min" label="Block length (min)" hint="Each started block is charged in full." error={errors.blockMinutes}>
-              <Input id="rule-block-min" inputMode="numeric" value={draft.blockMinutes} onChange={(e) => set('blockMinutes', e.target.value)} />
-            </Field>
-          </div>
+          <Field
+            id="rule-block-min"
+            label="Block length (min)"
+            hint="Each started block is charged in full. The first block is charged as soon as the vehicle enters: a stay is never free."
+            error={errors.blockMinutes}
+          >
+            <Input id="rule-block-min" inputMode="numeric" value={draft.blockMinutes} onChange={(e) => set('blockMinutes', e.target.value)} />
+          </Field>
 
           <div className="space-y-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-950">
@@ -194,7 +192,7 @@ export function PricingRuleEditor({
                 <Field id="rule-first-min" label="First block length (min)" error={errors.firstBlockMinutes}>
                   <Input id="rule-first-min" inputMode="numeric" value={draft.firstBlockMinutes} onChange={(e) => set('firstBlockMinutes', e.target.value)} />
                 </Field>
-                <Field id="rule-first-price" label="First block price (VND)" hint="Charged once, on the first day." error={errors.firstBlockPrice}>
+                <Field id="rule-first-price" label="First block price (VND)" hint="Charged as soon as the vehicle enters." error={errors.firstBlockPrice}>
                   <Input id="rule-first-price" inputMode="numeric" value={draft.firstBlockPrice} onChange={(e) => set('firstBlockPrice', e.target.value)} />
                 </Field>
               </div>
