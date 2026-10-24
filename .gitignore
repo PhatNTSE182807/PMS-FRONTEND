@@ -6,5 +6,7 @@ dist-ssr
 .env.*
 !.env.example
 backend/
-# Local Claude Code settings (preview configs)
-.claude/
+# Local Claude Code settings (preview configs). The shared settings.json, which turns
+# AI co-author attribution off for everyone, is the one file that is committed.
+.claude/*
+!.claude/settings.json
