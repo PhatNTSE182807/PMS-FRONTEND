@@ -1,4 +1,4 @@
-import { Bike, Car, CarFront, Zap, type LucideIcon } from 'lucide-react'
+import { Bike, Car, CarFront, type LucideIcon } from 'lucide-react'
 import { PASSWORD_RULES } from '@/lib/password'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
 
@@ -24,18 +24,18 @@ export function memberCode(userId: string | undefined): string {
   return `USR-${code.padStart(6, '0')}`
 }
 
-type VehicleKind = 'car' | 'suv' | 'motorbike' | 'ev'
+/** The only vehicle types: 4-seat cars ("car"), 7-seat cars ("suv") and motorbikes. */
+type VehicleKind = 'car' | 'suv' | 'motorbike'
 
-/** Category from the backend type code (CAR, SUV, MOTORBIKE, EV...) or, failing that, its name. */
+/** Category from the backend type code (CAR_4, CAR_7, MOTORBIKE) or, failing that, its name. */
 export function vehicleKind(type: Pick<VehicleTypeDTO, 'code' | 'name'> | { code?: string; name: string }): VehicleKind {
   const text = `${type.code ?? ''} ${type.name}`.toUpperCase()
-  if (text.includes('MOTOR') || text.includes('BIKE') || text.includes('SCOOTER')) return 'motorbike'
-  if (text.includes('EV') || text.includes('ELECTRIC') || text.includes('HYBRID')) return 'ev'
-  if (text.includes('SUV') || text.includes('CROSSOVER')) return 'suv'
+  if (text.includes('MOTOR')) return 'motorbike'
+  if (text.includes('CAR_7') || text.includes('7-SEAT') || text.includes('SUV')) return 'suv'
   return 'car'
 }
 
-export const KIND_ICON: Record<VehicleKind, LucideIcon> = { car: Car, suv: CarFront, motorbike: Bike, ev: Zap }
+export const KIND_ICON: Record<VehicleKind, LucideIcon> = { car: Car, suv: CarFront, motorbike: Bike }
 
 export const vehicleTitle = (vehicle: VehicleDTO) =>
   [vehicle.brand, vehicle.model].filter(Boolean).join(' ') || vehicle.licensePlate

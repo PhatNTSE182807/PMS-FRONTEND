@@ -27,10 +27,9 @@ export function zoneStatusFor(rate: number): ZoneStatus {
   return level === 'CRITICAL' ? 'FULL' : level === 'HIGH' ? 'WARNING' : 'AVAILABLE'
 }
 
-/** Parking slots only: EV chargers are a separate service and do not fill the lot. */
+/** Total, occupied and free parking slots over every vehicle type. */
 export function parkingSlots(capacity: VehicleCapacityDetail[]) {
   return capacity
-    .filter((c) => c.vehicleType !== 'EV_CHARGING')
     .reduce(
       (sum, c) => ({
         total: sum.total + c.totalSlots,

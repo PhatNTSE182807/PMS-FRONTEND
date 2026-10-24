@@ -5,7 +5,8 @@
 
 export type ParkingLotStatus = 'OPEN' | 'FULL' | 'MAINTENANCE' | 'CLOSED'
 
-export type CapacityVehicleType = 'CAR' | 'MOTORBIKE' | 'EV_CHARGING'
+/** The lot only takes cars (4 and 7 seats) and motorbikes. */
+export type CapacityVehicleType = 'CAR' | 'MOTORBIKE'
 
 export interface ParkingLotSummaryDTO {
   id: string

@@ -98,7 +98,7 @@ grep -n "^#### 4.2" document/SRS_v1.4.md        # exception flows per area
 | Lots, zones, slots | FR-LOT-01…08 | `LotsController`, `ZonesController`, `SlotsController`, `IParkingLotService`, `IZoneService`, `ISlotService`, `Jobs/LotJobs` | `pages/admin/ParkingLotsPage`, `api/lot-management.*` |
 | 3D map | FR-3D-01…09 | `LayoutsController` (`api/public/lots/{id}/layout`, rate-limited), `ILayoutService`, `Hubs/LotHub` | `components/customer/garage/*`, `api/layout.service.ts`, `hooks/useLotLayout.ts` |
 | Gate operations | FR-OPS-01…19 | `StaffGateController`, `GateRequestsController`, `ParkingSessionsController`, `ManagerOperationsController` (plate lists), `Hubs/ParkingOpsHub`, `Jobs/ParkingJobs` | `pages/staff/StaffGatePage`, `StaffCheckoutPage`, `StaffExceptionsPage` |
-| Pricing | FR-PRC-01…06 | `PricingRule*` entities; no pricing controller yet | `pages/management/ManagerPricingPage` |
+| Pricing | FR-PRC-01…06 | `ManagerPricingController` (`/api/manager/lots/{id}/pricing-rules`, simulate), `LotsController` public prices, `IPricingRuleService`, `TariffProvider`, `FeeCalculator` | `pages/management/ManagerPricingPage`, `api/pricing.service.ts`, `hooks/usePricing.ts` |
 | Reservations | FR-RSV-01…10 | `ReservationsController`, `IReservationService` | `pages/customer/CustomerBookingsPage`, `pages/management/ManagerReservationsPage` |
 | Payments & receipts | FR-PAY-01…11 | `PaymentsController`, `WalletController`, `Services/Payments` (VNPay, MoMo) | `PaymentReturnPage`, `pages/staff/StaffCashTallyPage` |
 | Customer app | FR-CUS-01…06 | `UsersController` (profile), `VehicleDocumentsController`, `IParkingHistoryService` | `pages/customer/*` |
@@ -279,6 +279,15 @@ git checkout features/<name>               # keep working on the branch afterwar
 
 Keep this list current; it is the first place to look when code and SRS disagree.
 
+- Only three vehicle types (team decision, 2026-10-25): `CAR_4` (4-seat car), `CAR_7` (7-seat car)
+  and `MOTORBIKE`. No bicycles, e-bikes or EVs: the `BICYCLE` row is kept but inactive (old data may
+  point to it), there are no EV chargers, and pricing has one rule per type. A vehicle without a
+  readable plate still needs the lane's vehicle type at check-in.
+- Pricing rules store an overnight surcharge and an overstay surcharge, but the gate's `FeeCalculator`
+  does not apply them yet, so the Manager pricing page does not offer them. "Price by the hour" is the
+  `DayNight` charge model: a block costs the day or night price of the hour it starts in.
+- Saving a pricing rule edits it in place (new `VersionNo`, old values in `PricingRuleHistory`); the
+  gates use the current Active rule at checkout, not a copy frozen at entry as BR-22 describes.
 - Deposit is optional when booking (team decision, 2026-10-24). With a deposit (BR-06, paid by
   wallet, VNPay or MoMo) the booking waits in `PendingDeposit` and the slot is held **30 minutes**
   after arrival (`Parking:Reservations:DepositHoldMinutes`). Without a deposit
@@ -293,8 +302,8 @@ Keep this list current; it is the first place to look when code and SRS disagree
   BR-28's rule (8+ characters with upper, lower and digit); do not switch to the SRS version.
   The single source is `src/lib/password.ts` (`PASSWORD_RULES`, `isValidPassword`); the backend
   uses the same rule in `UserValidatorConfiguration`.
-- Some screens run on demo data until their API exists (as of 2026-10-24): manager approvals and
-  pricing, staff exceptions / incidents and cash tally, revenue reports. Re-check with the
+- Some screens run on demo data until their API exists (as of 2026-10-25): manager approvals,
+  staff exceptions / incidents and cash tally, revenue reports. Manager pricing uses the API. Re-check with the
   commands in section 7 before relying on this line.
 - The 3D lot model is built from three building templates chosen by the Admin
   (`garageModel.ts`), not yet from a published `Layout3D` with draft/publish versions (FR-3D-05).

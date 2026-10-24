@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Bike, Building2, Car, Gauge, Store, TrendingDown, TrendingUp, UserCog, Users, Wallet, Zap } from 'lucide-react'
+import { Bike, Building2, Car, Gauge, Store, TrendingDown, TrendingUp, UserCog, Users, Wallet } from 'lucide-react'
 import { presetRange } from '@/components/features/revenue/revenueFilters'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,8 +13,8 @@ import { cn } from '@/lib/utils'
 import type { CapacityVehicleType, ParkingLotCapacityDTO } from '@/types/parking.dto'
 import type { RevenueByParkingLotDTO } from '@/types/report.dto'
 
-const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike, EV_CHARGING: Zap }
-const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes', EV_CHARGING: 'EV' }
+const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
+const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes' }
 const HUB_ICONS = [Building2, Store, Building2, Store]
 
 const vnd = (value: number) => `${formatNumber(Math.round(value))} VND`

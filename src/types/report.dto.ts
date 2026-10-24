@@ -4,7 +4,8 @@
  */
 import type { PageQuery } from './common.dto'
 
-export type ReportVehicleType = 'ALL' | 'CAR' | 'MOTORBIKE' | 'BICYCLE'
+/** Cars (4 and 7 seats) and motorbikes: the only vehicle types the system accepts. */
+export type ReportVehicleType = 'ALL' | 'CAR' | 'MOTORBIKE'
 
 export interface RevenueFilterQuery {
   /** yyyy-MM-dd, inclusive */

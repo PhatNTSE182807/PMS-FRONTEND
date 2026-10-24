@@ -127,30 +127,3 @@ export const demoApprovals: DemoApproval[] = [
   },
 ]
 
-/* ------------------------------------------------------------------ */
-/* Tariffs                                                              */
-/* ------------------------------------------------------------------ */
-
-export interface TariffClass {
-  id: 'CAR' | 'MOTORBIKE' | 'EV'
-  name: string
-  description: string
-  dailyCap: number
-  graceMinutes: number
-  /** First block (minutes) and its price; then a price per started subsequent block. */
-  firstBlockMinutes: number
-  firstBlockPrice: number
-  nextBlockMinutes: number
-  nextBlockPrice: number
-  overnightSurcharge: number
-  lostTicketPenalty: number
-  exitGraceMinutes: number
-}
-
-export const demoTariffs: TariffClass[] = [
-  { id: 'CAR', name: 'Class 1: Passenger Cars', description: 'Sedan, coupe, hatchback, crossover and SUV (up to 7 seats).', dailyCap: 350_000, graceMinutes: 15, firstBlockMinutes: 120, firstBlockPrice: 35_000, nextBlockMinutes: 60, nextBlockPrice: 25_000, overnightSurcharge: 120_000, lostTicketPenalty: 150_000, exitGraceMinutes: 15 },
-  { id: 'MOTORBIKE', name: 'Class 2: Motorbikes & Scooters', description: 'Mopeds, motorbikes and light electric scooters.', dailyCap: 70_000, graceMinutes: 15, firstBlockMinutes: 240, firstBlockPrice: 10_000, nextBlockMinutes: 240, nextBlockPrice: 15_000, overnightSurcharge: 30_000, lostTicketPenalty: 50_000, exitGraceMinutes: 15 },
-  { id: 'EV', name: 'Class 3: Electric Vehicles', description: 'EV charging bays on B2 and B3: Class 1 parking rules plus metered energy.', dailyCap: 350_000, graceMinutes: 15, firstBlockMinutes: 120, firstBlockPrice: 35_000, nextBlockMinutes: 60, nextBlockPrice: 25_000, overnightSurcharge: 120_000, lostTicketPenalty: 150_000, exitGraceMinutes: 15 },
-]
-
-export const EV_ENERGY_RATE = 3_800

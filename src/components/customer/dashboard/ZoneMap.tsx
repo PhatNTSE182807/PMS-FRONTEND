@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, X } from 'lucide-react'
 import { isMockService } from '@/config/env'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
+import { usePublicPrices } from '@/hooks/usePricing'
 import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { formatNumber } from '@/lib/format'
-import { demoTariffs } from '@/mocks/managerOps.mock'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
+import type { PublicLotPriceDTO } from '@/types/pricing.dto'
 import { GarageView } from '../garage/GarageView'
 import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
 import { ReserveBayPanel } from './ReserveBayPanel'
@@ -18,6 +19,16 @@ const STATUS_LABEL: Record<BayStatus, string> = {
   AVAILABLE: 'Available',
   RESERVED: 'Booked by another driver',
   OCCUPIED: 'Occupied',
+}
+
+/** "20,000 VND / 1h", "35,000 VND first 2h", or day and night prices, from the lot's public price. */
+function priceLabel(p: PublicLotPriceDTO): string {
+  const block = p.blockMinutes % 60 === 0 ? `${p.blockMinutes / 60}h` : `${p.blockMinutes} min`
+  if (p.chargeModel === 'DayNight' && p.dayPrice != null && p.nightPrice != null)
+    return `${formatNumber(p.dayPrice)} day • ${formatNumber(p.nightPrice)} night VND / ${block}`
+  if (p.firstBlockMinutes && p.firstBlockPrice != null)
+    return `${formatNumber(p.firstBlockPrice)} VND first ${p.firstBlockMinutes % 60 === 0 ? `${p.firstBlockMinutes / 60}h` : `${p.firstBlockMinutes} min`}`
+  return `${formatNumber(p.blockPrice)} VND / ${block}`
 }
 
 interface ZoneMapProps {
@@ -61,7 +72,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const selectedFloor = selected ? floors[selected.floorIndex] : null
   // Highlighted in the model as "your booking"
   const myBayId = myActive[0] ? String(myActive[0].slotId) : null
-  const tariff = demoTariffs.find((t) => t.id === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR'))
+  // The lot's real prices (the same rule the exit gate uses): motorbike floors show the motorbike price, car floors the 4-seat car price
+  const prices = usePublicPrices(lot?.id)
+  const price = prices.data?.find((p) => p.vehicleTypeCode === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR_4'))
   const isLoadingLots = liveBooking ? bookable.isPending : isLoading
 
   const changeLot = (id: string) => {
@@ -173,11 +186,11 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                   </div>
                   <div className="cx-map__cell">
                     <span className="cx-label">Vehicle type</span>
-                    <strong>{selectedFloor.kind === 'car' ? 'Sedan / SUV / EV' : 'Motorbike / scooter'}</strong>
+                    <strong>{selectedFloor.kind === 'car' ? '4-seat & 7-seat cars' : 'Motorbikes'}</strong>
                   </div>
                   <div className="cx-map__cell">
                     <span className="cx-label">Rate</span>
-                    <strong>{tariff ? `${formatNumber(tariff.firstBlockPrice)} VND first block` : '—'}</strong>
+                    <strong>{price ? priceLabel(price) : '—'}</strong>
                   </div>
                   <div className="cx-map__cell">
                     <span className="cx-label">Floor free now</span>

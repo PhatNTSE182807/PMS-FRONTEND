@@ -44,6 +44,13 @@ export const queryKeys = {
     capacity: () => [...queryKeys.parking.all, 'capacity'] as const,
     staffLots: (userId: string | undefined) => [...queryKeys.parking.all, 'staff-lots', userId] as const,
   },
+  /** A lot's pricing rules and fee simulations. */
+  pricing: {
+    all: ['pricing'] as const,
+    rules: (lotId: string) => ['pricing', 'rules', lotId] as const,
+    publicPrices: (lotId: string) => ['pricing', 'public', lotId] as const,
+    simulation: (lotId: string, request: object) => ['pricing', 'simulation', lotId, request] as const,
+  },
   /** Server-wide payment settings. */
   payments: {
     simulation: () => ['payments', 'simulation'] as const,

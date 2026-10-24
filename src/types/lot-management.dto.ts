@@ -62,5 +62,4 @@ export const VEHICLE_TYPES = [
   { id: 'CAR_4', name: 'Car (4–5 seats)' },
   { id: 'CAR_7', name: 'Car (7 seats)' },
   { id: 'MOTORBIKE', name: 'Motorbike' },
-  { id: 'BICYCLE', name: 'Bicycle' },
 ] as const
