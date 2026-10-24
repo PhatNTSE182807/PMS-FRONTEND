@@ -4,12 +4,10 @@ import AuthShowcaseLayout from './AuthShowcaseLayout';
 import { AuthAlert, AuthCheckbox, AuthField } from './AuthFields';
 import GoogleSignInButton from './GoogleSignInButton';
 import { getErrorMessage } from '../api/apiError';
-import { useAuth, useLogin } from '../hooks/useAuth';
+import { useLogin } from '../hooks/useAuth';
 import { GOOGLE_CLIENT_ID } from '../lib/google-identity';
-import { DEMO_ADMIN, DEMO_DRIVER, DEMO_MANAGER, DEMO_STAFF } from '../mocks/auth.mock';
 
 export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNavigateToRegister }) {
-  const { startDemo } = useAuth();
   const loginMutation = useLogin();
 
   // Login form state
@@ -57,14 +55,6 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
         },
       },
     );
-  };
-
-  // Demo auto-fill
-  const fillDemoAccount = () => {
-    setEmail('admin@admin.com');
-    setPassword('Admin123.?');
-    setErrorMsg('');
-    setInfoMsg('Filled demo credentials! Click Sign In or use an instant demo below.');
   };
 
   return (

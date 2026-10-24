@@ -1,0 +1,71 @@
+# CI pipeline for the PMS frontend (Vite + React + TypeScript)
+#
+# verify -> lint (ESLint) and typecheck (tsc -b), run in parallel
+# build  -> production build (vite build), the dist/ folder is kept as an artifact
+#
+# No deploy stage yet. Jobs carry no tags, so a project runner needs "Run untagged jobs".
+
+stages:
+  - verify
+  - build
+
+variables:
+  NODE_IMAGE: node:22.20.0-alpine
+  # Keep npm's download cache inside the project so GitLab can cache it between pipelines
+  npm_config_cache: $CI_PROJECT_DIR/.npm
+  # Build-time settings baked into the bundle by Vite. Override them in
+  # Settings > CI/CD > Variables (for example VITE_API_BASE_URL for a deployed API).
+  VITE_API_BASE_URL: https://localhost:44391/api
+  VITE_USE_MOCK_DATA: "false"
+
+workflow:
+  rules:
+    # Run merge request pipelines, and branch pipelines only when no merge request is open
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# Shared setup: Node image, a clean install from the lockfile, and the npm cache
+.node:
+  image: $NODE_IMAGE
+  cache:
+    # A new cache only when the lockfile changes
+    key:
+      files:
+        - package-lock.json
+      prefix: npm
+    paths:
+      - .npm/
+    policy: pull
+  before_script:
+    - npm ci --prefer-offline --no-audit --no-fund
+
+lint:
+  extends: .node
+  stage: verify
+  cache:
+    # The first job of the pipeline also refreshes the npm cache
+    policy: pull-push
+  script:
+    - npm run lint
+
+typecheck:
+  extends: .node
+  stage: verify
+  script:
+    - npm run typecheck
+
+build:
+  extends: .node
+  stage: build
+  needs: [lint, typecheck]
+  script:
+    # "build" runs tsc -b and vite build
+    - npm run build
+  artifacts:
+    name: "pms-frontend-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA"
+    expire_in: 1 week
+    paths:
+      - dist/
