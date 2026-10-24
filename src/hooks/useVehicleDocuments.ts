@@ -42,7 +42,8 @@ export function useVehicleVerification(vehicleId: string | null) {
 
 /**
  * Registrations Staff rejected recently: their vehicles were removed from the fleet, and the note says
- * why. A rejection pushed by the hub refreshes it and the vehicle list right away.
+ * why. Every decision pushed by the hub refreshes the vehicle list right away (its badges show the
+ * registration status), and a rejection also refreshes this list.
  */
 export function useRejectedVehicles() {
   const queryClient = useQueryClient()
@@ -55,9 +56,11 @@ export function useRejectedVehicles() {
   useEffect(() => {
     if (!live) return
     return vehicleVerificationRealtime.subscribe((event) => {
-      if (event.status !== 'Rejected') return
-      void queryClient.invalidateQueries({ queryKey: queryKeys.vehicleDocuments.rejected() })
+      // Approved, rejected or back in review: the fleet badges change either way
       void queryClient.invalidateQueries({ queryKey: queryKeys.profile.vehicles() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vehicleDocuments.latest(event.vehicleId) })
+      if (event.status === 'Rejected')
+        void queryClient.invalidateQueries({ queryKey: queryKeys.vehicleDocuments.rejected() })
     })
   }, [live, queryClient])
 
