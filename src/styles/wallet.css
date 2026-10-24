@@ -399,6 +399,22 @@
   color: #7f8e9a;
 }
 
+/* Daily top-up limit line under the amount, and its error state */
+.cx-wallet-limit {
+  margin: 0.45rem 0 0;
+  font-size: 0.75rem;
+  color: var(--cx-muted);
+}
+
+.cx-wallet-limit strong {
+  color: #e9c349;
+}
+
+.cx-wallet-limit--error {
+  color: #ff8a80;
+  font-weight: 600;
+}
+
 /* Payment Methods (VNPay & MoMo only) */
 .cx-wallet-methods {
   display: grid;
@@ -496,6 +512,17 @@
 
 .cx-wallet-submit:active {
   transform: scale(0.99);
+}
+
+/* Over the daily limit, below the minimum or while redirecting: clearly not clickable */
+.cx-wallet-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cx-wallet-submit:disabled:hover {
+  background: var(--cx-gold);
 }
 
 /* Recent Transaction Ledger */

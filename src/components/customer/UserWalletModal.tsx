@@ -11,7 +11,7 @@ interface UserWalletModalProps {
 const PRESET_AMOUNTS = [50000, 100000, 200000, 500000, 1000000]
 
 export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
-  const { balance, holdAmount, transactions, loading, deposit, withdraw } = useWallet()
+  const { balance, holdAmount, transactions, loading, dailyTopUpLimit, topUpRemainingToday, minTopUp, deposit, withdraw } = useWallet()
 
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
   const [selectedAmount, setSelectedAmount] = useState<number>(200000)
@@ -47,6 +47,17 @@ export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
     const num = Number(clean)
     setSelectedAmount(num)
   }
+
+  // Daily top-up limit check, shown under the amount before the customer leaves for the gateway
+  const depositAmount = Number(customAmountStr)
+  const depositProblem =
+    depositAmount > topUpRemainingToday
+      ? topUpRemainingToday > 0
+        ? `Over today's limit: you can still add ${formatVndBalance(topUpRemainingToday)} today.`
+        : `Today's top-up limit of ${formatVndBalance(dailyTopUpLimit)} is reached. Try again tomorrow.`
+      : depositAmount > 0 && depositAmount < minTopUp
+        ? `Minimum top-up amount is ${formatVndBalance(minTopUp)}.`
+        : null
 
   const handleDepositSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -173,6 +184,15 @@ export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
                 />
                 <span className="cx-wallet-input-suffix">VND</span>
               </div>
+              <p className="cx-wallet-limit">
+                Daily top-up limit {formatVndBalance(dailyTopUpLimit)} • left today{' '}
+                <strong>{formatVndBalance(topUpRemainingToday)}</strong>
+              </p>
+              {depositProblem && (
+                <p className="cx-wallet-limit cx-wallet-limit--error" role="alert">
+                  {depositProblem}
+                </p>
+              )}
             </div>
 
             {/* Payment Methods */}
@@ -221,7 +241,7 @@ export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
             </div>
 
             {/* Submit Action */}
-            <button type="submit" className="cx-wallet-submit" disabled={loading}>
+            <button type="submit" className="cx-wallet-submit" disabled={loading || depositProblem !== null || !depositAmount}>
               {loading ? (
                 <>
                   <Loader2 size={18} className="animate-spin" /> Connecting to Gateway...
