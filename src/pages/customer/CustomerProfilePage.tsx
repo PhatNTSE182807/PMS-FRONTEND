@@ -141,7 +141,7 @@ export default function CustomerProfilePage() {
     setFormError('')
     if (!form.fullName.trim()) return setFormError('Full name is required.')
     if (!form.phoneNumber.trim()) return setFormError('Phone number is required.')
-    if (!form.citizenId.trim()) return setFormError('Citizen ID (CCCD) is required.')
+    if (!form.citizenId.trim()) return setFormError('Citizen ID is required.')
     if (!/^\d{12}$/.test(form.citizenId.trim())) return setFormError('Citizen ID must have exactly 12 digits.')
 
     updateProfile.mutate(
@@ -286,7 +286,7 @@ export default function CustomerProfilePage() {
                 />
                 <Field
                   id="profile-citizen-id"
-                  label="Citizen ID (CCCD) *"
+                  label="Citizen ID *"
                   icon={IdCard}
                   inputMode="numeric"
                   maxLength={12}

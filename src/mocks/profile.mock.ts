@@ -142,7 +142,7 @@ export const profileMock = {
   addVehicle: (command: CreateVehicleCommand) =>
     mockResponse(() => {
       const profile = currentProfile()
-      if (!profile.citizenId?.trim()) mockFail(400, 'Please save your Citizen ID (CCCD) in your profile before registering a vehicle.')
+      if (!profile.citizenId?.trim()) mockFail(400, 'Your Citizen ID must be saved in your profile before registering a vehicle.')
       const plate = command.licensePlate.trim().toUpperCase()
       if (vehicles.some((v) => v.licensePlate === plate)) mockFail(400, `Vehicle ${plate} is already registered.`)
       const vehicle = toVehicle({ ...command, citizenId: profile.citizenId })
