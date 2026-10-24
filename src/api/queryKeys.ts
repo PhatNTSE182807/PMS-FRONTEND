@@ -10,6 +10,8 @@ export const queryKeys = {
     vehicles: () => [...queryKeys.profile.all, 'vehicles'] as const,
     vehicleTypes: () => [...queryKeys.profile.all, 'vehicle-types'] as const,
     checkPlate: (plate: string) => [...queryKeys.profile.all, 'check-plate', plate] as const,
+    checkUnique: (phone?: string, citizenId?: string) =>
+      [...queryKeys.profile.all, 'check-unique', phone ?? '', citizenId ?? ''] as const,
   },
   /** Paper checks (registration certificate + Citizen ID) of the signed-in user's vehicles. */
   vehicleDocuments: {

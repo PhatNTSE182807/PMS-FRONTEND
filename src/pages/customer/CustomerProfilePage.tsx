@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
+  AlertCircle,
   Camera,
   Check,
   ChevronRight,
@@ -32,20 +33,21 @@ import {
   resolveMediaUrl,
 } from '@/components/customer/customerFormat'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
-import { useChangePassword, useProfile, useUpdateProfile, useUploadAvatar, useVehicles } from '@/hooks/useProfile'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useChangePassword, useCheckProfileUniqueness, useProfile, useUpdateProfile, useUploadAvatar, useVehicles } from '@/hooks/useProfile'
 import { isValidPassword, PASSWORD_RULE_HINT, PASSWORD_RULE_MESSAGE, PASSWORD_RULES } from '@/lib/password'
 import type { UserProfileDTO } from '@/types/profile.dto'
-
-
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   id: string
   label: string
   icon?: LucideIcon
   aside?: ReactNode
+  error?: string | null
+  loading?: boolean
 }
 
-function Field({ id, label, icon: Icon, aside, className = '', ...input }: FieldProps) {
+function Field({ id, label, icon: Icon, aside, error, loading, className = '', ...input }: FieldProps) {
   return (
     <div className="cx-field">
       <div className="cx-field__label-row">
@@ -54,8 +56,24 @@ function Field({ id, label, icon: Icon, aside, className = '', ...input }: Field
       </div>
       <div className="cx-control">
         {Icon && <span className="cx-control__icon"><Icon aria-hidden /></span>}
-        <input id={id} className={`cx-input ${Icon ? 'cx-input--with-icon' : ''} ${className}`} {...input} />
+        <input
+          id={id}
+          className={`cx-input ${Icon ? 'cx-input--with-icon' : ''} ${loading ? 'cx-input--with-end' : ''} ${className}`}
+          style={error ? { borderColor: 'var(--cx-error, #ef4444)' } : undefined}
+          {...input}
+        />
+        {loading && (
+          <span className="cx-control__end" style={{ pointerEvents: 'none' }}>
+            <Loader2 className="animate-spin text-amber-500" style={{ width: '1rem', height: '1rem' }} aria-hidden />
+          </span>
+        )}
       </div>
+      {error && (
+        <p className="cx-field__error" style={{ color: 'var(--cx-error, #ef4444)', fontSize: '0.8125rem', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <AlertCircle style={{ width: '0.9rem', height: '0.9rem', flexShrink: 0 }} aria-hidden />
+          {error}
+        </p>
+      )}
     </div>
   )
 }
@@ -170,13 +188,39 @@ export default function CustomerProfilePage() {
       form.phoneNumber !== profile.phoneNumber ||
       form.citizenId !== (profile.citizenId ?? ''))
 
+  const debouncedPhone = useDebouncedValue(form.phoneNumber.trim(), 350)
+  const debouncedCitizenId = useDebouncedValue(form.citizenId.trim(), 350)
+
+  const originalPhone = (profile?.phoneNumber ?? '').trim()
+  const phoneChanged = Boolean(debouncedPhone && debouncedPhone !== originalPhone && debouncedPhone.length >= 8)
+
+  const originalCitizenId = (profile?.citizenId ?? '').trim()
+  const citizenIdChanged = Boolean(debouncedCitizenId && debouncedCitizenId !== originalCitizenId && /^\d{12}$/.test(debouncedCitizenId))
+
+  const shouldCheckUniqueness = phoneChanged || citizenIdChanged
+  const checkUniqueQuery = useCheckProfileUniqueness(
+    phoneChanged ? debouncedPhone : undefined,
+    citizenIdChanged ? debouncedCitizenId : undefined,
+    shouldCheckUniqueness,
+  )
+
+  const isPhoneChecking = phoneChanged && checkUniqueQuery.isFetching
+  const isPhoneTaken = Boolean(phoneChanged && checkUniqueQuery.data?.isPhoneAvailable === false)
+  const phoneErrorMsg = isPhoneTaken ? (checkUniqueQuery.data?.phoneReason || 'Phone number is already registered to another account.') : ''
+
+  const isCitizenIdChecking = citizenIdChanged && checkUniqueQuery.isFetching
+  const isCitizenIdTaken = Boolean(citizenIdChanged && checkUniqueQuery.data?.isCitizenIdAvailable === false)
+  const citizenIdErrorMsg = isCitizenIdTaken ? (checkUniqueQuery.data?.citizenIdReason || 'Citizen ID is already registered to another account.') : ''
+
   const saveProfile = (e: FormEvent) => {
     e.preventDefault()
     setFormError('')
     if (!form.fullName.trim()) return setFormError('Full name is required.')
     if (!form.phoneNumber.trim()) return setFormError('Phone number is required.')
+    if (isPhoneTaken) return setFormError(phoneErrorMsg || 'Phone number is already registered to another account.')
     if (!form.citizenId.trim()) return setFormError('Citizen ID is required.')
     if (!/^\d{12}$/.test(form.citizenId.trim())) return setFormError('Citizen ID must have exactly 12 digits.')
+    if (isCitizenIdTaken) return setFormError(citizenIdErrorMsg || 'Citizen ID is already registered to another account.')
 
     updateProfile.mutate(
       {
@@ -347,6 +391,8 @@ export default function CustomerProfilePage() {
                   value={form.phoneNumber}
                   onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
                   autoComplete="tel"
+                  error={phoneErrorMsg}
+                  loading={isPhoneChecking}
                 />
                 <Field
                   id="profile-citizen-id"
@@ -359,6 +405,8 @@ export default function CustomerProfilePage() {
                   value={form.citizenId}
                   onChange={(e) => setForm({ ...form, citizenId: e.target.value.replace(/\D/g, '') })}
                   autoComplete="off"
+                  error={citizenIdErrorMsg}
+                  loading={isCitizenIdChecking}
                   aside={!profile?.citizenId ? <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cx-gold, #f59e0b)' }}>Required to register vehicles</span> : undefined}
                 />
                 {formError && <p className="cx-error" role="alert">{formError}</p>}
@@ -371,7 +419,18 @@ export default function CustomerProfilePage() {
                   >
                     Discard
                   </button>
-                  <button type="submit" className="cx-btn cx-btn--teal" disabled={!isDirty || updateProfile.isPending}>
+                  <button
+                    type="submit"
+                    className="cx-btn cx-btn--teal"
+                    disabled={
+                      !isDirty ||
+                      updateProfile.isPending ||
+                      isPhoneTaken ||
+                      isCitizenIdTaken ||
+                      isPhoneChecking ||
+                      isCitizenIdChecking
+                    }
+                  >
                     {updateProfile.isPending ? 'Saving...' : 'Save profile changes'}
                   </button>
                 </div>

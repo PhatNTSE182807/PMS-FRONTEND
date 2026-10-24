@@ -84,3 +84,11 @@ export interface PlateAvailabilityDTO {
   reason?: string | null
 }
 
+export interface ProfileFieldAvailabilityDTO {
+  isPhoneAvailable: boolean
+  phoneReason?: string | null
+  isCitizenIdAvailable: boolean
+  citizenIdReason?: string | null
+}
+
+

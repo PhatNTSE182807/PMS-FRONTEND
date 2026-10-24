@@ -3,6 +3,7 @@ import { session } from '@/lib/session'
 import type {
   ChangePasswordCommand,
   CreateVehicleCommand,
+  ProfileFieldAvailabilityDTO,
   UpdateProfileCommand,
   UpdateVehicleCommand,
   UserProfileDTO,
@@ -129,10 +130,50 @@ export const profileMock = {
 
   updateProfile: (command: UpdateProfileCommand) =>
     mockResponse(() => {
+      const current = currentProfile()
+      const normalizedPhone = command.phoneNumber?.trim()
+      const normalizedCitizenId = command.citizenId?.trim()
+
+      if (normalizedPhone && normalizedPhone !== current.phoneNumber && normalizedPhone === '0909090909') {
+        mockFail(400, 'Phone number is already registered to another account.')
+      }
+      if (normalizedCitizenId && normalizedCitizenId !== current.citizenId && normalizedCitizenId === '012345678901') {
+        mockFail(400, 'Citizen ID is already registered to another account.')
+      }
+
       // The email is not changed from the profile form, so it is left out of the overrides
       const { citizenId, email: _email, ...details } = command
       profileOverrides = { ...profileOverrides, ...details, ...(citizenId?.trim() ? { citizenId: citizenId.trim() } : {}) }
       return currentProfile()
+    }),
+
+  checkProfileUniqueness: (phone?: string, citizenId?: string) =>
+    mockResponse<ProfileFieldAvailabilityDTO>(() => {
+      const current = currentProfile()
+      const normalizedPhone = phone?.trim()
+      const normalizedCitizenId = citizenId?.trim()
+
+      const takenPhone = '0909090909'
+      const takenCitizenId = '012345678901'
+
+      const isPhoneTaken = Boolean(
+        normalizedPhone &&
+        normalizedPhone !== current.phoneNumber &&
+        normalizedPhone === takenPhone
+      )
+
+      const isCitizenIdTaken = Boolean(
+        normalizedCitizenId &&
+        normalizedCitizenId !== current.citizenId &&
+        normalizedCitizenId === takenCitizenId
+      )
+
+      return {
+        isPhoneAvailable: !isPhoneTaken,
+        phoneReason: isPhoneTaken ? 'Phone number is already registered to another account.' : null,
+        isCitizenIdAvailable: !isCitizenIdTaken,
+        citizenIdReason: isCitizenIdTaken ? 'Citizen ID is already registered to another account.' : null,
+      }
     }),
 
   uploadAvatar: (file: File) =>

@@ -4,6 +4,7 @@ import type {
   ChangePasswordCommand,
   CreateVehicleCommand,
   PlateAvailabilityDTO,
+  ProfileFieldAvailabilityDTO,
   UpdateProfileCommand,
   UpdateVehicleCommand,
   UserProfileDTO,
@@ -23,6 +24,17 @@ export const profileService = {
 
   updateProfile(command: UpdateProfileCommand): Promise<UserProfileDTO> {
     return mocked() ? profileMock.updateProfile(command) : http.put<UserProfileDTO>(base, command)
+  },
+
+  checkProfileUniqueness(phone?: string, citizenId?: string): Promise<ProfileFieldAvailabilityDTO> {
+    return mocked()
+      ? profileMock.checkProfileUniqueness(phone, citizenId)
+      : http.get<ProfileFieldAvailabilityDTO>(`${base}/check-unique`, {
+          params: {
+            ...(phone ? { phone } : {}),
+            ...(citizenId ? { citizenId } : {}),
+          },
+        })
   },
 
   uploadAvatar(file: File): Promise<UserProfileDTO> {

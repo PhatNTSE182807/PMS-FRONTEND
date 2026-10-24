@@ -22,6 +22,18 @@ export function useCheckPlateAvailability(plate: string, enabled = true) {
   })
 }
 
+export function useCheckProfileUniqueness(phone?: string, citizenId?: string, enabled = true) {
+  const trimmedPhone = phone?.trim()
+  const trimmedCitizenId = citizenId?.trim()
+  const hasInput = Boolean(trimmedPhone || trimmedCitizenId)
+  return useQuery({
+    queryKey: queryKeys.profile.checkUnique(trimmedPhone, trimmedCitizenId),
+    queryFn: () => profileService.checkProfileUniqueness(trimmedPhone, trimmedCitizenId),
+    enabled: enabled && hasInput,
+    staleTime: 10_000,
+  })
+}
+
 export function useVehicleTypes() {
   return useQuery({
     queryKey: queryKeys.profile.vehicleTypes(),
