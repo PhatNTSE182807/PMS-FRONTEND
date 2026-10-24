@@ -134,10 +134,13 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
               {booking.bookingMode === 'PayAsYouGo' ? ' (pay as you go)' : ''}
             </span>
           </div>
+          {/* Without a deposit there is nothing to deduct, but the bay is held for a shorter time */}
           <div className="cx-tile">
-            <span className="cx-label">Deposit paid</span>
-            <strong className="cx-tile__value">{vnd(booking.depositAmount)}</strong>
-            <span className="cx-tile__sub" style={{ color: 'var(--cx-gold)' }}>Deductible at exit</span>
+            <span className="cx-label">{booking.hasDeposit ? 'Deposit paid' : 'Deposit'}</span>
+            <strong className="cx-tile__value">{booking.hasDeposit ? vnd(booking.depositAmount) : 'No deposit'}</strong>
+            <span className="cx-tile__sub" style={{ color: 'var(--cx-gold)' }}>
+              {booking.hasDeposit ? 'Deductible at exit' : 'Nothing to pay now'} • bay held {booking.holdMinutes} min after arrival
+            </span>
           </div>
         </div>
 
@@ -155,7 +158,7 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
               )
             }}
           >
-            <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`edit-${booking.id}`} disabled={update.isPending} />
+            <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`edit-${booking.id}`} disabled={update.isPending} holdMinutes={booking.holdMinutes} />
             {timeError && <p className="cx-error" role="alert">{timeError}</p>}
             <div className="cx-booking__actions">
               <button type="submit" className="cx-btn cx-btn--teal" disabled={update.isPending}>Save</button>
@@ -184,7 +187,9 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
           </div>
         )}
         <p className="cx-booking__note">
-          * Full deposit refund when cancelled at least 30 minutes before arrival; none after that. Not checked in by {time.format(Date.parse(booking.checkInUntil))}: the booking becomes a no-show and the deposit is kept.
+          {booking.hasDeposit
+            ? `* Full deposit refund when cancelled at least 30 minutes before arrival; none after that. Not checked in by ${time.format(Date.parse(booking.checkInUntil))}: the booking becomes a no-show and the deposit is kept.`
+            : `* Booked without a deposit: cancel any time for free. Not checked in by ${time.format(Date.parse(booking.checkInUntil))}: the bay is released for other drivers.`}
         </p>
       </div>
 
@@ -374,8 +379,10 @@ export default function CustomerBookingsPage() {
                           <span className="cx-table__sub">{time.format(Date.parse(b.arrivalTime))}</span>
                         </td>
                         <td>
-                          <strong className="cx-table__num">{vnd(b.depositAmount)}</strong>
-                          <span className="cx-table__sub">{b.refundAmount > 0 ? `Refunded ${vnd(b.refundAmount)}` : b.status === 'Completed' ? 'Deducted from the fee' : 'Not refunded'}</span>
+                          <strong className="cx-table__num">{b.hasDeposit ? vnd(b.depositAmount) : 'No deposit'}</strong>
+                          <span className="cx-table__sub">
+                            {!b.hasDeposit ? `Held ${b.holdMinutes} min` : b.refundAmount > 0 ? `Refunded ${vnd(b.refundAmount)}` : b.status === 'Completed' ? 'Deducted from the fee' : 'Not refunded'}
+                          </span>
                         </td>
                         <td>
                           <span className={`cx-chip ${ended ? 'cx-chip--muted' : ''}`} title={b.cancelReason ?? undefined}>{STATUS_LABEL[b.status]}</span>

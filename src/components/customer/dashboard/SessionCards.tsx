@@ -368,7 +368,7 @@ export function ReservationCard() {
 
       {editing && times ? (
         <div className="cx-booking__edit" style={{ marginTop: 0 }}>
-          <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`card-${booking.id}`} disabled={update.isPending} />
+          <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`card-${booking.id}`} disabled={update.isPending} holdMinutes={booking.holdMinutes} />
           {error && <p className="cx-error" role="alert">{error}</p>}
         </div>
       ) : (

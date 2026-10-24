@@ -24,6 +24,18 @@ const INITIAL_HOLD = 0
 
 const INITIAL_TRANSACTIONS: WalletTransaction[] = []
 
+/** Defaults until the API answers; the backend (Parking:Wallet options) is the source of truth. */
+export const DEFAULT_DAILY_TOP_UP_LIMIT = 10_000_000
+export const DEFAULT_MIN_TOP_UP = 10_000
+
+/** Demo mode only: what was topped up today, from the locally simulated transactions. */
+function demoTopUpsToday(transactions: WalletTransaction[]): number {
+  const today = new Date().toDateString()
+  return transactions
+    .filter((t) => t.type === 'deposit' && new Date(t.date).toDateString() === today)
+    .reduce((sum, t) => sum + t.amount, 0)
+}
+
 export function formatVndBalance(amount: number): string {
   return new Intl.NumberFormat('en-US').format(amount) + ' ₫'
 }
@@ -75,6 +87,15 @@ export function useWallet() {
 
   const [loading, setLoading] = useState<boolean>(false)
 
+  // Daily top-up limit and what is left of it today (the API counts paid and still-payable top-ups)
+  const [dailyTopUpLimit, setDailyTopUpLimit] = useState<number>(DEFAULT_DAILY_TOP_UP_LIMIT)
+  const [apiRemainingToday, setApiRemainingToday] = useState<number | null>(null)
+  const [minTopUp, setMinTopUp] = useState<number>(DEFAULT_MIN_TOP_UP)
+  const usesApi = Boolean(session.getToken()) && !session.isDemo()
+  const topUpRemainingToday = usesApi && apiRemainingToday !== null
+    ? apiRemainingToday
+    : Math.max(0, dailyTopUpLimit - demoTopUpsToday(transactions))
+
   // Fetch real wallet from backend if authenticated
   const fetchWallet = useCallback(async () => {
     if (!session.getToken()) return
@@ -83,6 +104,9 @@ export function useWallet() {
       if (data) {
         setBalanceState(data.balance)
         setHoldAmountState(data.holdAmount ?? 0)
+        if (data.dailyTopUpLimit) setDailyTopUpLimit(data.dailyTopUpLimit)
+        if (data.minTopUp) setMinTopUp(data.minTopUp)
+        if (typeof data.topUpRemainingToday === 'number') setApiRemainingToday(data.topUpRemainingToday)
         try {
           localStorage.setItem(STORAGE_KEY_BALANCE, String(data.balance))
           localStorage.setItem(STORAGE_KEY_HOLD, String(data.holdAmount ?? 0))
@@ -161,33 +185,49 @@ export function useWallet() {
         return false
       }
 
+      if (amount < minTopUp) {
+        toast.error(`Minimum top-up amount is ${formatVndBalance(minTopUp)}.`)
+        return false
+      }
+      // Checked here for a quick answer; the API enforces the same daily limit
+      if (amount > topUpRemainingToday) {
+        toast.error(
+          topUpRemainingToday > 0
+            ? `You can top up at most ${formatVndBalance(dailyTopUpLimit)} a day. You can still add ${formatVndBalance(topUpRemainingToday)} today.`
+            : `You have reached today's top-up limit of ${formatVndBalance(dailyTopUpLimit)}. Try again tomorrow.`,
+        )
+        return false
+      }
+
       const methodName = method === 'vnpay' ? 'VNPay' : 'MoMo'
 
-      // If user is authenticated, call real backend API to obtain gateway payment URL
-      if (session.getToken()) {
+      // Signed-in customers pay through the real VNPay / MoMo gateway: the balance only changes
+      // once the gateway confirms the payment (IPN), never on the client
+      if (usesApi) {
         setLoading(true)
         try {
           const res = await walletService.topUp({
             amount,
             provider: methodName,
           })
+          if (!res.payUrl) throw new Error(`${methodName} did not return a payment page. Please try again.`)
 
-          if (res.payUrl) {
-            toast.loading(`Redirecting to ${methodName} payment gateway...`)
-            // Short timeout to let user see toast before redirect
-            setTimeout(() => {
-              window.location.assign(res.payUrl!)
-            }, 600)
-            return true
-          }
+          toast.loading(`Redirecting to ${methodName} payment gateway...`)
+          // Short timeout to let user see toast before redirect
+          setTimeout(() => {
+            window.location.assign(res.payUrl!)
+          }, 600)
+          return true
         } catch (err) {
           toast.error(getErrorMessage(err))
           setLoading(false)
+          // A refused top-up may mean the limit changed: refresh what is left today
+          void fetchWallet()
           return false
         }
       }
 
-      // Offline / Local fallback simulation
+      // Demo mode (no backend): simulate the top-up locally
       const now = new Date()
       const timeStr = `Today, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
       const code = `XXIV-${Math.floor(100000 + Math.random() * 900000)}`
@@ -209,7 +249,7 @@ export function useWallet() {
       toast.success(`Successfully deposited ${formatVndBalance(amount)} via ${methodName}!`)
       return true
     },
-    [balance, transactions, updateBalanceAndTxs],
+    [balance, transactions, updateBalanceAndTxs, usesApi, minTopUp, topUpRemainingToday, dailyTopUpLimit, fetchWallet],
   )
 
   const withdraw = useCallback(
@@ -277,6 +317,9 @@ export function useWallet() {
     holdAmount,
     transactions,
     loading,
+    dailyTopUpLimit,
+    topUpRemainingToday,
+    minTopUp,
     deposit,
     withdraw,
     fetchWallet,

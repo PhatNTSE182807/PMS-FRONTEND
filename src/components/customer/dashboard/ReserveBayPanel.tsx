@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CircleCheck, CreditCard, Timer, Wallet } from 'lucide-react'
+import { CircleCheck, CreditCard, ShieldCheck, Timer, Wallet, Zap } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { useNow } from '@/hooks/useNow'
@@ -11,6 +11,14 @@ import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bo
 import { formatNumber } from '@/lib/format'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
 
+/** Deposit choices: the hold after arrival is longer when a deposit is paid. */
+const DEPOSIT_OPTIONS = [
+  { value: true, icon: ShieldCheck, title: 'With deposit', text: '30,000 VND, deducted at exit • bay held 30 min after arrival' },
+  { value: false, icon: Zap, title: 'No deposit', text: 'Confirmed at once • bay held only 15 min after arrival' },
+] as const
+
+const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+
 interface ReserveBayPanelProps {
   lotKey: string
   slotId: string
@@ -19,8 +27,10 @@ interface ReserveBayPanelProps {
 
 /**
  * Books the selected bay (SRS FR-RSV-02): pick the car, the booking type and the date and time
- * (Scheduled: arrival and departure; pay as you go: arrival only), then pay the deposit with VNPay or
- * MoMo before the deadline. Overlapping bookings of one bay: the first one wins.
+ * (Scheduled: arrival and departure; pay as you go: arrival only), and whether to pay a deposit.
+ * With a deposit (paid with the wallet, VNPay or MoMo before the deadline) the bay is held 30 minutes
+ * after arrival; without one the booking is confirmed at once and held only 15 minutes.
+ * Overlapping bookings of one bay: the first one wins.
  */
 export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelProps) {
   const now = useNow(1000)
@@ -32,6 +42,8 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   const [vehicleId, setVehicleId] = useState('')
   const [times, setTimes] = useState(() => defaultBookingTimes(Date.now()))
   const [held, setHeld] = useState<ReservationDTO | null>(null)
+  // Deposit option: true = pay 30,000 VND and keep the bay 30 min after arrival; false = no deposit, 15 min
+  const [payDeposit, setPayDeposit] = useState(true)
   const create = useCreateReservation()
   const pay = usePayDeposit()
 
@@ -53,12 +65,15 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
         arrivalTime: checked.arrivalTime,
         bookingMode: times.mode,
         departureTime: checked.departureTime,
+        payDeposit,
       },
       {
         onSuccess: (reservation) => {
           setHeld(reservation)
           toast.success(`Bay ${slotCode} is booked for ${describeWindow(reservation.arrivalTime, reservation.departureTime, Date.now())}`, {
-            description: `Pay the ${formatNumber(reservation.depositAmount)} VND deposit within 10 minutes to confirm it.`,
+            description: reservation.hasDeposit
+              ? `Pay the ${formatNumber(reservation.depositAmount)} VND deposit within 10 minutes to confirm it.`
+              : `Confirmed without a deposit: the bay is held ${reservation.holdMinutes} minutes after your arrival time.`,
           })
         },
         onError: (error) => toast.error(getErrorMessage(error)),
@@ -67,6 +82,22 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   }
 
   const payWith = (provider: PaymentProvider) => heldHere && pay.mutate({ id: heldHere.id, provider })
+
+  // Booked without a deposit: confirmed already, nothing to pay
+  if (heldHere && !heldHere.hasDeposit) {
+    return (
+      <div className="cx-reserve" aria-live="polite">
+        <p className="cx-reserve__title">
+          <CircleCheck aria-hidden /> Bay <strong>{heldHere.slotCode}</strong> confirmed • #{heldHere.code}
+        </p>
+        <p className="cx-reserve__meta">{describeWindow(heldHere.arrivalTime, heldHere.departureTime, now)}</p>
+        <p className="cx-reserve__meta">
+          <Timer aria-hidden /> No deposit: the bay is held until <strong>{clock.format(Date.parse(heldHere.checkInUntil))}</strong> ({heldHere.holdMinutes} minutes after arrival)
+        </p>
+        <Link to="/me/bookings" className="cx-link">Open My Bookings</Link>
+      </div>
+    )
+  }
 
   if (heldHere) {
     const due = heldHere.depositDueAt ? Date.parse(heldHere.depositDueAt) : now
@@ -77,6 +108,9 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           <CircleCheck aria-hidden /> Bay <strong>{heldHere.slotCode}</strong> booked • #{heldHere.code}
         </p>
         <p className="cx-reserve__meta">{describeWindow(heldHere.arrivalTime, heldHere.departureTime, now)}</p>
+        <p className="cx-reserve__meta">
+          <ShieldCheck aria-hidden /> With the deposit the bay is held {heldHere.holdMinutes} minutes after arrival
+        </p>
         <p className="cx-reserve__meta">
           <Timer aria-hidden /> Pay the <strong>{formatNumber(heldHere.depositAmount)} VND</strong> deposit within{' '}
           <span className="cx-mono">{Math.floor(left / 60_000)}:{String(Math.floor((left % 60_000) / 1000)).padStart(2, '0')}</span>
@@ -116,9 +150,40 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           </span>
         )}
       </label>
-      <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`reserve-${slotId}`} disabled={create.isPending} />
+      <BookingTimeFields
+        value={times}
+        onChange={setTimes}
+        now={now}
+        idPrefix={`reserve-${slotId}`}
+        disabled={create.isPending}
+        holdMinutes={payDeposit ? 30 : 15}
+      />
+      <div className="cx-mode" role="radiogroup" aria-label="Deposit">
+        {DEPOSIT_OPTIONS.map((option) => {
+          const Icon = option.icon
+          const active = payDeposit === option.value
+          return (
+            <button
+              key={String(option.value)}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={create.isPending}
+              className={`cx-mode__option ${active ? 'is-active' : ''}`}
+              onClick={() => setPayDeposit(option.value)}
+            >
+              <Icon aria-hidden />
+              <span>
+                <strong>{option.title}</strong>
+                <small>{option.text}</small>
+              </span>
+            </button>
+          )
+        })}
+      </div>
       <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled={!chosenVehicle || create.isPending} onClick={reserve}>
-        <CircleCheck aria-hidden /> {create.isPending ? 'Booking the bay…' : `Reserve bay ${slotCode} • 30,000 VND deposit`}
+        <CircleCheck aria-hidden />{' '}
+        {create.isPending ? 'Booking the bay…' : payDeposit ? `Reserve bay ${slotCode} • 30,000 VND deposit` : `Reserve bay ${slotCode} • no deposit`}
       </button>
       {cars.length === 0 && (
         <Link to="/me/vehicles" className="cx-link">{allCars.length ? 'Check your vehicle papers' : 'Register a car to book'}</Link>

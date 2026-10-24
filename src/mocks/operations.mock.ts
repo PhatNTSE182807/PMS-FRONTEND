@@ -38,7 +38,10 @@ const RULES = {
   maxStayHours: 24,
   depositMinutes: 10,
   earlyMinutes: 15,
+  /** Hold after arrival for a booking without a deposit. */
   holdMinutes: 15,
+  /** Hold after arrival for a booking with a paid deposit. */
+  depositHoldMinutes: 30,
   cancelRefundMinutes: 30,
   deposit: 30_000,
   graceMinutes: 15,
@@ -288,11 +291,15 @@ export const reservationMock = {
       checkSlotFree(request.parkingLotId, slotId, arrival, departure)
 
       const lot = findMockLot(request.parkingLotId)
+      // Like the API: with a deposit the booking waits for the payment and is held 30 minutes after
+      // arrival; without one it is confirmed at once and held 15 minutes
+      const withDeposit = request.payDeposit ?? true
+      const holdMinutes = withDeposit ? RULES.depositHoldMinutes : RULES.holdMinutes
       const created: MockReservation = {
         lotKey: request.parkingLotId,
         id: nextId(),
         code: code('RSV'),
-        status: 'PendingDeposit',
+        status: withDeposit ? 'PendingDeposit' : 'Confirmed',
         parkingLotId: lotNumber(request.parkingLotId),
         parkingLotName: lot?.name ?? 'Demo lot',
         zoneId: Math.floor(slotId / 1000) + 1,
@@ -303,14 +310,16 @@ export const reservationMock = {
         plateNumber: vehicle.licensePlate,
         arrivalTime: iso(arrival),
         checkInFrom: iso(arrival - RULES.earlyMinutes * MINUTE),
-        checkInUntil: iso(arrival + RULES.holdMinutes * MINUTE),
-        depositAmount: RULES.deposit,
-        depositDueAt: iso(now() + RULES.depositMinutes * MINUTE),
+        checkInUntil: iso(arrival + holdMinutes * MINUTE),
+        depositAmount: withDeposit ? RULES.deposit : 0,
+        hasDeposit: withDeposit,
+        holdMinutes,
+        depositDueAt: withDeposit ? iso(now() + RULES.depositMinutes * MINUTE) : null,
         refundAmount: 0,
         cancelReason: null,
         cancelledBy: null,
         createdAt: iso(now()),
-        confirmedAt: null,
+        confirmedAt: withDeposit ? null : iso(now()),
         canChange: false,
         canCancel: true,
         refundIfCancelledNow: 0,
@@ -341,7 +350,8 @@ export const reservationMock = {
 
       r.arrivalTime = iso(arrival)
       r.checkInFrom = iso(arrival - RULES.earlyMinutes * MINUTE)
-      r.checkInUntil = iso(arrival + RULES.holdMinutes * MINUTE)
+      // Keep the hold length of the booking type
+      r.checkInUntil = iso(arrival + r.holdMinutes * MINUTE)
       r.bookingMode = mode
       r.departureTime = departure === null ? null : iso(departure)
       r.isSlotHeld = arrival - 120 * MINUTE <= now()
@@ -889,8 +899,8 @@ function seedBooking(lotKey: string, plate: string, label: string, arrivalInMinu
     lotKey, id: nextId(), code: code('RSV'), status: 'Confirmed', parkingLotId: lotNumber(lotKey),
     parkingLotName: lot?.name ?? 'Demo lot', zoneId: 3, zoneName: 'Level 3 · Cars', slotId, slotCode: slotCode(slotId),
     vehicleId: `demo-${normalize(plate)}`, plateNumber: plate, arrivalTime: iso(arrival),
-    checkInFrom: iso(arrival - RULES.earlyMinutes * MINUTE), checkInUntil: iso(arrival + RULES.holdMinutes * MINUTE),
-    depositAmount: RULES.deposit, depositDueAt: null, refundAmount: 0, cancelReason: null, cancelledBy: null,
+    checkInFrom: iso(arrival - RULES.earlyMinutes * MINUTE), checkInUntil: iso(arrival + RULES.depositHoldMinutes * MINUTE),
+    depositAmount: RULES.deposit, hasDeposit: true, holdMinutes: RULES.depositHoldMinutes, depositDueAt: null, refundAmount: 0, cancelReason: null, cancelledBy: null,
     createdAt: iso(now() - 60 * MINUTE), confirmedAt: iso(now() - 55 * MINUTE), canChange: false, canCancel: true,
     refundIfCancelledNow: 0, pendingPayment: null, parkingLotAddress: lot?.address ?? null, parkingLotDistrict: null,
     vehicleLabel: label, bookingMode: 'PayAsYouGo', departureTime: null, isSlotHeld: true, staffDemo: true,

@@ -47,6 +47,12 @@ export interface WalletDTO {
   holdAmount: number
   currency: string
   status: string
+  /** Most the customer can top up online per calendar day. */
+  dailyTopUpLimit: number
+  /** What is left of today's limit (paid and still-payable top-ups count). */
+  topUpRemainingToday: number
+  /** Smallest online top-up accepted. */
+  minTopUp: number
   recentTransactions: WalletTransactionDTO[]
 }
 
@@ -119,6 +125,10 @@ export interface ReservationDTO {
   checkInFrom: string
   checkInUntil: string
   depositAmount: number
+  /** false for a booking made without a deposit. */
+  hasDeposit: boolean
+  /** Minutes the slot is held after the arrival time (30 with a deposit, 15 without). */
+  holdMinutes: number
   depositDueAt: string | null
   refundAmount: number
   cancelReason: string | null
@@ -154,6 +164,11 @@ export interface CreateReservationRequest {
   bookingMode: BookingMode
   /** ISO time; required for Scheduled, ignored for pay-as-you-go. */
   departureTime?: string | null
+  /**
+   * true (default): pay a deposit, the slot is held 30 minutes after arrival.
+   * false: no deposit, confirmed at once, the slot is held only 15 minutes after arrival.
+   */
+  payDeposit?: boolean
 }
 
 export interface UpdateReservationRequest {

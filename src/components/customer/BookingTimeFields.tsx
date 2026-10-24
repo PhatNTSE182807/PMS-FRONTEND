@@ -18,12 +18,15 @@ export function BookingTimeFields({
   now,
   idPrefix,
   disabled,
+  holdMinutes = 15,
 }: {
   value: BookingTimes
   onChange: (next: BookingTimes) => void
   now: number
   idPrefix: string
   disabled?: boolean
+  /** Minutes the bay is held after arrival: 30 with a deposit, 15 without. */
+  holdMinutes?: number
 }) {
   const min = toLocalInput(now + 60_000)
   const max = toLocalInput(now + BOOKING_RULES.maxLeadDays * 86_400_000)
@@ -91,7 +94,7 @@ export function BookingTimeFields({
         {value.mode === 'Scheduled'
           ? `The bay is yours for this window (${BOOKING_RULES.minStayMinutes} min to ${BOOKING_RULES.maxStayHours} h). You pay for the time you actually park.`
           : 'The bay is yours from arrival until you leave. You pay for the time you actually park.'}{' '}
-        Check-in opens 15 minutes before arrival and closes 15 minutes after.
+        Check-in opens 15 minutes before arrival and closes {holdMinutes} minutes after.
       </span>
     </div>
   )

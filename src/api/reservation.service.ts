@@ -50,6 +50,7 @@ export const reservationService = {
       arrivalTime: request.arrivalTime,
       bookingMode: request.bookingMode,
       departureTime: request.bookingMode === 'Scheduled' ? request.departureTime : null,
+      payDeposit: request.payDeposit ?? true,
     })
   },
 
