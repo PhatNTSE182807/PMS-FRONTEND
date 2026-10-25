@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { paymentService } from '@/api/payment.service'
 import { walletService } from '@/api/wallet.service'
@@ -10,24 +10,29 @@ export interface WalletTransaction {
   title: string
   subtitle: string
   amount: number
+  balanceBefore?: number
+  balanceAfter?: number
   status: string
-  type: 'deposit' | 'withdraw' | 'parking'
+  type: 'deposit' | 'withdraw' | 'refund' | 'payment' | 'parking'
   method?: string
   date: string
 }
 
-const STORAGE_KEY_BALANCE = 'xxiv_wallet_balance'
-const STORAGE_KEY_HOLD = 'xxiv_wallet_hold'
-const STORAGE_KEY_TXS = 'xxiv_wallet_transactions'
+const STORAGE_PREFIX_BALANCE = 'xxiv_wallet_balance'
+const STORAGE_PREFIX_HOLD = 'xxiv_wallet_hold'
+const STORAGE_PREFIX_TXS = 'xxiv_wallet_transactions'
 
 const INITIAL_BALANCE = 0
 const INITIAL_HOLD = 0
-
 const INITIAL_TRANSACTIONS: WalletTransaction[] = []
 
-/** Defaults until the API answers; the backend (Parking:Wallet options) is the source of truth. */
 export const DEFAULT_DAILY_TOP_UP_LIMIT = 10_000_000
 export const DEFAULT_MIN_TOP_UP = 10_000
+
+function getStorageKey(prefix: string, userId?: string | null): string {
+  const uid = userId || session.getUser()?.userId || 'guest'
+  return `${prefix}_${uid}`
+}
 
 /** Demo mode only: what was topped up today, from the locally simulated transactions. */
 function demoTopUpsToday(transactions: WalletTransaction[]): number {
@@ -46,14 +51,13 @@ export function formatVndQuick(amount: number): string {
 }
 
 export function useWallet() {
+  const [currentUserId, setCurrentUserId] = useState<string>(() => session.getUser()?.userId ?? 'guest')
+
   const [balance, setBalanceState] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_BALANCE)
-      if (!saved || saved === '1250000') {
-        localStorage.setItem(STORAGE_KEY_BALANCE, '0')
-        return 0
-      }
-      return Number(saved)
+      const uid = session.getUser()?.userId ?? 'guest'
+      const saved = localStorage.getItem(getStorageKey(STORAGE_PREFIX_BALANCE, uid))
+      return saved ? Number(saved) : INITIAL_BALANCE
     } catch {
       return INITIAL_BALANCE
     }
@@ -61,7 +65,8 @@ export function useWallet() {
 
   const [holdAmount, setHoldAmountState] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_HOLD)
+      const uid = session.getUser()?.userId ?? 'guest'
+      const saved = localStorage.getItem(getStorageKey(STORAGE_PREFIX_HOLD, uid))
       return saved ? Number(saved) : INITIAL_HOLD
     } catch {
       return INITIAL_HOLD
@@ -70,15 +75,11 @@ export function useWallet() {
 
   const [transactions, setTransactions] = useState<WalletTransaction[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_TXS)
+      const uid = session.getUser()?.userId ?? 'guest'
+      const saved = localStorage.getItem(getStorageKey(STORAGE_PREFIX_TXS, uid))
       if (saved) {
         const parsed = JSON.parse(saved)
-        // Clear old mock transactions from previous mock version
-        if (Array.isArray(parsed) && parsed.some((t: WalletTransaction) => t.id === 'XXIV-792182')) {
-          localStorage.removeItem(STORAGE_KEY_TXS)
-          return []
-        }
-        return parsed
+        if (Array.isArray(parsed)) return parsed
       }
       return INITIAL_TRANSACTIONS
     } catch {
@@ -86,20 +87,30 @@ export function useWallet() {
     }
   })
 
+  const [allTransactions, setAllTransactions] = useState<WalletTransaction[]>([])
+  const [loadingAllTxs, setLoadingAllTxs] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
 
-  // Daily top-up limit and what is left of it today (the API counts paid and still-payable top-ups)
   const [dailyTopUpLimit, setDailyTopUpLimit] = useState<number>(DEFAULT_DAILY_TOP_UP_LIMIT)
   const [apiRemainingToday, setApiRemainingToday] = useState<number | null>(null)
   const [minTopUp, setMinTopUp] = useState<number>(DEFAULT_MIN_TOP_UP)
+
   const usesApi = Boolean(session.getToken()) && !session.isDemo()
-  const topUpRemainingToday = usesApi && apiRemainingToday !== null
-    ? apiRemainingToday
-    : Math.max(0, dailyTopUpLimit - demoTopUpsToday(transactions))
+  const topUpRemainingToday =
+    usesApi && apiRemainingToday !== null
+      ? apiRemainingToday
+      : Math.max(0, dailyTopUpLimit - demoTopUpsToday(transactions))
+
+  const isFetchingRef = useRef(false)
 
   // Fetch real wallet from backend if authenticated
   const fetchWallet = useCallback(async () => {
     if (!session.getToken()) return
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
+
+    const uid = session.getUser()?.userId ?? 'guest'
+
     try {
       const data = await walletService.getWallet()
       if (data) {
@@ -108,80 +119,182 @@ export function useWallet() {
         if (data.dailyTopUpLimit) setDailyTopUpLimit(data.dailyTopUpLimit)
         if (data.minTopUp) setMinTopUp(data.minTopUp)
         if (typeof data.topUpRemainingToday === 'number') setApiRemainingToday(data.topUpRemainingToday)
+
         try {
-          localStorage.setItem(STORAGE_KEY_BALANCE, String(data.balance))
-          localStorage.setItem(STORAGE_KEY_HOLD, String(data.holdAmount ?? 0))
+          const balKey = getStorageKey(STORAGE_PREFIX_BALANCE, uid)
+          const holdKey = getStorageKey(STORAGE_PREFIX_HOLD, uid)
+          if (localStorage.getItem(balKey) !== String(data.balance)) {
+            localStorage.setItem(balKey, String(data.balance))
+          }
+          if (localStorage.getItem(holdKey) !== String(data.holdAmount ?? 0)) {
+            localStorage.setItem(holdKey, String(data.holdAmount ?? 0))
+          }
+        } catch {
+          // ignore storage error
+        }
+
+        // Always update transactions per user, even if empty array []
+        const rawList = data.recentTransactions ?? []
+        const mapped: WalletTransaction[] = rawList.map((tx) => ({
+          id: tx.id,
+          title: tx.title,
+          subtitle: tx.subtitle,
+          amount: tx.amount,
+          balanceBefore: tx.balanceBefore,
+          balanceAfter: tx.balanceAfter,
+          status: tx.status,
+          type: (tx.type as WalletTransaction['type']) || (tx.amount >= 0 ? 'deposit' : 'withdraw'),
+          method: tx.method,
+          date: tx.createdAt,
+        }))
+        setTransactions(mapped)
+
+        try {
+          const txsKey = getStorageKey(STORAGE_PREFIX_TXS, uid)
+          localStorage.setItem(txsKey, JSON.stringify(mapped))
+        } catch {
+          // ignore storage error
+        }
+      }
+    } catch {
+      // Fallback
+    } finally {
+      isFetchingRef.current = false
+    }
+  }, [])
+
+  // Fetch all transactions for history view (Issue 4)
+  const fetchAllTransactions = useCallback(async (): Promise<WalletTransaction[]> => {
+    if (!session.getToken()) {
+      setAllTransactions(transactions)
+      return transactions
+    }
+
+    setLoadingAllTxs(true)
+    try {
+      const data = await walletService.getTransactions()
+      if (Array.isArray(data)) {
+        const mapped: WalletTransaction[] = data.map((tx) => ({
+          id: tx.id,
+          title: tx.title,
+          subtitle: tx.subtitle,
+          amount: tx.amount,
+          balanceBefore: tx.balanceBefore,
+          balanceAfter: tx.balanceAfter,
+          status: tx.status,
+          type: (tx.type as WalletTransaction['type']) || (tx.amount >= 0 ? 'deposit' : 'withdraw'),
+          method: tx.method,
+          date: tx.createdAt,
+        }))
+        setAllTransactions(mapped)
+        setLoadingAllTxs(false)
+        return mapped
+      }
+    } catch {
+      // fallback
+    }
+    setLoadingAllTxs(false)
+    setAllTransactions(transactions)
+    return transactions
+  }, [transactions])
+
+  // Initial load
+  useEffect(() => {
+    void fetchWallet()
+  }, [fetchWallet])
+
+  // React to user auth state changes (login, logout, switch account)
+  useEffect(() => {
+    return session.subscribe((user) => {
+      const newUid = user?.userId ?? 'guest'
+      if (newUid !== currentUserId) {
+        setCurrentUserId(newUid)
+        const balKey = getStorageKey(STORAGE_PREFIX_BALANCE, newUid)
+        const holdKey = getStorageKey(STORAGE_PREFIX_HOLD, newUid)
+        const txsKey = getStorageKey(STORAGE_PREFIX_TXS, newUid)
+        try {
+          const savedBal = localStorage.getItem(balKey)
+          setBalanceState(savedBal !== null ? Number(savedBal) : 0)
+          const savedHold = localStorage.getItem(holdKey)
+          setHoldAmountState(savedHold !== null ? Number(savedHold) : 0)
+          const savedTxs = localStorage.getItem(txsKey)
+          setTransactions(savedTxs !== null ? JSON.parse(savedTxs) : [])
+        } catch {
+          setBalanceState(0)
+          setHoldAmountState(0)
+          setTransactions([])
+        }
+        void fetchWallet()
+      }
+    })
+  }, [currentUserId, fetchWallet])
+
+  // Cross-tab and same-tab synchronization WITHOUT infinite loop (Issue 2)
+  useEffect(() => {
+    const balKey = getStorageKey(STORAGE_PREFIX_BALANCE, currentUserId)
+    const holdKey = getStorageKey(STORAGE_PREFIX_HOLD, currentUserId)
+    const txsKey = getStorageKey(STORAGE_PREFIX_TXS, currentUserId)
+
+    const handleStorage = (e: StorageEvent) => {
+      // CRITICAL: Only react to keys belonging to the current user!
+      // DO NOT call fetchWallet() here to prevent cross-tab ping-pong loops!
+      if (!e.key || e.newValue === null) return
+
+      if (e.key === balKey) {
+        const val = Number(e.newValue)
+        if (!isNaN(val)) setBalanceState(val)
+      } else if (e.key === holdKey) {
+        const val = Number(e.newValue)
+        if (!isNaN(val)) setHoldAmountState(val)
+      } else if (e.key === txsKey) {
+        try {
+          const parsed = JSON.parse(e.newValue)
+          if (Array.isArray(parsed)) setTransactions(parsed)
         } catch {
           // ignore
         }
-
-        if (data.recentTransactions && data.recentTransactions.length > 0) {
-          const mapped: WalletTransaction[] = data.recentTransactions.map((tx) => ({
-            id: tx.id,
-            title: tx.title,
-            subtitle: tx.subtitle,
-            amount: tx.amount,
-            status: tx.status,
-            type: tx.type,
-            method: tx.method,
-            date: tx.createdAt,
-          }))
-          setTransactions(mapped)
-          try {
-            localStorage.setItem(STORAGE_KEY_TXS, JSON.stringify(mapped))
-          } catch {
-            // ignore
-          }
-        }
       }
-    } catch {
-      // Fallback to local storage if API is temporarily unavailable
     }
-  }, [])
 
-  useEffect(() => {
-    fetchWallet()
-  }, [fetchWallet])
-
-  // Synchronize across hook consumers or tabs
-  useEffect(() => {
-    const handleSync = () => {
-      fetchWallet()
+    const handleLocalSync = () => {
       try {
-        const savedBal = localStorage.getItem(STORAGE_KEY_BALANCE)
+        const savedBal = localStorage.getItem(balKey)
         if (savedBal !== null) setBalanceState(Number(savedBal))
-        const savedHold = localStorage.getItem(STORAGE_KEY_HOLD)
+        const savedHold = localStorage.getItem(holdKey)
         if (savedHold !== null) setHoldAmountState(Number(savedHold))
-        const savedTxs = localStorage.getItem(STORAGE_KEY_TXS)
+        const savedTxs = localStorage.getItem(txsKey)
         if (savedTxs !== null) setTransactions(JSON.parse(savedTxs))
       } catch {
-        // ignore storage errors
+        // ignore
       }
     }
 
-    window.addEventListener('xxiv-wallet-updated', handleSync)
-    window.addEventListener('storage', handleSync)
+    window.addEventListener('storage', handleStorage)
+    window.addEventListener('xxiv-wallet-updated', handleLocalSync)
     return () => {
-      window.removeEventListener('xxiv-wallet-updated', handleSync)
-      window.removeEventListener('storage', handleSync)
+      window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('xxiv-wallet-updated', handleLocalSync)
     }
-  }, [fetchWallet])
+  }, [currentUserId])
 
-  const updateBalanceAndTxs = useCallback((newBalance: number, newTxs: WalletTransaction[]) => {
-    setBalanceState(newBalance)
-    setTransactions(newTxs)
-    try {
-      localStorage.setItem(STORAGE_KEY_BALANCE, String(newBalance))
-      localStorage.setItem(STORAGE_KEY_TXS, JSON.stringify(newTxs))
-      window.dispatchEvent(new Event('xxiv-wallet-updated'))
-    } catch {
-      // ignore
-    }
-  }, [])
+  const updateBalanceAndTxs = useCallback(
+    (newBalance: number, newTxs: WalletTransaction[]) => {
+      const uid = session.getUser()?.userId ?? 'guest'
+      setBalanceState(newBalance)
+      setTransactions(newTxs)
+      try {
+        localStorage.setItem(getStorageKey(STORAGE_PREFIX_BALANCE, uid), String(newBalance))
+        localStorage.setItem(getStorageKey(STORAGE_PREFIX_TXS, uid), JSON.stringify(newTxs))
+        window.dispatchEvent(new Event('xxiv-wallet-updated'))
+      } catch {
+        // ignore
+      }
+    },
+    [],
+  )
 
   /**
-   * Tops the wallet up through VNPay / MoMo. With `simulate` (development / testing only) the payment is
-   * created on the server and completed at once, without the gateway pages.
+   * Tops the wallet up through VNPay / MoMo.
    */
   const deposit = useCallback(
     async (amount: number, method: 'vnpay' | 'momo', options: { simulate?: boolean } = {}): Promise<boolean> => {
@@ -194,7 +307,7 @@ export function useWallet() {
         toast.error(`Minimum top-up amount is ${formatVndBalance(minTopUp)}.`)
         return false
       }
-      // Checked here for a quick answer; the API enforces the same daily limit
+
       if (amount > topUpRemainingToday) {
         toast.error(
           topUpRemainingToday > 0
@@ -206,8 +319,6 @@ export function useWallet() {
 
       const methodName = method === 'vnpay' ? 'VNPay' : 'MoMo'
 
-      // Signed-in customers pay through the real VNPay / MoMo gateway: the balance only changes
-      // once the gateway confirms the payment (IPN), never on the client
       if (usesApi) {
         setLoading(true)
         try {
@@ -217,7 +328,6 @@ export function useWallet() {
           })
 
           if (options.simulate) {
-            // Same server path as a gateway confirmation: the balance is credited by the API
             await paymentService.simulateSuccess(res.id)
             await fetchWallet()
             setLoading(false)
@@ -228,7 +338,6 @@ export function useWallet() {
           if (!res.payUrl) throw new Error(`${methodName} did not return a payment page. Please try again.`)
 
           toast.loading(`Redirecting to ${methodName} payment gateway...`)
-          // Short timeout to let user see toast before redirect
           setTimeout(() => {
             window.location.assign(res.payUrl!)
           }, 600)
@@ -236,13 +345,12 @@ export function useWallet() {
         } catch (err) {
           toast.error(getErrorMessage(err))
           setLoading(false)
-          // A refused top-up may mean the limit changed: refresh what is left today
           void fetchWallet()
           return false
         }
       }
 
-      // Demo mode (no backend): simulate the top-up locally
+      // Demo mode fallback
       const now = new Date()
       const timeStr = `Today, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
       const code = `XXIV-${Math.floor(100000 + Math.random() * 900000)}`
@@ -252,6 +360,8 @@ export function useWallet() {
         title: `Wallet Top-up (${methodName})`,
         subtitle: `${timeStr} • ID: ${code}`,
         amount,
+        balanceBefore: balance,
+        balanceAfter: balance + amount,
         status: 'Completed',
         type: 'deposit',
         method: methodName,
@@ -312,6 +422,8 @@ export function useWallet() {
         title: `Withdrawal to ${targetTitle}`,
         subtitle: `${timeStr} • ${noteOrAccount || `ID: ${code}`}`,
         amount: -amount,
+        balanceBefore: balance,
+        balanceAfter: balance - amount,
         status: 'Processing',
         type: 'withdraw',
         method: targetTitle,
@@ -331,6 +443,8 @@ export function useWallet() {
     balance,
     holdAmount,
     transactions,
+    allTransactions,
+    loadingAllTxs,
     loading,
     dailyTopUpLimit,
     topUpRemainingToday,
@@ -338,6 +452,7 @@ export function useWallet() {
     deposit,
     withdraw,
     fetchWallet,
+    fetchAllTransactions,
     formatVndBalance,
     formatVndQuick,
   }

@@ -168,7 +168,12 @@ export default function CustomerProfilePage() {
   const [form, setForm] = useState({ fullName: '', email: '', phoneNumber: '', citizenId: '' })
   const [formError, setFormError] = useState('')
   const resetForm = useCallback((p: UserProfileDTO) => {
-    setForm({ fullName: p.fullName, email: p.email, phoneNumber: p.phoneNumber, citizenId: p.citizenId ?? '' })
+    setForm({
+      fullName: p.fullName ?? '',
+      email: p.email ?? '',
+      phoneNumber: p.phoneNumber ?? '',
+      citizenId: p.citizenId ?? '',
+    })
   }, [])
   useEffect(() => {
     if (profile) resetForm(profile)
@@ -184,12 +189,12 @@ export default function CustomerProfilePage() {
   const daysMember = profile?.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(profile.createdAt).getTime()) / 86_400_000)) : 0
   const isDirty =
     profile !== undefined &&
-    (form.fullName !== profile.fullName ||
-      form.phoneNumber !== profile.phoneNumber ||
-      form.citizenId !== (profile.citizenId ?? ''))
+    ((form.fullName || '') !== (profile.fullName || '') ||
+      (form.phoneNumber || '') !== (profile.phoneNumber || '') ||
+      (form.citizenId || '') !== (profile.citizenId ?? ''))
 
-  const debouncedPhone = useDebouncedValue(form.phoneNumber.trim(), 350)
-  const debouncedCitizenId = useDebouncedValue(form.citizenId.trim(), 350)
+  const debouncedPhone = useDebouncedValue((form.phoneNumber || '').trim(), 350)
+  const debouncedCitizenId = useDebouncedValue((form.citizenId || '').trim(), 350)
 
   const originalPhone = (profile?.phoneNumber ?? '').trim()
   const phoneChanged = Boolean(debouncedPhone && debouncedPhone !== originalPhone && debouncedPhone.length >= 8)
@@ -215,20 +220,25 @@ export default function CustomerProfilePage() {
   const saveProfile = (e: FormEvent) => {
     e.preventDefault()
     setFormError('')
-    if (!form.fullName.trim()) return setFormError('Full name is required.')
-    if (!form.phoneNumber.trim()) return setFormError('Phone number is required.')
+    const fullName = (form.fullName || '').trim()
+    const phoneNumber = (form.phoneNumber || '').trim()
+    const citizenId = (form.citizenId || '').trim()
+    const email = (form.email || '').trim()
+
+    if (!fullName) return setFormError('Full name is required.')
+    if (!phoneNumber) return setFormError('Phone number is required.')
     if (isPhoneTaken) return setFormError(phoneErrorMsg || 'Phone number is already registered to another account.')
-    if (!form.citizenId.trim()) return setFormError('Citizen ID is required.')
-    if (!/^\d{12}$/.test(form.citizenId.trim())) return setFormError('Citizen ID must have exactly 12 digits.')
+    if (!citizenId) return setFormError('Citizen ID is required.')
+    if (!/^\d{12}$/.test(citizenId)) return setFormError('Citizen ID must have exactly 12 digits.')
     if (isCitizenIdTaken) return setFormError(citizenIdErrorMsg || 'Citizen ID is already registered to another account.')
 
     updateProfile.mutate(
       {
-        fullName: form.fullName.trim(),
-        email: form.email.trim(),
-        phoneNumber: form.phoneNumber.trim(),
+        fullName,
+        email,
+        phoneNumber,
         avatarUrl: profile?.avatarUrl ?? '',
-        citizenId: form.citizenId.trim(),
+        citizenId,
       },
       {
         onSuccess: () => toast.success('Profile updated.'),
@@ -367,7 +377,7 @@ export default function CustomerProfilePage() {
                   id="profile-name"
                   label="Full legal name"
                   icon={User}
-                  value={form.fullName}
+                  value={form.fullName ?? ''}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                   autoComplete="name"
                 />
@@ -376,7 +386,7 @@ export default function CustomerProfilePage() {
                   label="Primary email address"
                   icon={Mail}
                   type="email"
-                  value={form.email}
+                  value={form.email ?? ''}
                   disabled
                   readOnly
                   autoComplete="email"
@@ -388,7 +398,7 @@ export default function CustomerProfilePage() {
                   icon={Phone}
                   type="tel"
                   className="cx-mono"
-                  value={form.phoneNumber}
+                  value={form.phoneNumber ?? ''}
                   onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
                   autoComplete="tel"
                   error={phoneErrorMsg}
@@ -402,7 +412,7 @@ export default function CustomerProfilePage() {
                   maxLength={12}
                   placeholder="12 digits"
                   className="cx-mono"
-                  value={form.citizenId}
+                  value={form.citizenId ?? ''}
                   onChange={(e) => setForm({ ...form, citizenId: e.target.value.replace(/\D/g, '') })}
                   autoComplete="off"
                   error={citizenIdErrorMsg}

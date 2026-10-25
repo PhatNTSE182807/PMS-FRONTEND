@@ -662,13 +662,288 @@
   color: var(--cx-emerald);
 }
 
+.cx-wallet-history__amount--refund {
+  color: #38bdf8;
+}
+
 .cx-wallet-history__amount--deduct {
   color: var(--cx-on-surface);
+}
+
+.cx-wallet-history__icon--refund {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.cx-wallet-history__icon--payment {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
 }
 
 .cx-wallet-history__status {
   font-size: 0.7rem;
   color: var(--cx-muted);
+}
+
+/* =========================================================
+   FULL TRANSACTION HISTORY VIEW (VIEW ALL)
+========================================================= */
+.cx-wallet-dialog--wide {
+  width: min(680px, 96vw);
+}
+
+.cx-wallet-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(116, 141, 146, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--cx-on-surface);
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cx-wallet-back-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--cx-gold);
+  color: var(--cx-gold);
+}
+
+/* Overview telemetry stats */
+.cx-wallet-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .cx-wallet-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cx-wallet-stat-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.55rem;
+  background: var(--cx-container);
+  border: 1px solid rgba(116, 141, 146, 0.14);
+}
+
+.cx-wallet-stat-card__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cx-muted);
+}
+
+.cx-wallet-stat-card__val {
+  font-family: var(--cx-headline-font);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+  white-space: nowrap;
+}
+
+/* Filters & Search toolbar */
+.cx-wallet-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.cx-wallet-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.5rem;
+  background: var(--cx-lowest);
+  border: 1px solid rgba(116, 141, 146, 0.22);
+}
+
+.cx-wallet-search-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--cx-on-surface);
+  font-size: 0.85rem;
+}
+
+.cx-wallet-search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.cx-wallet-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+}
+
+.cx-wallet-filter-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cx-wallet-filter-pill {
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(116, 141, 146, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--cx-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cx-wallet-filter-pill:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--cx-on-surface);
+}
+
+.cx-wallet-filter-pill--active {
+  background: rgba(233, 195, 73, 0.12) !important;
+  border-color: var(--cx-gold) !important;
+  color: var(--cx-gold) !important;
+}
+
+/* Detailed transaction item card */
+.cx-wallet-tx-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--cx-container);
+  border: 1px solid rgba(116, 141, 146, 0.14);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.cx-wallet-tx-card:hover {
+  background: var(--cx-container-high);
+  border-color: rgba(116, 141, 146, 0.28);
+}
+
+.cx-wallet-tx-card__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cx-wallet-tx-card__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cx-wallet-tx-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cx-wallet-tx-card__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cx-on-surface);
+}
+
+.cx-wallet-tx-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cx-wallet-tx-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cx-wallet-tx-badge--deposit {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--cx-emerald);
+}
+
+.cx-wallet-tx-badge--withdraw {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--cx-amber);
+}
+
+.cx-wallet-tx-badge--refund {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+}
+
+.cx-wallet-tx-badge--payment {
+  background: rgba(168, 85, 247, 0.18);
+  color: #c084fc;
+}
+
+.cx-wallet-tx-badge--method {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--cx-muted);
+}
+
+.cx-wallet-tx-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.72rem;
+  color: var(--cx-muted);
+  flex-wrap: wrap;
+}
+
+.cx-wallet-tx-card__ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  font-family: var(--cx-mono-font);
+}
+
+.cx-wallet-tx-card__ref:hover {
+  color: var(--cx-gold);
+  border-color: rgba(233, 195, 73, 0.3);
+}
+
+.cx-wallet-tx-card__balance-flow {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.5);
+  padding-top: 0.2rem;
+  border-top: 1px dashed rgba(116, 141, 146, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cx-wallet-tx-card__amount-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  flex-shrink: 0;
 }
 
 /* Footer security reassurance */
@@ -678,3 +953,4 @@
   text-align: center;
   padding-top: 0.35rem;
 }
+
