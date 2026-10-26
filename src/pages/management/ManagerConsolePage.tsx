@@ -9,11 +9,9 @@ import {
   Layers,
   MapPin,
   ReceiptText,
-  RotateCcw,
   SlidersHorizontal,
   TrendingDown,
   TrendingUp,
-  TriangleAlert,
   UserPlus,
 } from 'lucide-react'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
@@ -23,25 +21,19 @@ import { presetRange } from '@/components/features/revenue/revenueFilters'
 import { DemoTag, EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useDemoApprovals } from '@/hooks/useDemoApprovals'
+import { usePendingLostTickets } from '@/hooks/useApprovals'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
 import { usePaymentMethodBreakdown, useRevenueByParkingLot } from '@/hooks/useRevenueReport'
 import { useNow } from '@/hooks/useNow'
 import { formatNumber, toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { demoReservations, type ApprovalKind } from '@/mocks/managerOps.mock'
+import { demoReservations } from '@/mocks/managerOps.mock'
 import { LOT_STATES, type ManagedLot } from '@/types/lot-management.dto'
 import type { CapacityVehicleType } from '@/types/parking.dto'
 
 const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
 const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes' }
-const KIND_ICON: Record<ApprovalKind, typeof Car> = {
-  LOST_TICKET: ReceiptText,
-  DEPOSIT_REFUND: RotateCcw,
-  SESSION_CLOSURE: TriangleAlert,
-  COUNTER_ADJUSTMENT: SlidersHorizontal,
-}
 
 function yesterdayRange() {
   const d = new Date()
@@ -67,7 +59,7 @@ function Console({ lot }: { lot: ManagedLot }) {
   const qr = methods.data?.find((m) => m.method === 'QR_BANKING')?.amount ?? 0
   const cash = methods.data?.find((m) => m.method === 'CASH')?.amount ?? 0
 
-  const { pending } = useDemoApprovals()
+  const pending = usePendingLostTickets(lot.id).data ?? []
 
   const totals = (live?.capacityByVehicle ?? []).reduce(
     (s, d) => ({ total: s.total + d.totalSlots, free: s.free + d.availableSlots }),
@@ -182,8 +174,8 @@ function Console({ lot }: { lot: ManagedLot }) {
           <ul className="mt-3 space-y-1 text-sm text-slate-700">
             {pending.slice(0, 3).map((a) => (
               <li key={a.id} className="flex items-center gap-2">
-                <span className={cn('size-1.5 rounded-full', a.priority === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500')} aria-hidden />
-                {a.title}
+                <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
+                Lost ticket • {a.plateNumber || a.code}
               </li>
             ))}
           </ul>
@@ -253,34 +245,33 @@ function Console({ lot }: { lot: ManagedLot }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-                  Approval &amp; Incident Queue <DemoTag />
+                  Approval &amp; Incident Queue
                 </h2>
                 <p className="mt-0.5 text-sm text-slate-700">Exceptions that need the Facility Manager's sign-off.</p>
               </div>
               <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">{pending.length} active</span>
             </div>
             <ul className="mt-4 space-y-3">
-              {pending.slice(0, 3).map((a) => {
-                const Icon = KIND_ICON[a.kind]
-                return (
-                  <li key={a.id} className={cn('rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200', a.priority === 'HIGH' && 'border-l-2 border-rose-400')}>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="flex items-center gap-2 font-semibold text-slate-950">
-                        <Icon className="size-4 text-amber-500" aria-hidden /> {a.title}
-                      </p>
-                      <span className="font-mono text-xs text-slate-600">#{a.id}</span>
-                    </div>
-                    {a.plate && <p className="mt-2 font-mono text-lg font-bold text-indigo-700">{a.plate}</p>}
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-700">{a.summary}</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="font-mono text-sm font-bold text-amber-500">{a.amount ? vnd(Math.abs(a.amount)) : 'No charge'}</span>
-                      <Button size="sm" asChild>
-                        <Link to={`/management/approvals?id=${a.id}`}>Review</Link>
-                      </Button>
-                    </div>
-                  </li>
-                )
-              })}
+              {pending.slice(0, 3).map((a) => (
+                <li key={a.id} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="flex items-center gap-2 font-semibold text-slate-950">
+                      <ReceiptText className="size-4 text-amber-500" aria-hidden /> Lost ticket report
+                    </p>
+                    <span className="font-mono text-xs text-slate-600">#{a.code}</span>
+                  </div>
+                  {a.plateNumber && <p className="mt-2 font-mono text-lg font-bold text-indigo-700">{a.plateNumber}</p>}
+                  <p className="mt-1 line-clamp-2 text-sm text-slate-700">
+                    {a.vehicleTypeName ?? 'Vehicle'} inside since {formatClock(Date.parse(a.entryTime))}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold text-amber-500">Awaiting sign-off</span>
+                    <Button size="sm" asChild>
+                      <Link to={`/management/approvals?id=${a.id}`}>Review</Link>
+                    </Button>
+                  </div>
+                </li>
+              ))}
               {pending.length === 0 && <li className="text-sm text-slate-600">Nothing waiting for sign-off.</li>}
             </ul>
           </section>
