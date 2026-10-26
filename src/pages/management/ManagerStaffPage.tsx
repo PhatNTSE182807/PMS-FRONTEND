@@ -16,6 +16,7 @@ import { EmptyState, ErrorState } from '@/components/ui/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useDeleteManagedStaff, useManagedStaff, useSetManagedStaffStatus } from '@/hooks/useManagedStaff'
 import { useManagerLot } from '@/hooks/useManagerLot'
+import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
 import { formatPhone, initials } from '@/lib/format'
 import { toSearchable } from '@/lib/text'
 import { cn } from '@/lib/utils'
@@ -55,10 +56,10 @@ function Staff({ lot }: { lot: ManagedLot }) {
     const next = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
     try {
       await setStatus.mutateAsync({ id: user.id, status: next })
-      toast.success(next === 'ACTIVE' ? `${user.fullName} can sign in again` : `${user.fullName} is locked`)
+      toast.success(ADMIN_TOAST.accountStatusUpdated)
       setPending(null)
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not change the account status.'))
+      toastAdminError(error, { fallback: 'Could not change the account status.' })
     }
   }
 
@@ -68,7 +69,7 @@ function Staff({ lot }: { lot: ManagedLot }) {
       toast.success(`${user.fullName} was removed from your team`)
       setPending(null)
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not remove the staff member.'))
+      toastAdminError(error, { fallback: 'Could not remove the staff member.' })
     }
   }
 
