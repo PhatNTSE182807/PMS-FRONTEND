@@ -36,6 +36,7 @@ import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useChangePassword, useCheckProfileUniqueness, useProfile, useUpdateProfile, useUploadAvatar, useVehicles } from '@/hooks/useProfile'
 import { isValidPassword, PASSWORD_RULE_HINT, PASSWORD_RULE_MESSAGE, PASSWORD_RULES } from '@/lib/password'
+import { USER_TOAST } from '@/lib/userToasts'
 import type { UserProfileDTO } from '@/types/profile.dto'
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -241,7 +242,7 @@ export default function CustomerProfilePage() {
         citizenId,
       },
       {
-        onSuccess: () => toast.success('Profile updated.'),
+        onSuccess: () => toast.success(USER_TOAST.profileUpdated),
         onError: (error) => setFormError(getErrorMessage(error, 'Could not update your profile.')),
       },
     )
