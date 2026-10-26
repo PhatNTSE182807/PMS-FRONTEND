@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { Ban, CircleCheck, DoorOpen, LogIn, ShieldAlert, TriangleAlert, Undo2 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
@@ -11,6 +11,7 @@ import { useVehicleTypes } from '@/hooks/useProfile'
 import { cn } from '@/lib/utils'
 import type { CheckInRequest, CheckInResultDTO, GateAlertDTO, GateReservationLookupDTO } from '@/types/operations.dto'
 import { Panel, SectionTitle } from './StaffBits'
+import { STAFF_TOAST, toastEntryAlerts, toastReservationLookup } from './staffToasts'
 
 /** Alerts the Staff can clear on the next attempt, and the request flag that clears each one. */
 const OVERRIDES: Partial<Record<string, { flag: keyof CheckInRequest; label: string }>> = {
@@ -47,7 +48,18 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
   const lookupEntry = useDebouncedValue(entry.trim(), 350)
   const lookup = useReservationLookup(lotId, lookupEntry)
   const found = entry.trim() && lookupEntry === entry.trim() ? lookup.data ?? null : null
+  const lookupFailed = Boolean(entry.trim()) && lookupEntry === entry.trim() && lookup.isError
   const [filledFor, setFilledFor] = useState<number | null>(null)
+
+  // One popup per scanned ticket: loaded, used, invalid or expired
+  const announced = useRef<string | null>(null)
+  useEffect(() => {
+    const key = found ? `found:${lookupEntry}` : lookupFailed ? `failed:${lookupEntry}` : null
+    if (!key || key === announced.current) return
+    announced.current = key
+    if (found) toastReservationLookup(found)
+    else toast.error(STAFF_TOAST.invalidTicket)
+  }, [found, lookupFailed, lookupEntry])
 
   // A newly found booking fills the plate and vehicle type (adjusting state while rendering, not in an effect)
   if (found && found.reservation.id !== filledFor) {
@@ -84,7 +96,8 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
     checkIn.mutate(request, {
       onSuccess: (r) => {
         setResult(r)
-        if (r.outcome === 'Created') toast.success(`Barrier open for ${r.session?.plateNumber || 'the plate-less vehicle'}`, { description: 'Waiting for the loop sensor.' })
+        if (r.outcome === 'Created') toast.success(STAFF_TOAST.checkedIn)
+        else toastEntryAlerts(r.alerts, found?.reservation)
       },
       onError: (e) => toast.error(getErrorMessage(e)),
     })
@@ -93,6 +106,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
   const next = () => {
     setResult(null)
     setEntry('')
+    announced.current = null
     setFilledFor(null)
     setForm((f) => ({ ...EMPTY, vehicleTypeId: f.vehicleTypeId }))
   }
