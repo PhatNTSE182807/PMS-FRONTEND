@@ -322,6 +322,14 @@ export interface CheckInResultDTO {
   ticket: string | null
 }
 
+/** LostTicketModel: POST /staff/sessions/{id}/lost-ticket, answered with the session (SessionResponseModel). */
+export interface LostTicketRequest {
+  /** Required by the backend. */
+  reason: string
+  /** Photos, papers and ID match and the standard fine applies: no Manager approval needed. */
+  conditionsMet: boolean
+}
+
 /** CheckoutQuoteModel */
 export interface CheckoutQuoteDTO {
   session: ParkingSessionDTO
