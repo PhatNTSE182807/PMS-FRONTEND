@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { gateService } from '@/api/gate.service'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
-import type { CheckInRequest, CheckoutRequest, PaymentProvider } from '@/types/operations.dto'
+import type { CheckInRequest, CheckoutRequest, LostTicketRequest, PaymentProvider } from '@/types/operations.dto'
 
 /** Polling fallback for the lane console when SignalR is not connected (demo, hub down). */
 const GATE_REFRESH_MS = 5_000
@@ -74,6 +74,13 @@ export const useCancelPaymentRequest = () => useGateMutation((sessionId: number)
 export const usePayCash = () => useGateMutation(({ sessionId, amount, prepaid }: { sessionId: number; amount: number; prepaid?: boolean }) => gateService.payCash(sessionId, amount, prepaid))
 export const usePayOnline = () => useGateMutation(({ sessionId, provider, prepaid }: { sessionId: number; provider: PaymentProvider; prepaid?: boolean }) => gateService.payOnline(sessionId, provider, prepaid))
 export const useCheckout = () => useGateMutation(({ sessionId, request }: { sessionId: number; request: CheckoutRequest }) => gateService.checkout(sessionId, request))
+
+/** Lost ticket desk: finds the open session of the plate, then reports its ticket as lost. */
+export const useReportLostTicket = (lotId: string | undefined) =>
+  useGateMutation(async ({ plate, request }: { plate: string; request: LostTicketRequest }) => {
+    const session = await gateService.lookup(lotId!, { plate })
+    return gateService.reportLostTicket(session.id, request)
+  })
 
 /**
  * Entry lane: looks the reservation up as soon as a QR is scanned or a code typed. Anything starting

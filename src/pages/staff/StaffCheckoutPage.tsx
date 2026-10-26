@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowUp, Banknote, Car, CreditCard, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
-import { getErrorMessage } from '@/api/apiError'
+import { ApiError, getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
 import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
+import { STAFF_TOAST, isPast, toastUnsettled } from '@/components/features/staff/staffToasts'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { formatClock, formatMinutes, vnd } from '@/components/features/manager/managerFormat'
 import { Button } from '@/components/ui/button'
@@ -64,6 +65,7 @@ export default function StaffCheckoutPage() {
             setQuote(q)
             setQr(null)
             setTendered(0)
+            if (q.amountDue > 0 && q.exitWindowLateFee > 0) toast.warning(STAFF_TOAST.graceExceeded)
           },
           onError: (e) => toast.error(getErrorMessage(e)),
         },
@@ -87,8 +89,9 @@ export default function StaffCheckoutPage() {
       const found = await gateService.lookup(lotKey, /^SS/i.test(value) ? { code: value.toUpperCase() } : { plate: value })
       setExitPlate(found.hasPlate ? found.plateNumber : '')
       setParams({ session: String(found.id) })
+      toast.success(STAFF_TOAST.ticketLoaded)
     } catch (e) {
-      toast.error(getErrorMessage(e))
+      toast.error(e instanceof ApiError && e.status === 404 ? STAFF_TOAST.vehicleNotFound : getErrorMessage(e))
     } finally {
       setSearching(false)
     }
@@ -161,7 +164,7 @@ export default function StaffCheckoutPage() {
   const liftBarrier = useCallback(() => {
     if (!session || cleared) return
     if (session.status !== 'Paid') {
-      toast.error('Payment not settled', { description: `Collect ${vnd(due)} first, or wait for the QR payment.` })
+      toastUnsettled(session.exitWindowEndsAt)
       return
     }
     checkout.mutate(
@@ -172,18 +175,23 @@ export default function StaffCheckoutPage() {
       {
         onSuccess: (r) => {
           if (!r.barrierOpen) {
-            toast.error('Barrier held', { description: r.alerts.map((a) => a.message).join(' ') })
+            // No popup in the spec for a plate / photo check: refresh so the alerts show in the barrier panel
+            loadQuote(session.id, exitPlate)
             return
           }
           setCleared({ plate: r.session.plateNumber || r.session.code, refund: r.depositRefund })
-          toast.success(`Barrier lifted for ${r.session.plateNumber || r.session.code}`, {
-            description: r.depositRefund > 0 ? `${vnd(r.depositRefund)} of the deposit is refunded to the customer.` : undefined,
-          })
+          toast.success(STAFF_TOAST.checkedOut)
         },
-        onError: (e) => toast.error(getErrorMessage(e)),
+        onError: (e) => {
+          // The pre-payment ran past the exit window while the Staff was at the lane: more is due now
+          if (e instanceof ApiError && e.status === 400 && isPast(session.exitWindowEndsAt)) {
+            toastUnsettled(session.exitWindowEndsAt)
+            loadQuote(session.id, exitPlate)
+          } else toast.error(getErrorMessage(e))
+        },
       },
     )
-  }, [allowMismatch, checkout, cleared, due, exitPlate, overrideReason, photoChecked, session])
+  }, [allowMismatch, checkout, cleared, exitPlate, loadQuote, overrideReason, photoChecked, session])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

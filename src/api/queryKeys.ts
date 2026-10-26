@@ -96,6 +96,11 @@ export const queryKeys = {
     sessions: (lotId: string) => [...queryKeys.gate.all, 'sessions', lotId] as const,
     reservation: (lotId: string, entry: string) => [...queryKeys.gate.all, 'reservation', lotId, entry] as const,
   },
+  /** Manager sign-off queues of a lot. */
+  approvals: {
+    all: ['approvals'] as const,
+    lostTickets: (lotId: string) => [...queryKeys.approvals.all, 'lost-tickets', lotId] as const,
+  },
   layout: {
     all: ['layout'] as const,
     templates: () => [...queryKeys.layout.all, 'templates'] as const,
