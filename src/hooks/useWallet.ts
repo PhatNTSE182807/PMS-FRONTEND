@@ -4,6 +4,7 @@ import { paymentService } from '@/api/payment.service'
 import { walletService } from '@/api/wallet.service'
 import { getErrorMessage } from '@/api/apiError'
 import { session } from '@/lib/session'
+import { USER_TOAST, toastPaymentError } from '@/lib/userToasts'
 
 export interface WalletTransaction {
   id: string
@@ -331,7 +332,7 @@ export function useWallet() {
             await paymentService.simulateSuccess(res.id)
             await fetchWallet()
             setLoading(false)
-            toast.success(`Top-up of ${formatVndBalance(amount)} via ${methodName} succeeded (simulated).`)
+            toast.success(USER_TOAST.walletDeposited)
             return true
           }
 
@@ -343,7 +344,7 @@ export function useWallet() {
           }, 600)
           return true
         } catch (err) {
-          toast.error(getErrorMessage(err))
+          toastPaymentError(err)
           setLoading(false)
           void fetchWallet()
           return false
