@@ -11,6 +11,7 @@ import { Checkbox, FieldError, Input, Label, NativeSelect } from '@/components/u
 import { Spinner } from '@/components/ui/states'
 import { isMockService } from '@/config/env'
 import { useCreateStaff, useUpdateStaff } from '@/hooks/useStaff'
+import { ADMIN_TOAST } from '@/lib/adminToasts'
 import { generatePassword } from '@/lib/password'
 import { cn } from '@/lib/utils'
 import type { UserDTO, UserRole } from '@/types/identity.dto'
@@ -112,18 +113,13 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
         const updated = await updateStaff.mutateAsync({ id: user.id, command: assignment })
         toast.success('Account updated', { description: `${updated.fullName} (${updated.employeeCode})` })
       } else {
-        const created = await createStaff.mutateAsync({
+        await createStaff.mutateAsync({
           ...assignment,
           email: values.email,
           password: values.passwordMode === 'auto' ? generatedPassword : values.password,
           sendWelcomeEmail: values.sendWelcomeEmail,
         })
-        toast.success(`Account created for ${created.fullName}`, {
-          description:
-            sendsWelcomeEmail && values.sendWelcomeEmail
-              ? `Employee code ${created.employeeCode}. A welcome email was sent to ${created.email}.`
-              : `Employee code ${created.employeeCode}. They can sign in now with ${created.email}; send them the password through a secure channel.`,
-        })
+        toast.success(ADMIN_TOAST.accountCreated)
       }
       onDone()
     } catch (error) {

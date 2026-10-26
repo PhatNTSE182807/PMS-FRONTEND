@@ -18,6 +18,7 @@ import { EmptyState, ErrorState } from '@/components/ui/states'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useParkingLots } from '@/hooks/useParking'
 import { useResetStaffPassword, useSetStaffStatus, useStaffList } from '@/hooks/useStaff'
+import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
 import type { StaffListQuery, UserDTO, UserRole, UserStatus } from '@/types/identity.dto'
 
 const PAGE_SIZE = 10
@@ -91,13 +92,11 @@ export default function StaffAccountsPage() {
     setStatus.mutate(
       { id: user.id, status: nextStatus },
       {
-        onSuccess: (updated) => {
-          toast.success(nextStatus === 'ACTIVE' ? 'Account activated' : 'Account deactivated', {
-            description: `${updated.fullName} (${updated.employeeCode})`,
-          })
+        onSuccess: () => {
+          toast.success(ADMIN_TOAST.accountStatusUpdated)
           setPendingAction(null)
         },
-        onError: (error) => toast.error('Could not update the account status', { description: getErrorMessage(error) }),
+        onError: (error) => toastAdminError(error),
       },
     )
   }
