@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { Ban, CircleCheck, DoorOpen, LogIn, ShieldAlert, TriangleAlert, Undo2 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { Button } from '@/components/ui/button'
-import { Checkbox, Input, Label, NativeSelect } from '@/components/ui/form-controls'
+import { Checkbox, FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { QrCode } from '@/components/ui/qr-code'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useCancelEntry, useCheckIn, useConfirmEntry, useGates, useReservationLookup } from '@/hooks/useGate'
@@ -25,6 +25,8 @@ const OVERRIDES: Partial<Record<string, { flag: keyof CheckInRequest; label: str
 
 const EMPTY: CheckInRequest = { plateNumber: '', anprConfidence: undefined }
 
+const NO_PLATE_REASON_ERROR = 'Enter why the plate cannot be read.'
+
 const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 /**
@@ -42,6 +44,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
   const confirm = useConfirmEntry()
   const cancel = useCancelEntry()
   const [form, setForm] = useState<CheckInRequest>(EMPTY)
+  const [reasonError, setReasonError] = useState<string>()
   const [result, setResult] = useState<CheckInResultDTO | null>(null)
   // Reservation QR payload or RSV… code, looked up as the Staff types or scans
   const [entry, setEntry] = useState('')
@@ -84,11 +87,22 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
     event.preventDefault()
     const reservationEntry = entry.trim()
     const isCode = /^RSV/i.test(reservationEntry)
+    // Without a plate the backend skips the duplicate-vehicle and blacklist checks, so the Staff must say why
+    // (the reason is kept on the session as a manual entry). A missing reason is a form mistake: shown under the field.
+    const noPlate = Boolean(form.noPlate)
+    const manualReason = form.manualReason?.trim()
+    if (noPlate && !manualReason) {
+      setReasonError(NO_PLATE_REASON_ERROR)
+      return
+    }
+    setReasonError(undefined)
     const request: CheckInRequest = {
       ...form,
       gateId: entryGate?.id,
       vehicleTypeId: form.vehicleTypeId ?? types[0]?.id,
-      plateNumber: form.noPlate ? undefined : form.plateNumber?.trim(),
+      isManual: noPlate || undefined,
+      manualReason: noPlate ? manualReason : undefined,
+      plateNumber: noPlate ? undefined : form.plateNumber?.trim(),
       reservationQr: reservationEntry && !isCode ? reservationEntry : undefined,
       reservationCode: reservationEntry && isCode ? reservationEntry.toUpperCase() : undefined,
       overrideReason: form.overrideReason?.trim() || undefined,
@@ -108,6 +122,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
     setEntry('')
     announced.current = null
     setFilledFor(null)
+    setReasonError(undefined)
     setForm((f) => ({ ...EMPTY, vehicleTypeId: f.vehicleTypeId }))
   }
 
@@ -222,8 +237,41 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
             </NativeSelect>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-800">
-            <Checkbox checked={Boolean(form.noPlate)} onChange={(e) => set('noPlate', e.target.checked)} /> Plate unreadable or missing: ticket and photo only
+            <Checkbox
+              checked={Boolean(form.noPlate)}
+              onChange={(e) => {
+                set('noPlate', e.target.checked)
+                setReasonError(undefined)
+              }}
+            />{' '}
+            Plate unreadable or missing: ticket and photo only
           </label>
+          {form.noPlate && (
+            <div className="space-y-2 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+              <p className="flex items-start gap-2 text-sm text-amber-800">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                Without a plate the duplicate-vehicle and blacklist checks are skipped. Compare the ticket and the photo yourself.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="lane-manual-reason">Reason (required)</Label>
+                <Input
+                  id="lane-manual-reason"
+                  value={form.manualReason ?? ''}
+                  placeholder="e.g. Plate covered by mud"
+                  autoComplete="off"
+                  aria-invalid={Boolean(reasonError)}
+                  aria-describedby={reasonError ? 'lane-manual-reason-error' : undefined}
+                  onChange={(e) => {
+                    set('manualReason', e.target.value)
+                    if (reasonError) setReasonError(undefined)
+                  }}
+                />
+                <div id="lane-manual-reason-error">
+                  <FieldError message={reasonError} />
+                </div>
+              </div>
+            </div>
+          )}
 
           {blocking.length > 0 && (
             <div className="space-y-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">

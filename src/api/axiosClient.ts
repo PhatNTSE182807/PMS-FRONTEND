@@ -46,6 +46,11 @@ axiosClient.interceptors.response.use(
       session.clear()
     }
 
+    // The screen only gets the generic system error; developers still find the real cause here
+    if (apiError.status !== undefined && apiError.status >= 500) {
+      console.error(`[API] HTTP ${apiError.status} ${error instanceof AxiosError ? `${error.config?.method?.toUpperCase()} ${error.config?.url}` : ''}`, apiError.technicalDetails)
+    }
+
     return Promise.reject(apiError)
   },
 )
