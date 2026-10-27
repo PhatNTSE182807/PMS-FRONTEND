@@ -37,6 +37,10 @@ export const gateService = {
     return http.get<ParkingSessionDTO[]>(`${lotPath(lotId)}/sessions`, { params: { status } })
   },
 
+  getHistory(lotId: string, page: number, plate?: string): Promise<{ items: ParkingSessionDTO[]; page: number; pageSize: number; totalCount: number }> {
+    return http.get(`${lotPath(lotId)}/sessions/history`, { params: { page, pageSize: 10, plate: plate || undefined } })
+  },
+
   /** Exit lane: the open session of a plate or a session code. */
   lookup(lotId: string, query: { plate?: string; code?: string; ticket?: string }): Promise<ParkingSessionDTO> {
     return http.get<ParkingSessionDTO>(`${lotPath(lotId)}/sessions/lookup`, { params: query })
