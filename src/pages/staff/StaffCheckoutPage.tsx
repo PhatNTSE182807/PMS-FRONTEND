@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ArrowUp, Banknote, Car, CreditCard, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
 import { ApiError, getErrorMessage } from '@/api/apiError'
@@ -30,6 +31,14 @@ export default function StaffCheckoutPage() {
   const myLots = useMyStaffLots()
   const lotKey = myLots.data?.[0]?.id
   const [params, setParams] = useSearchParams()
+  const [historyPlate, setHistoryPlate] = useState('')
+  const [historyPage, setHistoryPage] = useState(1)
+  const history = useQuery({
+    queryKey: ['staff-session-history', lotKey, historyPage, historyPlate],
+    queryFn: () => gateService.getHistory(lotKey!, historyPage, historyPlate),
+    enabled: Boolean(lotKey),
+    refetchInterval: 5000,
+  })
   const [lookup, setLookup] = useState('')
   const [quote, setQuote] = useState<CheckoutQuoteDTO | null>(null)
   const [qr, setQr] = useState<PaymentDTO | null>(null)
@@ -239,6 +248,34 @@ export default function StaffCheckoutPage() {
             <Search /> Find vehicle
           </Button>
         </form>
+      </Panel>
+
+      <Panel>
+        <SectionTitle icon={<ReceiptText />}>Vehicle entry and exit history</SectionTitle>
+        <label className="block text-sm font-medium" htmlFor="history-plate">Search by entry plate</label>
+        <Input id="history-plate" value={historyPlate} onChange={(e) => { setHistoryPlate(e.target.value); setHistoryPage(1) }} placeholder="Plate number" />
+        {!lotKey && <p className="mt-3 text-sm">No assigned parking lot is available.</p>}
+        {lotKey && history.isLoading && <p className="mt-3 text-sm">Loading history…</p>}
+        {history.isError && <p className="mt-3 text-sm text-red-700">Unable to load history: {getErrorMessage(history.error)}</p>}
+        {history.data && history.data.items.length === 0 && <p className="mt-3 text-sm">No sessions found.</p>}
+        {history.data && history.data.items.length > 0 && (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead><tr><th>Session</th><th>Entry plate</th><th>Entry time</th><th>Exit time</th><th>Status</th><th>Paid</th></tr></thead>
+              <tbody>{history.data.items.map((item) => <tr key={item.id}>
+                <td>{item.code}</td><td>{item.plateNumber || 'No plate'}</td>
+                <td>{new Date(item.entryTime).toLocaleString()}</td>
+                <td>{item.exitTime ? new Date(item.exitTime).toLocaleString() : '—'}</td>
+                <td>{item.status}</td><td>{vnd(item.paidAmount)}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        )}
+        {history.data && <div className="mt-3 flex items-center gap-3">
+          <Button variant="secondary" disabled={historyPage <= 1} onClick={() => setHistoryPage((page) => page - 1)}>Previous</Button>
+          <span>Page {historyPage} · {history.data.totalCount} sessions</span>
+          <Button variant="secondary" disabled={historyPage * history.data.pageSize >= history.data.totalCount} onClick={() => setHistoryPage((page) => page + 1)}>Next</Button>
+        </div>}
       </Panel>
 
       {!session ? (
