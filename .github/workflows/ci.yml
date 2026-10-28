@@ -1,0 +1,73 @@
+# CI for the PMS frontend (Vite + React + TypeScript) on GitHub Actions.
+#
+# GitLab (git.fsoft-academy.edu.vn) stays the main repository: a GitLab push mirror copies every
+# branch here, and this workflow runs on GitHub's hosted runners. Setup: document/GITHUB-ACTIONS.md.
+#
+# verify -> lint (ESLint) and typecheck (tsc -b), in parallel
+# build  -> production build (vite build), the dist/ folder is kept as an artifact
+
+name: Frontend CI
+
+on:
+  push:
+    branches: ['**']
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the older run
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22.20.0'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: lint
+            command: npm run lint
+          - name: typecheck
+            command: npm run typecheck
+          # tests/parking is left out until its two tests are updated for the required lot model
+          # template; add `node --test tests/parking` here once they pass
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: ${{ matrix.command }}
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    env:
+      # Baked into the bundle by Vite. Set the repository variable VITE_API_BASE_URL
+      # (Settings > Secrets and variables > Actions > Variables) to point at a deployed API.
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://localhost:44391/api' }}
+      VITE_USE_MOCK_DATA: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      # "build" runs tsc -b and vite build
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pms-frontend-dist-${{ github.sha }}
+          path: dist/
+          retention-days: 7
