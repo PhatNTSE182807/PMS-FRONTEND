@@ -10,7 +10,7 @@ import { Dialog, DialogClose, DialogDescription, DialogTitle, SheetContent } fro
 import { Checkbox, FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { Spinner } from '@/components/ui/states'
 import { isMockService } from '@/config/env'
-import { useCreateStaff, useUpdateStaff } from '@/hooks/useStaff'
+import { useCreateStaff, useStaffList, useUpdateStaff } from '@/hooks/useStaff'
 import { generatePassword } from '@/lib/password'
 import { cn } from '@/lib/utils'
 import type { UserDTO, UserRole } from '@/types/identity.dto'
@@ -59,6 +59,15 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
   const mode = user ? 'edit' : 'create'
   const createStaff = useCreateStaff()
   const updateStaff = useUpdateStaff()
+  // A lot has one Manager: lots run by another active Manager cannot be picked here
+  const managers = useStaffList({ role: 'MANAGER', pageNumber: 1, pageSize: 200 })
+  const otherManagerOf = (lot: ParkingLotSummaryDTO) => {
+    if (!lot.managerUserId || lot.managerUserId === user?.id) return null
+    const manager = managers.data?.items.find((m) => m.id === lot.managerUserId)
+    // A deactivated Manager's lot can be handed over
+    if (manager && manager.status !== 'ACTIVE') return null
+    return manager?.fullName ?? 'another Manager'
+  }
   const [generatedPassword, setGeneratedPassword] = useState(() => generatePassword())
   const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -212,24 +221,38 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                   >
                     {parkingLots.map((lot) => {
                       const checked = lotsField.value.includes(lot.id)
+                      const takenBy = otherManagerOf(lot)
+                      const locked = Boolean(takenBy) && !checked
                       return (
-                        <label key={lot.id} className="flex cursor-pointer items-start gap-3 px-3 py-2.5 hover:bg-slate-50">
+                        <label
+                          key={lot.id}
+                          className={cn(
+                            'flex items-start gap-3 px-3 py-2.5',
+                            locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-slate-50',
+                          )}
+                        >
                           <Checkbox
                             className="mt-0.5"
                             checked={checked}
+                            disabled={locked}
                             onChange={() =>
                               lotsField.onChange(checked ? lotsField.value.filter((id) => id !== lot.id) : [...lotsField.value, lot.id])
                             }
                           />
                           <span className="min-w-0">
                             <span className="block text-sm text-slate-900">{lot.name}</span>
-                            <span className="block truncate text-xs text-slate-500">{lot.address}</span>
+                            <span className="block truncate text-xs text-slate-500">
+                              {takenBy ? `Managed by ${takenBy}` : lot.address}
+                            </span>
                           </span>
                         </label>
                       )
                     })}
                   </div>
-                  <p className="text-xs text-slate-500">A Manager can be assigned to several lots.</p>
+                  <p className="text-xs text-slate-500">
+                    A Manager can run several lots, but each lot has only one Manager. Lots with another Manager are locked until that
+                    Manager is removed from them.
+                  </p>
                   <FieldError message={errors.assignedParkingLotIds?.message} />
                 </fieldset>
               ) : (

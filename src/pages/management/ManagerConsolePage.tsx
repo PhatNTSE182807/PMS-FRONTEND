@@ -89,8 +89,8 @@ function Console({ lot }: { lot: ManagedLot }) {
           <>
             <EyebrowTag>Facility console</EyebrowTag>
             <span className="font-mono tracking-normal">{lot.code}</span>
-            <span className={cn('rounded-full px-2.5 py-0.5', lot.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700')}>
-              {LOT_STATES[lot.status]}
+            <span className={cn('rounded-full px-2.5 py-0.5', lot.status === 'Active' && lot.isStaffed !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700')}>
+              {lot.status === 'Active' && lot.isStaffed === false ? 'Maintenance · add Staff to open for bookings' : LOT_STATES[lot.status]}
             </span>
           </>
         }

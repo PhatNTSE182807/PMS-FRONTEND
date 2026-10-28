@@ -13,6 +13,8 @@ export interface ParkingLotSummaryDTO {
   code: string
   name: string
   address: string
+  /** The lot's one Manager, when the backend sends it; a lot never has more than one. */
+  managerUserId?: string | null
 }
 
 export interface VehicleCapacityDetail {

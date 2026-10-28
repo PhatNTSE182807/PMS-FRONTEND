@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, X } from 'lucide-react'
+import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, Wrench, X } from 'lucide-react'
 import { isMockService } from '@/config/env'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
 import { usePublicPrices } from '@/hooks/usePricing'
@@ -13,7 +13,13 @@ import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
 import { ReserveBayPanel } from './ReserveBayPanel'
 
 /** What the map needs of a lot, from either the live lot list or the demo capacity data. */
-type MapLot = Pick<ParkingLotCapacityDTO, 'id' | 'code' | 'name' | 'address'>
+type MapLot = Pick<ParkingLotCapacityDTO, 'id' | 'code' | 'name' | 'address'> & {
+  /** False while the lot is under maintenance (e.g. no Manager and Staff on duty yet): view only. */
+  isBookable?: boolean
+  maintenanceNotice?: string | null
+}
+
+const DEFAULT_MAINTENANCE_NOTICE = 'This lot is under maintenance. You can look around, but it cannot take bookings right now.'
 
 const STATUS_LABEL: Record<BayStatus, string> = {
   AVAILABLE: 'Available',
@@ -47,7 +53,14 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const liveBooking = !isMockService('booking')
   const bookable = useBookableLots()
   const lots: MapLot[] = liveBooking
-    ? (bookable.data ?? []).map((l) => ({ id: l.key, code: l.code, name: l.name, address: l.address }))
+    ? (bookable.data ?? []).map((l) => ({
+        id: l.key,
+        code: l.code,
+        name: l.name,
+        address: l.address,
+        isBookable: l.isBookable ?? true,
+        maintenanceNotice: l.maintenanceNotice,
+      }))
     : capacityLots
   const [liveLotId, setLiveLotId] = useState<string>()
   const lot = lots.find((l) => l.id === (liveBooking ? liveLotId : lotId)) ?? lots[0]
@@ -76,6 +89,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const prices = usePublicPrices(lot?.id)
   const price = prices.data?.find((p) => p.vehicleTypeCode === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR_4'))
   const isLoadingLots = liveBooking ? bookable.isPending : isLoading
+  const underMaintenance = lot?.isBookable === false
 
   const changeLot = (id: string) => {
     if (liveBooking) setLiveLotId(id)
@@ -110,6 +124,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               onClick={() => changeLot(l.id)}
             >
               {l.name}
+              {l.isBookable === false && ' • Maintenance'}
             </button>
           ))}
         </div>
@@ -163,6 +178,12 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               <span className="cx-chip cx-chip--teal">{lot.code}</span>
             </div>
 
+            {underMaintenance && (
+              <p className="cx-map__mine" role="status">
+                <Wrench size={15} aria-hidden /> {lot.maintenanceNotice || DEFAULT_MAINTENANCE_NOTICE}
+              </p>
+            )}
+
             {selected && selectedFloor ? (
               <>
                 <div className="cx-map__stall">
@@ -202,14 +223,16 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                     <CircleCheck aria-hidden />
                     {myActive.find((r) => String(r.slotId) === selected.id)?.status === 'PendingDeposit' ? 'Booked for you • pay the deposit' : 'Booked for you • show my QR'}
                   </Link>
-                ) : selected.status === 'AVAILABLE' && selectedFloor.kind === 'car' && bookableBays ? (
+                ) : selected.status === 'AVAILABLE' && selectedFloor.kind === 'car' && bookableBays && !underMaintenance ? (
                   <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
                 ) : (
                   <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled>
                     <CircleCheck aria-hidden />
                     {myBayIds.has(selected.id)
                       ? 'Booked for you'
-                      : selected.status !== 'AVAILABLE'
+                      : underMaintenance
+                        ? 'Under maintenance • view only'
+                        : selected.status !== 'AVAILABLE'
                         ? 'Not available'
                         : selectedFloor.kind !== 'car'
                           ? 'Only car bays can be reserved'
@@ -220,7 +243,11 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
             ) : (
               <div className="cx-map__hint">
                 <MousePointerClick aria-hidden />
-                <p>Click a green bay in the 3D model to see its details and book it.</p>
+                <p>
+                  {underMaintenance
+                    ? 'Click a bay in the 3D model to see its details. This lot is not taking bookings right now.'
+                    : 'Click a green bay in the 3D model to see its details and book it.'}
+                </p>
               </div>
             )}
 
