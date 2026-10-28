@@ -285,11 +285,23 @@ export interface ParkingSessionDTO {
   exitTime: string | null
   isManualEntry: boolean
   isLostTicket: boolean
+  /** Latest lost-ticket case; null without a case (or an old one recorded before cases had a status). */
+  lostTicketStatus: LostTicketCaseStatus | null
+  /** User id of who reported the latest case; that account cannot approve or reject it. */
+  lostTicketReportedBy: string | null
+  lostTicketReportedAt: string | null
+  /** What the reporter wrote (what was checked). */
+  lostTicketReason: string | null
+  /** The Manager's remarks or rejection reason. */
+  lostTicketDecisionNote: string | null
   plateMismatch: boolean
   isOverdue: boolean
   zeroFeeReason: string | null
   overrideNote: string | null
 }
+
+/** LostTicketCaseStatus: a rejected case keeps the vehicle in the lot until a new case is approved. */
+export type LostTicketCaseStatus = 'Pending' | 'Approved' | 'Rejected'
 
 /** CheckInModel */
 export interface CheckInRequest {
