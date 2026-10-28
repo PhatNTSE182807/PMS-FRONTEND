@@ -52,6 +52,11 @@ import type { LotState } from '@/types/lot-management.dto'
 const PAGE_SIZE = 8
 
 /** Colours of each lifecycle state: the chip and the "P" tile. */
+/** An open lot without an active Manager and Staff is shown (and treated) as under maintenance. */
+const isUnstaffed = (lot: ManagedLot) => lot.status === 'Active' && lot.isStaffed === false
+const shownState = (lot: ManagedLot): LotState => (isUnstaffed(lot) ? 'Maintenance' : lot.status)
+const UNSTAFFED_HINT = 'Needs a Manager and at least one Staff member before customers can book it.'
+
 const LIFECYCLE_STYLE: Record<LotState, { chip: string; icon: string }> = {
   Active: { chip: 'bg-emerald-100 text-emerald-700', icon: 'text-indigo-700' },
   Maintenance: { chip: 'bg-amber-100 text-amber-700', icon: 'text-amber-500' },
@@ -75,7 +80,7 @@ function exportLots(rows: ManagedLot[], managerName: (id: string) => string) {
   const header = ['Code', 'Name', 'Address', 'Status', 'Capacity', 'Zones', 'Cars', 'Motorbikes', 'Manager']
   const lines = rows.map((l) => {
     const mix = capacityMix(l)
-    return [l.code, l.name, l.address, LOT_STATES[l.status], l.capacity, l.zones.length, mix.cars, mix.bikes, managerName(l.managerUserId)]
+    return [l.code, l.name, l.address, LOT_STATES[shownState(l)], l.capacity, l.zones.length, mix.cars, mix.bikes, managerName(l.managerUserId)]
       .map(quote)
       .join(',')
   })
@@ -164,7 +169,7 @@ export default function ParkingLotsPage() {
   const zone = selected?.zones.find((z) => z.id === zoneId)
   const filtered = (lots.data ?? []).filter(
     (l) =>
-      (!status || l.status === status) &&
+      (!status || shownState(l) === status) &&
       toSearchable(`${l.code} ${l.name} ${l.address}`).includes(
         toSearchable(search),
       ),
@@ -248,7 +253,7 @@ export default function ParkingLotsPage() {
                 </div>
                 <div role="tablist" aria-label="Filter by lifecycle state" className="flex flex-wrap gap-1">
                   {[['', 'All facilities'] as const, ...Object.entries(LOT_STATES)].map(([key, label]) => {
-                    const count = key ? lots.data.filter((l) => l.status === key).length : lots.data.length
+                    const count = key ? lots.data.filter((l) => shownState(l) === key).length : lots.data.length
                     const active = status === key
                     return (
                       <button
@@ -313,7 +318,7 @@ export default function ParkingLotsPage() {
                       {filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((l) => {
                         const mix = capacityMix(l)
                         const manager = managers.data?.find((m) => m.id === l.managerUserId)
-                        const state = LIFECYCLE_STYLE[l.status]
+                        const state = LIFECYCLE_STYLE[shownState(l)]
                         return (
                           <TableRow key={l.id}>
                             <TableCell>
@@ -369,8 +374,9 @@ export default function ParkingLotsPage() {
                             <TableCell>
                               <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold tracking-wide uppercase', state.chip)}>
                                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
-                                {LOT_STATES[l.status]}
+                                {LOT_STATES[shownState(l)]}
                               </span>
+                              {isUnstaffed(l) && <p className="mt-1 max-w-48 text-xs text-amber-700">{UNSTAFFED_HINT}</p>}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
@@ -459,11 +465,12 @@ export default function ParkingLotsPage() {
                       <div className="space-y-2 text-sm text-slate-600">
                         <Badge
                           tone={
-                            selected.status === 'Active' ? 'emerald' : 'amber'
+                            shownState(selected) === 'Active' ? 'emerald' : 'amber'
                           }
                         >
-                          {LOT_STATES[selected.status]}
+                          {LOT_STATES[shownState(selected)]}
                         </Badge>
+                        {isUnstaffed(selected) && <p className="text-amber-700">{UNSTAFFED_HINT}</p>}
                         <p>{selected.address}</p>
                         <p>
                           {selected.is24Hours

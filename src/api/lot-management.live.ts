@@ -25,7 +25,11 @@ interface LotResponse {
   capacity: number
   imageUrl: string | null
   description: string | null
+  /** What customers see: Maintenance while the lot has no active Manager and Staff. */
   status: string
+  /** The status the Admin set. */
+  storedStatus?: string
+  isStaffed?: boolean
   closedFrom: string | null
   closedUntil: string | null
   closureReason: string | null
@@ -118,7 +122,8 @@ function toLot(lot: LotResponse, zones: ZoneResponse[], slots: SlotResponse[]): 
     description: lot.description ?? '',
     managerUserId: lot.managerUserId ?? '',
     layoutTemplate: lot.layoutTemplate ?? '',
-    status: lot.status as LotState,
+    status: (lot.storedStatus ?? lot.status) as LotState,
+    isStaffed: lot.isStaffed ?? true,
     closedFrom: toDateTimeInput(lot.closedFrom),
     closedUntil: toDateTimeInput(lot.closedUntil),
     closureReason: lot.closureReason ?? '',

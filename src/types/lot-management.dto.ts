@@ -38,7 +38,10 @@ export interface ManagedLot {
   imageUrl: string
   description: string
   managerUserId: string
+  /** The status the Admin set; an Active lot without people on duty is still shown as Maintenance. */
   status: LotState
+  /** False when the lot has no active Manager or no active Staff: customers can view it but not book it. */
+  isStaffed?: boolean
   closedFrom: string
   closedUntil: string
   closureReason: string

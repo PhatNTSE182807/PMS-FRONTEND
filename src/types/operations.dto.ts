@@ -395,4 +395,10 @@ export interface BookableLotDTO {
   name: string
   address: string
   layoutTemplate: string | null
+  /** Active, or Maintenance (also while the lot has no Manager and Staff on duty). */
+  status?: string
+  /** False while the lot is under maintenance: customers can look at it but not book it. */
+  isBookable?: boolean
+  /** Why it cannot be booked, in plain words. */
+  maintenanceNotice?: string | null
 }

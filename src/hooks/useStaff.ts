@@ -10,12 +10,19 @@ export function useStaffList(query: StaffListQuery) {
   })
 }
 
-/** Every staff mutation can move rows between filtered pages, so the whole list is refetched. */
+/**
+ * Every staff mutation can move rows between filtered pages, so the whole list is refetched. Assigning a
+ * Manager also changes which lots are free and whether a lot is staffed, so the lot lists are refetched too.
+ */
 function useStaffMutation<TVariables, TData>(mutationFn: (variables: TVariables) => Promise<TData>) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.staff.all }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.staff.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.parking.all }),
+      ]),
   })
 }
 
