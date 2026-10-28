@@ -46,8 +46,8 @@ export const gateService = {
     return http.get<ParkingSessionDTO>(`${lotPath(lotId)}/sessions/lookup`, { params: query })
   },
 
-  /** Entry lane: the booking behind a scanned QR (`qr`) or a typed code, with the booked vehicle. */
-  lookupReservation(lotId: string, query: { code?: string; qr?: string }): Promise<GateReservationLookupDTO> {
+  /** Entry lane: the booking behind a scanned QR (`qr`), a typed code or the vehicle's plate, with the booked vehicle. */
+  lookupReservation(lotId: string, query: { code?: string; qr?: string; plate?: string }): Promise<GateReservationLookupDTO> {
     return http.get<GateReservationLookupDTO>(`${lotPath(lotId)}/reservations/lookup`, { params: query })
   },
 

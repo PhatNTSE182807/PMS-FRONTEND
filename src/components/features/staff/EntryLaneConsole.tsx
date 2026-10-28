@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { QrCode } from '@/components/ui/qr-code'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { useCancelEntry, useCheckIn, useConfirmEntry, useGates, useReservationLookup } from '@/hooks/useGate'
+import { useCancelEntry, useCheckIn, useConfirmEntry, useFindReservationByPlate, useGates, useReservationLookup } from '@/hooks/useGate'
 import { useVehicleTypes } from '@/hooks/useProfile'
 import { cn } from '@/lib/utils'
 import type { CheckInRequest, CheckInResultDTO, GateAlertDTO, GateReservationLookupDTO } from '@/types/operations.dto'
@@ -50,6 +50,14 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
   const found = entry.trim() && lookupEntry === entry.trim() ? lookup.data ?? null : null
   const lookupFailed = Boolean(entry.trim()) && lookupEntry === entry.trim() && lookup.isError
   const [filledFor, setFilledFor] = useState<number | null>(null)
+  const findByPlate = useFindReservationByPlate(lotId)
+
+  // The customer has no code: the plate finds the booking, and its RSV code fills the field above
+  const findBooking = () =>
+    findByPlate.mutate(form.plateNumber?.trim() ?? '', {
+      onSuccess: (r) => setEntry(r.reservation.code),
+      onError: (e) => toast.error(getErrorMessage(e)),
+    })
 
   // One popup per scanned ticket: loaded, used, invalid or expired
   const announced = useRef<string | null>(null)
@@ -88,7 +96,8 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
       ...form,
       gateId: entryGate?.id,
       vehicleTypeId: form.vehicleTypeId ?? types[0]?.id,
-      plateNumber: form.noPlate ? undefined : form.plateNumber?.trim(),
+      plateNumber: form.noPlate ? '' : form.plateNumber?.trim(),
+      noPlateReason: form.noPlate ? form.noPlateReason?.trim() : undefined,
       reservationQr: reservationEntry && !isCode ? reservationEntry : undefined,
       reservationCode: reservationEntry && isCode ? reservationEntry.toUpperCase() : undefined,
       overrideReason: form.overrideReason?.trim() || undefined,
@@ -213,6 +222,11 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
               />
             </div>
           </div>
+          {!entry.trim() && !form.noPlate && form.plateNumber?.trim() && (
+            <Button type="button" variant="secondary" className="w-full" disabled={findByPlate.isPending} onClick={findBooking}>
+              Find the booking by this plate
+            </Button>
+          )}
           <div>
             <Label htmlFor="lane-type">Vehicle type</Label>
             <NativeSelect id="lane-type" value={form.vehicleTypeId ?? types[0]?.id ?? ''} onChange={(e) => set('vehicleTypeId', Number(e.target.value))}>
@@ -222,8 +236,29 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
             </NativeSelect>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-800">
-            <Checkbox checked={Boolean(form.noPlate)} onChange={(e) => set('noPlate', e.target.checked)} /> Plate unreadable or missing: ticket and photo only
+            <Checkbox
+              checked={Boolean(form.noPlate)}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                noPlate: e.target.checked,
+                ...(e.target.checked ? { plateNumber: '', anprConfidence: undefined } : { noPlateReason: undefined }),
+              }))}
+            /> Plate unreadable or missing: ticket and photo only
           </label>
+          {form.noPlate && (
+            <div>
+              <Label htmlFor="lane-no-plate-reason">Reason for no plate</Label>
+              <Input
+                id="lane-no-plate-reason"
+                value={form.noPlateReason ?? ''}
+                maxLength={500}
+                required
+                onChange={(e) => set('noPlateReason', e.target.value)}
+                placeholder="e.g. plate torn off, covered by mud"
+                autoComplete="off"
+              />
+            </div>
+          )}
 
           {blocking.length > 0 && (
             <div className="space-y-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">
@@ -242,7 +277,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
             </div>
           )}
 
-          <Button type="submit" variant="gold" className="h-11 w-full" disabled={checkIn.isPending || (!form.noPlate && !form.plateNumber?.trim())}>
+          <Button type="submit" variant="gold" className="h-11 w-full" disabled={checkIn.isPending || (form.noPlate ? !form.noPlateReason?.trim() : !form.plateNumber?.trim())}>
             <DoorOpen /> {blocking.length ? 'Check again' : 'Check in & open barrier'}
           </Button>
         </form>

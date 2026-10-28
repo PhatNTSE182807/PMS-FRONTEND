@@ -576,6 +576,7 @@ export const gateMock = {
       const plate = request.noPlate ? '' : (request.plateNumber ?? '').trim().toUpperCase()
       const key = normalize(plate)
       if (!request.noPlate && !key) alert('PLATE_REQUIRED', 'Enter the plate or mark the vehicle as plate-less.', false, false)
+      if (request.noPlate && !request.noPlateReason?.trim()) alert('NO_PLATE_REASON_REQUIRED', 'Give the reason the vehicle has no plate.', false, false)
       const confidence = request.anprConfidence == null ? 1 : request.anprConfidence > 1 ? request.anprConfidence / 100 : request.anprConfidence
       if (!request.noPlate && confidence < RULES.anprThreshold)
         alert('LOW_CONFIDENCE', `ANPR is only ${Math.round(confidence * 100)}% confident; check the plate.`, request.plateConfirmed)
@@ -648,15 +649,22 @@ export const gateMock = {
     }),
 
   /** Entry lane: the booking behind a scanned QR or typed code, with the booked vehicle. */
-  async lookupReservation(lotId: string, query: { code?: string; qr?: string }): Promise<GateReservationLookupDTO> {
+  async lookupReservation(lotId: string, query: { code?: string; qr?: string; plate?: string }): Promise<GateReservationLookupDTO> {
     const vehicles = await profileMock.getVehicles()
     return mockResponse(() => {
       sweep()
       const id = query.qr?.trim().startsWith('rsv.demo.') ? Number(query.qr.trim().slice(9)) : NaN
       const wanted = query.code?.trim().toUpperCase()
-      if (!query.qr?.trim() && !wanted) mockFail(400, 'Scan the reservation QR or type its code.')
+      const typedPlate = normalize(query.plate ?? '')
+      if (!query.qr?.trim() && !wanted && !typedPlate) mockFail(400, 'Scan the reservation QR, type its code or type the plate.')
       if (query.qr?.trim() && Number.isNaN(id)) mockFail(400, 'This reservation QR is not genuine.')
-      const r = reservations.find((x) => x.id === id || (wanted && x.code === wanted))
+      const byPlate = !query.qr?.trim() && !wanted
+        ? reservations
+            .filter((x) => (x.lotKey === lotId || String(x.parkingLotId) === lotId) && normalize(x.plateNumber ?? '') === typedPlate)
+            .sort((a, b) => Number(b.status === 'Confirmed') - Number(a.status === 'Confirmed'))[0]
+        : undefined
+      if (typedPlate && !query.qr?.trim() && !wanted && !byPlate) mockFail(404, 'No reservation found for this plate in this lot.')
+      const r = byPlate ?? reservations.find((x) => x.id === id || (wanted && x.code === wanted))
       if (!r) mockFail(404, 'Reservation not found.')
       if (r.lotKey !== lotId && String(r.parkingLotId) !== lotId) mockFail(400, 'This reservation is for another parking lot.')
       const vehicle = vehicles.find((v) => v.vehicleId === r.vehicleId)

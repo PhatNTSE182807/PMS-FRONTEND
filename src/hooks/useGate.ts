@@ -82,6 +82,13 @@ export const useReportLostTicket = (lotId: string | undefined) =>
     return gateService.reportLostTicket(session.id, request)
   })
 
+/** Entry lane: the customer has no code, so find the booking of the typed plate (gives back its RSV code). */
+export function useFindReservationByPlate(lotId: string | undefined) {
+  return useMutation({
+    mutationFn: (plate: string) => gateService.lookupReservation(lotId!, { plate }),
+  })
+}
+
 /**
  * Entry lane: looks the reservation up as soon as a QR is scanned or a code typed. Anything starting
  * with "RSV" is a code; anything else is the signed QR payload.
