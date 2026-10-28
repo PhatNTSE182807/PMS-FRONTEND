@@ -284,6 +284,7 @@ export interface ParkingSessionDTO {
   exitWindowEndsAt: string | null
   exitTime: string | null
   isManualEntry: boolean
+  noPlateReason?: string | null
   isLostTicket: boolean
   /** Latest lost-ticket case; null without a case (or an old one recorded before cases had a status). */
   lostTicketStatus: LostTicketCaseStatus | null
@@ -308,6 +309,8 @@ export interface CheckInRequest {
   gateId?: number
   plateNumber?: string
   noPlate?: boolean
+  /** Required with `noPlate`: why the plate is unreadable or missing. */
+  noPlateReason?: string
   vehicleTypeId?: number
   /** 0..1 */
   anprConfidence?: number
