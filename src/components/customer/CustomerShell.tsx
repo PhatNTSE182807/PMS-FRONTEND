@@ -28,7 +28,8 @@ export function CustomerShell() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const { pathname, hash } = useLocation()
-  const { balance } = useWallet()
+  const wallet = useWallet()
+  const { balance } = wallet
   const [isWalletOpen, setIsWalletOpen] = useState(false)
 
   // React Router does not follow #anchors: scroll to the section, or to the top on a new page.
@@ -132,7 +133,7 @@ export function CustomerShell() {
         </div>
       </footer>
 
-      <UserWalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} />
+      <UserWalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} wallet={wallet} />
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>

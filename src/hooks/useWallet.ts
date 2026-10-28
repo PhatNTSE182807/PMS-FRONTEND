@@ -105,7 +105,7 @@ export function useWallet() {
   const isFetchingRef = useRef(false)
 
   // Fetch real wallet from backend if authenticated
-  const fetchWallet = useCallback(async () => {
+  const fetchWallet = useCallback(async (options: { silent?: boolean } = {}) => {
     if (!session.getToken()) return
     if (isFetchingRef.current) return
     isFetchingRef.current = true
@@ -124,35 +124,40 @@ export function useWallet() {
         try {
           const balKey = getStorageKey(STORAGE_PREFIX_BALANCE, uid)
           const holdKey = getStorageKey(STORAGE_PREFIX_HOLD, uid)
-          if (localStorage.getItem(balKey) !== String(data.balance)) {
+          const prevBal = localStorage.getItem(balKey)
+          const prevHold = localStorage.getItem(holdKey)
+          const balChanged = prevBal !== String(data.balance)
+          const holdChanged = prevHold !== String(data.holdAmount ?? 0)
+
+          if (balChanged) {
             localStorage.setItem(balKey, String(data.balance))
           }
-          if (localStorage.getItem(holdKey) !== String(data.holdAmount ?? 0)) {
+          if (holdChanged) {
             localStorage.setItem(holdKey, String(data.holdAmount ?? 0))
           }
-        } catch {
-          // ignore storage error
-        }
 
-        // Always update transactions per user, even if empty array []
-        const rawList = data.recentTransactions ?? []
-        const mapped: WalletTransaction[] = rawList.map((tx) => ({
-          id: tx.id,
-          title: tx.title,
-          subtitle: tx.subtitle,
-          amount: tx.amount,
-          balanceBefore: tx.balanceBefore,
-          balanceAfter: tx.balanceAfter,
-          status: tx.status,
-          type: (tx.type as WalletTransaction['type']) || (tx.amount >= 0 ? 'deposit' : 'withdraw'),
-          method: tx.method,
-          date: tx.createdAt,
-        }))
-        setTransactions(mapped)
+          // Always update transactions per user, even if empty array []
+          const rawList = data.recentTransactions ?? []
+          const mapped: WalletTransaction[] = rawList.map((tx) => ({
+            id: tx.id,
+            title: tx.title,
+            subtitle: tx.subtitle,
+            amount: tx.amount,
+            balanceBefore: tx.balanceBefore,
+            balanceAfter: tx.balanceAfter,
+            status: tx.status,
+            type: (tx.type as WalletTransaction['type']) || (tx.amount >= 0 ? 'deposit' : 'withdraw'),
+            method: tx.method,
+            date: tx.createdAt,
+          }))
+          setTransactions(mapped)
 
-        try {
           const txsKey = getStorageKey(STORAGE_PREFIX_TXS, uid)
           localStorage.setItem(txsKey, JSON.stringify(mapped))
+
+          if (!options.silent && (balChanged || holdChanged)) {
+            window.dispatchEvent(new Event('xxiv-wallet-updated'))
+          }
         } catch {
           // ignore storage error
         }
@@ -268,6 +273,9 @@ export function useWallet() {
       } catch {
         // ignore
       }
+      if (session.getToken()) {
+        void fetchWallet({ silent: true })
+      }
     }
 
     window.addEventListener('storage', handleStorage)
@@ -276,7 +284,7 @@ export function useWallet() {
       window.removeEventListener('storage', handleStorage)
       window.removeEventListener('xxiv-wallet-updated', handleLocalSync)
     }
-  }, [currentUserId])
+  }, [currentUserId, fetchWallet])
 
   const updateBalanceAndTxs = useCallback(
     (newBalance: number, newTxs: WalletTransaction[]) => {
@@ -331,6 +339,7 @@ export function useWallet() {
           if (options.simulate) {
             await paymentService.simulateSuccess(res.id)
             await fetchWallet()
+            window.dispatchEvent(new Event('xxiv-wallet-updated'))
             setLoading(false)
             toast.success(USER_TOAST.walletDeposited)
             return true
@@ -400,10 +409,43 @@ export function useWallet() {
             bankName: bankName || 'Bank Account',
             bankAccount: noteOrAccount,
           })
+
+          const uid = session.getUser()?.userId ?? 'guest'
+          const balKey = getStorageKey(STORAGE_PREFIX_BALANCE, uid)
+          const holdKey = getStorageKey(STORAGE_PREFIX_HOLD, uid)
+          const txsKey = getStorageKey(STORAGE_PREFIX_TXS, uid)
+
           setBalanceState(res.balance)
           setHoldAmountState(res.holdAmount ?? 0)
+
+          try {
+            localStorage.setItem(balKey, String(res.balance))
+            localStorage.setItem(holdKey, String(res.holdAmount ?? 0))
+            if (Array.isArray(res.recentTransactions)) {
+              const mapped: WalletTransaction[] = res.recentTransactions.map((tx) => ({
+                id: tx.id,
+                title: tx.title,
+                subtitle: tx.subtitle,
+                amount: tx.amount,
+                balanceBefore: tx.balanceBefore,
+                balanceAfter: tx.balanceAfter,
+                status: tx.status,
+                type: (tx.type as WalletTransaction['type']) || (tx.amount >= 0 ? 'deposit' : 'withdraw'),
+                method: tx.method,
+                date: tx.createdAt,
+              }))
+              setTransactions(mapped)
+              localStorage.setItem(txsKey, JSON.stringify(mapped))
+            }
+          } catch {
+            // ignore storage error
+          }
+
+          // Broadcast immediately to update header balance and other listeners across the app
+          window.dispatchEvent(new Event('xxiv-wallet-updated'))
+
           toast.success(`Withdrawal request of ${formatVndBalance(amount)} submitted successfully.`)
-          await fetchWallet()
+          await fetchWallet({ silent: true })
           setLoading(false)
           return true
         } catch (err) {
@@ -458,3 +500,6 @@ export function useWallet() {
     formatVndQuick,
   }
 }
+
+export type UseWalletReturn = ReturnType<typeof useWallet>
+

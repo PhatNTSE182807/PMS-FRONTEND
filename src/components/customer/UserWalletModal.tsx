@@ -13,19 +13,21 @@ import {
   Check,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useWallet, formatVndBalance, formatVndQuick, type WalletTransaction } from '@/hooks/useWallet'
+import { useWallet, formatVndBalance, formatVndQuick, type WalletTransaction, type UseWalletReturn } from '@/hooks/useWallet'
 import '@/styles/wallet.css'
 
 interface UserWalletModalProps {
   isOpen: boolean
   onClose: () => void
+  wallet?: UseWalletReturn
 }
 
 const PRESET_AMOUNTS = [50000, 100000, 200000, 500000, 1000000]
 
 type HistoryFilter = 'all' | 'deposit' | 'withdraw' | 'refund' | 'payment'
 
-export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
+export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserWalletModalProps) {
+  const localWallet = useWallet()
   const {
     balance,
     holdAmount,
@@ -38,8 +40,9 @@ export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
     minTopUp,
     deposit,
     withdraw,
+    fetchWallet,
     fetchAllTransactions,
-  } = useWallet()
+  } = parentWallet ?? localWallet
 
   const [viewMode, setViewMode] = useState<'wallet' | 'history'>('wallet')
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
@@ -58,14 +61,16 @@ export function UserWalletModal({ isOpen, onClose }: UserWalletModalProps) {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  // Reset view to wallet on close or open
+  // Reset view to wallet on close or open; refresh wallet data when opening
   useEffect(() => {
     if (!isOpen) {
       setViewMode('wallet')
       setSearchQuery('')
       setHistoryFilter('all')
+    } else {
+      void fetchWallet({ silent: true })
     }
-  }, [isOpen])
+  }, [isOpen, fetchWallet])
 
   // Close on Escape key
   useEffect(() => {
