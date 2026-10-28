@@ -23,6 +23,19 @@ export interface RequestLoginOtpCommand {
   email: string
 }
 
+/** POST /api/Users/forgot-password: always answers the same message, whether or not the email has an account. */
+export interface ForgotPasswordCommand {
+  email: string
+}
+
+/** POST /api/Users/reset-password: `token` comes from the emailed link (valid 30 minutes, single use). */
+export interface ResetPasswordCommand {
+  email: string
+  token: string
+  newPassword: string
+  confirmPassword: string
+}
+
 /** POST /api/Users/login-otp/verify: returns the same payload as a password login. */
 export interface VerifyLoginOtpCommand {
   email: string

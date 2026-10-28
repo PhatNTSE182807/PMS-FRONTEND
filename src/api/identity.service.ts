@@ -14,6 +14,7 @@ import type {
   CustomerAccountDTO,
   CustomerListQuery,
   CreateUserCommand,
+  ForgotPasswordCommand,
   GoogleLoginCommand,
   InternalUserResponseDTO,
   LoginCommand,
@@ -23,6 +24,7 @@ import type {
   RequestLoginOtpCommand,
   ResendTwoFactorCommand,
   ResendTwoFactorResponseDTO,
+  ResetPasswordCommand,
   ResetPasswordResultDTO,
   StaffListQuery,
   TwoFactorLoginCommand,
@@ -53,6 +55,18 @@ export const identityService = {
   verifyLoginOtp(command: VerifyLoginOtpCommand): Promise<LoginResponseDTO> {
     if (isMockService('auth')) return authMock.verifyLoginOtp(command)
     return http.post<LoginResponseDTO>(`${SERVICE_PATHS.auth}/login-otp/verify`, command)
+  },
+
+  /** Emails a reset link (or a "set a password" link for Google-only accounts). Same answer for unknown emails. */
+  forgotPassword(command: ForgotPasswordCommand): Promise<string> {
+    if (isMockService('auth')) return authMock.forgotPassword(command)
+    return http.post<string>(`${SERVICE_PATHS.auth}/forgot-password`, command)
+  },
+
+  /** Sets the new password with the token from the link; the link stops working afterwards. */
+  resetPassword(command: ResetPasswordCommand): Promise<string> {
+    if (isMockService('auth')) return authMock.resetPassword(command)
+    return http.post<string>(`${SERVICE_PATHS.auth}/reset-password`, command)
   },
 
   /** Customers only: Manager/Staff/Admin accounts keep their password login. */

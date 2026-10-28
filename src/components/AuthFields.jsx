@@ -16,6 +16,16 @@ export function AuthAlert({ tone, children }) {
 /**
  * Labelled input with a leading icon. Password fields get a show/hide toggle when
  * `onToggleVisible` is passed.
+ *
+ * @param {{
+ *   id: string,
+ *   label: string,
+ *   icon: import('react').ElementType,
+ *   labelAside?: import('react').ReactNode,
+ *   visible?: boolean,
+ *   onToggleVisible?: () => void,
+ *   [inputProp: string]: unknown,
+ * }} props
  */
 export function AuthField({ id, label, icon, labelAside, visible, onToggleVisible, ...inputProps }) {
   const Icon = icon;

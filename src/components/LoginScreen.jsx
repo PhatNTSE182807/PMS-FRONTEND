@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ArrowRight, Lock, Mail, X } from 'lucide-react';
+import { ArrowRight, Lock, Mail } from 'lucide-react';
 import AuthShowcaseLayout from './AuthShowcaseLayout';
 import { AuthAlert, AuthCheckbox, AuthField } from './AuthFields';
+import ForgotPasswordDialog from './ForgotPasswordDialog';
 import GoogleSignInButton from './GoogleSignInButton';
 import { getErrorMessage } from '../api/apiError';
 import { useLogin } from '../hooks/useAuth';
@@ -126,42 +127,15 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
 
 
       {isForgotPasswordOpen && (
-        <div className="auth-shell__backdrop" onClick={() => setIsForgotPasswordOpen(false)}>
-          <div className="auth-shell__dialog" role="dialog" aria-modal="true" aria-labelledby="forgot-title" onClick={(e) => e.stopPropagation()}>
-            <div className="auth-shell__dialog-header">
-              <h2 id="forgot-title" className="auth-shell__dialog-title">Reset password</h2>
-              <button type="button" className="auth-shell__toggle" onClick={() => setIsForgotPasswordOpen(false)} aria-label="Close">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="auth-shell__dialog-body">
-              <p>Enter your registered email or Vietnamese phone number to receive password recovery instructions.</p>
-              <AuthField
-                id="forgot-identifier"
-                label="Email or phone number"
-                icon={Mail}
-                type="text"
-                placeholder="name@domain.com"
-                defaultValue={email}
-              />
-            </div>
-            <div className="auth-shell__dialog-footer">
-              <button type="button" className="auth-shell__ghost" onClick={() => setIsForgotPasswordOpen(false)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="auth-shell__submit"
-                onClick={() => {
-                  setInfoMsg('Password recovery instructions sent if the account exists!');
-                  setIsForgotPasswordOpen(false);
-                }}
-              >
-                Send instructions
-              </button>
-            </div>
-          </div>
-        </div>
+        <ForgotPasswordDialog
+          initialEmail={email}
+          onClose={() => setIsForgotPasswordOpen(false)}
+          onSent={(message) => {
+            setErrorMsg('');
+            setInfoMsg(message);
+            setIsForgotPasswordOpen(false);
+          }}
+        />
       )}
     </AuthShowcaseLayout>
   );
