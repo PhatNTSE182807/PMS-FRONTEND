@@ -1,17 +1,12 @@
 import { Link } from 'react-router-dom'
 import { Boxes, Gauge, ShieldCheck, SlidersHorizontal, Zap } from 'lucide-react'
-import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
-
-
 
 interface HeroSectionProps {
-  lots: ParkingLotCapacityDTO[]
-  isLoading: boolean
   /** Where "Reserve priority slot" goes: the dashboard when signed in, otherwise sign-up. */
   reserveTo: string
 }
 
-export function HeroSection({ lots: _lots, isLoading: _isLoading, reserveTo }: HeroSectionProps) {
+export function HeroSection({ reserveTo }: HeroSectionProps) {
 
   return (
     <section className="home-hero" id="top">

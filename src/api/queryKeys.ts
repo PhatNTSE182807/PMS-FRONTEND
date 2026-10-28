@@ -45,6 +45,8 @@ export const queryKeys = {
     all: ['parking'] as const,
     lots: () => [...queryKeys.parking.all, 'lots'] as const,
     capacity: () => [...queryKeys.parking.all, 'capacity'] as const,
+    /** Public lot list with live free bays (homepage). */
+    publicLots: () => [...queryKeys.parking.all, 'public-lots'] as const,
     staffLots: (userId: string | undefined) => [...queryKeys.parking.all, 'staff-lots', userId] as const,
   },
   /** A lot's pricing rules and fee simulations. */

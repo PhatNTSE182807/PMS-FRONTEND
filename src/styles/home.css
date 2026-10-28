@@ -1036,6 +1036,10 @@
   color: var(--home-on-variant);
 }
 
+.home-terminals__empty .home-btn {
+  margin-top: 1rem;
+}
+
 /* CTA banner */
 .home-cta {
   position: relative;

@@ -6,17 +6,15 @@ import { HomeFooter } from '@/components/home/HomeFooter'
 import { HomeNav } from '@/components/home/HomeNav'
 import { TerminalNetwork } from '@/components/home/TerminalNetwork'
 import { homePathFor, useAuth } from '@/hooks/useAuth'
-import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
+import { usePublicLots } from '@/hooks/usePublicLots'
 import '@/styles/home.css'
 
-/** Public landing page at "/". The terminal cards use the same capacity feed as the admin page. */
+/** Public landing page at "/". The terminal cards list the system's parking lots with live free bays. */
 export default function HomePage() {
   const { user } = useAuth()
-  const capacity = useParkingCapacity()
-  // With mock data, vehicles arrive and leave every few seconds so the page feels live.
-  useCapacitySimulation(true)
+  const publicLots = usePublicLots()
 
-  const lots = capacity.data ?? []
+  const lots = publicLots.data ?? []
   const dashboardTo = user ? homePathFor(user.role) : '/register'
 
   return (
@@ -24,15 +22,16 @@ export default function HomePage() {
       <a href="#terminals" className="home-skip">
         Skip to live terminals
       </a>
-      <HomeNav isOnline={!capacity.isError} />
+      <HomeNav isOnline={!publicLots.isError} />
       <main>
-        <HeroSection lots={lots} isLoading={capacity.isPending} reserveTo={dashboardTo} />
+        <HeroSection reserveTo={dashboardTo} />
         <FacilityShowcase />
         <Capabilities />
         <TerminalNetwork
           lots={lots}
-          isLoading={capacity.isPending}
-          isError={capacity.isError}
+          isLoading={publicLots.isPending}
+          isError={publicLots.isError}
+          onRetry={() => void publicLots.refetch()}
           reserveTo={dashboardTo}
         />
         <CtaBanner isSignedIn={Boolean(user)} dashboardTo={dashboardTo} />
