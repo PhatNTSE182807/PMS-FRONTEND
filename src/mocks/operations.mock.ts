@@ -79,6 +79,9 @@ interface MockSession extends ParkingSessionDTO {
   ownedByCustomer?: boolean
 }
 
+/** Session fields of a vehicle with no lost-ticket case. */
+const NO_LOST_TICKET_CASE = { lostTicketStatus: null, lostTicketReportedBy: null, lostTicketReportedAt: null, lostTicketReason: null, lostTicketDecisionNote: null }
+
 const reservations: MockReservation[] = []
 /** The demo driver's own bookings (the Staff demo seeds other customers' bookings in the same list). */
 const customerReservations = () => reservations.filter((r) => !r.staffDemo)
@@ -445,7 +448,7 @@ const CAPACITY = { car: 40, motorbike: 20 }
 
 function seedLot(lotKey: string) {
   if (sessions.some((s) => s.lotKey === lotKey && !s.ownedByCustomer)) return
-  const base = { lotKey, parkingLotId: lotNumber(lotKey), entryGateId: 1, hasPlate: true, zoneId: null, zoneName: null, slotId: null, slotCode: null, reservationId: null, reservationCode: null, isCustomerAccount: false, paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false, plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null }
+  const base = { lotKey, parkingLotId: lotNumber(lotKey), entryGateId: 1, hasPlate: true, zoneId: null, zoneName: null, slotId: null, slotCode: null, reservationId: null, reservationCode: null, isCustomerAccount: false, paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false, ...NO_LOST_TICKET_CASE, plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null }
   const seed: [string, number, 'car' | 'motorbike'][] = [
     ['51A-888.68', 140, 'car'],
     ['30G-456.12', 47, 'car'],
@@ -638,6 +641,7 @@ export const gateMock = {
         exitTime: null,
         isManualEntry: Boolean(request.isManual),
         isLostTicket: false,
+        ...NO_LOST_TICKET_CASE,
         plateMismatch: false,
         isOverdue: false,
         zeroFeeReason: null,
@@ -769,7 +773,7 @@ async function customerSessions(): Promise<MockSession[]> {
         entryTime: iso(entry), entryConfirmedAt: iso(entry), entryGateId: 1, zoneId: 2, zoneName: 'Level 2 · Cars',
         slotId: 1014, slotCode: 'L2-14', reservationId: null, reservationCode: null, isCustomerAccount: true,
         paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false,
-        plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null,
+        ...NO_LOST_TICKET_CASE, plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null,
       })
     }
   }
