@@ -3,9 +3,9 @@ import { gateRequestMock } from '@/mocks/operations.mock'
 import type { ApproveGateRequestRequest, GateRequestDecisionDTO, GateRequestDTO, GateRequestKind } from '@/types/gateRequest.dto'
 import { http } from './axiosClient'
 
-// Customer calls live next to reservations; Staff calls next to the other lane endpoints
+// Customer calls live next to reservations; Staff calls next to the other lane endpoints and always
+// use the real API (the check-in / check-out flow has no demo mode)
 const customerMocked = () => isMockService('booking')
-const staffMocked = () => isMockService('gate')
 const staffBase = SERVICE_PATHS.gate
 
 /**
@@ -40,22 +40,16 @@ export const gateRequestService = {
 
   /** Waiting requests of the Staff's lot, oldest first. */
   getQueue(lotId: string, kind: GateRequestKind): Promise<GateRequestDTO[]> {
-    return staffMocked()
-      ? gateRequestMock.queue(lotId, kind)
-      : http.get<GateRequestDTO[]>(`${staffBase}/lots/${lotId}/gate-requests`, { params: { kind } })
+    return http.get<GateRequestDTO[]>(`${staffBase}/lots/${lotId}/gate-requests`, { params: { kind } })
   },
 
   /** Opens the barrier through the normal gate checks. */
   approve(requestId: number, request: ApproveGateRequestRequest = {}): Promise<GateRequestDecisionDTO> {
-    return staffMocked()
-      ? gateRequestMock.approve(requestId, request)
-      : http.post<GateRequestDecisionDTO>(`${staffBase}/gate-requests/${requestId}/approve`, request)
+    return http.post<GateRequestDecisionDTO>(`${staffBase}/gate-requests/${requestId}/approve`, request)
   },
 
   /** Refuses with a reason the customer sees. */
   refuse(requestId: number, reason: string): Promise<GateRequestDTO> {
-    return staffMocked()
-      ? gateRequestMock.refuse(requestId, reason)
-      : http.post<GateRequestDTO>(`${staffBase}/gate-requests/${requestId}/refuse`, { reason })
+    return http.post<GateRequestDTO>(`${staffBase}/gate-requests/${requestId}/refuse`, { reason })
   },
 }

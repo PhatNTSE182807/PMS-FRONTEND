@@ -43,6 +43,7 @@ import {
 } from '@/types/lot-management.dto'
 import { GaragePreview } from '@/components/customer/garage/GaragePreview'
 import { findTemplate, type ZoneStats } from '@/components/customer/garage/garageModel'
+import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
 import { toSearchable } from '@/lib/text'
 import { formatPhone, initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -177,9 +178,10 @@ export default function ParkingLotsPage() {
   const managerName = (id: string) =>
     managers.data?.find((m) => m.id === id)?.fullName ?? (id ? 'Assigned' : 'Unassigned')
   const currentPage = Math.min(page, pageCount)
-  const reload = async () => {
+  // `message` is the popup of a real save; demo data stays in this browser and says so
+  const reload = async (message: string) => {
     await lots.refetch()
-    toast.success(service.isDemo() ? 'Demo data saved in this browser' : 'Changes saved')
+    toast.success(service.isDemo() ? 'Demo data saved in this browser' : message)
   }
   const canConfigure = Boolean(
     selected &&
@@ -692,14 +694,14 @@ export default function ParkingLotsPage() {
           lot={editing.lot}
           managers={managers.data ?? []}
           onClose={() => setEditing(null)}
-          onSaved={reload}
+          onSaved={() => reload(ADMIN_TOAST.lotSaved)}
         />
       )}
       {editing?.kind === 'operation' && (
         <OperationForm
           lot={editing.lot}
           onClose={() => setEditing(null)}
-          onSaved={reload}
+          onSaved={() => reload(ADMIN_TOAST.lotSaved)}
         />
       )}
       {removing && (
@@ -717,10 +719,11 @@ export default function ParkingLotsPage() {
             setDeleting(true)
             try {
               await removing.run()
-              await reload()
+              // No spec popup for deleting a lot: keeps its own text
+              await reload('Changes saved')
               setRemoving(null)
             } catch (e) {
-              toast.error(getErrorMessage(e))
+              toastAdminError(e)
             } finally {
               setDeleting(false)
             }

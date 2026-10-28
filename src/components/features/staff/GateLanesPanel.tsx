@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowRight, CircleCheck, CircleX, Clock, DoorOpen, Hourglass, Keyboard, LogIn, LogOut, Phone, ShieldAlert, SkipForward, Undo2, UserRound } from 'lucide-react'
-import { getErrorMessage } from '@/api/apiError'
+import { ApiError, getErrorMessage } from '@/api/apiError'
 import { Button } from '@/components/ui/button'
 import { Checkbox, Input } from '@/components/ui/form-controls'
 import { useApproveGateRequest, useGateRequestQueue, useRefuseGateRequest } from '@/hooks/useGateRequests'
@@ -14,6 +14,7 @@ import type { ApproveGateRequestRequest, GateRequestDTO, GateRequestKind } from 
 import type { GateAlertDTO } from '@/types/operations.dto'
 import { AlertRow, EntryLaneConsole } from './EntryLaneConsole'
 import { Panel, Plate } from './StaffBits'
+import { STAFF_TOAST, toastEntryAlerts, toastUnsettled } from './staffToasts'
 
 const clock = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—')
 
@@ -214,22 +215,27 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
       {
         onSuccess: (decision) => {
           if (!decision.barrierOpen) {
+            // The alerts show below; only those the spec has a popup for are toasted
             setAlerts(decision.alerts)
-            toast.warning('Barrier held', { description: 'Clear the alerts below, or refuse the request.' })
+            if (checkIn) toastEntryAlerts(decision.alerts, { status: request.reservationStatus, checkInUntil: request.checkInUntil })
             return
           }
           if (checkIn) {
             const session = decision.checkIn?.session ?? null
-            toast.success(`Barrier open for ${request.plateNumber ?? 'the vehicle'}`, { description: 'Waiting for the vehicle to pass the sensor.' })
+            toast.success(STAFF_TOAST.checkedIn)
             onHandled({ request: decision.request, phase: 'entering', sessionId: session?.id ?? null, message: '' })
           } else {
             const refund = decision.checkOut?.depositRefund ?? 0
             const message = refund > 0 ? `Exit barrier opened. ${formatNumber(refund)} VND of the deposit goes back to the customer.` : 'Exit barrier opened. Session completed.'
-            toast.success(`${request.plateNumber ?? 'Vehicle'} is out`)
+            toast.success(STAFF_TOAST.checkedOut)
             onHandled({ request: decision.request, phase: 'done', sessionId: request.sessionId, message })
           }
         },
-        onError: (e) => toast.error(getErrorMessage(e, 'Could not open the barrier.')),
+        onError: (e) => {
+          // A check-out request is refused by the server while the fee is not settled
+          if (!checkIn && e instanceof ApiError && e.status === 400 && request.sessionStatus !== 'Paid') toastUnsettled(request.exitWindowEndsAt)
+          else toast.error(getErrorMessage(e, 'Could not open the barrier.'))
+        },
       },
     )
 

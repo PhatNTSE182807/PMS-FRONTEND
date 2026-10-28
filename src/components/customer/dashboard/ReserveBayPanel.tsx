@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CircleCheck, CreditCard, FlaskConical, ShieldCheck, Timer, Wallet, Zap } from 'lucide-react'
-import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { useNow } from '@/hooks/useNow'
 import { useVehicles } from '@/hooks/useProfile'
@@ -10,6 +9,7 @@ import { usePaymentSimulation } from '@/hooks/usePaymentSimulation'
 import { useCreateReservation, usePayDeposit, useSimulateDeposit } from '@/hooks/useReservations'
 import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
+import { USER_TOAST, toastBookingError } from '@/lib/userToasts'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
 
 /** Deposit choices: the hold after arrival is longer when a deposit is paid. */
@@ -73,14 +73,11 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
       },
       {
         onSuccess: (reservation) => {
+          // The deposit deadline and the hold time are shown in the panel itself
           setHeld(reservation)
-          toast.success(`Bay ${slotCode} is booked for ${describeWindow(reservation.arrivalTime, reservation.departureTime, Date.now())}`, {
-            description: reservation.hasDeposit
-              ? `Pay the ${formatNumber(reservation.depositAmount)} VND deposit within 10 minutes to confirm it.`
-              : `Confirmed without a deposit: the bay is held ${reservation.holdMinutes} minutes after your arrival time.`,
-          })
+          toast.success(USER_TOAST.bookingSuccess)
         },
-        onError: (error) => toast.error(getErrorMessage(error)),
+        onError: toastBookingError,
       },
     )
   }

@@ -21,6 +21,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
+import { USER_TOAST, isPlateDuplicate } from '@/lib/userToasts'
 import { KIND_ICON, vehicleKind, vehicleTitle } from '@/components/customer/customerFormat'
 import { VehicleDocumentsPanel } from '@/components/customer/VehicleDocumentsPanel'
 import { useAuth } from '@/hooks/useAuth'
@@ -227,12 +228,16 @@ export default function RegisterVehiclePage() {
           setPapersVehicle(vehicle)
           try {
             await papers.uploadAndSubmit(vehicle.vehicleId)
-            toast.success(`${vehicle.licensePlate} registered. Staff will check its papers before it can be booked.`)
+            toast.success(USER_TOAST.vehicleAdded)
           } catch (err) {
             setError(getErrorMessage(err, 'The vehicle is saved, but its papers could not be uploaded. Send them again below.'))
           }
         },
-        onError: (err) => setError(getErrorMessage(err, 'Could not register the vehicle.')),
+        onError: (err) => {
+          // The live plate check shows a taken plate under the field; this is the server refusing it on submit
+          if (isPlateDuplicate(err)) toast.error(USER_TOAST.plateDuplicate)
+          setError(getErrorMessage(err, 'Could not register the vehicle.'))
+        },
       },
     )
   }

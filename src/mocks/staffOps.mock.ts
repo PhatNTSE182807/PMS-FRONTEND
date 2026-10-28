@@ -141,7 +141,6 @@ export interface DemoIncident {
   exit: { image: string; at: number; ocr: string; score: number; node: string; mode: string }
   suggestedPlate: string
   tariff: number
-  lostTicketFine: number
 }
 
 export const demoIncidents: DemoIncident[] = [
@@ -160,7 +159,6 @@ export const demoIncidents: DemoIncident[] = [
     exit: { image: '/home/anpr-gate.jpg', at: today(14, 25, 4), ocr: '51K-88?24', score: 68.2, node: 'SGC-EXIT-GANTRY-CAM-03', mode: 'IR night-vision on' },
     suggestedPlate: '51K-889.24',
     tariff: 70_000,
-    lostTicketFine: 150_000,
   },
   {
     id: 'ALT-1090',
@@ -177,7 +175,6 @@ export const demoIncidents: DemoIncident[] = [
     exit: { image: '/home/hero-garage.jpg', at: today(14, 21, 9), ocr: '59-X3 481.08', score: 95.6, node: 'SGC-EXIT-GANTRY-CAM-03', mode: 'IR night-vision on' },
     suggestedPlate: '59-X3 481.02',
     tariff: 12_000,
-    lostTicketFine: 50_000,
   },
   {
     id: 'ALT-1088',
@@ -194,7 +191,6 @@ export const demoIncidents: DemoIncident[] = [
     exit: { image: '/home/vault-deck.jpg', at: today(14, 32, 8), ocr: '51K-889.24', score: 99.8, node: 'SGC-FRONT-CAM-01', mode: '1080p 60FPS RAW' },
     suggestedPlate: '51K-889.24',
     tariff: 0,
-    lostTicketFine: 0,
   },
 ]
 

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ArrowUp, Banknote, Car, CreditCard, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
-import { getErrorMessage } from '@/api/apiError'
+import { ApiError, getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
 import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
+import { STAFF_TOAST, isPast, toastUnsettled } from '@/components/features/staff/staffToasts'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { formatClock, formatMinutes, vnd } from '@/components/features/manager/managerFormat'
 import { Button } from '@/components/ui/button'
@@ -29,6 +31,14 @@ export default function StaffCheckoutPage() {
   const myLots = useMyStaffLots()
   const lotKey = myLots.data?.[0]?.id
   const [params, setParams] = useSearchParams()
+  const [historyPlate, setHistoryPlate] = useState('')
+  const [historyPage, setHistoryPage] = useState(1)
+  const history = useQuery({
+    queryKey: ['staff-session-history', lotKey, historyPage, historyPlate],
+    queryFn: () => gateService.getHistory(lotKey!, historyPage, historyPlate),
+    enabled: Boolean(lotKey),
+    refetchInterval: 5000,
+  })
   const [lookup, setLookup] = useState('')
   const [quote, setQuote] = useState<CheckoutQuoteDTO | null>(null)
   const [qr, setQr] = useState<PaymentDTO | null>(null)
@@ -64,6 +74,7 @@ export default function StaffCheckoutPage() {
             setQuote(q)
             setQr(null)
             setTendered(0)
+            if (q.amountDue > 0 && q.exitWindowLateFee > 0) toast.warning(STAFF_TOAST.graceExceeded)
           },
           onError: (e) => toast.error(getErrorMessage(e)),
         },
@@ -87,8 +98,9 @@ export default function StaffCheckoutPage() {
       const found = await gateService.lookup(lotKey, /^SS/i.test(value) ? { code: value.toUpperCase() } : { plate: value })
       setExitPlate(found.hasPlate ? found.plateNumber : '')
       setParams({ session: String(found.id) })
+      toast.success(STAFF_TOAST.ticketLoaded)
     } catch (e) {
-      toast.error(getErrorMessage(e))
+      toast.error(e instanceof ApiError && e.status === 404 ? STAFF_TOAST.vehicleNotFound : getErrorMessage(e))
     } finally {
       setSearching(false)
     }
@@ -161,7 +173,7 @@ export default function StaffCheckoutPage() {
   const liftBarrier = useCallback(() => {
     if (!session || cleared) return
     if (session.status !== 'Paid') {
-      toast.error('Payment not settled', { description: `Collect ${vnd(due)} first, or wait for the QR payment.` })
+      toastUnsettled(session.exitWindowEndsAt)
       return
     }
     checkout.mutate(
@@ -172,18 +184,23 @@ export default function StaffCheckoutPage() {
       {
         onSuccess: (r) => {
           if (!r.barrierOpen) {
-            toast.error('Barrier held', { description: r.alerts.map((a) => a.message).join(' ') })
+            // No popup in the spec for a plate / photo check: refresh so the alerts show in the barrier panel
+            loadQuote(session.id, exitPlate)
             return
           }
           setCleared({ plate: r.session.plateNumber || r.session.code, refund: r.depositRefund })
-          toast.success(`Barrier lifted for ${r.session.plateNumber || r.session.code}`, {
-            description: r.depositRefund > 0 ? `${vnd(r.depositRefund)} of the deposit is refunded to the customer.` : undefined,
-          })
+          toast.success(STAFF_TOAST.checkedOut)
         },
-        onError: (e) => toast.error(getErrorMessage(e)),
+        onError: (e) => {
+          // The pre-payment ran past the exit window while the Staff was at the lane: more is due now
+          if (e instanceof ApiError && e.status === 400 && isPast(session.exitWindowEndsAt)) {
+            toastUnsettled(session.exitWindowEndsAt)
+            loadQuote(session.id, exitPlate)
+          } else toast.error(getErrorMessage(e))
+        },
       },
     )
-  }, [allowMismatch, checkout, cleared, due, exitPlate, overrideReason, photoChecked, session])
+  }, [allowMismatch, checkout, cleared, exitPlate, loadQuote, overrideReason, photoChecked, session])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -231,6 +248,34 @@ export default function StaffCheckoutPage() {
             <Search /> Find vehicle
           </Button>
         </form>
+      </Panel>
+
+      <Panel>
+        <SectionTitle icon={<ReceiptText />}>Vehicle entry and exit history</SectionTitle>
+        <label className="block text-sm font-medium" htmlFor="history-plate">Search by entry plate</label>
+        <Input id="history-plate" value={historyPlate} onChange={(e) => { setHistoryPlate(e.target.value); setHistoryPage(1) }} placeholder="Plate number" />
+        {!lotKey && <p className="mt-3 text-sm">No assigned parking lot is available.</p>}
+        {lotKey && history.isLoading && <p className="mt-3 text-sm">Loading history…</p>}
+        {history.isError && <p className="mt-3 text-sm text-red-700">Unable to load history: {getErrorMessage(history.error)}</p>}
+        {history.data && history.data.items.length === 0 && <p className="mt-3 text-sm">No sessions found.</p>}
+        {history.data && history.data.items.length > 0 && (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead><tr><th>Session</th><th>Entry plate</th><th>Entry time</th><th>Exit time</th><th>Status</th><th>Paid</th></tr></thead>
+              <tbody>{history.data.items.map((item) => <tr key={item.id}>
+                <td>{item.code}</td><td>{item.plateNumber || 'No plate'}</td>
+                <td>{new Date(item.entryTime).toLocaleString()}</td>
+                <td>{item.exitTime ? new Date(item.exitTime).toLocaleString() : '—'}</td>
+                <td>{item.status}</td><td>{vnd(item.paidAmount)}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        )}
+        {history.data && <div className="mt-3 flex items-center gap-3">
+          <Button variant="secondary" disabled={historyPage <= 1} onClick={() => setHistoryPage((page) => page - 1)}>Previous</Button>
+          <span>Page {historyPage} · {history.data.totalCount} sessions</span>
+          <Button variant="secondary" disabled={historyPage * history.data.pageSize >= history.data.totalCount} onClick={() => setHistoryPage((page) => page + 1)}>Next</Button>
+        </div>}
       </Panel>
 
       {!session ? (

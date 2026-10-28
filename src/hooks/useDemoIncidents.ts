@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import { demoIncidents, type DemoIncident } from '@/mocks/staffOps.mock'
 
-export type IncidentResolution = 'RESOLVED' | 'LOST_TICKET' | 'ESCALATED' | 'BLACKLISTED'
+/** Lost tickets are not demo incidents: they go through the lost ticket desk and the real API. */
+export type IncidentResolution = 'RESOLVED' | 'ESCALATED' | 'BLACKLISTED'
 
 export interface TrackedIncident extends DemoIncident {
   resolution?: IncidentResolution

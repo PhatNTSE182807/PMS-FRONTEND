@@ -5,6 +5,7 @@ import { notificationApi, type NotificationModel, type NotificationListModel } f
 import { parkingOpsRealtime, type ParkingOpsEvent } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
 import { useAuth } from '@/hooks/useAuth'
+import { USER_TOAST } from '@/lib/userToasts'
 
 /** Loads the bell's notifications and keeps them up-to-date through SignalR. */
 export function useNotifications(take = 30) {
@@ -39,8 +40,12 @@ export function useNotifications(take = 30) {
         }
       })
 
-      // Show a toast for immediate feedback
-      toast.info(notification.title, { description: notification.message, duration: 5000 })
+      // Popup for immediate feedback. The id stops several mounted copies of this hook showing it twice.
+      // A check-out closed by the lot Manager (it carries a note) is not a normal exit: it keeps its own text.
+      const id = `notification-${notification.id}`
+      if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
+      else if (notification.type === 'CheckOut' && !notification.data?.note) toast.success(USER_TOAST.checkedOut, { id })
+      else toast.info(notification.title, { id, description: notification.message, duration: 5000 })
     })
 
     return unsubscribe

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { getErrorMessage } from '@/api/apiError'
+import { USER_TOAST, toastPaymentError } from '@/lib/userToasts'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { parkingSessionService } from '@/api/parkingSession.service'
 import { queryKeys } from '@/api/queryKeys'
@@ -43,7 +43,7 @@ export function usePrepaySession() {
       parkingSessionService.prepay(sessionId, provider),
     onSuccess: (payment) => {
       if (!payment.payUrl) {
-        toast.success('Parking fee successfully paid using XXIV Wallet! Exit pass issued.')
+        toast.success(USER_TOAST.feePaidFromWallet)
         window.dispatchEvent(new Event('xxiv-wallet-updated'))
         void queryClient.invalidateQueries({ queryKey: queryKeys.parkingSessions.all })
         return
@@ -53,6 +53,6 @@ export function usePrepaySession() {
       if (url.origin === window.location.origin) navigate(`${url.pathname}${url.search}`)
       else window.location.assign(payment.payUrl)
     },
-    onError: (error) => toast.error(getErrorMessage(error, 'Could not start the payment.')),
+    onError: (error) => toastPaymentError(error, 'Could not start the payment.'),
   })
 }

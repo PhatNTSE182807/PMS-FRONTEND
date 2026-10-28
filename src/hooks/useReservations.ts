@@ -7,6 +7,7 @@ import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { paymentService } from '@/api/payment.service'
 import { queryKeys } from '@/api/queryKeys'
 import { reservationService } from '@/api/reservation.service'
+import { USER_TOAST, toastBookingError, toastPaymentError } from '@/lib/userToasts'
 import type { CreateReservationRequest, PaymentProvider, ReservationDTO, UpdateReservationRequest } from '@/types/operations.dto'
 
 /** Polling fallback: deposit deadlines are minutes long, so 15 s is enough without SignalR. */
@@ -22,6 +23,10 @@ export function useMyReservations() {
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'ReservationChanged' || event.type === 'PaymentChanged')
         void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+      // The hold passed without a check-in: the backend job cancels the booking. The id stops several mounted
+      // copies of this hook from showing the same popup twice.
+      if (event.type === 'ReservationChanged' && event.status === 'NoShow')
+        toast.error(USER_TOAST.noShow, { id: `no-show-${event.reservationId}` })
       if (event.type === 'ReservationReminder')
         toast.info(event.kind === 'Arrival' ? 'Your parking arrival time is coming up.' : 'Your bay hold ends soon.', {
           description: new Date(event.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
@@ -86,7 +91,7 @@ export function useUpdateReservation() {
   return useMutation({
     mutationFn: ({ id, request }: { id: number; request: UpdateReservationRequest }) => reservationService.update(id, request),
     onSuccess: () => toast.success('Reservation updated.'),
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: toastBookingError,
     onSettled: invalidate,
   })
 }
@@ -95,10 +100,11 @@ export function useCancelReservation() {
   const invalidate = useInvalidateReservations()
   return useMutation({
     mutationFn: ({ id, reason }: { id: number; reason?: string }) => reservationService.cancel(id, reason),
+    // The spec text says the deposit came back; a cancel without a refund (late, or no deposit) has no spec text
     onSuccess: (r) =>
-      toast.success(`Reservation ${r.code} cancelled`, {
-        description: r.refundAmount > 0 ? `${r.refundAmount.toLocaleString('en-US')} VND is refunded to your payment source.` : 'The deposit is not refunded.',
-      }),
+      r.refundAmount > 0
+        ? toast.success(USER_TOAST.bookingCancelled)
+        : toast.success(`Reservation ${r.code} cancelled`, { description: 'The deposit is not refunded.' }),
     onError: (error) => toast.error(getErrorMessage(error)),
     onSettled: invalidate,
   })
@@ -121,7 +127,7 @@ export function useSimulateDeposit() {
       toast.success(`Deposit paid (simulated): bay ${reservation.slotCode} is confirmed.`)
       void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: (error) => toastPaymentError(error),
   })
 }
 
@@ -147,6 +153,6 @@ export function usePayDeposit() {
       if (url.origin === window.location.origin) navigate(`${url.pathname}${url.search}`)
       else window.location.assign(payment.payUrl)
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: (error) => toastPaymentError(error),
   })
 }

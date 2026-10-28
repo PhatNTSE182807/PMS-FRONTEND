@@ -10,6 +10,7 @@ import { Dialog, DialogClose, DialogDescription, DialogTitle, SheetContent } fro
 import { FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { Spinner } from '@/components/ui/states'
 import { useCreateManagedStaff, useUpdateManagedStaff } from '@/hooks/useManagedStaff'
+import { ADMIN_TOAST } from '@/lib/adminToasts'
 import { generatePassword, isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/password'
 import type { UserDTO } from '@/types/identity.dto'
 import type { ManagedLot } from '@/types/lot-management.dto'
@@ -119,15 +120,13 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
         })
         toast.success('Staff updated', { description: `${updated.fullName} (${updated.employeeCode})` })
       } else {
-        const created = await createStaff.mutateAsync({
+        await createStaff.mutateAsync({
           ...details,
           password: values.password,
           confirmPassword: values.confirmPassword,
           parkingLotId: values.parkingLotId,
         })
-        toast.success(`Staff account created for ${created.fullName}`, {
-          description: `Employee code ${created.employeeCode}. They can sign in now with ${created.email}; send them the password through a secure channel.`,
-        })
+        toast.success(ADMIN_TOAST.accountCreated)
       }
       onDone()
     } catch (error) {
