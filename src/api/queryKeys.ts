@@ -119,5 +119,6 @@ export const queryKeys = {
     paymentMethods: (query: RevenueFilterQuery) => [...queryKeys.reports.all, 'payment-methods', query] as const,
     byLot: (query: RevenueFilterQuery) => [...queryKeys.reports.all, 'by-lot', query] as const,
     breakdown: (query: RevenueBreakdownQuery) => [...queryKeys.reports.all, 'breakdown', query] as const,
+    manager: (query: object) => [...queryKeys.reports.all, 'manager', query] as const,
   },
 }

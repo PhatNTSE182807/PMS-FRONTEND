@@ -69,3 +69,13 @@ export interface RevenueBreakdownRowDTO {
 }
 
 export type RevenueBreakdownQuery = RevenueFilterQuery & PageQuery
+
+/** Revenue of the Manager's lots (ManagerRevenueController, /manager/reports/revenue): settled sessions only. */
+export interface ManagerRevenueReportDTO {
+  startDate: string
+  endDate: string
+  totalRevenue: number
+  totalSessions: number
+  byLot: { parkingLotId: number; parkingLotName: string; totalRevenue: number; totalSessions: number }[]
+  paymentMethods: PaymentMethodBreakdownDTO[]
+}

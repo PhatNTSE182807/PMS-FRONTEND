@@ -2,6 +2,7 @@ import { isMockService, SERVICE_PATHS } from '@/config/env'
 import { revenueMock } from '@/mocks/revenue.mock'
 import type { PaginatedResponse } from '@/types/common.dto'
 import type {
+  ManagerRevenueReportDTO,
   PaymentMethodBreakdownDTO,
   RevenueBreakdownQuery,
   RevenueBreakdownRowDTO,
@@ -17,6 +18,11 @@ const mocked = () => isMockService('reports')
 
 /** Report service: read-only revenue aggregations (a CQRS read model after the split). */
 export const reportService = {
+  /** Real revenue of the signed-in Manager's lots (cash, QR and wallet), never demo data. */
+  getManagerRevenue(query: { startDate: string; endDate: string; parkingLotId?: string }): Promise<ManagerRevenueReportDTO> {
+    return http.get<ManagerRevenueReportDTO>('/manager/reports/revenue', { params: query })
+  },
+
   getKpiSummary(query: RevenueFilterQuery): Promise<RevenueKpiSummaryDTO> {
     return mocked() ? revenueMock.getKpiSummary(query) : http.get<RevenueKpiSummaryDTO>(`${base}/kpi`, { params: query })
   },
