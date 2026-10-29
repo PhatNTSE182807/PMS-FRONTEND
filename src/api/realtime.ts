@@ -14,11 +14,20 @@ export interface LotStatusChangedEvent {
 export interface LayoutChangedEvent {
   lotId: number
 }
+/** A zone's free and used spaces moved (vehicle in or out, bay held or released). */
+export interface ZoneCounterChangedEvent {
+  lotId: number
+  zoneId: number
+  availableSpaces: number
+  occupiedSpaces: number
+  totalCapacity: number
+}
 
 export type LotEvent =
   | ({ type: 'SlotStatusChanged' } & SlotStatusChangedEvent)
   | ({ type: 'LotStatusChanged' } & LotStatusChangedEvent)
   | ({ type: 'LayoutChanged' } & LayoutChangedEvent)
+  | ({ type: 'ZoneCounterChanged' } & ZoneCounterChangedEvent)
 
 interface Watcher {
   onEvent: (event: LotEvent) => void
@@ -52,6 +61,7 @@ function hub(): HubConnection {
   built.on('SlotStatusChanged', dispatch('SlotStatusChanged'))
   built.on('LotStatusChanged', dispatch('LotStatusChanged'))
   built.on('LayoutChanged', dispatch('LayoutChanged'))
+  built.on('ZoneCounterChanged', dispatch('ZoneCounterChanged'))
   built.onreconnecting(notifyConnection)
   built.onreconnected(() => joinAll(built).finally(notifyConnection))
   built.onclose(notifyConnection)
