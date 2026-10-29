@@ -59,3 +59,10 @@ export function passwordScore(password: string): 0 | 1 | 2 | 3 | 4 {
 }
 
 export const STRENGTH_LABEL = ['', 'Weak', 'Fair', 'Good', 'Strong'] as const
+
+/** "15 minutes", or "15 seconds" for a hold the Admin's parking simulation made shorter than whole minutes. */
+export function holdDuration(booking: { holdMinutes: number; holdSeconds?: number }): string {
+  const seconds = booking.holdSeconds ?? booking.holdMinutes * 60
+  if (seconds % 60 === 0) return seconds === 60 ? '1 minute' : `${seconds / 60} minutes`
+  return seconds === 1 ? '1 second' : `${seconds} seconds`
+}

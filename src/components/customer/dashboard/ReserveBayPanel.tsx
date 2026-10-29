@@ -11,6 +11,7 @@ import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bo
 import { formatNumber } from '@/lib/format'
 import { USER_TOAST, toastBookingError } from '@/lib/userToasts'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
+import { holdDuration } from '../customerFormat'
 
 /** Deposit choices: the hold after arrival is longer when a deposit is paid. */
 const DEPOSIT_OPTIONS = [
@@ -93,7 +94,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
         </p>
         <p className="cx-reserve__meta">{describeWindow(heldHere.arrivalTime, heldHere.departureTime, now)}</p>
         <p className="cx-reserve__meta">
-          <Timer aria-hidden /> No deposit: the bay is held until <strong>{clock.format(Date.parse(heldHere.checkInUntil))}</strong> ({heldHere.holdMinutes} minutes after arrival)
+          <Timer aria-hidden /> No deposit: the bay is held until <strong>{clock.format(Date.parse(heldHere.checkInUntil))}</strong> ({holdDuration(heldHere)} after arrival)
         </p>
         <Link to="/me/bookings" className="cx-link">Open My Bookings</Link>
       </div>
@@ -110,7 +111,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
         </p>
         <p className="cx-reserve__meta">{describeWindow(heldHere.arrivalTime, heldHere.departureTime, now)}</p>
         <p className="cx-reserve__meta">
-          <ShieldCheck aria-hidden /> With the deposit the bay is held {heldHere.holdMinutes} minutes after arrival
+          <ShieldCheck aria-hidden /> With the deposit the bay is held {holdDuration(heldHere)} after arrival
         </p>
         <p className="cx-reserve__meta">
           <Timer aria-hidden /> Pay the <strong>{formatNumber(heldHere.depositAmount)} VND</strong> deposit within{' '}

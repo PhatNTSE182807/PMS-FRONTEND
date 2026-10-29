@@ -131,6 +131,8 @@ export interface ReservationDTO {
   hasDeposit: boolean
   /** Minutes the slot is held after the arrival time (30 with a deposit, 15 without). */
   holdMinutes: number
+  /** The same hold in seconds; a parking simulation can hold for less than a minute. */
+  holdSeconds?: number
   depositDueAt: string | null
   refundAmount: number
   cancelReason: string | null
