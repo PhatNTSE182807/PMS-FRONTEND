@@ -56,6 +56,8 @@ export const queryKeys = {
     publicPrices: (lotId: string) => ['pricing', 'public', lotId] as const,
     simulation: (lotId: string, request: object) => ['pricing', 'simulation', lotId, request] as const,
   },
+  /** The Admin's parking simulation (fees and booking times in seconds). */
+  parkingSimulation: ['parking-simulation'] as const,
   /** Server-wide payment settings. */
   payments: {
     simulation: () => ['payments', 'simulation'] as const,

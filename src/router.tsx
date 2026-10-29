@@ -22,6 +22,7 @@ const StaffAccountsPage = lazy(() => import('@/pages/admin/StaffAccountsPage'))
 const CustomerAccountsPage = lazy(() => import('@/pages/admin/CustomerAccountsPage'))
 const RevenueReportPage = lazy(() => import('@/pages/admin/RevenueReportPage'))
 const ParkingCapacityPage = lazy(() => import('@/pages/admin/ParkingCapacityPage'))
+const ParkingSimulationPage = lazy(() => import('@/pages/admin/ParkingSimulationPage'))
 const ManagerConsolePage = lazy(() => import('@/pages/management/ManagerConsolePage'))
 const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerReservationsPage'))
 const ManagerApprovalsPage = lazy(() => import('@/pages/management/ManagerApprovalsPage'))
@@ -85,6 +86,7 @@ export const router = createBrowserRouter([
       { path: 'lots', element: <ParkingLotsPage /> },
       { path: 'revenue', element: <RevenueReportPage /> },
       { path: 'capacity', element: <ParkingCapacityPage /> },
+      { path: 'simulation', element: <ParkingSimulationPage /> },
     ],
   },
   {
