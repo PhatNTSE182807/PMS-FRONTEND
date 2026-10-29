@@ -79,6 +79,9 @@ interface MockSession extends ParkingSessionDTO {
   ownedByCustomer?: boolean
 }
 
+/** Session fields of a vehicle with no lost-ticket case. */
+const NO_LOST_TICKET_CASE = { lostTicketStatus: null, lostTicketReportedBy: null, lostTicketReportedAt: null, lostTicketReason: null, lostTicketDecisionNote: null }
+
 const reservations: MockReservation[] = []
 /** The demo driver's own bookings (the Staff demo seeds other customers' bookings in the same list). */
 const customerReservations = () => reservations.filter((r) => !r.staffDemo)
@@ -445,7 +448,7 @@ const CAPACITY = { car: 40, motorbike: 20 }
 
 function seedLot(lotKey: string) {
   if (sessions.some((s) => s.lotKey === lotKey && !s.ownedByCustomer)) return
-  const base = { lotKey, parkingLotId: lotNumber(lotKey), entryGateId: 1, hasPlate: true, zoneId: null, zoneName: null, slotId: null, slotCode: null, reservationId: null, reservationCode: null, isCustomerAccount: false, paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false, plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null }
+  const base = { lotKey, parkingLotId: lotNumber(lotKey), entryGateId: 1, hasPlate: true, zoneId: null, zoneName: null, slotId: null, slotCode: null, reservationId: null, reservationCode: null, isCustomerAccount: false, paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false, ...NO_LOST_TICKET_CASE, plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null }
   const seed: [string, number, 'car' | 'motorbike'][] = [
     ['51A-888.68', 140, 'car'],
     ['30G-456.12', 47, 'car'],
@@ -576,6 +579,7 @@ export const gateMock = {
       const plate = request.noPlate ? '' : (request.plateNumber ?? '').trim().toUpperCase()
       const key = normalize(plate)
       if (!request.noPlate && !key) alert('PLATE_REQUIRED', 'Enter the plate or mark the vehicle as plate-less.', false, false)
+      if (request.noPlate && !request.noPlateReason?.trim()) alert('NO_PLATE_REASON_REQUIRED', 'Give the reason the vehicle has no plate.', false, false)
       const confidence = request.anprConfidence == null ? 1 : request.anprConfidence > 1 ? request.anprConfidence / 100 : request.anprConfidence
       if (!request.noPlate && confidence < RULES.anprThreshold)
         alert('LOW_CONFIDENCE', `ANPR is only ${Math.round(confidence * 100)}% confident; check the plate.`, request.plateConfirmed)
@@ -638,6 +642,7 @@ export const gateMock = {
         exitTime: null,
         isManualEntry: Boolean(request.isManual),
         isLostTicket: false,
+        ...NO_LOST_TICKET_CASE,
         plateMismatch: false,
         isOverdue: false,
         zeroFeeReason: null,
@@ -648,15 +653,22 @@ export const gateMock = {
     }),
 
   /** Entry lane: the booking behind a scanned QR or typed code, with the booked vehicle. */
-  async lookupReservation(lotId: string, query: { code?: string; qr?: string }): Promise<GateReservationLookupDTO> {
+  async lookupReservation(lotId: string, query: { code?: string; qr?: string; plate?: string }): Promise<GateReservationLookupDTO> {
     const vehicles = await profileMock.getVehicles()
     return mockResponse(() => {
       sweep()
       const id = query.qr?.trim().startsWith('rsv.demo.') ? Number(query.qr.trim().slice(9)) : NaN
       const wanted = query.code?.trim().toUpperCase()
-      if (!query.qr?.trim() && !wanted) mockFail(400, 'Scan the reservation QR or type its code.')
+      const typedPlate = normalize(query.plate ?? '')
+      if (!query.qr?.trim() && !wanted && !typedPlate) mockFail(400, 'Scan the reservation QR, type its code or type the plate.')
       if (query.qr?.trim() && Number.isNaN(id)) mockFail(400, 'This reservation QR is not genuine.')
-      const r = reservations.find((x) => x.id === id || (wanted && x.code === wanted))
+      const byPlate = !query.qr?.trim() && !wanted
+        ? reservations
+            .filter((x) => (x.lotKey === lotId || String(x.parkingLotId) === lotId) && normalize(x.plateNumber ?? '') === typedPlate)
+            .sort((a, b) => Number(b.status === 'Confirmed') - Number(a.status === 'Confirmed'))[0]
+        : undefined
+      if (typedPlate && !query.qr?.trim() && !wanted && !byPlate) mockFail(404, 'No reservation found for this plate in this lot.')
+      const r = byPlate ?? reservations.find((x) => x.id === id || (wanted && x.code === wanted))
       if (!r) mockFail(404, 'Reservation not found.')
       if (r.lotKey !== lotId && String(r.parkingLotId) !== lotId) mockFail(400, 'This reservation is for another parking lot.')
       const vehicle = vehicles.find((v) => v.vehicleId === r.vehicleId)
@@ -769,7 +781,7 @@ async function customerSessions(): Promise<MockSession[]> {
         entryTime: iso(entry), entryConfirmedAt: iso(entry), entryGateId: 1, zoneId: 2, zoneName: 'Level 2 · Cars',
         slotId: 1014, slotCode: 'L2-14', reservationId: null, reservationCode: null, isCustomerAccount: true,
         paidAmount: 0, finalFee: 0, exitWindowEndsAt: null, exitTime: null, isManualEntry: false, isLostTicket: false,
-        plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null,
+        ...NO_LOST_TICKET_CASE, plateMismatch: false, isOverdue: false, zeroFeeReason: null, overrideNote: null,
       })
     }
   }

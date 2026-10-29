@@ -9,6 +9,7 @@ import { RequireAuth } from '@/components/layout/RequireAuth'
 import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import CustomerDashboardPage from '@/pages/customer/CustomerDashboardPage'
 import CustomerProfilePage from '@/pages/customer/CustomerProfilePage'
 import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
@@ -21,6 +22,7 @@ const StaffAccountsPage = lazy(() => import('@/pages/admin/StaffAccountsPage'))
 const CustomerAccountsPage = lazy(() => import('@/pages/admin/CustomerAccountsPage'))
 const RevenueReportPage = lazy(() => import('@/pages/admin/RevenueReportPage'))
 const ParkingCapacityPage = lazy(() => import('@/pages/admin/ParkingCapacityPage'))
+const ParkingSimulationPage = lazy(() => import('@/pages/admin/ParkingSimulationPage'))
 const ManagerConsolePage = lazy(() => import('@/pages/management/ManagerConsolePage'))
 const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerReservationsPage'))
 const ManagerApprovalsPage = lazy(() => import('@/pages/management/ManagerApprovalsPage'))
@@ -41,6 +43,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
+      // Opened from the password reset email
+      { path: '/reset-password', element: <ResetPasswordPage /> },
     ],
   },
   // VNPay / MoMo send the browser back here (public: Guests pay lane QRs on their phones too).
@@ -82,6 +86,7 @@ export const router = createBrowserRouter([
       { path: 'lots', element: <ParkingLotsPage /> },
       { path: 'revenue', element: <RevenueReportPage /> },
       { path: 'capacity', element: <ParkingCapacityPage /> },
+      { path: 'simulation', element: <ParkingSimulationPage /> },
     ],
   },
   {

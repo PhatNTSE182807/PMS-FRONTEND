@@ -59,6 +59,14 @@ export function useOtpLogin() {
   return useMutation({ mutationFn: (input: OtpLoginInput) => loginWithOtp(input) })
 }
 
+export function useForgotPassword() {
+  return useMutation({ mutationFn: identityService.forgotPassword })
+}
+
+export function useResetPassword() {
+  return useMutation({ mutationFn: identityService.resetPassword })
+}
+
 export function useRegister() {
   return useMutation({ mutationFn: identityService.register })
 }

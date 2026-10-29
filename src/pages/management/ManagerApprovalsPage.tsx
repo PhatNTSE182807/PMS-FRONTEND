@@ -30,7 +30,8 @@ const REJECTION_REASONS = [
 ]
 
 /** Maker-checker: a Manager never approves a request their own account raised. */
-const isOwnRequest = (request: LostTicketApprovalDTO, userId: string | undefined) => Boolean(userId && request.createdBy && request.createdBy === userId)
+const isOwnRequest = (request: LostTicketApprovalDTO, userId: string | undefined) =>
+  Boolean(userId && request.lostTicketReportedBy && request.lostTicketReportedBy === userId)
 
 const accessLabel = (request: LostTicketApprovalDTO) =>
   request.sessionType === 'Reservation' ? `Reservation ${request.reservationCode ?? ''}`.trim() : request.sessionType === 'Whitelist' ? 'Whitelist (free)' : 'Walk-in'

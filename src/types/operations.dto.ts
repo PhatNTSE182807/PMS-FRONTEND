@@ -131,6 +131,8 @@ export interface ReservationDTO {
   hasDeposit: boolean
   /** Minutes the slot is held after the arrival time (30 with a deposit, 15 without). */
   holdMinutes: number
+  /** The same hold in seconds; a parking simulation can hold for less than a minute. */
+  holdSeconds?: number
   depositDueAt: string | null
   refundAmount: number
   cancelReason: string | null
@@ -284,18 +286,33 @@ export interface ParkingSessionDTO {
   exitWindowEndsAt: string | null
   exitTime: string | null
   isManualEntry: boolean
+  noPlateReason?: string | null
   isLostTicket: boolean
+  /** Latest lost-ticket case; null without a case (or an old one recorded before cases had a status). */
+  lostTicketStatus: LostTicketCaseStatus | null
+  /** User id of who reported the latest case; that account cannot approve or reject it. */
+  lostTicketReportedBy: string | null
+  lostTicketReportedAt: string | null
+  /** What the reporter wrote (what was checked). */
+  lostTicketReason: string | null
+  /** The Manager's remarks or rejection reason. */
+  lostTicketDecisionNote: string | null
   plateMismatch: boolean
   isOverdue: boolean
   zeroFeeReason: string | null
   overrideNote: string | null
 }
 
+/** LostTicketCaseStatus: a rejected case keeps the vehicle in the lot until a new case is approved. */
+export type LostTicketCaseStatus = 'Pending' | 'Approved' | 'Rejected'
+
 /** CheckInModel */
 export interface CheckInRequest {
   gateId?: number
   plateNumber?: string
   noPlate?: boolean
+  /** Required with `noPlate`: why the plate is unreadable or missing. */
+  noPlateReason?: string
   vehicleTypeId?: number
   /** 0..1 */
   anprConfidence?: number
@@ -401,27 +418,4 @@ export interface BookableLotDTO {
   isBookable?: boolean
   /** Why it cannot be booked, in plain words. */
   maintenanceNotice?: string | null
-}
-
-/** StaffPaymentHistoryItemModel */
-export interface StaffPaymentHistoryItemDTO {
-  id: number
-  code: string
-  paidAt: string | null
-  sessionId: number | null
-  sessionCode: string | null
-  plateNumber: string | null
-  method: string
-  channel: string | null
-  amount: number
-  status: string
-  collectedByName: string | null
-}
-
-/** StaffPaymentHistoryPageModel */
-export interface StaffPaymentHistoryPageDTO {
-  items: StaffPaymentHistoryItemDTO[]
-  page: number
-  pageSize: number
-  totalCount: number
 }

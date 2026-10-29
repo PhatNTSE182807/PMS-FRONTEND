@@ -1,10 +1,12 @@
 import type { SessionUser } from '@/lib/session'
 import type {
+  ForgotPasswordCommand,
   LoginCommand,
   LoginResponseDTO,
   RegisterCommand,
   RegisterResponseDTO,
   RequestLoginOtpCommand,
+  ResetPasswordCommand,
   VerifyLoginOtpCommand,
 } from '@/types/identity.dto'
 import { mockFail, mockId, mockResponse } from './mockApi'
@@ -85,6 +87,21 @@ export const authMock = {
       return mockResponse(() => mockFail(400, 'Login code is invalid or has expired'))
     }
     return authMock.login({ email, password: code })
+  },
+
+  forgotPassword({ email }: ForgotPasswordCommand): Promise<string> {
+    return mockResponse(() => {
+      if (!email.trim()) mockFail(400, 'Email address is required')
+      return 'Demo mode: no email is sent. Open /reset-password?email=you@example.com&token=demo to try the next step.'
+    })
+  },
+
+  /** Demo mode accepts the token "demo". */
+  resetPassword({ token }: ResetPasswordCommand): Promise<string> {
+    return mockResponse(() => {
+      if (token !== 'demo') mockFail(400, 'This reset link is invalid or has expired. Please request a new one.')
+      return 'Your password has been reset. You can now sign in with it.'
+    })
   },
 
   register(command: RegisterCommand): Promise<RegisterResponseDTO> {

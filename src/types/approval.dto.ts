@@ -11,12 +11,7 @@ export interface SessionDecisionRequest {
 
 /**
  * A lost-ticket report waiting for the Manager: a session in `LostTicketPending`
- * (GET /staff/lots/{lotId}/sessions?status=LostTicketPending).
+ * (GET /staff/lots/{lotId}/sessions?status=LostTicketPending). `lostTicketReportedBy` is the account
+ * that raised it: that account cannot approve or reject it (maker-checker, also enforced by the API).
  */
-export interface LostTicketApprovalDTO extends ParkingSessionDTO {
-  /**
-   * Id of the account that raised the request. The API does not send it yet; once it does, the
-   * Manager cannot approve a request they created themselves (maker-checker).
-   */
-  createdBy?: string | null
-}
+export type LostTicketApprovalDTO = ParkingSessionDTO

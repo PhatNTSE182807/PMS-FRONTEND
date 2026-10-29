@@ -45,6 +45,8 @@ export const queryKeys = {
     all: ['parking'] as const,
     lots: () => [...queryKeys.parking.all, 'lots'] as const,
     capacity: () => [...queryKeys.parking.all, 'capacity'] as const,
+    /** Public lot list with live free bays (homepage). */
+    publicLots: () => [...queryKeys.parking.all, 'public-lots'] as const,
     staffLots: (userId: string | undefined) => [...queryKeys.parking.all, 'staff-lots', userId] as const,
   },
   /** A lot's pricing rules and fee simulations. */
@@ -54,6 +56,8 @@ export const queryKeys = {
     publicPrices: (lotId: string) => ['pricing', 'public', lotId] as const,
     simulation: (lotId: string, request: object) => ['pricing', 'simulation', lotId, request] as const,
   },
+  /** The Admin's parking simulation (fees and booking times in seconds). */
+  parkingSimulation: ['parking-simulation'] as const,
   /** Server-wide payment settings. */
   payments: {
     simulation: () => ['payments', 'simulation'] as const,
@@ -117,5 +121,6 @@ export const queryKeys = {
     paymentMethods: (query: RevenueFilterQuery) => [...queryKeys.reports.all, 'payment-methods', query] as const,
     byLot: (query: RevenueFilterQuery) => [...queryKeys.reports.all, 'by-lot', query] as const,
     breakdown: (query: RevenueBreakdownQuery) => [...queryKeys.reports.all, 'breakdown', query] as const,
+    manager: (query: object) => [...queryKeys.reports.all, 'manager', query] as const,
   },
 }
