@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { LogOut } from 'lucide-react'
+import { Building2, LogOut } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -10,9 +10,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useDemoIncidents } from '@/hooks/useDemoIncidents'
+import { useMyStaffLots } from '@/hooks/useParking'
 import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
-import { demoStation } from '@/mocks/staffOps.mock'
 import { STAFF_NAV } from './adminNav'
 
 function Kbd({ children }: { children: string }) {
@@ -39,6 +39,8 @@ export function StaffLayout() {
   const navigate = useNavigate()
   const handleLogout = useSignOut()
   const { open } = useDemoIncidents()
+  const myLots = useMyStaffLots()
+  const lots = myLots.data ?? []
 
   // F1 Quick Pay and F2 Plate Scan work from every Staff screen.
   useEffect(() => {
@@ -68,30 +70,24 @@ export function StaffLayout() {
             <p className="text-[11px] font-bold tracking-[0.14em] text-amber-500 uppercase">POS terminal console</p>
           </div>
 
-          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 whitespace-nowrap 2xl:flex">
+          {/* The lot this Staff is assigned to (same data the Manager console shows) */}
+          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 whitespace-nowrap md:flex">
+            <Building2 className="size-4 shrink-0 text-amber-500" aria-hidden />
             <span className="text-xs font-semibold text-slate-700 uppercase">Facility</span>
-            <span className="text-sm font-semibold text-slate-950">
-              {demoStation.facility} (#{demoStation.facilityCode})
-            </span>
-          </div>
-          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 whitespace-nowrap lg:flex 2xl:ml-0">
-            <span className="text-xs font-semibold text-indigo-700 uppercase">Station</span>
-            <span className="text-sm font-semibold text-slate-950">
-              {demoStation.station} ({demoStation.lane})
+            <span className="truncate text-sm font-semibold text-slate-950">
+              {myLots.isPending
+                ? 'Loading…'
+                : lots.length
+                  ? lots.map((lot) => `${lot.name} · ${lot.code}`).join(', ')
+                  : 'No assigned parking lot'}
             </span>
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <span className="hidden items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-slate-950 uppercase xl:inline-flex">
-              <span className="size-2 animate-pulse-soft rounded-full bg-indigo-400" aria-hidden />
-              Edge online ({demoStation.edgeLatencyMs}ms latency)
-            </span>
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
                 <p className="text-sm font-semibold text-slate-950">{user?.fullName}</p>
-                <p className="text-xs text-slate-700">
-                  {demoStation.employeeCode} • {demoStation.title}
-                </p>
+                <p className="text-xs font-semibold tracking-wider text-amber-500 uppercase">Staff</p>
               </div>
               <img
                 src={resolveMediaUrl(user?.avatarUrl) || LOGO_SRC}
