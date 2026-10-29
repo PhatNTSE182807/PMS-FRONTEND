@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   Archive,
   Bike,
@@ -7,7 +7,6 @@ import {
   CarFront,
   Clock,
   Hourglass,
-  LogIn,
   LogOut,
   Moon,
   Pencil,
@@ -15,7 +14,6 @@ import {
   Power,
   ShieldCheck,
   Sun,
-  Terminal,
   TicketX,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
@@ -26,7 +24,6 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/dialog'
-import { Checkbox, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useVehicleTypes } from '@/hooks/useProfile'
@@ -34,7 +31,6 @@ import {
   useArchivePricingRule,
   useCreatePricingRule,
   usePricingRules,
-  usePricingSimulation,
   useSetPricingRuleStatus,
   useUpdatePricingRule,
 } from '@/hooks/usePricing'
@@ -47,12 +43,6 @@ import type { VehicleTypeDTO } from '@/types/profile.dto'
 const EXIT_WINDOW_MINUTES = 15
 
 const typeIcon = (code: string) => (code === 'MOTORBIKE' ? Bike : code === 'CAR_7' ? CarFront : Car)
-
-/** "2026-10-18T08:30" for <input type="datetime-local">, in local time. */
-function localInput(date: Date) {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 const STATUS_STYLE: Record<PricingRuleDTO['status'], string> = {
   Active: 'bg-emerald-100 text-emerald-700',
@@ -193,127 +183,6 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
   )
 }
 
-/** Fee calculator: asks the API what the gate would charge, with the lot's active rule. */
-function Calculator({ lotId, types }: { lotId: string; types: VehicleTypeDTO[] }) {
-  const now = new Date()
-  const morning = new Date(now)
-  morning.setHours(8, 30, 0, 0)
-  const afternoon = new Date(now)
-  afternoon.setHours(15, 45, 0, 0)
-
-  const [typeId, setTypeId] = useState<number | null>(null)
-  const [entry, setEntry] = useState(localInput(morning))
-  const [exit, setExit] = useState(localInput(afternoon))
-  const [deposit, setDeposit] = useState(0)
-  const [lostTicket, setLostTicket] = useState(false)
-
-  const vehicleTypeId = typeId ?? types[0]?.id
-  const start = new Date(entry).getTime()
-  const end = new Date(exit).getTime()
-  const valid = Number.isFinite(start) && Number.isFinite(end) && end > start && vehicleTypeId != null
-  const request = useMemo(
-    () =>
-      valid
-        ? { vehicleTypeId, entryTime: new Date(start).toISOString(), exitTime: new Date(end).toISOString(), depositAmount: deposit, isLostTicket: lostTicket }
-        : null,
-    [valid, vehicleTypeId, start, end, deposit, lostTicket],
-  )
-  const simulation = usePricingSimulation(lotId, request)
-  const result = simulation.data
-
-  return (
-    <Card className="border-t-2 border-amber-500 p-5 xl:sticky xl:top-24">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-          <Terminal className="size-5 text-amber-500" aria-hidden /> Fee calculator
-        </h2>
-        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-700 uppercase">Same as the gates</span>
-      </div>
-      <p className="mt-2 text-sm text-slate-700">What the exit gate would charge for a stay, with the active rule of this lot.</p>
-
-      <div className="mt-4 space-y-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="calc-type">Vehicle type</Label>
-          <NativeSelect id="calc-type" value={vehicleTypeId ?? ''} onChange={(e) => setTypeId(Number(e.target.value))}>
-            {types.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="calc-entry" className="flex items-center gap-1"><LogIn className="size-3.5" aria-hidden /> Entry</Label>
-            <Input id="calc-entry" type="datetime-local" value={entry} onChange={(e) => setEntry(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="calc-exit" className="flex items-center gap-1"><LogOut className="size-3.5" aria-hidden /> Exit</Label>
-            <Input id="calc-exit" type="datetime-local" value={exit} onChange={(e) => setExit(e.target.value)} />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="calc-deposit">Booking deposit</Label>
-            <NativeSelect id="calc-deposit" value={deposit} onChange={(e) => setDeposit(Number(e.target.value))}>
-              <option value={0}>None</option>
-              <option value={30_000}>30,000 VND</option>
-            </NativeSelect>
-          </div>
-          <label className="mt-6 flex items-center gap-2 text-sm text-slate-800">
-            <Checkbox checked={lostTicket} onChange={(e) => setLostTicket(e.target.checked)} /> Lost ticket
-          </label>
-        </div>
-      </div>
-
-      {!valid ? (
-        <p className="mt-5 text-sm text-rose-700">The exit time must be after the entry time.</p>
-      ) : simulation.isError ? (
-        <p className="mt-5 text-sm text-rose-700">{getErrorMessage(simulation.error)}</p>
-      ) : !result ? (
-        <Skeleton className="mt-5 h-40 rounded-xl" />
-      ) : (
-        <div className={cn('mt-5 rounded-xl bg-[#060f16] p-4 ring-1 ring-slate-200', simulation.isFetching && 'opacity-70')}>
-          <p className="flex justify-between text-xs font-bold tracking-wider text-slate-700 uppercase">
-            Billing ledger <span className="font-mono text-amber-500">{formatMinutes(result.durationMinutes)} stay</span>
-          </p>
-          <ul className="mt-3 space-y-2 text-sm">
-            {result.days.map((d) => (
-              <li key={d.date} className="flex justify-between gap-3 text-slate-700">
-                <span>
-                  {new Date(d.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {formatMinutes(d.minutes)}, {d.blocks} {d.blocks === 1 ? 'block' : 'blocks'}
-                  {d.capped && <span className="ml-1 text-amber-500">(daily cap)</span>}
-                </span>
-                <span className="shrink-0 font-mono font-bold text-slate-950">{vnd(d.amount)}</span>
-              </li>
-            ))}
-            {result.lostTicketFee > 0 && (
-              <li className="flex justify-between gap-3 text-slate-700">
-                Lost ticket fee
-                <span className="font-mono font-bold text-slate-950">{vnd(result.lostTicketFee)}</span>
-              </li>
-            )}
-            {result.depositApplied > 0 && (
-              <li className="flex justify-between gap-3 text-indigo-700">
-                Deposit deducted
-                <span className="font-mono font-bold">−{vnd(result.depositApplied)}</span>
-              </li>
-            )}
-          </ul>
-          <div className="mt-4 flex items-end justify-between gap-3 rounded-lg bg-slate-50 p-3">
-            <span className="text-xs font-bold tracking-wider text-slate-800 uppercase">Due at the exit gate</span>
-            <span className="font-display text-3xl font-bold text-amber-500">{vnd(result.amountDue)}</span>
-          </div>
-          <p className="mt-2 text-xs text-slate-600">
-            Rule: {result.ruleName}
-            {result.ruleVersion != null && ` (version ${result.ruleVersion})`}
-          </p>
-        </div>
-      )}
-    </Card>
-  )
-}
-
 /** Default prices for a vehicle type that has no rule yet (the API's defaults). */
 function starterRule(type: VehicleTypeDTO): PricingRuleInput {
   const bike = type.code === 'MOTORBIKE'
@@ -357,7 +226,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
     <div className="space-y-6">
       <PageHeader
         eyebrow={<span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-700">Applied at every gate checkout</span>}
-        title="Pricing Rules & Fee Calculator"
+        title="Pricing Rules"
         description={`${lot.name} • 4-seat cars, 7-seat cars and motorbikes. Saved prices apply from the next checkout.`}
       />
 
@@ -426,8 +295,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
           )}
         </div>
 
-        <div className="space-y-6">
-          <Calculator lotId={lot.id} types={types} />
+        <div className="space-y-6 xl:sticky xl:top-24">
           <Card className="p-5">
             <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-slate-950">
               <ShieldCheck className="size-5 text-indigo-700" aria-hidden /> How the gates charge
@@ -436,7 +304,13 @@ function Pricing({ lot }: { lot: ManagedLot }) {
               <li>✓ The first block (the first hour by default) is charged as soon as the vehicle enters: a stay is never free.</li>
               <li>✓ Each started block is charged in full; with day and night prices a block costs the price of the hour it starts in.</li>
               <li>✓ The daily cap applies per calendar day (midnight, Vietnam time); fees are rounded up to 1,000 VND.</li>
+              <li>✓ A booking deposit is deducted from the fee at checkout; a lost ticket adds the lost ticket fee to the stay.</li>
+              <li>
+                ✓ After paying at the counter or in the app the driver has {EXIT_WINDOW_MINUTES} minutes to leave; later, the stay is priced again
+                and a late-exit fee is added.
+              </li>
               <li>✓ Only Active rules are used; without one the system default price applies.</li>
+              <li>✓ While the Admin&apos;s parking simulation is on, every block lasts a few seconds and the daily cap is off.</li>
             </ul>
           </Card>
         </div>
@@ -445,7 +319,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
   )
 }
 
-/** /management/pricing: the lot's pricing rules (ManagerPricingController) and a fee calculator using the same engine. */
+/** /management/pricing: the lot's pricing rules (ManagerPricingController) and how the gates apply them. */
 export default function ManagerPricingPage() {
   return <WithManagerLot>{(lot) => <Pricing lot={lot} />}</WithManagerLot>
 }
