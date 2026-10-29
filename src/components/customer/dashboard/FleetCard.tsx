@@ -6,6 +6,19 @@ import { useSetDefaultVehicle } from '@/hooks/useProfile'
 import type { VehicleDTO } from '@/types/profile.dto'
 import { vehicleTitle } from '../customerFormat'
 
+/**
+ * Status chip of a vehicle: only a vehicle Staff approved is "Active". Anything still waiting
+ * (papers not sent, draft, or under review) is "Pending"; a rejected one says so.
+ * AutoVerified is a legacy approved status the API may still return.
+ */
+function vehicleChip(vehicle: VehicleDTO): { label: string; className: string } {
+  if (vehicle.isActive === false) return { label: 'Inactive', className: 'cx-chip--muted' }
+  const status: string | null | undefined = vehicle.verificationStatus
+  if (status === 'Approved' || status === 'AutoVerified') return { label: 'Active', className: '' }
+  if (status === 'Rejected') return { label: 'Rejected', className: 'cx-chip--red' }
+  return { label: 'Pending', className: 'cx-chip--gold' }
+}
+
 interface FleetCardProps {
   vehicles: VehicleDTO[]
   isLoading: boolean
@@ -47,12 +60,14 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
 
       {sorted.length > 0 && (
         <div className="cx-fleet">
-          {sorted.map((vehicle) => (
+          {sorted.map((vehicle) => {
+            const chip = vehicleChip(vehicle)
+            return (
             <article key={vehicle.vehicleId} className={`cx-vehicle ${vehicle.isDefault ? 'cx-vehicle--default' : ''}`}>
               <div className="cx-vehicle__top">
-                <span className="cx-label">{vehicle.isDefault ? 'Default active' : 'Secondary'}</span>
-                <span className={`cx-chip ${vehicle.isActive ? '' : 'cx-chip--muted'}`}>
-                  {vehicle.isActive ? 'Active' : 'Inactive'}
+                <span className="cx-label">{vehicle.isDefault ? 'Default vehicle' : 'Secondary'}</span>
+                <span className={`cx-chip ${chip.className}`} title={vehicle.verificationNote ?? undefined}>
+                  {chip.label}
                 </span>
               </div>
               <h3 className="cx-vehicle__name">{vehicleTitle(vehicle)}</h3>
@@ -77,7 +92,8 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
                 )}
               </div>
             </article>
-          ))}
+            )
+          })}
         </div>
       )}
 
