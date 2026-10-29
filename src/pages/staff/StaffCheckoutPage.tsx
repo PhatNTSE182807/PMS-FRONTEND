@@ -35,13 +35,24 @@ export default function StaffCheckoutPage() {
   const lotKey = myLots.data?.[0]?.id
   const [params, setParams] = useSearchParams()
   const queryClient = useQueryClient()
-  // Vehicles whose fee was requested (lane, counter or app) and that still have to pay
+  // Vehicles that still have to pay: fee already requested (lane, counter or app) first, then the ones parked
   const waiting = useQuery({
     queryKey: ['staff-waiting-payment', lotKey],
-    queryFn: () => gateService.getSessions(lotKey!, 'PendingPayment'),
+    queryFn: async () => {
+      const open = await gateService.getSessions(lotKey!)
+      const order = (status: string) => (status === 'PendingPayment' ? 0 : 1)
+      return open
+        .filter((s) => s.status === 'PendingPayment' || s.status === 'Active')
+        .sort((a, b) => order(a.status) - order(b.status) || Date.parse(a.entryTime) - Date.parse(b.entryTime))
+    },
     enabled: Boolean(lotKey),
     refetchInterval: 5000,
   })
+  const [queueFilter, setQueueFilter] = useState('')
+  const queue = (waiting.data ?? []).filter((s) =>
+    (s.plateNumber ?? '').replace(/[^A-Z0-9]/gi, '').toUpperCase().includes(queueFilter.replace(/[^A-Z0-9]/gi, '').toUpperCase()),
+  )
+  const QUEUE_SHOWN = 8
   // Payments taken at the lot, cash only by default
   const [historyPlate, setHistoryPlate] = useState('')
   const [historyPage, setHistoryPage] = useState(1)
@@ -280,21 +291,36 @@ export default function StaffCheckoutPage() {
       <Panel>
         <SectionTitle
           icon={<Clock />}
-          aside={waiting.data && <span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-500">{waiting.data.length} waiting</span>}
+          aside={
+            waiting.data && (
+              <span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-500">
+                {waiting.data.filter((s) => s.status === 'PendingPayment').length} requested · {waiting.data.length} unpaid
+              </span>
+            )
+          }
         >
-          Waiting for payment
+          Vehicles to collect from
         </SectionTitle>
         {!lotKey && <p className="text-sm text-slate-700">No assigned parking lot is available.</p>}
         {lotKey && waiting.isLoading && <p className="text-sm text-slate-700">Loading…</p>}
         {waiting.isError && <p className="text-sm text-rose-700">Unable to load the queue: {getErrorMessage(waiting.error)}</p>}
-        {waiting.data && waiting.data.length === 0 && (
-          <p className="text-sm text-slate-700">No vehicle is waiting to pay. Find a vehicle above to request its fee.</p>
-        )}
         {waiting.data && waiting.data.length > 0 && (
+          <>
+            <label className="sr-only" htmlFor="queue-filter">Filter by plate</label>
+            <Input id="queue-filter" className="mb-2" value={queueFilter} onChange={(e) => setQueueFilter(e.target.value)} placeholder="Filter by plate" />
+          </>
+        )}
+        {waiting.data && queue.length === 0 && (
+          <p className="text-sm text-slate-700">{waiting.data.length === 0 ? 'No parked vehicle has an unpaid fee.' : 'No vehicle matches this plate.'}</p>
+        )}
+        {queue.length > 0 && (
           <ul className="divide-y divide-slate-200">
-            {waiting.data.map((s) => (
+            {queue.slice(0, QUEUE_SHOWN).map((s) => (
               <li key={s.id} className={cn('flex flex-wrap items-center gap-x-6 gap-y-1 py-3', session?.id === s.id && 'bg-amber-50/40')}>
                 <span className="w-36 font-mono text-lg font-bold text-slate-950">{s.plateNumber || 'NO PLATE'}</span>
+                <span className={cn('rounded px-2 py-0.5 text-xs font-bold', s.status === 'PendingPayment' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-700')}>
+                  {s.status === 'PendingPayment' ? 'Fee requested' : 'Parked'}
+                </span>
                 <span className="font-mono text-xs text-slate-700">{s.code}</span>
                 <span className="text-sm text-slate-700">{s.vehicleTypeName}</span>
                 <span className="text-sm text-slate-700">In since {formatClock(Date.parse(s.entryTime))}</span>
@@ -304,6 +330,9 @@ export default function StaffCheckoutPage() {
               </li>
             ))}
           </ul>
+        )}
+        {queue.length > QUEUE_SHOWN && (
+          <p className="mt-2 text-xs text-slate-700">{queue.length - QUEUE_SHOWN} more: filter by plate to find them.</p>
         )}
       </Panel>
 

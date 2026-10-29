@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { usePendingLostTickets } from '@/hooks/useApprovals'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
-import { usePaymentMethodBreakdown, useRevenueByParkingLot } from '@/hooks/useRevenueReport'
+import { useManagerRevenue } from '@/hooks/useRevenueReport'
 import { useNow } from '@/hooks/useNow'
 import { formatNumber, toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -49,15 +49,17 @@ function Console({ lot }: { lot: ManagedLot }) {
   const { lots: assigned, setLotId } = useManagerLot()
   const live = capacity.data?.find((c) => c.id === lot.id)
 
+  // Real revenue of this lot (settled sessions): cash taken at the counter shows up within seconds
   const today = presetRange('today')
-  const todayByLot = useRevenueByParkingLot(today)
-  const yesterdayByLot = useRevenueByParkingLot(yesterdayRange())
-  const methods = usePaymentMethodBreakdown({ ...today, parkingLotId: lot.id })
-  const revenue = todayByLot.data?.find((r) => r.parkingLotId === lot.id)?.totalRevenue ?? 0
-  const previous = yesterdayByLot.data?.find((r) => r.parkingLotId === lot.id)?.totalRevenue ?? 0
+  const todayRevenue = useManagerRevenue({ ...today, parkingLotId: lot.id })
+  const yesterdayRevenue = useManagerRevenue({ ...yesterdayRange(), parkingLotId: lot.id })
+  const revenue = todayRevenue.data?.totalRevenue ?? 0
+  const previous = yesterdayRevenue.data?.totalRevenue ?? 0
   const change = previous ? ((revenue - previous) / previous) * 100 : 0
-  const qr = methods.data?.find((m) => m.method === 'QR_BANKING')?.amount ?? 0
-  const cash = methods.data?.find((m) => m.method === 'CASH')?.amount ?? 0
+  const methods = todayRevenue.data?.paymentMethods ?? []
+  const qr = methods.find((m) => m.method === 'QR_BANKING')?.amount ?? 0
+  const cash = methods.find((m) => m.method === 'CASH')?.amount ?? 0
+  const wallet = methods.find((m) => m.method === 'RFID_WALLET')?.amount ?? 0
 
   const pending = usePendingLostTickets(lot.id).data ?? []
 
@@ -151,7 +153,7 @@ function Console({ lot }: { lot: ManagedLot }) {
         </Kpi>
 
         <Kpi label="Today's revenue">
-          {todayByLot.isPending ? (
+          {todayRevenue.isPending ? (
             <Skeleton className="mt-3 h-10 w-48" />
           ) : (
             <p className="mt-3 font-display text-3xl font-bold text-amber-500 tabular-nums">{vnd(revenue)}</p>
@@ -161,10 +163,15 @@ function Console({ lot }: { lot: ManagedLot }) {
             {change >= 0 ? '+' : ''}
             {change.toFixed(1)}% <span className="text-slate-700">vs yesterday</span>
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700">
-            <span>VietQR / bank<strong className="block font-mono text-sm text-slate-950">{vnd(qr)}</strong></span>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-700">
             <span>Cash<strong className="block font-mono text-sm text-slate-950">{vnd(cash)}</strong></span>
+            <span>VNPay / MoMo<strong className="block font-mono text-sm text-slate-950">{vnd(qr)}</strong></span>
+            <span>Wallet<strong className="block font-mono text-sm text-slate-950">{vnd(wallet)}</strong></span>
           </div>
+          {todayRevenue.data && (
+            <p className="mt-2 text-xs text-slate-700">{formatNumber(todayRevenue.data.totalSessions)} paid sessions today</p>
+          )}
+          {todayRevenue.isError && <p className="mt-2 text-xs text-rose-700">Revenue could not be loaded.</p>}
         </Kpi>
 
         <Kpi label="Action queue" icon={<ClipboardCheck />} className="sm:col-span-2 xl:col-span-1">

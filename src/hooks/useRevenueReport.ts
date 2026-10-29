@@ -34,3 +34,15 @@ export function useRevenueByParkingLot(filter: RevenueFilterQuery, enabled = tru
 export function useRevenueBreakdown(query: RevenueBreakdownQuery) {
   return useQuery({ queryKey: queryKeys.reports.breakdown(query), queryFn: () => reportService.getBreakdown(query) })
 }
+
+/** How often the Manager's revenue refreshes, so cash taken at the counter shows up quickly. */
+export const MANAGER_REVENUE_REFRESH_MS = 10_000
+
+/** Real revenue of the Manager's lots for a date range (one lot when parkingLotId is set). */
+export function useManagerRevenue(query: { startDate: string; endDate: string; parkingLotId?: string }) {
+  return useQuery({
+    queryKey: queryKeys.reports.manager(query),
+    queryFn: () => reportService.getManagerRevenue(query),
+    refetchInterval: MANAGER_REVENUE_REFRESH_MS,
+  })
+}
