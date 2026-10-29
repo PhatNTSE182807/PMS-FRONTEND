@@ -62,8 +62,8 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
         maintenanceNotice: l.maintenanceNotice,
       }))
     : capacityLots
-  const [liveLotId, setLiveLotId] = useState<string>()
-  const lot = lots.find((l) => l.id === (liveBooking ? liveLotId : lotId)) ?? lots[0]
+  // The page owns the selection, so the lot chips in the welcome banner move the map too
+  const lot = lots.find((l) => l.id === lotId) ?? lots[0]
   const capacityLot = capacityLots.find((l) => l.id === lot?.id)
 
   // The published layout gives the real slot ids a reservation needs; the template model is the fallback
@@ -92,8 +92,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const underMaintenance = lot?.isBookable === false
 
   const changeLot = (id: string) => {
-    if (liveBooking) setLiveLotId(id)
-    else onLotChange(id)
+    onLotChange(id)
     setSelectedId(null)
     setFocusFloor(null)
   }
