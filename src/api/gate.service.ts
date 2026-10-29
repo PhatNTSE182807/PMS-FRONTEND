@@ -11,6 +11,7 @@ import type {
   ParkingSessionDTO,
   PaymentDTO,
   PaymentProvider,
+  StaffPaymentHistoryPageDTO,
   ZoneCounterDTO,
 } from '@/types/operations.dto'
 import { http } from './axiosClient'
@@ -37,8 +38,21 @@ export const gateService = {
     return http.get<ParkingSessionDTO[]>(`${lotPath(lotId)}/sessions`, { params: { status } })
   },
 
-  getHistory(lotId: string, page: number, plate?: string): Promise<{ items: ParkingSessionDTO[]; page: number; pageSize: number; totalCount: number }> {
-    return http.get(`${lotPath(lotId)}/sessions/history`, { params: { page, pageSize: 10, plate: plate || undefined } })
+  getHistory(
+    lotId: string,
+    page = 1,
+    plate?: string,
+    pageSize = 10,
+  ): Promise<{ items: ParkingSessionDTO[]; page: number; pageSize: number; totalCount: number }> {
+    return http.get(`${lotPath(lotId)}/sessions/history`, { params: { page, pageSize, plate: plate || undefined } })
+  },
+
+  /** Parking fees collected at this lot; method=Cash keeps cash only. */
+  getPayments(
+    lotId: string,
+    params?: { method?: string; plate?: string; page?: number; pageSize?: number },
+  ): Promise<StaffPaymentHistoryPageDTO> {
+    return http.get<StaffPaymentHistoryPageDTO>(`${lotPath(lotId)}/payments`, { params })
   },
 
   /** Exit lane: the open session of a plate or a session code. */

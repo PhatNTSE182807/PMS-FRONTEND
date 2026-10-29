@@ -42,20 +42,31 @@ export const DEMO_STAFF: SessionUser = {
 
 const MOCK_LOGIN_OTP = '123456'
 
+import { findUserByLogin } from './users.mock'
+
 export const authMock = {
   /** Accepts any credentials; e-mails starting with "admin" sign in as Admin. */
   login({ email, username, password }: LoginCommand): Promise<LoginResponseDTO> {
     return mockResponse(() => {
       const identifier = (email ?? username ?? '').trim()
       if (!identifier || !password) mockFail(400, 'Email and password are required.')
+      const foundUser = findUserByLogin(identifier)
       const isAdmin = identifier.toLowerCase().startsWith('admin')
-      const userId = isAdmin ? DEMO_ADMIN.userId : mockId('u')
+      const isManager = identifier.toLowerCase().startsWith('manager') || foundUser?.role === 'MANAGER'
+      const isStaff = identifier.toLowerCase().startsWith('staff') || foundUser?.role === 'STAFF'
+      const userId = foundUser?.id ?? (isAdmin ? DEMO_ADMIN.userId : isManager ? DEMO_MANAGER.userId : isStaff ? DEMO_STAFF.userId : mockId('u'))
+      const role = foundUser ? (foundUser.role === 'MANAGER' ? 'Manager' : foundUser.role === 'STAFF' ? 'Staff' : 'User') : (isAdmin ? 'Admin' : isManager ? 'Manager' : isStaff ? 'Staff' : 'User')
+      const fullName = foundUser?.fullName ?? (isAdmin ? DEMO_ADMIN.fullName : isManager ? DEMO_MANAGER.fullName : isStaff ? DEMO_STAFF.fullName : identifier.split('@')[0])
+      const employeeCode = foundUser?.employeeCode ?? (isStaff ? 'EMP-0418' : isManager ? 'EMP-0091' : undefined)
+
       return {
         userId,
         username: identifier.split('@')[0],
-        email: identifier.includes('@') ? identifier : `${identifier}@xxivparking.vn`,
-        phoneNumber: isAdmin ? DEMO_ADMIN.phoneNumber : '0988123456',
-        role: isAdmin ? 'Admin' : 'User',
+        fullName,
+        employeeCode,
+        email: foundUser?.email ?? (identifier.includes('@') ? identifier : `${identifier}@xxivparking.vn`),
+        phoneNumber: foundUser?.phoneNumber ?? (isAdmin ? DEMO_ADMIN.phoneNumber : '0988123456'),
+        role,
         token: `demo.${userId}`,
       }
     })

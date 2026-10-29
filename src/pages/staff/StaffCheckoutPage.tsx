@@ -16,6 +16,7 @@ import { QrCode } from '@/components/ui/qr-code'
 import { useCancelPaymentRequest, useCheckout, usePayCash, usePayOnline, useQuote } from '@/hooks/useGate'
 import { useNow } from '@/hooks/useNow'
 import { useMyStaffLots } from '@/hooks/useParking'
+import { useStaffLot } from '@/hooks/useStaffLot'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/operations.dto'
@@ -29,7 +30,8 @@ const FAST_NOTES = [50_000, 100_000, 200_000, 500_000]
  */
 export default function StaffCheckoutPage() {
   const myLots = useMyStaffLots()
-  const lotKey = myLots.data?.[0]?.id
+  const { lot } = useStaffLot()
+  const lotKey = lot?.id ?? myLots.data?.[0]?.id
   const [params, setParams] = useSearchParams()
   const [historyPlate, setHistoryPlate] = useState('')
   const [historyPage, setHistoryPage] = useState(1)

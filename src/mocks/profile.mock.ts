@@ -56,19 +56,26 @@ let vehicles: VehicleDTO[] = [
 
 let profileOverrides: Partial<UserProfileDTO> = {}
 
+import { findUserByLogin } from './users.mock'
+
 function currentProfile(): UserProfileDTO {
   const user = session.getUser()
+  const found = user ? (findUserByLogin(user.userId) || findUserByLogin(user.email) || findUserByLogin(user.username)) : undefined
+  const fullName = found?.fullName || (user?.fullName && user.fullName !== user.username ? user.fullName : found?.fullName || user?.fullName || 'Demo User')
+  const employeeCode = found?.employeeCode || user?.employeeCode || (user?.role === 'STAFF' ? 'EMP-0418' : user?.role === 'MANAGER' ? 'EMP-0091' : undefined)
+
   return {
     userId: user?.userId ?? 'u-demo',
-    fullName: user?.fullName ?? 'Demo User',
-    email: user?.email ?? 'demo@xxivparking.vn',
-    phoneNumber: user?.phoneNumber ?? '0988123456',
+    fullName,
+    employeeCode,
+    email: found?.email ?? user?.email ?? 'demo@xxivparking.vn',
+    phoneNumber: found?.phoneNumber ?? user?.phoneNumber ?? '0988123456',
     avatarUrl: user?.avatarUrl ?? null,
     citizenId: DEMO_CITIZEN_ID,
     isActive: true,
     status: 'Active',
     hasPassword: true,
-    role: user?.role === 'ADMIN' ? 'Admin' : 'User',
+    role: user?.role === 'ADMIN' ? 'Admin' : user?.role === 'MANAGER' ? 'Manager' : user?.role === 'STAFF' ? 'Staff' : 'User',
     createdAt: now,
     ...profileOverrides,
     vehicles,

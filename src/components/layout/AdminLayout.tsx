@@ -1,7 +1,7 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { Building2, ChevronRight, LogOut, Menu } from 'lucide-react'
+import { ChevronRight, LogOut, Menu } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,9 @@ import { ErrorState } from '@/components/ui/states'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useParkingCapacity } from '@/hooks/useParking'
+import { useProfile } from '@/hooks/useProfile'
 import { formatNumber, resolveMediaUrl } from '@/lib/format'
+import { session } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
 
@@ -54,23 +56,45 @@ function NetworkFooter() {
 /** Manager top bar: which assigned lot the console is showing. */
 function ManagerLotSelect() {
   const { lots, lot, setLotId } = useManagerLot()
-  if (!lots.data?.length) return null
+  if (!lots.data?.length) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
+        <span className="text-xs font-semibold text-slate-700 uppercase">Facility</span>
+        <span className="text-sm font-semibold text-slate-500 italic">No facility assigned</span>
+      </div>
+    )
+  }
+
   return (
-    <label className="flex items-center gap-2.5 rounded-lg bg-slate-100 py-1 pr-1 pl-3 ring-1 ring-slate-200">
-      <Building2 className="size-4 shrink-0 text-amber-500" aria-hidden />
-      <span className="sr-only">Parking lot</span>
-      <select
-        value={lot?.id}
-        onChange={(e) => setLotId(e.target.value)}
-        className="max-w-56 cursor-pointer truncate bg-transparent py-1 pr-1 text-sm font-semibold text-slate-950 focus-visible:outline-none"
-      >
-        {lots.data.map((l) => (
-          <option key={l.id} value={l.id} className="bg-white">
-            {l.name} · {l.code}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
+        <span className="text-xs font-semibold text-slate-700 uppercase">Facility</span>
+        {lots.data.length > 1 ? (
+          <select
+            value={lot?.id}
+            onChange={(e) => setLotId(e.target.value)}
+            className="max-w-56 cursor-pointer truncate bg-transparent text-sm font-semibold text-slate-950 focus-visible:outline-none sm:max-w-64"
+          >
+            {lots.data.map((l) => (
+              <option key={l.id} value={l.id} className="bg-white">
+                {l.name} (#{l.code})
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-sm font-semibold text-slate-950">
+            {lot ? `${lot.name} (#${lot.code})` : '—'}
+          </span>
+        )}
+      </div>
+
+      <div className="hidden min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 whitespace-nowrap xl:flex ring-1 ring-slate-200/60">
+        <span className="text-xs font-semibold text-indigo-700 uppercase">Station</span>
+        <span className="text-sm font-semibold text-slate-950">
+          Central Hub & All Zones {lot ? `(${lot.code})` : ''}
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -149,8 +173,28 @@ function PageSkeleton() {
 /** Shell of the admin dashboard: sidebar navigation, top bar and page outlet. */
 export function AdminLayout() {
   const { user } = useAuth()
+  const { data: profile } = useProfile()
   const { pathname } = useLocation()
   const [isNavOpen, setIsNavOpen] = useState(false)
+
+  // Sync profile details into session if received from API
+  useEffect(() => {
+    if (profile) {
+      const updates: Record<string, string> = {}
+      if (profile.fullName && profile.fullName !== user?.fullName) {
+        updates.fullName = profile.fullName
+      }
+      if (profile.employeeCode && profile.employeeCode !== user?.employeeCode) {
+        updates.employeeCode = profile.employeeCode
+      }
+      if (profile.avatarUrl && profile.avatarUrl !== user?.avatarUrl) {
+        updates.avatarUrl = profile.avatarUrl
+      }
+      if (Object.keys(updates).length > 0) {
+        session.updateUser(updates)
+      }
+    }
+  }, [profile, user?.fullName, user?.employeeCode, user?.avatarUrl])
 
   const current = [...ADMIN_NAV, ...MANAGER_NAV].find((item) => pathname.startsWith(item.to))
 
@@ -195,13 +239,17 @@ export function AdminLayout() {
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <img
-                src={resolveMediaUrl(user?.avatarUrl) || LOGO_SRC}
+                src={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
                 alt=""
                 className="size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300"
               />
               <div className="hidden leading-tight md:block">
-                <p className="text-sm font-semibold text-slate-950">{user?.fullName}</p>
-                <p className="text-xs font-bold tracking-wide text-amber-500 uppercase">{roleLabel(user?.role)}</p>
+                <p className="text-sm font-semibold text-slate-950">
+                  {profile?.fullName || user?.fullName || user?.username}
+                </p>
+                <p className="text-xs font-bold tracking-wide text-amber-500 uppercase">
+                  {profile?.employeeCode ? `${profile.employeeCode} • ` : user?.employeeCode ? `${user.employeeCode} • ` : ''}{roleLabel(user?.role)}
+                </p>
               </div>
               <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={handleLogout}>
                 <LogOut />

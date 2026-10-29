@@ -32,6 +32,8 @@ export interface VerifyLoginOtpCommand {
 export interface LoginResponseDTO {
   userId: string
   username: string
+  fullName?: string
+  employeeCode?: string | null
   email: string
   phoneNumber: string
   role: string

@@ -53,6 +53,26 @@ export function useZoneCounters(lotId: string | undefined) {
   })
 }
 
+export function useGateHistory(lotId: string | undefined, page = 1, pageSize = 50) {
+  const live = useGateRealtime(lotId)
+  return useQuery({
+    queryKey: queryKeys.gate.history(lotId ?? '', page),
+    queryFn: () => gateService.getHistory(lotId!, page, undefined, pageSize),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? 60_000 : GATE_REFRESH_MS,
+  })
+}
+
+export function useLotPayments(lotId: string | undefined, method?: string, pageSize = 50) {
+  const live = useGateRealtime(lotId)
+  return useQuery({
+    queryKey: queryKeys.gate.payments(lotId ?? '', method),
+    queryFn: () => gateService.getPayments(lotId!, { method, page: 1, pageSize }),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? 60_000 : GATE_REFRESH_MS,
+  })
+}
+
 /** Every lane action refreshes the lot's sessions and counters (and the 3D model). */
 function useGateMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
   const queryClient = useQueryClient()

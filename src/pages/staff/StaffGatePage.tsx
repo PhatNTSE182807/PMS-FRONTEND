@@ -27,12 +27,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDemoIncidents } from '@/hooks/useDemoIncidents'
-import { useOpenSessions, useZoneCounters } from '@/hooks/useGate'
+import { useGateHistory, useLotPayments, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
+import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
+import { useStaffLot } from '@/hooks/useStaffLot'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { demoCameras, demoGateStats, demoStation } from '@/mocks/staffOps.mock'
-import type { ParkingSessionDTO, ZoneCounterDTO } from '@/types/operations.dto'
+import type { ParkingSessionDTO, StaffPaymentHistoryPageDTO, ZoneCounterDTO } from '@/types/operations.dto'
 
 const clockWithSeconds = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
@@ -50,7 +52,17 @@ function CapacityRing({ percent }: { percent: number }) {
   )
 }
 
-function KpiRow({ counters, sessions }: { counters: ZoneCounterDTO[] | undefined; sessions: ParkingSessionDTO[] | undefined }) {
+function KpiRow({
+  counters,
+  sessions,
+  history,
+  payments,
+}: {
+  counters: ZoneCounterDTO[] | undefined
+  sessions: ParkingSessionDTO[] | undefined
+  history: { items: ParkingSessionDTO[]; totalCount: number } | undefined
+  payments: StaffPaymentHistoryPageDTO | undefined
+}) {
   const s = demoGateStats
   // Live Zone Counters when the lot has them; the demo figures otherwise
   const total = counters?.length ? counters.reduce((sum, c) => sum + c.totalCapacity, 0) : s.totalBays
@@ -58,10 +70,47 @@ function KpiRow({ counters, sessions }: { counters: ZoneCounterDTO[] | undefined
   const active = total - free
   const reserved = sessions ? sessions.filter((x) => x.sessionType === 'Reservation').length : s.reservedVip
   const occupancy = total ? Math.round((active / total) * 100) : 0
+
+  // Calculate Throughput today from real history and open sessions (with fallback to demo stats)
+  const throughputToday = useMemo(() => {
+    if (!history && !sessions) return s.throughputToday
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const startMs = startOfToday.getTime()
+
+    const openToday = sessions?.filter((e) => new Date(e.entryTime).getTime() >= startMs).length ?? 0
+    const closedToday = history?.items?.filter((e) => new Date(e.entryTime).getTime() >= startMs).length ?? 0
+    const todayTotal = openToday + closedToday
+    return todayTotal > 0 ? todayTotal : (history?.totalCount ?? s.throughputToday)
+  }, [history, sessions, s.throughputToday])
+
+  // Calculate Cash in drawer from real payments (with fallback to demo stats)
+  const cashInDrawer = useMemo(() => {
+    if (!payments) return s.cashInDrawer
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const startMs = startOfToday.getTime()
+
+    const todayCash = payments.items
+      .filter((p) => p.status === 'Succeeded' && p.method === 'Cash' && (!p.paidAt || new Date(p.paidAt).getTime() >= startMs))
+      .reduce((sum, p) => sum + p.amount, 0)
+
+    if (todayCash > 0) return todayCash
+    if (payments.items.length > 0) {
+      // Sum recent cash drawer payments if none recorded today yet
+      const recentDrawer = payments.items
+        .filter((p) => p.status === 'Succeeded' && p.method === 'Cash')
+        .slice(0, 20)
+        .reduce((sum, p) => sum + p.amount, 0)
+      if (recentDrawer > 0) return recentDrawer
+    }
+    return 0
+  }, [payments, s.cashInDrawer])
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <StatTile label="Throughput today" icon={<Car />}>
-        <Metric value={formatNumber(s.throughputToday)} />
+        <Metric value={formatNumber(throughputToday)} />
         <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-700">
           <CircleCheck className="size-4 text-emerald-600" aria-hidden /> Zero toll violations
           <span className="ml-auto font-mono text-xs font-bold text-emerald-700">+{s.throughputTrend}%</span>
@@ -87,14 +136,48 @@ function KpiRow({ counters, sessions }: { counters: ZoneCounterDTO[] | undefined
         <p className="mt-1 text-sm text-slate-700">Checked in on a reservation</p>
       </StatTile>
       <StatTile label="Cash in drawer" icon={<Wallet />}>
-        <Metric value={formatNumber(s.cashInDrawer)} unit="VND" />
+        <Metric value={formatNumber(cashInDrawer)} unit="VND" />
         <p className="mt-1 text-sm text-slate-700">Synced with cash vault module</p>
       </StatTile>
     </div>
   )
 }
 
-function AnprTelemetry() {
+function AnprTelemetry({
+  sessions,
+  history,
+}: {
+  sessions: ParkingSessionDTO[] | undefined
+  history: { items: ParkingSessionDTO[]; totalCount: number } | undefined
+}) {
+  const latestEntry = sessions?.[0]
+  const latestExit = history?.items?.find((h) => h.exitTime)
+
+  const cameras = useMemo(() => {
+    const list = [...demoCameras]
+    if (latestEntry && latestEntry.plateNumber) {
+      list[0] = {
+        ...list[0],
+        plate: latestEntry.plateNumber,
+        vehicle: latestEntry.vehicleTypeName || 'Passenger vehicle',
+        tag: latestEntry.sessionType === 'Reservation' ? 'Reserved' : 'OCR locked',
+        status: latestEntry.status === 'Active' ? 'PASSING' : 'AWAITING',
+        capturedAt: Date.parse(latestEntry.entryTime) || Date.now(),
+      }
+    }
+    if (latestExit && latestExit.plateNumber) {
+      list[1] = {
+        ...list[1],
+        plate: latestExit.plateNumber,
+        vehicle: latestExit.vehicleTypeName || 'Passenger vehicle',
+        tag: 'Plate verified',
+        status: 'PASSING',
+        capturedAt: latestExit.exitTime ? Date.parse(latestExit.exitTime) : Date.now(),
+      }
+    }
+    return list
+  }, [latestEntry, latestExit])
+
   return (
     <Panel>
       <SectionTitle
@@ -109,7 +192,7 @@ function AnprTelemetry() {
         Live optical ANPR telemetry
       </SectionTitle>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {demoCameras.map((cam) => (
+        {cameras.map((cam) => (
           <figure key={cam.id} className="overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-200">
             <CameraFrame
               image={cam.image}
@@ -276,12 +359,27 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
 export default function StaffGatePage() {
   const { open } = useDemoIncidents()
   const myLots = useMyStaffLots()
+  const { lot } = useStaffLot()
   const [lotId, setLotId] = useState<string>()
   useCapacitySimulation(true)
   const [query, setQuery] = useState('')
-  const lotKey = lotId ?? myLots.data?.[0]?.id
+  const lotKey = lotId ?? lot?.id ?? myLots.data?.[0]?.id
   const sessions = useOpenSessions(lotKey)
   const counters = useZoneCounters(lotKey)
+  const history = useGateHistory(lotKey, 1, 50)
+  const cashPayments = useLotPayments(lotKey, 'Cash', 50)
+  const checkIns = useGateRequestQueue(lotKey, 'CheckIn')
+  const checkOuts = useGateRequestQueue(lotKey, 'CheckOut')
+
+  // Real incidents detected from live open sessions and app gate requests
+  const incidentCount = useMemo(() => {
+    let count = 0
+    if (sessions.data) {
+      count += sessions.data.filter((s) => s.isLostTicket || s.lostTicketStatus === 'Pending' || s.isOverdue || s.plateMismatch).length
+    }
+    count += (checkIns.data?.length ?? 0) + (checkOuts.data?.length ?? 0)
+    return sessions.isSuccess ? count : open.length
+  }, [sessions.data, sessions.isSuccess, checkIns.data, checkOuts.data, open.length])
 
   return (
     <div className="space-y-6">
@@ -292,19 +390,19 @@ export default function StaffGatePage() {
           </p>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-slate-950">Gate operations dashboard</h1>
         </div>
-        {open.length > 0 && (
+        {incidentCount > 0 && (
           <Button variant="outline" asChild>
             <Link to="/staff/exceptions">
-              <TriangleAlert className="text-amber-500" /> {open.length} incidents need manual review
+              <TriangleAlert className="text-amber-500" /> {incidentCount} incident{incidentCount > 1 ? 's' : ''} need manual review
             </Link>
           </Button>
         )}
       </div>
 
-      <KpiRow counters={counters.data} sessions={sessions.data} />
+      <KpiRow counters={counters.data} sessions={sessions.data} history={history.data} payments={cashPayments.data} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
-        <AnprTelemetry />
+        <AnprTelemetry sessions={sessions.data} history={history.data} />
         {lotKey ? (
           <GateLanesPanel lotId={lotKey} />
         ) : (

@@ -35,6 +35,7 @@ export interface UserProfileDTO {
   status: string
   hasPassword: boolean
   role: string
+  employeeCode?: string | null
   createdAt?: string | null
   updatedAt?: string | null
   vehicles: VehicleDTO[]

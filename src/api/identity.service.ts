@@ -323,8 +323,8 @@ export function toSessionUser(dto: LoginResponseDTO): SessionUser {
   return {
     userId: dto.userId,
     username: dto.username,
-    // LoginResponseModel has no full name yet; the profile call fills it in later.
-    fullName: dto.username,
+    fullName: dto.fullName || dto.username,
+    employeeCode: dto.employeeCode || undefined,
     email: dto.email,
     phoneNumber: dto.phoneNumber,
     role: normalizeRole(dto.role),

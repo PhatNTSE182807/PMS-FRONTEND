@@ -101,6 +101,19 @@ function findUser(id: string): UserDTO {
   return user
 }
 
+export function findUserByLogin(term: string): UserDTO | undefined {
+  if (!term) return undefined
+  const clean = term.trim().toLowerCase()
+  const localPart = clean.split('@')[0]
+  return users.find(
+    (u) =>
+      u.id.toLowerCase() === clean ||
+      u.email.toLowerCase() === clean ||
+      u.email.toLowerCase().split('@')[0] === localPart ||
+      u.employeeCode.toLowerCase() === clean,
+  )
+}
+
 function resolveLots(ids: string[]) {
   return ids.map((id) => {
     const lot = findMockLot(id)

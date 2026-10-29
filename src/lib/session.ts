@@ -12,6 +12,7 @@ export interface SessionUser {
   email: string
   phoneNumber: string
   role: AccountRole
+  employeeCode?: string
   avatarUrl?: string
 }
 
