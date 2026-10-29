@@ -96,7 +96,7 @@ export default function ParkingCapacityPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Parking Lot Capacity"
+        title="Parking Lot Performance"
         description="Monitor the real-time occupancy of every lot and zone."
         actions={
           <Button variant="outline" onClick={() => capacity.refetch()} disabled={capacity.isFetching}>
