@@ -56,6 +56,12 @@ export const queryKeys = {
     publicPrices: (lotId: string) => ['pricing', 'public', lotId] as const,
     simulation: (lotId: string, request: object) => ['pricing', 'simulation', lotId, request] as const,
   },
+  /** Admin dashboard: network overview and per-hub performance. */
+  adminDashboard: {
+    all: ['admin-dashboard'] as const,
+    overview: () => [...queryKeys.adminDashboard.all, 'overview'] as const,
+    hubs: () => [...queryKeys.adminDashboard.all, 'hubs'] as const,
+  },
   /** The Admin's parking simulation (fees and booking times in seconds). */
   parkingSimulation: ['parking-simulation'] as const,
   /** Server-wide payment settings. */

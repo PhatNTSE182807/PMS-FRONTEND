@@ -103,7 +103,7 @@ grep -n "^#### 4.2" document/SRS_v1.4.md        # exception flows per area
 | Payments & receipts | FR-PAY-01…11 | `PaymentsController`, `WalletController`, `Services/Payments` (VNPay, MoMo) | `PaymentReturnPage`, `pages/staff/StaffCashTallyPage` |
 | Customer app | FR-CUS-01…06 | `UsersController` (profile), `VehicleDocumentsController`, `IParkingHistoryService` | `pages/customer/*` |
 | Vehicle verification | FR-VER-01…06 | `VehicleVerificationsController`, `Hubs/VehicleVerificationHub`, `Jobs/VehicleDocumentJobs` | `pages/staff/StaffVehicleVerificationPage` |
-| Reports | FR-RPT-01…07 | no report controller yet | `pages/admin/RevenueReportPage`, `AdminDashboardPage` |
+| Reports | FR-RPT-01…07 | no report controller yet | `pages/admin/RevenueReportPage`, `pages/admin/Dashboard` (`api/admin.service.ts`) |
 | Staff, devices, settings | FR-SYS-01…08 | `NotificationsController`, `SystemSetting`, `Device`, `Gate` entities | `api/system.service.ts`, `api/notification.service.ts` |
 
 ## 4. Business rules you will hit most
