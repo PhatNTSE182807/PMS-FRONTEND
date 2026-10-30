@@ -282,10 +282,11 @@ export const reservationMock = {
       sweep()
       const vehicle = vehicles.find((v) => v.vehicleId === request.vehicleId)
       if (!vehicle) mockFail(400, 'This vehicle is not on your account.')
-      if (/motor/i.test(vehicle.vehicleType)) mockFail(400, 'This vehicle type cannot be reserved.')
-      const arrival = Date.parse(request.arrivalTime)
-      checkArrival(arrival)
-      const mode: BookingMode = request.bookingMode ?? 'PayAsYouGo'
+      // Like the API: a motorbike claims the bay for right now, with no deposit and pay-as-you-go
+      const instant = /motor/i.test(vehicle.vehicleType)
+      const arrival = instant ? Math.floor(now() / MINUTE) * MINUTE : Date.parse(request.arrivalTime)
+      if (!instant) checkArrival(arrival)
+      const mode: BookingMode = instant ? 'PayAsYouGo' : (request.bookingMode ?? 'PayAsYouGo')
       const departure = checkDeparture(mode, arrival, request.departureTime)
       // BR-07: a checked-in booking still counts, and the vehicle is matched by plate
       const active = customerReservations().filter((r) => r.status === 'PendingDeposit' || r.status === 'Confirmed' || r.status === 'CheckedIn')
@@ -298,7 +299,7 @@ export const reservationMock = {
       const lot = findMockLot(request.parkingLotId)
       // Like the API: with a deposit the booking waits for the payment and is held 30 minutes after
       // arrival; without one it is confirmed at once and held 15 minutes
-      const withDeposit = request.payDeposit ?? true
+      const withDeposit = (request.payDeposit ?? true) && !instant
       const holdMinutes = withDeposit ? RULES.depositHoldMinutes : RULES.holdMinutes
       const created: MockReservation = {
         lotKey: request.parkingLotId,
