@@ -16,7 +16,7 @@ import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
 import CustomerBookingsPage from '@/pages/customer/CustomerBookingsPage'
 
 // Admin pages are code-split: drivers never download the dashboard (or its chart library).
-const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'))
+const DashboardPage = lazy(() => import('@/pages/admin/Dashboard'))
 const ParkingLotsPage = lazy(() => import('@/pages/admin/ParkingLotsPage'))
 const StaffAccountsPage = lazy(() => import('@/pages/admin/StaffAccountsPage'))
 const CustomerAccountsPage = lazy(() => import('@/pages/admin/CustomerAccountsPage'))
@@ -80,7 +80,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: 'dashboard', element: <AdminDashboardPage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
       { path: 'staff', element: <StaffAccountsPage /> },
       { path: 'customers', element: <CustomerAccountsPage /> },
       { path: 'lots', element: <ParkingLotsPage /> },
