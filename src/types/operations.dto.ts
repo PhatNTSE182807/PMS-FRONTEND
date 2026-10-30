@@ -419,3 +419,29 @@ export interface BookableLotDTO {
   /** Why it cannot be booked, in plain words. */
   maintenanceNotice?: string | null
 }
+
+/** StaffPaymentHistoryItemModel */
+export interface StaffPaymentHistoryItemDTO {
+  id: number
+  code: string
+  paidAt: string | null
+  sessionId: number | null
+  sessionCode: string | null
+  plateNumber: string | null
+  /** Cash, Wallet, VNPay or MoMo. */
+  method: string
+  /** Lane, Kiosk (counter) or App. */
+  channel: string | null
+  amount: number
+  status: string
+  /** The Staff who took a cash payment. */
+  collectedByName: string | null
+}
+
+/** StaffPaymentHistoryPageModel */
+export interface StaffPaymentHistoryPageDTO {
+  items: StaffPaymentHistoryItemDTO[]
+  page: number
+  pageSize: number
+  totalCount: number
+}
