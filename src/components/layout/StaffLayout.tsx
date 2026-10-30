@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { Building2, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -10,8 +10,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useDemoIncidents } from '@/hooks/useDemoIncidents'
+import { useOpenSessions } from '@/hooks/useGate'
+import { useProfile } from '@/hooks/useProfile'
+import { useStaffLot } from '@/hooks/useStaffLot'
 import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
+import { session } from '@/lib/session'
 import { demoStation } from '@/mocks/staffOps.mock'
 import { STAFF_NAV } from './adminNav'
 
@@ -41,6 +45,29 @@ export function StaffLayout() {
   const navigate = useNavigate()
   const handleLogout = useSignOut()
   const { open } = useDemoIncidents()
+  const openSessions = useOpenSessions(lot?.id)
+  const exceptionsCount = openSessions.isSuccess
+    ? (openSessions.data?.filter((s) => s.isLostTicket || s.lostTicketStatus === 'Pending' || s.isOverdue || s.plateMismatch).length ?? 0)
+    : open.length
+
+  // Sync profile details (FullName, EmployeeCode, Avatar) into session if received from API
+  useEffect(() => {
+    if (profile) {
+      const updates: Record<string, string> = {}
+      if (profile.fullName && profile.fullName !== user?.fullName) {
+        updates.fullName = profile.fullName
+      }
+      if (profile.employeeCode && profile.employeeCode !== user?.employeeCode) {
+        updates.employeeCode = profile.employeeCode
+      }
+      if (profile.avatarUrl && profile.avatarUrl !== user?.avatarUrl) {
+        updates.avatarUrl = profile.avatarUrl
+      }
+      if (Object.keys(updates).length > 0) {
+        session.updateUser(updates)
+      }
+    }
+  }, [profile, user?.fullName, user?.employeeCode, user?.avatarUrl])
 
   // F1 Quick Pay and F2 Plate Scan work from every Staff screen.
   useEffect(() => {
@@ -70,25 +97,47 @@ export function StaffLayout() {
             <p className="text-[11px] font-bold tracking-[0.14em] text-amber-500 uppercase">POS terminal console</p>
           </div>
 
-          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 whitespace-nowrap 2xl:flex">
+          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 whitespace-nowrap 2xl:flex ring-1 ring-slate-200">
             <span className="text-xs font-semibold text-slate-700 uppercase">Facility</span>
-            <span className="text-sm font-semibold text-slate-950">
-              {demoStation.facility} (#{demoStation.facilityCode})
-            </span>
+            {lots.isLoading ? (
+              <span className="text-sm font-semibold text-slate-400">Loading...</span>
+            ) : lots.data && lots.data.length > 1 ? (
+              <select
+                value={lot?.id}
+                onChange={(e) => setLotId(e.target.value)}
+                className="max-w-64 cursor-pointer truncate bg-transparent text-sm font-semibold text-slate-950 focus-visible:outline-none"
+              >
+                {lots.data.map((l) => (
+                  <option key={l.id} value={l.id} className="bg-white">
+                    {l.name} (#{l.code})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-sm font-semibold text-slate-950">
+                {lot ? `${lot.name} (#${lot.code})` : `${demoStation.facility} (#${demoStation.facilityCode})`}
+              </span>
+            )}
           </div>
-          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 whitespace-nowrap lg:flex 2xl:ml-0">
+          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 whitespace-nowrap lg:flex 2xl:ml-0 ring-1 ring-slate-200/60">
             <span className="text-xs font-semibold text-indigo-700 uppercase">Station</span>
             <span className="text-sm font-semibold text-slate-950">
-              {demoStation.station} ({demoStation.lane})
+              {demoStation.station} {lot ? `(${lot.code})` : `(${demoStation.lane})`}
             </span>
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <span className="hidden items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-slate-950 uppercase xl:inline-flex">
+              <span className="size-2 animate-pulse-soft rounded-full bg-indigo-400" aria-hidden />
+              Edge online ({demoStation.edgeLatencyMs}ms latency)
+            </span>
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
-                <p className="text-sm font-semibold text-slate-950">{user?.fullName}</p>
+                <p className="text-sm font-semibold text-slate-950">
+                  {profile?.fullName || user?.fullName || user?.username}
+                </p>
                 <p className="text-xs text-slate-700">
-                  {demoStation.employeeCode} • {demoStation.title}
+                  {profile?.employeeCode || user?.employeeCode || demoStation.employeeCode} • {demoStation.title}
                 </p>
               </div>
               <img
