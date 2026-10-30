@@ -319,6 +319,10 @@ Keep this list current; it is the first place to look when code and SRS disagree
   commands in section 7 before relying on this line.
 - The 3D lot model is built from three building templates chosen by the Admin
   (`garageModel.ts`), not yet from a published `Layout3D` with draft/publish versions (FR-3D-05).
+- Motorbikes park at once (team decision, 2026-10-30): BR-01 allows cars only, but on a motorbike floor
+  of the customer map a free bay shows `ParkMotorbikePanel`: one tap claims the bay now (no time, no
+  deposit) and sends a check-in request, so Staff sees the plate at the entry lane; the fee is paid at
+  check-out. Car bays keep `ReserveBayPanel` (time and optional deposit).
 - Bookings have two modes: pay-as-you-go follows the SRS (arrival time only); scheduled also
   takes a departure time, which the SRS does not have.
 - `src/components/OtpLoginScreen.jsx` and other OTP code are out of scope in v1.4 (no OTP / 2FA).

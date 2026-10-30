@@ -10,6 +10,7 @@ import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 import type { PublicLotPriceDTO } from '@/types/pricing.dto'
 import { GarageView } from '../garage/GarageView'
 import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
+import { ParkMotorbikePanel } from './ParkMotorbikePanel'
 import { ReserveBayPanel } from './ReserveBayPanel'
 
 /** What the map needs of a lot, from either the live lot list or the demo capacity data. */
@@ -220,10 +221,19 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                 {myBayIds.has(selected.id) ? (
                   <Link to="/me/bookings" className="cx-btn cx-btn--light cx-btn--block">
                     <CircleCheck aria-hidden />
-                    {myActive.find((r) => String(r.slotId) === selected.id)?.status === 'PendingDeposit' ? 'Booked for you • pay the deposit' : 'Booked for you • show my QR'}
+                    {myActive.find((r) => String(r.slotId) === selected.id)?.status === 'PendingDeposit'
+                      ? 'Booked for you • pay the deposit'
+                      : selectedFloor.kind === 'car'
+                        ? 'Booked for you • show my QR'
+                        : 'Held for you • Staff checks you in at the gate'}
                   </Link>
-                ) : selected.status === 'AVAILABLE' && selectedFloor.kind === 'car' && bookableBays && !underMaintenance ? (
-                  <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
+                ) : selected.status === 'AVAILABLE' && bookableBays && !underMaintenance ? (
+                  // Cars book ahead with a time and an optional deposit; motorbikes claim the bay now
+                  selectedFloor.kind === 'car' ? (
+                    <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
+                  ) : (
+                    <ParkMotorbikePanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
+                  )
                 ) : (
                   <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled>
                     <CircleCheck aria-hidden />
@@ -233,9 +243,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                         ? 'Under maintenance • view only'
                         : selected.status !== 'AVAILABLE'
                         ? 'Not available'
-                        : selectedFloor.kind !== 'car'
-                          ? 'Only car bays can be reserved'
-                          : 'This lot has no published layout yet'}
+                        : 'This lot has no published layout yet'}
                   </button>
                 )}
               </>
