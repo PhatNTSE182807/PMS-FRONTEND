@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Building2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { EmptyState, ErrorState } from '@/components/ui/states'
-import { formatNumber } from '@/lib/format'
 import type { HubPerformanceDTO } from '@/types/dashboard.dto'
 import { HubModelDialog } from './HubModelDialog'
 import { HubPerformanceItem, HubPerformanceItemSkeleton } from './HubPerformanceItem'
@@ -19,7 +18,6 @@ interface HubPerformanceListProps {
 
 /** All hubs of the network, with a loading skeleton, an error prompt and an empty state. */
 export function HubPerformanceList({ hubs = [], isLoading = false, error = null, onRetry }: HubPerformanceListProps) {
-  const todayTotal = hubs.reduce((sum, hub) => sum + hub.todayRevenue, 0)
   const [openHub, setOpenHub] = useState<HubPerformanceDTO | null>(null)
 
   return (
@@ -54,12 +52,6 @@ export function HubPerformanceList({ hubs = [], isLoading = false, error = null,
             ))}
           </ul>
           <HubModelDialog hub={openHub} onOpenChange={(open) => !open && setOpenHub(null)} />
-          <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-6 py-4">
-            <span className="text-sm text-slate-700">Network total today</span>
-            <span className="font-mono text-lg font-bold text-slate-950 tabular-nums">
-              {formatNumber(Math.round(todayTotal))} <span className="text-xs font-semibold text-slate-600">VND</span>
-            </span>
-          </div>
         </>
       )}
     </Card>
