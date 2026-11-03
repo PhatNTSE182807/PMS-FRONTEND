@@ -16,6 +16,7 @@ import {
   TriangleAlert,
   Video,
   Wallet,
+  TicketX
 } from 'lucide-react'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { GateLanesPanel } from '@/components/features/staff/GateLanesPanel'
@@ -299,11 +300,20 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
                   <span className={cn('rounded px-2 py-0.5 text-xs font-bold tracking-wide uppercase', SESSION_TONE[e.status] ?? 'bg-slate-100 text-slate-800')}>{e.status}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
+                  <div className="flex justify-end gap-1">
+                  {e.sessionType !== 'Reservation' && (e.status === 'Active' || e.status === 'PendingPayment') && !e.isLostTicket && (
+                    <Button variant="ghost" size="sm" asChild title="The driver lost the paper ticket: check the papers on the Exceptions screen">
+                      <Link to="/staff/exceptions" state={{ lostTicket: { sessionId: e.id, plate: e.hasPlate ? e.plateNumber : '' } }}>
+                        <TicketX /> Lost ticket
+                      </Link>
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" asChild title="Ask for the fee now and open this vehicle on the checkout screen">
                     <Link to={`/staff/checkout?session=${e.id}`} state={{ plate: e.hasPlate ? e.plateNumber : '' }}>
                       <LogOut /> Force check-out
                     </Link>
                   </Button>
+                  </div>
                 </td>
               </tr>
             ))}
