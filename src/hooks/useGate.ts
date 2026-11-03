@@ -1,4 +1,5 @@
 import type { BanknoteCounts } from '@/types/cashDrawer.dto'
+import { isCashAlert } from './useCashAlerts'
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -19,7 +20,7 @@ function useGateRealtime(lotId: string | undefined) {
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'SessionChanged' || event.type === 'ZoneCounterChanged' || event.type === 'PaymentChanged')
         void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
-      if (event.type === 'OpsAlert') toast.warning(event.message)
+      if (event.type === 'OpsAlert' && !isCashAlert(event.code)) toast.warning(event.message)
     }, lotId)
   }, [live, lotId, queryClient])
   return live
