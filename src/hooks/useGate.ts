@@ -1,3 +1,4 @@
+import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -91,7 +92,11 @@ export const useConfirmEntry = () => useGateMutation((sessionId: number) => gate
 export const useCancelEntry = () => useGateMutation((sessionId: number) => gateService.cancelEntry(sessionId))
 export const useQuote = () => useGateMutation(({ sessionId, plateNumber }: { sessionId: number; plateNumber?: string }) => gateService.quote(sessionId, plateNumber))
 export const useCancelPaymentRequest = () => useGateMutation((sessionId: number) => gateService.cancelPayment(sessionId))
-export const usePayCash = () => useGateMutation(({ sessionId, amount, prepaid }: { sessionId: number; amount: number; prepaid?: boolean }) => gateService.payCash(sessionId, amount, prepaid))
+export const usePayCash = () =>
+  useGateMutation(
+    ({ sessionId, amount, prepaid, received, change }: { sessionId: number; amount: number; prepaid?: boolean; received?: BanknoteCounts; change?: BanknoteCounts }) =>
+      gateService.payCash(sessionId, amount, prepaid, received, change),
+  )
 export const usePayOnline = () => useGateMutation(({ sessionId, provider, prepaid }: { sessionId: number; provider: PaymentProvider; prepaid?: boolean }) => gateService.payOnline(sessionId, provider, prepaid))
 export const useCheckout = () => useGateMutation(({ sessionId, request }: { sessionId: number; request: CheckoutRequest }) => gateService.checkout(sessionId, request))
 
