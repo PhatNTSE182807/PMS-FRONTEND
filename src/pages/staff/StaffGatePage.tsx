@@ -31,6 +31,7 @@ import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/features/staff/LostTicketPapersDialog'
 import { demoCameras, demoGateStats, demoStation } from '@/mocks/staffOps.mock'
 import type { ParkingSessionDTO, StaffPaymentHistoryPageDTO, ZoneCounterDTO } from '@/types/operations.dto'
 
@@ -242,6 +243,7 @@ const SESSION_TONE: Record<string, string> = {
 
 /** Vehicles inside the lot (or entering), live from the gate API; refreshed by SignalR or polling. */
 function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: ParkingSessionDTO[]; isLoading: boolean; query: string; setQuery: (q: string) => void }) {
+  const [lostVehicle, setLostVehicle] = useState<LostTicketVehicle | null>(null)
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
     if (!q) return sessions
@@ -301,11 +303,14 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-1">
-                  {e.sessionType !== 'Reservation' && (e.status === 'Active' || e.status === 'PendingPayment') && !e.isLostTicket && (
-                    <Button variant="ghost" size="sm" asChild title="The driver lost the paper ticket: check the papers on the Exceptions screen">
-                      <Link to="/staff/exceptions" state={{ lostTicket: { sessionId: e.id, plate: e.hasPlate ? e.plateNumber : '' } }}>
-                        <TicketX /> Lost ticket
-                      </Link>
+                  {e.sessionType !== 'Reservation' && (e.status === 'Active' || e.status === 'PendingPayment') && (!e.isLostTicket || e.lostTicketStatus === 'Rejected') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="The driver lost the paper ticket: upload the Citizen ID and registration certificate"
+                      onClick={() => setLostVehicle({ sessionId: e.id, plate: e.hasPlate ? e.plateNumber : '', vehicleTypeName: e.vehicleTypeName, code: e.code })}
+                    >
+                      <TicketX /> Lost ticket
                     </Button>
                   )}
                   <Button variant="ghost" size="sm" asChild title="Ask for the fee now and open this vehicle on the checkout screen">
@@ -327,6 +332,7 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
           </tbody>
         </table>
       </div>
+      <LostTicketPapersDialog vehicle={lostVehicle} onClose={() => setLostVehicle(null)} />
     </Panel>
   )
 }
