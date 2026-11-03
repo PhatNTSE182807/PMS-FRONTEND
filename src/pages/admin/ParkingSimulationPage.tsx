@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CalendarClock, Coins, FlaskConical, Power, RotateCcw, Save, TriangleAlert } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { WalkInSimulationPanel } from '@/components/features/simulation/WalkInSimulationPanel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -244,6 +245,7 @@ export default function ParkingSimulationPage() {
         // Re-mount when the saved values change so the form shows what the server stored
         <SimulationForm key={`${simulation.data.updatedAt ?? 'new'}-${simulation.data.enabled}`} current={simulation.data} />
       )}
+      {simulation.data && <WalkInSimulationPanel simulating={simulation.data.enabled} />}
     </div>
   )
 }

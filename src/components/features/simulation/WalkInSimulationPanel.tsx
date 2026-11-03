@@ -1,0 +1,248 @@
+import { useState } from 'react'
+import { Car, LogOut, ParkingSquare, Send, TicketX } from 'lucide-react'
+import { getErrorMessage } from '@/api/apiError'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState, ErrorState } from '@/components/ui/states'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useParkingLots } from '@/hooks/useParking'
+import {
+  useCheckOutAllWalkIns,
+  useCheckOutWalkIn,
+  useDeployWalkIns,
+  useOccupyBookedBay,
+  useSimulateLostTicket,
+  useWalkInSimulation,
+} from '@/hooks/useParkingSimulation'
+import { formatNumber } from '@/lib/format'
+import { WALK_IN_MAX_COUNT, WALK_IN_MAX_STAY_HOURS, type SimulatedWalkInDTO } from '@/types/simulation.dto'
+
+const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+const STATUS_TONE: Record<string, 'emerald' | 'amber' | 'sky' | 'rose' | 'neutral'> = {
+  Active: 'emerald',
+  PendingEntry: 'sky',
+  PendingPayment: 'amber',
+  Paid: 'sky',
+  LostTicketPending: 'rose',
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  Active: 'Parked',
+  PendingEntry: 'Entering',
+  PendingPayment: 'Paying',
+  Paid: 'Paid, leaving',
+  LostTicketPending: 'Lost ticket: waiting for a Manager',
+}
+
+interface Draft {
+  count: string
+  carPercent: string
+  minStayHours: string
+  maxStayHours: string
+  noPlatePercent: string
+}
+
+const DEFAULT_DRAFT: Draft = { count: '20', carPercent: '50', minStayHours: '2', maxStayHours: '4', noPlatePercent: '5' }
+
+/** The form's numbers, or an error message in plain words. */
+function check(draft: Draft) {
+  const count = Number(draft.count)
+  const car = Number(draft.carPercent)
+  const noPlate = Number(draft.noPlatePercent)
+  const min = Number(draft.minStayHours)
+  const max = Number(draft.maxStayHours)
+  if (!Number.isInteger(count) || count < 1 || count > WALK_IN_MAX_COUNT) return { error: `Send between 1 and ${WALK_IN_MAX_COUNT} vehicles.` }
+  if (![car, noPlate].every((p) => Number.isInteger(p) && p >= 0 && p <= 100)) return { error: 'Percentages are whole numbers from 0 to 100.' }
+  if (!(min > 0) || !(max >= min) || max > WALK_IN_MAX_STAY_HOURS)
+    return { error: `The stay is more than 0 and at most ${WALK_IN_MAX_STAY_HOURS} hours; the shortest is not longer than the longest.` }
+  return { value: { count, carPercent: car, noPlatePercent: noPlate, minStayHours: min, maxStayHours: max } }
+}
+
+function NumberField({ id, label, hint, value, onChange }: { id: string; label: string; hint: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} inputMode="decimal" className="tabular-nums" value={value} onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, ''))} />
+      <p className="text-xs text-slate-500">{hint}</p>
+    </div>
+  )
+}
+
+function WalkInRow({ vehicle }: { vehicle: SimulatedWalkInDTO }) {
+  const checkOut = useCheckOutWalkIn()
+  const lostTicket = useSimulateLostTicket()
+  const busy = checkOut.isPending || lostTicket.isPending
+  const canAct = vehicle.status === 'Active' || vehicle.status === 'PendingPayment' || vehicle.status === 'Paid'
+
+  return (
+    <TableRow>
+      <TableCell className="font-mono">{vehicle.hasPlate ? vehicle.plate : <span className="text-slate-400">No plate</span>}</TableCell>
+      <TableCell>
+        <div>{vehicle.vehicleTypeName ?? '—'}</div>
+        <div className="text-xs text-slate-500">{[vehicle.lotName, vehicle.zoneName].filter(Boolean).join(' • ')}</div>
+      </TableCell>
+      <TableCell className="tabular-nums">{time.format(Date.parse(vehicle.entryTime))}</TableCell>
+      <TableCell className="tabular-nums">{vehicle.plannedExitAt ? time.format(Date.parse(vehicle.plannedExitAt)) : '—'}</TableCell>
+      <TableCell>
+        <Badge tone={STATUS_TONE[vehicle.status] ?? 'neutral'}>{STATUS_LABEL[vehicle.status] ?? vehicle.status}</Badge>
+        {vehicle.lostTicket && vehicle.status !== 'LostTicketPending' && <Badge tone="rose" className="ml-1">Lost ticket</Badge>}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy || vehicle.status !== 'Active' || vehicle.lostTicket}
+            title="The driver says the paper ticket is lost: Staff checks the papers, or a Manager must decide"
+            onClick={() => {
+              const conditionsMet = window.confirm(
+                'Do the photos and papers match (Staff approves on the spot)?\nOK = approve at the lane, Cancel = send to the lot\'s Manager.',
+              )
+              lostTicket.mutate({ sessionId: vehicle.sessionId, conditionsMet })
+            }}
+          >
+            <TicketX aria-hidden /> Lost ticket
+          </Button>
+          <Button size="sm" variant="secondary" disabled={busy || !canAct} onClick={() => checkOut.mutate(vehicle.sessionId)}>
+            <LogOut aria-hidden /> Check out now
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+/**
+ * Admin demo traffic: send walk-ins with random plates through a lot's real entry lane. They stay a random
+ * time, then pay cash at the exit lane and leave by themselves, so counters, the 3D map and revenue move.
+ */
+export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
+  const lots = useParkingLots()
+  const [lotId, setLotId] = useState('')
+  const [draft, setDraft] = useState<Draft>(DEFAULT_DRAFT)
+  const chosenLot = lotId || lots.data?.[0]?.id || ''
+  const numericLot = chosenLot ? Number(chosenLot) : undefined
+  const overview = useWalkInSimulation(numericLot)
+  const deploy = useDeployWalkIns()
+  const checkOutAll = useCheckOutAllWalkIns()
+  const occupy = useOccupyBookedBay()
+
+  const checked = check(draft)
+  const set = (key: keyof Draft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }))
+  const inside = overview.data?.inside ?? []
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Car className="size-4" aria-hidden /> Walk-in traffic
+            </CardTitle>
+            <CardDescription>
+              Vehicles with random plates go through the lot&apos;s real entry lane, stay a random time, then pay cash at the exit lane
+              and leave. Zone counters, the 3D map and the lot&apos;s revenue move as for real vehicles.
+            </CardDescription>
+          </div>
+          <Badge tone={simulating ? 'amber' : 'neutral'}>{simulating ? '1 hour = 1 pricing block' : 'Real hours'}</Badge>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="walkin-lot">Parking lot</Label>
+            <NativeSelect id="walkin-lot" value={chosenLot} onChange={(e) => setLotId(e.target.value)} disabled={lots.isPending}>
+              {(lots.data ?? []).map((lot) => (
+                <option key={lot.id} value={lot.id}>
+                  {lot.name} ({lot.code})
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <NumberField id="walkin-count" label="Vehicles" hint={`1 to ${WALK_IN_MAX_COUNT}`} value={draft.count} onChange={set('count')} />
+            <NumberField id="walkin-cars" label="Cars (%)" hint="The rest are motorbikes" value={draft.carPercent} onChange={set('carPercent')} />
+            <NumberField id="walkin-min" label="Shortest stay (h)" hint="e.g. 2" value={draft.minStayHours} onChange={set('minStayHours')} />
+            <NumberField id="walkin-max" label="Longest stay (h)" hint="e.g. 4" value={draft.maxStayHours} onChange={set('maxStayHours')} />
+            <NumberField id="walkin-noplate" label="No readable plate (%)" hint="Paper ticket only" value={draft.noPlatePercent} onChange={set('noPlatePercent')} />
+          </div>
+          {!simulating && (
+            <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+              The parking simulation is off, so a 2–4 hour stay lasts 2–4 real hours. Turn it on above to make each hour one pricing block.
+            </p>
+          )}
+          {checked.error && <FieldError message={checked.error} />}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="gold"
+              disabled={!numericLot || !checked.value || deploy.isPending}
+              onClick={() => numericLot && checked.value && deploy.mutate({ lotId: numericLot, ...checked.value })}
+            >
+              <Send aria-hidden /> {deploy.isPending ? 'Sending vehicles…' : 'Send vehicles in'}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!numericLot || occupy.isPending}
+              title="A walk-in parks in the bay of this lot's next confirmed booking; check that booking in at the entry lane to see the exception"
+              onClick={() => numericLot && occupy.mutate(numericLot)}
+            >
+              <ParkingSquare aria-hidden /> Park a walk-in in a booked bay
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle>Simulated vehicles inside</CardTitle>
+            <CardDescription>
+              {overview.data
+                ? `${inside.length} inside • ${formatNumber(overview.data.completedCount)} paid and left • ${formatNumber(overview.data.revenue)} VND collected`
+                : 'Loading…'}
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={inside.length === 0 || checkOutAll.isPending}
+            onClick={() => window.confirm('Every simulated vehicle in this lot pays and leaves now. Continue?') && checkOutAll.mutate(numericLot)}
+          >
+            <LogOut aria-hidden /> Check out all
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {overview.isPending ? (
+            <Skeleton className="h-40 rounded-lg" />
+          ) : overview.isError ? (
+            <ErrorState message={getErrorMessage(overview.error, 'Could not load the simulated vehicles.')} onRetry={() => void overview.refetch()} />
+          ) : inside.length === 0 ? (
+            <EmptyState icon={Car} title="No simulated vehicle inside" description="Send a batch in to fill the lot." />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Plate</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Entered</TableHead>
+                    <TableHead>Leaves at</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inside.map((vehicle) => (
+                    <WalkInRow key={vehicle.sessionId} vehicle={vehicle} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

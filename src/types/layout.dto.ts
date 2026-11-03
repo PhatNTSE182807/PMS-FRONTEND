@@ -71,6 +71,8 @@ export interface LotPlan2DDTO {
   lotStatus: string
   version: number
   detail: Layout2DDetail
+  /** Live free and total spaces per zone (zone counters): walk-ins only move these. */
+  zoneCounters?: { zoneId: number; total: number; free: number }[]
   floors: {
     floorNo: number
     name: string

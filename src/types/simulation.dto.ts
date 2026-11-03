@@ -40,3 +40,66 @@ export interface ParkingSimulationDTO extends UpdateParkingSimulationCommand {
 
 export const SIMULATION_MIN_SECONDS = 1
 export const SIMULATION_MAX_SECONDS = 3600
+
+/* Walk-in simulation (WalkInSimulationModels, /admin/simulation/walk-ins). */
+
+/** DeployWalkInsModel: a batch of walk-ins with random plates sent through the lot's entry lane. */
+export interface DeployWalkInsCommand {
+  lotId: number
+  /** 1–500; the batch stops early when a zone is full. */
+  count: number
+  /** Share of cars, 0–100; the rest are motorbikes. */
+  carPercent: number
+  /** Stay bounds in hours (at most 72). While the simulation is on, one hour lasts one pricing block. */
+  minStayHours: number
+  maxStayHours: number
+  /** Share of vehicles whose plate cannot be read, 0–100. */
+  noPlatePercent: number
+}
+
+export const WALK_IN_MAX_COUNT = 500
+export const WALK_IN_MAX_STAY_HOURS = 72
+
+export interface DeployWalkInsResultDTO {
+  requested: number
+  entered: number
+  /** Why the batch stopped early, in plain words; null when every vehicle entered. */
+  stoppedReason: string | null
+}
+
+/** SimulatedWalkInModel: one simulated vehicle still inside. */
+export interface SimulatedWalkInDTO {
+  sessionId: number
+  sessionCode: string
+  lotId: number
+  lotName: string
+  /** Empty when the vehicle has no readable plate. */
+  plate: string
+  hasPlate: boolean
+  vehicleTypeName: string | null
+  zoneName: string | null
+  entryTime: string
+  plannedExitAt: string | null
+  status: string
+  lostTicket: boolean
+}
+
+export interface WalkInSimulationOverviewDTO {
+  inside: SimulatedWalkInDTO[]
+  completedCount: number
+  revenue: number
+}
+
+export interface WalkInCheckOutResultDTO {
+  checkedOut: number
+  skipped: number
+}
+
+/** BookedBayTakenModel: a simulated walk-in now stands in a booked bay. */
+export interface BookedBayTakenDTO {
+  sessionId: number
+  plate: string
+  bayCode: string
+  reservationId: number
+  reservationCode: string
+}
