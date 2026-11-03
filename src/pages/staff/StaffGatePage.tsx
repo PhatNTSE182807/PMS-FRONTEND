@@ -7,15 +7,12 @@ import {
   CircleCheck,
   Cpu,
   DoorOpen,
-  Headset,
   LogIn,
   LogOut,
   Lock,
   ScanLine,
   Search,
   ShieldCheck,
-  Siren,
-  TrafficCone,
   TriangleAlert,
   Video,
   Wallet,
@@ -234,42 +231,6 @@ function AnprTelemetry({
   )
 }
 
-function DispatchBar() {
-  const [armed, setArmed] = useState(false)
-  const override = () => {
-    if (!armed) {
-      setArmed(true)
-      return
-    }
-    setArmed(false)
-    toast.error('Emergency barrier override engaged', { description: 'All lanes of Station 01 opened.' })
-  }
-  return (
-    <Panel className="flex flex-col gap-4 py-4 lg:flex-row lg:items-center sm:py-4">
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg bg-slate-100 text-amber-500">
-          <TriangleAlert className="size-5" aria-hidden />
-        </span>
-        <div>
-          <p className="font-display text-lg font-bold text-slate-950">Tactical rapid dispatch &amp; barrier override</p>
-          <p className="text-sm text-slate-700">Gate terminal direct override for Station 01 console</p>
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-2 lg:ml-auto">
-        <Button variant="secondary" onClick={() => toast.info('Blocked slot reported to the floor team')}>
-          <TrafficCone /> Report blocked slot
-        </Button>
-        <Button variant="secondary" onClick={() => toast.info('Intercom channel open')}>
-          <Headset /> Intercom audio <span className="size-1.5 rounded-full bg-indigo-400" aria-hidden />
-        </Button>
-        <Button variant="destructive" onClick={override} onBlur={() => setArmed(false)}>
-          <Siren /> {armed ? 'Click again to confirm' : 'Emergency barrier override'}
-        </Button>
-      </div>
-    </Panel>
-  )
-}
-
 const SESSION_TONE: Record<string, string> = {
   PendingEntry: 'bg-amber-100 text-amber-700',
   Active: 'bg-indigo-100 text-indigo-700',
@@ -413,7 +374,6 @@ export default function StaffGatePage() {
         <LiveLotModel lots={myLots.data ?? []} lotId={lotId} onLotChange={setLotId} />
       )}
 
-      <DispatchBar />
       <ActivityStream sessions={sessions.data ?? []} isLoading={sessions.isPending} query={query} setQuery={setQuery} />
     </div>
   )
