@@ -1,5 +1,14 @@
 import { SERVICE_PATHS } from '@/config/env'
-import type { ParkingSimulationDTO, UpdateParkingSimulationCommand } from '@/types/simulation.dto'
+import type {
+  BookedBayTakenDTO,
+  DeployWalkInsCommand,
+  DeployWalkInsResultDTO,
+  ParkingSimulationDTO,
+  SimulatedWalkInDTO,
+  UpdateParkingSimulationCommand,
+  WalkInCheckOutResultDTO,
+  WalkInSimulationOverviewDTO,
+} from '@/types/simulation.dto'
 import { http } from './axiosClient'
 
 /**
@@ -15,5 +24,40 @@ export const simulationService = {
   /** PUT /admin/simulation: saves and applies at once. */
   update(command: UpdateParkingSimulationCommand): Promise<ParkingSimulationDTO> {
     return http.put<ParkingSimulationDTO>(`${SERVICE_PATHS.staff}/simulation`, command)
+  },
+}
+
+const walkIns = `${SERVICE_PATHS.staff}/simulation/walk-ins`
+
+/** Admin walk-in simulation: random-plate vehicles through the real entry and exit lanes. */
+export const walkInSimulationService = {
+  /** GET /admin/simulation/walk-ins: simulated vehicles inside, how many left and what they paid. */
+  overview(lotId?: number): Promise<WalkInSimulationOverviewDTO> {
+    return http.get<WalkInSimulationOverviewDTO>(walkIns, { params: lotId ? { lotId } : undefined })
+  },
+
+  /** POST /admin/simulation/walk-ins: send a batch in. */
+  deploy(command: DeployWalkInsCommand): Promise<DeployWalkInsResultDTO> {
+    return http.post<DeployWalkInsResultDTO>(walkIns, command)
+  },
+
+  /** One vehicle pays cash at the exit lane and leaves now. */
+  checkOut(sessionId: number): Promise<SimulatedWalkInDTO | null> {
+    return http.post<SimulatedWalkInDTO | null>(`${walkIns}/${sessionId}/check-out`)
+  },
+
+  /** Every simulated vehicle (of one lot, or all) pays and leaves now. */
+  checkOutAll(lotId?: number): Promise<WalkInCheckOutResultDTO> {
+    return http.post<WalkInCheckOutResultDTO>(`${walkIns}/check-out-all`, undefined, { params: lotId ? { lotId } : undefined })
+  },
+
+  /** The driver reports a lost ticket: approved on the spot (conditions met) or sent to the lot's Manager. */
+  reportLostTicket(sessionId: number, conditionsMet: boolean): Promise<SimulatedWalkInDTO | null> {
+    return http.post<SimulatedWalkInDTO | null>(`${walkIns}/${sessionId}/lost-ticket`, { conditionsMet })
+  },
+
+  /** A walk-in parks in the bay of the lot's next confirmed booking. */
+  occupyBookedBay(lotId: number): Promise<BookedBayTakenDTO> {
+    return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: { lotId } })
   },
 }

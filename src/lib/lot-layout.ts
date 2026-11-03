@@ -14,6 +14,7 @@ const BAY_STATUS: Record<SlotStatus, BayStatus> = {
  * same grid, so a published layout renders exactly where the backend placed each bay.
  */
 export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
+  const walkIns = walkInBays(plan)
   return plan.floors.map((floor, index) => {
     const bays: Bay[] = floor.cells.map((cell) => ({
       id: String(cell.slotId),
@@ -21,7 +22,7 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
       floorIndex: index,
       row: cell.row,
       col: cell.col,
-      status: BAY_STATUS[cell.status],
+      status: walkIns.has(cell.slotId) ? 'OCCUPIED' : BAY_STATUS[cell.status],
     }))
     return {
       index,
@@ -31,8 +32,32 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
       rows: floor.rows,
       cols: floor.cols,
       bays,
-      liveFree: floor.free,
+      // Walk-ins drawn on this level are not free either
+      liveFree: Math.max(0, floor.free - floor.cells.filter((c) => walkIns.has(c.slotId)).length),
       liveTotal: floor.total,
     }
   })
+}
+
+/**
+ * Walk-ins are not given a bay: only the zone counter knows how many are inside. The model still shows them,
+ * filling free bays of their zone in a fixed order (front rows first) so the same bays stay filled between
+ * refreshes. Spaces used = counter total - counter free; bays already shown as held or taken count first.
+ */
+function walkInBays(plan: LotPlan2DDTO): Set<number> {
+  const filled = new Set<number>()
+  const cells = plan.floors.flatMap((floor, floorIndex) => floor.cells.map((cell) => ({ ...cell, floorIndex })))
+  for (const zone of plan.zoneCounters ?? []) {
+    const inZone = cells.filter((c) => c.zoneId === zone.zoneId)
+    const shown = inZone.filter((c) => c.status !== 'Available').length
+    let missing = Math.max(0, zone.total - zone.free - shown)
+    const free = inZone
+      .filter((c) => c.status === 'Available')
+      .sort((a, b) => a.floorIndex - b.floorIndex || a.row - b.row || a.col - b.col)
+    for (const cell of free) {
+      if (missing-- <= 0) break
+      filled.add(cell.slotId)
+    }
+  }
+  return filled
 }

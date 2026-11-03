@@ -64,6 +64,8 @@ export const queryKeys = {
   },
   /** The Admin's parking simulation (fees and booking times in seconds). */
   parkingSimulation: ['parking-simulation'] as const,
+  /** Simulated walk-ins (Admin demo traffic), per lot or all. */
+  walkInSimulation: (lotId?: number) => ['parking-simulation', 'walk-ins', lotId ?? 'all'] as const,
   /** Server-wide payment settings. */
   payments: {
     simulation: () => ['payments', 'simulation'] as const,
