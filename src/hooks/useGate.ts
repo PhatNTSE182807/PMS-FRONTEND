@@ -102,9 +102,19 @@ export const usePayOnline = () => useGateMutation(({ sessionId, provider, prepai
 export const useCheckout = () => useGateMutation(({ sessionId, request }: { sessionId: number; request: CheckoutRequest }) => gateService.checkout(sessionId, request))
 
 /** Lost ticket desk: finds the open session of the plate, then reports its ticket as lost. */
+/** A lost ticket was reported for a vehicle that came in with a booking. */
+export class BookedVehicleError extends Error {
+  constructor() {
+    super('This vehicle came in with a booking, so it has no paper ticket to lose: find it by plate or booking code at the exit instead.')
+    this.name = 'BookedVehicleError'
+  }
+}
+
 export const useReportLostTicket = (lotId: string | undefined) =>
   useGateMutation(async ({ plate, request }: { plate: string; request: LostTicketRequest }) => {
     const session = await gateService.lookup(lotId!, { plate })
+    // The API refuses it too; checking here keeps the message next to the plate field
+    if (session.sessionType === 'Reservation') throw new BookedVehicleError()
     return gateService.reportLostTicket(session.id, request)
   })
 

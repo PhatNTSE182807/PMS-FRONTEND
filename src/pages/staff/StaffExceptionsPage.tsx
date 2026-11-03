@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AlarmClock, BellRing, CircleCheck, FileWarning, Gavel, Hourglass, IdCard, RefreshCw, ShieldCheck, TriangleAlert, Undo2 } from 'lucide-react'
 import { ApiError, getErrorMessage } from '@/api/apiError'
@@ -12,7 +12,7 @@ import { Checkbox, FieldError, Input, Label, NativeSelect } from '@/components/u
 import { EmptyState } from '@/components/ui/states'
 import { useAuth } from '@/hooks/useAuth'
 import { resolveIncident, useDemoIncidents, type IncidentResolution, type TrackedIncident } from '@/hooks/useDemoIncidents'
-import { useReportLostTicket } from '@/hooks/useGate'
+import { BookedVehicleError, useReportLostTicket } from '@/hooks/useGate'
 import { useNow } from '@/hooks/useNow'
 import { useMyStaffLots } from '@/hooks/useParking'
 import { cn } from '@/lib/utils'
@@ -229,7 +229,16 @@ function LostTicketDesk() {
   const myLots = useMyStaffLots()
   const lotId = myLots.data?.[0]?.id
   const report = useReportLostTicket(lotId)
-  const [plate, setPlate] = useState('')
+  // Opened from Vehicles in the lot: the vehicle is filled in (router state, so the plate never lands in the URL)
+  const preset = (useLocation().state as { lostTicket?: { sessionId: number; plate: string } } | null)?.lostTicket
+  const [plate, setPlate] = useState(preset?.plate ?? '')
+  const deskRef = useRef<HTMLElement>(null)
+  const reasonRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!preset) return
+    deskRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    reasonRef.current?.focus({ preventScroll: true })
+  }, [preset])
   const [reason, setReason] = useState('')
   const [conditionsMet, setConditionsMet] = useState(false)
   const [errors, setErrors] = useState<LostTicketErrors>({})
@@ -253,14 +262,22 @@ function LostTicketDesk() {
       // Without the conditions the case waits for a Manager: the fine is not applied yet.
       if (session.status !== 'LostTicketPending') toast.success(STAFF_TOAST.lostTicketApplied)
     } catch (error) {
+      // Only walk-ins can lose a ticket: say so under the plate
+      if (error instanceof BookedVehicleError || (error instanceof ApiError && /booking/i.test(error.message))) {
+        setErrors((prev) => ({ ...prev, plate: error.message }))
+        return
+      }
       toast.error(error instanceof ApiError && error.status === 404 ? STAFF_TOAST.vehicleNotFound : getErrorMessage(error))
     }
   }
 
   return (
-    <Panel>
+    <Panel ref={deskRef} id="lost-ticket" className={cn(preset && 'ring-2 ring-amber-400')}>
       <SectionTitle icon={<FileWarning className="size-5 text-amber-500" aria-hidden />}>Lost ticket desk</SectionTitle>
-      <p className="mt-1 text-sm text-slate-700">Look up the vehicle still inside by its plate, check the driver&apos;s identity and papers, then apply the lost ticket fine.</p>
+      <p className="mt-1 text-sm text-slate-700">
+        Walk-in vehicles only: look up the vehicle still inside by its plate, check the driver&apos;s identity and papers, then apply the lost ticket fine.
+        A booked vehicle has no paper ticket and is refused.
+      </p>
 
       <form noValidate onSubmit={submit} className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-start">
         <div className="space-y-1.5">
@@ -285,6 +302,7 @@ function LostTicketDesk() {
           <Label htmlFor="lost-reason">Reason</Label>
           <Input
             id="lost-reason"
+            ref={reasonRef}
             value={reason}
             placeholder="Driver lost the paper ticket; registration papers and ID checked"
             aria-invalid={Boolean(errors.reason)}
