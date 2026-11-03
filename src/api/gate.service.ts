@@ -15,7 +15,7 @@ import type {
   StaffPaymentHistoryPageDTO,
   ZoneCounterDTO,
 } from '@/types/operations.dto'
-import { http } from './axiosClient'
+import { axiosClient, http, toApiError } from './axiosClient'
 
 const base = SERVICE_PATHS.gate
 const lotPath = (lotId: string) => `${base}/lots/${lotId}`
@@ -100,6 +100,30 @@ export const gateService = {
   /** Dynamic QR (VNPay / MoMo) for a Guest: show `payUrl` as a QR code. */
   payOnline(sessionId: number, provider: PaymentProvider, prepaid = false): Promise<PaymentDTO> {
     return http.post<PaymentDTO>(`${sessionPath(sessionId)}/payments/online`, { provider, prepaid })
+  },
+
+  /** Lost ticket with photos of the driver's Citizen ID and registration certificate; the Staff then reviews it. */
+  reportLostTicketWithPapers(sessionId: number, reason: string, citizenId: File, registration: File): Promise<ParkingSessionDTO> {
+    const form = new FormData()
+    form.append('reason', reason)
+    form.append('citizenId', citizenId)
+    form.append('registration', registration)
+    return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/lost-ticket/papers`, form)
+  },
+
+  /** The Staff compared the papers: approve (fine on the bill, the vehicle stays) or refuse with a note. */
+  reviewLostTicket(sessionId: number, approve: boolean, note?: string): Promise<ParkingSessionDTO> {
+    return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/lost-ticket/review`, { approve, note: note || undefined })
+  },
+
+  /** One uploaded paper (citizen-id or registration); the endpoint needs the bearer token, so it is fetched as a blob. */
+  async getLostTicketPaper(sessionId: number, kind: 'citizen-id' | 'registration'): Promise<Blob> {
+    try {
+      const response = await axiosClient.get<Blob>(`${sessionPath(sessionId)}/lost-ticket/papers/${kind}`, { responseType: 'blob' })
+      return response.data
+    } catch (error) {
+      throw toApiError(error)
+    }
   },
 
   /**

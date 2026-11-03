@@ -143,7 +143,8 @@ String constants live in `src/PMS.Application/Models/Operations/ParkingStatuses.
   `PendingPayment` (fee requested at lane, counter or app; back to `Active` on cancel/timeout) →
   `Paid` (paid after deposit, or fee 0; back to `PendingPayment` when a pre-payment exceeds the
   exit window) → `Completed` (vehicle passed the barrier). Side paths: `Active → LostTicketPending
-  → PendingPayment` (approved) or back to `Active` (rejected); `Active → AbnormalClosed`
+  → Active` (approved: the fine is added at check-out; rejected: the vehicle stays until new papers
+  are approved); `Active → AbnormalClosed`
   (Maker-Checker); `Active → EmergencyExit` (Manager then waives or records debt). A turned-back
   car cancels the session (`Cancelled`) and the counter does not change. "Device failure" is not a
   state: it is the *manual* flag with a reason.
@@ -349,5 +350,14 @@ Keep this list current; it is the first place to look when code and SRS disagree
 - Bookings have two modes: pay-as-you-go follows the SRS (arrival time only); scheduled also
   takes a departure time, which the SRS does not have.
 - `src/components/OtpLoginScreen.jsx` and other OTP code are out of scope in v1.4 (no OTP / 2FA).
+- Lost ticket papers (team decision, 2026-11-04): Lost ticket (Vehicles in the lot on the gate dashboard, or the
+  Exceptions desk after a plate lookup) opens a popup where the Staff uploads photos of the driver's Citizen ID and
+  vehicle registration certificate (JPEG / PNG / PDF, 8 MB each; `POST /api/staff/sessions/{id}/lost-ticket/papers`,
+  stored under `lost-tickets/{sessionId}`, paths on the `SessionViolations` row). The case waits with
+  `ApprovalMode = Staff` (no Manager alert) and the Exceptions screen shows the papers for the Staff to check and
+  approve or disapprove (`POST .../lost-ticket/review`; disapproving needs a note). The Staff at the counter decides
+  this case, unlike the Maker-Checker rule for the other lost-ticket paths. Every decision leaves the vehicle parked
+  (`Active`): an approval adds the lost-ticket fine to the bill at check-out; a disapproval keeps the vehicle in
+  until new papers are uploaded and approved.
 - The user wallet (`api/wallet.service.ts`, `hooks/useWallet.ts`) is a team addition: the SRS
   lists an internal wallet as out of scope (2.5), but it is in active use for payments.

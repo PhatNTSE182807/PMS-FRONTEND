@@ -295,6 +295,10 @@ export interface ParkingSessionDTO {
   lostTicketReportedAt: string | null
   /** What the reporter wrote (what was checked). */
   lostTicketReason: string | null
+  /** Who decides the open case: Staff (papers uploaded), Manager, or Conditional once approved on the spot. */
+  lostTicketApprovalMode?: string | null
+  /** The Staff uploaded the Citizen ID and registration photos for the latest case. */
+  lostTicketHasPapers?: boolean
   /** The Manager's remarks or rejection reason. */
   lostTicketDecisionNote: string | null
   plateMismatch: boolean

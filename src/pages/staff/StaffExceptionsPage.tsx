@@ -1,28 +1,25 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { AlarmClock, BellRing, CircleCheck, FileWarning, Gavel, Hourglass, IdCard, RefreshCw, ShieldCheck, TriangleAlert, Undo2 } from 'lucide-react'
+import { AlarmClock, BellRing, CircleCheck, FileWarning, Gavel, IdCard, RefreshCw, ShieldCheck, TriangleAlert, Undo2 } from 'lucide-react'
 import { ApiError, getErrorMessage } from '@/api/apiError'
 import { CameraFrame, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
 import { STAFF_TOAST } from '@/components/features/staff/staffToasts'
 import { formatMinutes, vnd } from '@/components/features/manager/managerFormat'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Checkbox, FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
+import { FieldError, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { EmptyState } from '@/components/ui/states'
 import { useAuth } from '@/hooks/useAuth'
 import { resolveIncident, useDemoIncidents, type IncidentResolution, type TrackedIncident } from '@/hooks/useDemoIncidents'
-import { BookedVehicleError, useReportLostTicket } from '@/hooks/useGate'
+import { BookedVehicleError } from '@/hooks/useGate'
+import { gateService } from '@/api/gate.service'
+import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/features/staff/LostTicketPapersDialog'
+import { LostTicketReviews } from '@/components/features/staff/LostTicketReviews'
 import { useNow } from '@/hooks/useNow'
 import { useMyStaffLots } from '@/hooks/useParking'
 import { cn } from '@/lib/utils'
 import { RESOLUTION_REASONS, demoIncidentStats, demoStation, type IncidentSeverity } from '@/mocks/staffOps.mock'
-import type { ParkingSessionDTO } from '@/types/operations.dto'
-
-interface LostTicketErrors {
-  plate?: string
-  reason?: string
-}
 
 const SEVERITY: Record<IncidentSeverity, { label: string; tone: string }> = {
   URGENT: { label: 'Urgent review', tone: 'bg-rose-100 text-rose-700' },
@@ -222,127 +219,81 @@ function Dossier({ incident }: { incident: TrackedIncident }) {
 }
 
 /**
- * Lost ticket / card desk: finds the open session of the plate and reports the ticket as lost. Form
- * mistakes are shown under their field; only the API outcome is a toast.
+ * Lost ticket desk: find a walk-in still inside by its plate, then upload the driver's papers (the same popup as
+ * Lost ticket on the gate dashboard). Booked vehicles are refused: they have no paper ticket.
  */
 function LostTicketDesk() {
   const myLots = useMyStaffLots()
   const lotId = myLots.data?.[0]?.id
-  const report = useReportLostTicket(lotId)
-  // Opened from Vehicles in the lot: the vehicle is filled in (router state, so the plate never lands in the URL)
-  const preset = (useLocation().state as { lostTicket?: { sessionId: number; plate: string } } | null)?.lostTicket
-  const [plate, setPlate] = useState(preset?.plate ?? '')
-  const deskRef = useRef<HTMLElement>(null)
-  const reasonRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (!preset) return
-    deskRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    reasonRef.current?.focus({ preventScroll: true })
-  }, [preset])
-  const [reason, setReason] = useState('')
-  const [conditionsMet, setConditionsMet] = useState(false)
-  const [errors, setErrors] = useState<LostTicketErrors>({})
-  const [reported, setReported] = useState<ParkingSessionDTO | null>(null)
+  const [plate, setPlate] = useState('')
+  const [error, setError] = useState<string | undefined>()
+  const [searching, setSearching] = useState(false)
+  const [vehicle, setVehicle] = useState<LostTicketVehicle | null>(null)
   const noLot = myLots.isSuccess && !lotId
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const find = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const found: LostTicketErrors = {}
-    if (!plate.trim()) found.plate = 'Enter the licence plate of the vehicle.'
-    if (!reason.trim()) found.reason = 'Enter why the ticket is reported as lost.'
-    setErrors(found)
-    if (found.plate || found.reason || !lotId) return
-
+    if (!plate.trim()) return setError('Enter the licence plate of the vehicle.')
+    if (!lotId) return
+    setError(undefined)
+    setSearching(true)
     try {
-      const session = await report.mutateAsync({ plate: plate.trim(), request: { reason: reason.trim(), conditionsMet } })
-      setReported(session)
-      setPlate('')
-      setReason('')
-      setConditionsMet(false)
-      // Without the conditions the case waits for a Manager: the fine is not applied yet.
-      if (session.status !== 'LostTicketPending') toast.success(STAFF_TOAST.lostTicketApplied)
-    } catch (error) {
-      // Only walk-ins can lose a ticket: say so under the plate
-      if (error instanceof BookedVehicleError || (error instanceof ApiError && /booking/i.test(error.message))) {
-        setErrors((prev) => ({ ...prev, plate: error.message }))
-        return
-      }
-      toast.error(error instanceof ApiError && error.status === 404 ? STAFF_TOAST.vehicleNotFound : getErrorMessage(error))
+      const session = await gateService.lookup(lotId, { plate: plate.trim() })
+      if (session.sessionType === 'Reservation') return setError(new BookedVehicleError().message)
+      if (session.status === 'LostTicketPending') return setError('This vehicle already has a lost ticket waiting for a decision.')
+      setVehicle({ sessionId: session.id, plate: session.plateNumber, vehicleTypeName: session.vehicleTypeName, code: session.code })
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) setError(STAFF_TOAST.vehicleNotFound)
+      else toast.error(getErrorMessage(e))
+    } finally {
+      setSearching(false)
     }
   }
 
   return (
-    <Panel ref={deskRef} id="lost-ticket" className={cn(preset && 'ring-2 ring-amber-400')}>
+    <Panel>
       <SectionTitle icon={<FileWarning className="size-5 text-amber-500" aria-hidden />}>Lost ticket desk</SectionTitle>
       <p className="mt-1 text-sm text-slate-700">
-        Walk-in vehicles only: look up the vehicle still inside by its plate, check the driver&apos;s identity and papers, then apply the lost ticket fine.
-        A booked vehicle has no paper ticket and is refused.
+        Walk-in vehicles only: find the vehicle still inside by its plate, photograph the driver&apos;s Citizen ID and registration certificate,
+        then check them. A booked vehicle has no paper ticket and is refused.
       </p>
-
-      <form noValidate onSubmit={submit} className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-start">
-        <div className="space-y-1.5">
+      <form noValidate onSubmit={find} className="mt-4 flex flex-wrap items-start gap-3">
+        <div className="w-60 space-y-1.5">
           <Label htmlFor="lost-plate">Licence plate</Label>
           <Input
             id="lost-plate"
             value={plate}
             placeholder="51K-889.24"
-            aria-invalid={Boolean(errors.plate)}
-            aria-describedby={errors.plate ? 'lost-plate-error' : undefined}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'lost-plate-error' : undefined}
             onChange={(e) => {
               setPlate(e.target.value.toUpperCase())
-              if (errors.plate) setErrors((prev) => ({ ...prev, plate: undefined }))
+              setError(undefined)
             }}
             className="font-mono font-bold tracking-wider"
           />
-          <div id="lost-plate-error">
-            <FieldError message={errors.plate} />
-          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="lost-reason">Reason</Label>
-          <Input
-            id="lost-reason"
-            ref={reasonRef}
-            value={reason}
-            placeholder="Driver lost the paper ticket; registration papers and ID checked"
-            aria-invalid={Boolean(errors.reason)}
-            aria-describedby={errors.reason ? 'lost-reason-error' : undefined}
-            onChange={(e) => {
-              setReason(e.target.value)
-              if (errors.reason) setErrors((prev) => ({ ...prev, reason: undefined }))
-            }}
-          />
-          <div id="lost-reason-error">
-            <FieldError message={errors.reason} />
-          </div>
-          <label className="flex items-start gap-2 pt-1 text-sm text-slate-700">
-            <Checkbox checked={conditionsMet} onChange={(e) => setConditionsMet(e.target.checked)} className="mt-0.5" />
-            Photos, registration papers and ID match the entry record, and the standard fine applies (no Manager approval needed).
-          </label>
-        </div>
-        <Button type="submit" variant="gold" className="h-9 lg:mt-6" disabled={report.isPending || !lotId}>
-          <IdCard /> {report.isPending ? 'Reporting…' : 'Report lost ticket'}
+        <Button type="submit" variant="gold" className="h-9 sm:mt-6" disabled={searching || !lotId}>
+          <IdCard /> {searching ? 'Finding…' : 'Find vehicle and upload papers'}
         </Button>
+        <div id="lost-plate-error" className="basis-full">
+          <FieldError message={error} />
+        </div>
       </form>
       {noLot && <p className="mt-3 text-sm font-medium text-rose-600">You are not assigned to a parking lot yet.</p>}
-
-      {reported &&
-        (reported.status === 'LostTicketPending' ? (
-          <p className="mt-4 flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
-            <Hourglass className="size-4" aria-hidden /> {reported.plateNumber} ({reported.code}) is waiting for a Manager&apos;s approval. The fine is added once it is approved.
-          </p>
-        ) : (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
-            <span className="flex items-center gap-2">
-              <CircleCheck className="size-4" aria-hidden /> {reported.plateNumber} ({reported.code}): lost ticket fine added.
-            </span>
-            <Button asChild size="sm" variant="secondary">
-              <Link to={`/staff/checkout?session=${reported.id}`}>Collect the fee at checkout</Link>
-            </Button>
-          </div>
-        ))}
+      <LostTicketPapersDialog vehicle={vehicle} onClose={() => setVehicle(null)} />
     </Panel>
   )
+}
+
+/** The papers check, opened on the vehicle that was just uploaded (router state, never the URL). */
+function LostTicketReviewArea() {
+  const myLots = useMyStaffLots()
+  const selected = (useLocation().state as { lostTicketReview?: number } | null)?.lostTicketReview
+  useEffect(() => {
+    if (selected) document.getElementById('lost-ticket-review')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [selected])
+  return <LostTicketReviews lotId={myLots.data?.[0]?.id} selectedSessionId={selected} />
 }
 
 export default function StaffExceptionsPage() {
@@ -368,6 +319,7 @@ export default function StaffExceptionsPage() {
         <span className="font-mono normal-case">Audit stamp: {stamp.format(now)}</span>
       </div>
 
+      <LostTicketReviewArea />
       <LostTicketDesk />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[400px_minmax(0,1fr)]">
