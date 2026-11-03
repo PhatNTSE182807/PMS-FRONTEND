@@ -5,11 +5,8 @@ import {
   Car,
   CarFront,
   ClipboardCheck,
-  Construction,
-  Layers,
   MapPin,
   ReceiptText,
-  SlidersHorizontal,
   TrendingDown,
   TrendingUp,
   UserPlus,
@@ -94,21 +91,11 @@ function Console({ lot }: { lot: ManagedLot }) {
           <div className="flex flex-col gap-2 sm:items-end">
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" asChild>
-                <Link to="/management/lots">
-                  <Construction className="text-amber-500" /> Closure / maintenance mode
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
                 <Link to="/management/staff">
                   <UserPlus /> Staff &amp; POS
                 </Link>
               </Button>
             </div>
-            <Button asChild size="lg">
-              <Link to="/management/lots">
-                <Layers /> Open zones &amp; bays editor
-              </Link>
-            </Button>
           </div>
         }
       />
@@ -201,11 +188,6 @@ function Console({ lot }: { lot: ManagedLot }) {
               <h2 className="font-display text-xl font-semibold text-slate-950">Live Bay &amp; Zone Capacity</h2>
               <p className="mt-0.5 text-sm text-slate-700">Real-time occupancy per zone from the gate and sensor feed.</p>
             </div>
-            <Button variant="outline" asChild>
-              <Link to="/management/lots">
-                <SlidersHorizontal /> Manage bays &amp; maintenance
-              </Link>
-            </Button>
           </div>
 
           <ul className="mt-5 space-y-3">
