@@ -126,9 +126,6 @@ export function CustomerShell() {
           </div>
           <div className="cx-footer__bottom">
             <span>© {new Date().getFullYear()} XXIV PARKING. Saigon Metropolitan Network. All rights reserved.</span>
-            <span className="cx-footer__status">
-              <span className="cx-dot cx-dot--gold" aria-hidden="true" /> System online
-            </span>
           </div>
         </div>
       </footer>
