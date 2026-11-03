@@ -1,4 +1,4 @@
-import { BadgeDollarSign, CalendarCheck, ChartColumnBig, ClipboardCheck, CreditCard, FlaskConical, Gauge, LayoutDashboard, Network, ScanText, SquareParking, TriangleAlert, UserCog, Users, Vault, type LucideIcon } from 'lucide-react'
+import { BadgeDollarSign, CalendarCheck, ChartColumnBig, ClipboardCheck, CreditCard, FlaskConical, Gauge, LayoutDashboard, ScanText, SquareParking, TriangleAlert, UserCog, Users, Vault, type LucideIcon } from 'lucide-react'
 
 export interface AdminNavItem {
   to: string
@@ -13,7 +13,6 @@ export const MANAGER_NAV: AdminNavItem[] = [
   { to: '/management/approvals', label: 'Approval Queue', icon: ClipboardCheck },
   { to: '/management/pricing', label: 'Pricing & Tariffs', icon: BadgeDollarSign },
   { to: '/management/staff', label: 'Staff & POS Assignment', icon: UserCog },
-  { to: '/management/lots', label: 'Facility Zones & Bays', icon: Network },
 ]
 
 /** Tabs of the Staff (gate attendant) POS terminal console. */

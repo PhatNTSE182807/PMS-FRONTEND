@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -54,11 +53,6 @@ export function WithManagerLot({ children }: { children: (lot: ManagedLot) => Re
           icon={Building2}
           title="No parking lot assigned yet"
           description="Ask an Admin to assign you to a parking lot. Its console appears here once it is assigned."
-          action={
-            <Link to="/management/lots" className="text-sm font-semibold text-indigo-700 hover:underline">
-              Open Facility Zones &amp; Bays
-            </Link>
-          }
         />
       </Card>
     )

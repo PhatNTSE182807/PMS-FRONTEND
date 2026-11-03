@@ -51,12 +51,6 @@ function ManagerLotSelect() {
         )}
       </div>
 
-      <div className="hidden min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 whitespace-nowrap xl:flex ring-1 ring-slate-200/60">
-        <span className="text-xs font-semibold text-indigo-700 uppercase">Station</span>
-        <span className="text-sm font-semibold text-slate-950">
-          Central Hub & All Zones {lot ? `(${lot.code})` : ''}
-        </span>
-      </div>
     </div>
   )
 }

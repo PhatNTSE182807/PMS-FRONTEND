@@ -101,7 +101,8 @@ export const router = createBrowserRouter([
       { path: 'approvals', element: <ManagerApprovalsPage /> },
       { path: 'pricing', element: <ManagerPricingPage /> },
       { path: 'staff', element: <ManagerStaffPage /> },
-      { path: 'lots', element: <ParkingLotsPage /> },
+      // The Manager no longer has a zones and bays page: old links land on the console
+      { path: 'lots', element: <Navigate to="/management/console" replace /> },
     ],
   },
   {
