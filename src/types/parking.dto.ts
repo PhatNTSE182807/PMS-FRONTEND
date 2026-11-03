@@ -23,6 +23,25 @@ export interface ParkingLotSummaryDTO {
   layoutTemplate?: string | null
 }
 
+/** GET /manager/lots/{lotId}/occupancy: LotOccupancyModel, live from the zone counters. */
+export interface LotOccupancyDTO {
+  parkingLotId: number
+  totalBays: number
+  occupiedBays: number
+  freeBays: number
+  /** 0-100, one decimal. */
+  occupancyRate: number
+  baysByVehicle: { vehicleType: CapacityVehicleType; totalBays: number; freeBays: number }[]
+  zones: {
+    zoneId: number
+    zoneName: string
+    vehicleType: CapacityVehicleType | null
+    totalBays: number
+    occupiedBays: number
+    freeBays: number
+  }[]
+}
+
 export interface VehicleCapacityDetail {
   vehicleType: CapacityVehicleType
   totalSlots: number

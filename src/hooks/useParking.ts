@@ -26,6 +26,17 @@ export function useMyStaffLots() {
   })
 }
 
+/** Live occupancy of one lot for its Manager; refreshed every 10 s. */
+export function useLotOccupancy(lotId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.parking.occupancy(lotId ?? ''),
+    queryFn: () => parkingService.getLotOccupancy(lotId!),
+    enabled: Boolean(lotId),
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+  })
+}
+
 export function useParkingCapacity() {
   return useQuery({
     queryKey: queryKeys.parking.capacity(),

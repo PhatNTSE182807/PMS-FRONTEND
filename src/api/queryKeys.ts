@@ -45,6 +45,8 @@ export const queryKeys = {
     all: ['parking'] as const,
     lots: () => [...queryKeys.parking.all, 'lots'] as const,
     capacity: () => [...queryKeys.parking.all, 'capacity'] as const,
+    /** Live occupied / free bays of one lot (zone counters), for its Manager. */
+    occupancy: (lotId: string) => [...queryKeys.parking.all, 'occupancy', lotId] as const,
     /** Public lot list with live free bays (homepage). */
     publicLots: () => [...queryKeys.parking.all, 'public-lots'] as const,
     staffLots: (userId: string | undefined) => [...queryKeys.parking.all, 'staff-lots', userId] as const,
@@ -130,5 +132,6 @@ export const queryKeys = {
     byLot: (query: RevenueFilterQuery) => [...queryKeys.reports.all, 'by-lot', query] as const,
     breakdown: (query: RevenueBreakdownQuery) => [...queryKeys.reports.all, 'breakdown', query] as const,
     manager: (query: object) => [...queryKeys.reports.all, 'manager', query] as const,
+    managerAllTime: (lotId?: string) => [...queryKeys.reports.all, 'manager-all-time', lotId ?? 'all'] as const,
   },
 }
