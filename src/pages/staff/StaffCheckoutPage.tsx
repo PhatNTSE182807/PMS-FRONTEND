@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ArrowUp, Banknote, Car, Clock, CreditCard, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
@@ -112,9 +112,13 @@ export default function StaffCheckoutPage() {
 
   // Opened from the gate dashboard: /staff/checkout?session=123
   const sessionParam = params.get('session')
+  // The plate read at entry (passed by the gate dashboard, never in the URL), so the exit check starts filled in
+  const plateParam = (useLocation().state as { plate?: string } | null)?.plate || null
   useEffect(() => {
-    if (sessionParam) loadQuote(Number(sessionParam))
-  }, [sessionParam, loadQuote])
+    if (!sessionParam) return
+    if (plateParam) setExitPlate(plateParam)
+    loadQuote(Number(sessionParam), plateParam ?? undefined)
+  }, [sessionParam, plateParam, loadQuote])
 
   const find = async (event: FormEvent) => {
     event.preventDefault()
