@@ -219,7 +219,9 @@ function OpenDrawer({ lotId }: { lotId: string }) {
 
 /** The drawer is open: count it against the notes the system expects, with the live match beside it. */
 function CountDrawer({ lotId, drawer }: { lotId: string; drawer: CashDrawerDTO }) {
-  const [counted, setCounted] = useState<BanknoteCounts>({})
+  // Starts as what the system expects in the drawer: the Staff only fixes the notes that differ
+  const fromDrawer = () => cleanNotes(drawer.expectedNotes)
+  const [counted, setCounted] = useState<BanknoteCounts>(fromDrawer)
   const [reason, setReason] = useState('')
   const [needsReason, setNeedsReason] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
@@ -247,8 +249,17 @@ function CountDrawer({ lotId, drawer }: { lotId: string; drawer: CashDrawerDTO }
         Count your drawer
       </SectionTitle>
       <p className="-mt-2 mb-4 text-sm text-slate-700">
-        Count every note in the drawer. The In drawer column is what the system expects from your float, the notes taken and the change given.
+        Count every note in the drawer. The In drawer column is what the system expects from your float, the notes taken and the change given; the count starts from it.
       </p>
+      <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+        <span className="mr-auto text-xs text-slate-600">The count starts from the In drawer column: change only the notes that differ.</span>
+        <Button size="sm" variant="secondary" disabled={close.isPending} onClick={() => setCounted(fromDrawer())}>
+          <Banknote /> Fill from drawer
+        </Button>
+        <Button size="sm" variant="ghost" disabled={close.isPending} onClick={() => setCounted({})}>
+          <RotateCcw /> Clear all
+        </Button>
+      </div>
       <NoteSheet notes={counted} onChange={setCounted} disabled={close.isPending} expected={drawer.expectedNotes} />
       {needsReason && (
         <div className="mt-4 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200">
