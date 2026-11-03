@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Building2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { EmptyState, ErrorState } from '@/components/ui/states'
 import { formatNumber } from '@/lib/format'
 import type { HubPerformanceDTO } from '@/types/dashboard.dto'
+import { HubModelDialog } from './HubModelDialog'
 import { HubPerformanceItem, HubPerformanceItemSkeleton } from './HubPerformanceItem'
 
 const SKELETON_ROWS = 4
@@ -18,6 +20,7 @@ interface HubPerformanceListProps {
 /** All hubs of the network, with a loading skeleton, an error prompt and an empty state. */
 export function HubPerformanceList({ hubs = [], isLoading = false, error = null, onRetry }: HubPerformanceListProps) {
   const todayTotal = hubs.reduce((sum, hub) => sum + hub.todayRevenue, 0)
+  const [openHub, setOpenHub] = useState<HubPerformanceDTO | null>(null)
 
   return (
     <Card aria-busy={isLoading} className="p-0">
@@ -47,9 +50,10 @@ export function HubPerformanceList({ hubs = [], isLoading = false, error = null,
         <>
           <ul className="space-y-3 p-4 sm:p-6">
             {hubs.map((hub) => (
-              <HubPerformanceItem key={hub.lotId} hub={hub} />
+              <HubPerformanceItem key={hub.lotId} hub={hub} onOpen={() => setOpenHub(hub)} />
             ))}
           </ul>
+          <HubModelDialog hub={openHub} onOpenChange={(open) => !open && setOpenHub(null)} />
           <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-6 py-4">
             <span className="text-sm text-slate-700">Network total today</span>
             <span className="font-mono text-lg font-bold text-slate-950 tabular-nums">

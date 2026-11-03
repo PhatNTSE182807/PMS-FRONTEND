@@ -13,6 +13,9 @@ interface LotResponse {
   name: string
   address: string
   managerUserId: string | null
+  status?: string
+  isBookable?: boolean
+  layoutTemplate?: string | null
 }
 
 /** Parking service: lots (PMS.API LotsController) and live occupancy (no endpoint yet). */
@@ -20,7 +23,16 @@ export const parkingService = {
   async getParkingLots(): Promise<ParkingLotSummaryDTO[]> {
     if (isMockService('parking')) return capacityMock.getParkingLots()
     const lots = await http.get<LotResponse[]>(`${SERVICE_PATHS.parking}/lots`)
-    return lots.map(({ id, code, name, address, managerUserId }) => ({ id: String(id), code, name, address, managerUserId }))
+    return lots.map(({ id, code, name, address, managerUserId, status, isBookable, layoutTemplate }) => ({
+      id: String(id),
+      code,
+      name,
+      address,
+      managerUserId,
+      status,
+      isBookable,
+      layoutTemplate,
+    }))
   },
 
   /** GET /staff/lots: the lot the signed-in Staff works at, as assigned by their Manager. */

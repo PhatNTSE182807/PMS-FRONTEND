@@ -1,4 +1,5 @@
-import { Building2, MapPin } from 'lucide-react'
+import type { KeyboardEvent } from 'react'
+import { Building2, MapPin, Rotate3d } from 'lucide-react'
 import { LEVEL_STYLES } from '@/components/features/capacity/occupancyStyles'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -9,20 +10,45 @@ import type { HubPerformanceDTO } from '@/types/dashboard.dto'
 
 const vnd = (value: number) => formatNumber(Math.round(value))
 
-/** One parking lot: where it is, how full it is, and what it earned today and this month. */
-export function HubPerformanceItem({ hub }: { hub: HubPerformanceDTO }) {
+/**
+ * One parking lot: where it is, how full it is, and what it earned today and this month. Clicking it (or
+ * Enter / Space) opens the lot's live 3D model.
+ */
+export function HubPerformanceItem({ hub, onOpen }: { hub: HubPerformanceDTO; onOpen?: () => void }) {
   const level = LEVEL_STYLES[occupancyLevel(hub.occupancyRate)]
   const LevelIcon = level.icon
   const percent = Math.min(100, Math.max(0, hub.occupancyRate))
 
   return (
-    <li className="grid gap-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,0.9fr)] lg:items-center lg:gap-6">
+    <li
+      className={cn(
+        'grid gap-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,0.9fr)] lg:items-center lg:gap-6',
+        onOpen && 'cursor-pointer transition-shadow hover:ring-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none',
+      )}
+      {...(onOpen && {
+        role: 'button',
+        tabIndex: 0,
+        'aria-label': `Open the 3D model of ${hub.lotName}`,
+        onClick: onOpen,
+        onKeyDown: (e: KeyboardEvent<HTMLLIElement>) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onOpen()
+          }
+        },
+      })}
+    >
       <div className="flex min-w-0 items-start gap-3">
         <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-white text-indigo-700 ring-1 ring-slate-200">
           <Building2 className="size-5" aria-hidden />
         </span>
         <div className="min-w-0">
           <p className="truncate font-display text-base font-semibold text-slate-950">{hub.lotName}</p>
+          {onOpen && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-indigo-700">
+              <Rotate3d className="size-3.5" aria-hidden /> View 3D model
+            </p>
+          )}
           <p className="mt-0.5 flex items-start gap-1 text-sm text-slate-700">
             <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-500" aria-hidden />
             <span className="line-clamp-2">{hub.location}</span>
