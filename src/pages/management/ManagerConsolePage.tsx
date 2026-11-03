@@ -4,7 +4,7 @@ import {
   Bike,
   Car,
   CarFront,
-  ClipboardCheck,
+  Landmark,
   MapPin,
   ReceiptText,
   TrendingDown,
@@ -20,8 +20,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePendingLostTickets } from '@/hooks/useApprovals'
 import { useManagerLot } from '@/hooks/useManagerLot'
-import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
-import { useManagerRevenue } from '@/hooks/useRevenueReport'
+import { useLotOccupancy } from '@/hooks/useParking'
+import { useManagerAllTimeRevenue, useManagerRevenue } from '@/hooks/useRevenueReport'
 import { useNow } from '@/hooks/useNow'
 import { formatNumber, toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -41,10 +41,10 @@ function yesterdayRange() {
 
 function Console({ lot }: { lot: ManagedLot }) {
   const now = useNow(30_000)
-  const capacity = useParkingCapacity()
-  useCapacitySimulation(true)
+  // Live occupancy of this lot from its zone counters (walk-ins and bookings alike)
+  const occupancyQuery = useLotOccupancy(lot.id)
+  const live = occupancyQuery.data
   const { lots: assigned, setLotId } = useManagerLot()
-  const live = capacity.data?.find((c) => c.id === lot.id)
 
   // Real revenue of this lot (settled sessions): cash taken at the counter shows up within seconds
   const today = presetRange('today')
@@ -60,12 +60,15 @@ function Console({ lot }: { lot: ManagedLot }) {
 
   const pending = usePendingLostTickets(lot.id).data ?? []
 
-  const totals = (live?.capacityByVehicle ?? []).reduce(
-    (s, d) => ({ total: s.total + d.totalSlots, free: s.free + d.availableSlots }),
-    { total: 0, free: 0 },
-  )
-  const occupied = totals.total - totals.free
-  const occupancy = totals.total ? (occupied / totals.total) * 100 : 0
+  const totals = { total: live?.totalBays ?? 0, free: live?.freeBays ?? 0 }
+  const occupied = live?.occupiedBays ?? 0
+  const occupancy = live?.occupancyRate ?? 0
+  const byVehicle = live?.baysByVehicle ?? []
+
+  // Everything this lot has earned since its first parking session
+  const allTime = useManagerAllTimeRevenue(lot.id)
+  const allTimeMethods = allTime.data?.paymentMethods ?? []
+  const allTimeOf = (method: string) => allTimeMethods.find((m) => m.method === method)?.amount ?? 0
 
   const upcoming = demoReservations
     .filter((r) => r.status === 'CONFIRMED' && r.start >= now - 30 * 60_000)
@@ -107,7 +110,7 @@ function Console({ lot }: { lot: ManagedLot }) {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Kpi label="Current occupancy" icon={<CarFront />}>
-          {capacity.isPending ? (
+          {occupancyQuery.isPending ? (
             <Skeleton className="mt-3 h-10 w-32" />
           ) : (
             <p className="mt-3 font-display text-4xl font-bold text-slate-950 tabular-nums">
@@ -118,21 +121,21 @@ function Console({ lot }: { lot: ManagedLot }) {
             </p>
           )}
           <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden>
-            {(live?.capacityByVehicle ?? []).map((d, i) => (
+            {byVehicle.map((d, i) => (
               <span
                 key={d.vehicleType}
                 className={['bg-indigo-700', 'bg-amber-500', 'bg-emerald-600'][i % 3]}
-                style={{ width: `${totals.total ? ((d.totalSlots - d.availableSlots) / totals.total) * 100 : 0}%` }}
+                style={{ width: `${totals.total ? ((d.totalBays - d.freeBays) / totals.total) * 100 : 0}%` }}
               />
             ))}
           </div>
           <p className="mt-2 flex flex-wrap gap-x-4 text-xs text-slate-700">
-            {(live?.capacityByVehicle ?? []).map((d) => {
+            {byVehicle.map((d) => {
               const Icon = VEHICLE_ICON[d.vehicleType]
               return (
                 <span key={d.vehicleType} className="flex items-center gap-1">
                   <Icon className="size-3.5" aria-hidden />
-                  {VEHICLE_LABEL[d.vehicleType]}: <strong className="text-slate-950">{formatNumber(d.totalSlots - d.availableSlots)} / {formatNumber(d.totalSlots)}</strong>
+                  {VEHICLE_LABEL[d.vehicleType]}: <strong className="text-slate-950">{formatNumber(d.totalBays - d.freeBays)} / {formatNumber(d.totalBays)}</strong>
                 </span>
               )
             })}
@@ -161,21 +164,23 @@ function Console({ lot }: { lot: ManagedLot }) {
           {todayRevenue.isError && <p className="mt-2 text-xs text-rose-700">Revenue could not be loaded.</p>}
         </Kpi>
 
-        <Kpi label="Action queue" icon={<ClipboardCheck />} className="sm:col-span-2 xl:col-span-1">
-          <p className="mt-3 font-display text-4xl font-bold text-amber-500">
-            {pending.length} <span className="text-base font-semibold text-slate-950">items need sign-off</span>
-          </p>
-          <ul className="mt-3 space-y-1 text-sm text-slate-700">
-            {pending.slice(0, 3).map((a) => (
-              <li key={a.id} className="flex items-center gap-2">
-                <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
-                Lost ticket • {a.plateNumber || a.code}
-              </li>
-            ))}
-          </ul>
-          <Link to="/management/approvals" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:underline">
-            Review queue <ArrowRight className="size-4" aria-hidden />
-          </Link>
+        <Kpi label="All-time revenue" icon={<Landmark />} className="sm:col-span-2 xl:col-span-1">
+          {allTime.isPending ? (
+            <Skeleton className="mt-3 h-10 w-48" />
+          ) : (
+            <p className="mt-3 font-display text-3xl font-bold text-amber-500 tabular-nums">{vnd(allTime.data?.totalRevenue ?? 0)}</p>
+          )}
+          {allTime.data && (
+            <p className="mt-1 text-sm text-slate-700">
+              {formatNumber(allTime.data.totalSessions)} paid sessions since {allTime.data.startDate}
+            </p>
+          )}
+          <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-700">
+            <span>Cash<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('CASH'))}</strong></span>
+            <span>VNPay / MoMo<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('QR_BANKING'))}</strong></span>
+            <span>Wallet<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('RFID_WALLET'))}</strong></span>
+          </div>
+          {allTime.isError && <p className="mt-2 text-xs text-rose-700">Revenue could not be loaded.</p>}
         </Kpi>
       </div>
 
@@ -191,12 +196,12 @@ function Console({ lot }: { lot: ManagedLot }) {
           </div>
 
           <ul className="mt-5 space-y-3">
-            {capacity.isPending && Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
-            {!capacity.isPending && !live?.zones.length && (
+            {occupancyQuery.isPending && Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+            {!occupancyQuery.isPending && !live?.zones.length && (
               <li className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600">No live zone data for this lot yet.</li>
             )}
             {live?.zones.map((zone) => {
-              const percent = zone.totalSlots ? (zone.occupiedSlots / zone.totalSlots) * 100 : 0
+              const percent = zone.totalBays ? (zone.occupiedBays / zone.totalBays) * 100 : 0
               const tone = percent >= 90 ? 'rose' : percent >= 75 ? 'amber' : 'indigo'
               return (
                 <li key={zone.zoneId} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
@@ -212,7 +217,7 @@ function Console({ lot }: { lot: ManagedLot }) {
                         {Math.round(percent)}% {tone === 'rose' ? 'Occupied' : tone === 'amber' ? 'Busy' : 'Normal'}
                       </span>
                       <span className="font-mono text-sm font-bold text-slate-950">
-                        {formatNumber(zone.occupiedSlots)} / {formatNumber(zone.totalSlots)}
+                        {formatNumber(zone.occupiedBays)} / {formatNumber(zone.totalBays)}
                       </span>
                     </div>
                   </div>
@@ -222,7 +227,7 @@ function Console({ lot }: { lot: ManagedLot }) {
                       style={{ width: `${Math.min(100, percent)}%` }}
                     />
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-600">{formatNumber(zone.totalSlots - zone.occupiedSlots)} slots available</p>
+                  <p className="mt-1.5 text-xs text-slate-600">{formatNumber(zone.freeBays)} bays free</p>
                 </li>
               )
             })}

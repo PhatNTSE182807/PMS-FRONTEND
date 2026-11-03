@@ -2,7 +2,7 @@ import { isMockService, SERVICE_PATHS } from '@/config/env'
 import { session } from '@/lib/session'
 import { capacityMock } from '@/mocks/capacity.mock'
 import { lotAssignmentsMock } from '@/mocks/lotAssignments.mock'
-import type { AssignedParkingLotDTO, ParkingLotCapacityDTO, ParkingLotSummaryDTO } from '@/types/parking.dto'
+import type { AssignedParkingLotDTO, LotOccupancyDTO, ParkingLotCapacityDTO, ParkingLotSummaryDTO } from '@/types/parking.dto'
 import { http } from './axiosClient'
 
 const base = SERVICE_PATHS.capacity
@@ -42,6 +42,11 @@ export const parkingService = {
     if (isMockService('team')) return lotAssignmentsMock.getStaffLots(user.userId)
     const lots = await http.get<{ id: number; code: string; name: string }[]>('/staff/lots')
     return lots.map(({ id, code, name }) => ({ id: String(id), code, name }))
+  },
+
+  /** GET /manager/lots/{lotId}/occupancy: live occupied and free bays of a lot the Manager runs. */
+  getLotOccupancy(lotId: string): Promise<LotOccupancyDTO> {
+    return http.get<LotOccupancyDTO>(`/manager/lots/${lotId}/occupancy`)
   },
 
   getCapacityOverview(): Promise<ParkingLotCapacityDTO[]> {

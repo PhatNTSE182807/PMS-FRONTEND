@@ -23,6 +23,11 @@ export const reportService = {
     return http.get<ManagerRevenueReportDTO>('/manager/reports/revenue', { params: query })
   },
 
+  /** GET /manager/reports/revenue/all-time: everything the lot (or every managed lot) earned since its first session. */
+  getManagerAllTimeRevenue(parkingLotId?: string): Promise<ManagerRevenueReportDTO> {
+    return http.get<ManagerRevenueReportDTO>('/manager/reports/revenue/all-time', { params: parkingLotId ? { parkingLotId } : undefined })
+  },
+
   getKpiSummary(query: RevenueFilterQuery): Promise<RevenueKpiSummaryDTO> {
     return mocked() ? revenueMock.getKpiSummary(query) : http.get<RevenueKpiSummaryDTO>(`${base}/kpi`, { params: query })
   },

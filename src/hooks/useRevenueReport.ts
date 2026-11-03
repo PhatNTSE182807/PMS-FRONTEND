@@ -39,6 +39,15 @@ export function useRevenueBreakdown(query: RevenueBreakdownQuery) {
 export const MANAGER_REVENUE_REFRESH_MS = 10_000
 
 /** Real revenue of the Manager's lots for a date range (one lot when parkingLotId is set). */
+/** Everything the lot earned since its first parking session; refreshed like the daily figures. */
+export function useManagerAllTimeRevenue(parkingLotId?: string) {
+  return useQuery({
+    queryKey: queryKeys.reports.managerAllTime(parkingLotId),
+    queryFn: () => reportService.getManagerAllTimeRevenue(parkingLotId),
+    refetchInterval: MANAGER_REVENUE_REFRESH_MS,
+  })
+}
+
 export function useManagerRevenue(query: { startDate: string; endDate: string; parkingLotId?: string }) {
   return useQuery({
     queryKey: queryKeys.reports.manager(query),
