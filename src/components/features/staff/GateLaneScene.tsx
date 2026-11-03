@@ -24,16 +24,48 @@ export interface LaneVehicle {
   kind: LaneVehicleKind
 }
 
+/** A box in the frame, 0..1 from the top-left corner. */
+export interface FrameBox {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export interface LaneFrame {
   image: Blob
   width: number
   height: number
-  /** Plate position in the frame, 0..1 from the top-left corner; null when no plate is in view. */
-  plateBox: { x: number; y: number; width: number; height: number } | null
+  /** Plate position in the frame; null when no plate is in view. */
+  plateBox: FrameBox | null
+  /** Each character printed on the plate and where it is in the frame (separators are left out). */
+  chars: { char: string; box: FrameBox }[]
+}
+
+/** One posed, still picture of the lane for the plate reader's training images. */
+export interface LaneSample {
+  plate: string
+  kind: LaneVehicleKind
+  /** Metres left/right of the lane centre and before/after the reading line. */
+  offsetX: number
+  offsetZ: number
+  /** Vehicle turned away from the lane axis, in radians. */
+  yaw: number
+  /** Camera moved from its mount (metres) and its field of view (degrees). */
+  camera: { dx: number; dy: number; dz: number; fov: number }
+  /** Overall brightness, 1 = normal. */
+  exposure: number
+  /** 0 = barrier down, 1 = fully up. */
+  barrierLift: number
+  /** 0..1: dirt and wear on the plate. */
+  grime: number
+  paint: number
 }
 
 export interface GateLaneSceneHandle {
   captureFrame: () => Promise<LaneFrame | null>
+  /** Poses the sample, draws it at the given size and returns the labelled frame (JPEG). */
+  renderSample: (sample: LaneSample, size: { width: number; height: number }) => Promise<LaneFrame | null>
 }
 
 interface GateLaneSceneProps {
@@ -58,6 +90,7 @@ const READ_Z = -5
 const CAMERA_POS = new THREE.Vector3(0.9, 2.2, -8.4)
 const CAMERA_TARGET = new THREE.Vector3(0, 0.5, -2.2)
 const BARRIER_Z = 0.7
+export const CAMERA_FOV = 34
 
 /** Where the rear plate sits on each model (models face +z, rear at -z). */
 const REAR_PLATE: Record<LaneVehicleKind, { shape: PlateShape; y: number; z: number; tilt: number }> = {
@@ -75,6 +108,124 @@ function hash(text: string) {
   let h = 0
   for (const ch of text) h = (h * 31 + ch.charCodeAt(0)) | 0
   return Math.abs(h)
+}
+
+/** A vehicle placed in the scene, with its rear plate and where each character is on it. */
+interface BuiltVehicle {
+  group: THREE.Group
+  plate: THREE.Mesh
+  kind: LaneVehicleKind
+  /** Character boxes in the plate's own coordinates (metres, centre of the plate at 0,0). */
+  glyphs: { char: string; x0: number; y0: number; x1: number; y1: number }[]
+  dispose: () => void
+}
+
+/** Dirt, scratches and fading on a plate canvas, so the training images are not all spotless. */
+function soilPlate(canvas: HTMLCanvasElement, amount: number) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx || amount <= 0) return
+  const { width, height } = canvas
+  ctx.save()
+  ctx.globalAlpha = 0.18 * amount
+  ctx.fillStyle = '#6b5a3e'
+  ctx.fillRect(0, 0, width, height)
+  for (let i = 0; i < 40 * amount; i++) {
+    ctx.globalAlpha = 0.1 + Math.random() * 0.35 * amount
+    ctx.fillStyle = Math.random() < 0.7 ? '#4a3b28' : '#d9d4c7'
+    const r = (0.01 + Math.random() * 0.05) * height
+    ctx.beginPath()
+    ctx.ellipse(Math.random() * width, Math.random() * height, r * (1 + Math.random() * 3), r, Math.random() * Math.PI, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+/** Builds a vehicle with its paint and plate, out of sight until it is positioned. */
+function buildVehicle(
+  s: { scene: THREE.Scene; renderer: THREE.WebGLRenderer; models: Record<LaneVehicleKind, VehicleModel>; materials: Record<PartSlot, THREE.Material> },
+  plateText: string,
+  kind: LaneVehicleKind,
+  paintHex: number,
+  grime = 0,
+): BuiltVehicle {
+  const group = new THREE.Group()
+  const paint = (s.materials.paint as THREE.MeshStandardMaterial).clone()
+  paint.color.setHex(paintHex)
+  for (const [slot, geometry] of s.models[kind]) {
+    group.add(new THREE.Mesh(geometry, slot === 'paint' ? paint : s.materials[slot]))
+  }
+
+  const spot = REAR_PLATE[kind]
+  const size = PLATE_SIZE[spot.shape]
+  const drawn = drawPlate(plateText, spot.shape)
+  soilPlate(drawn.canvas, grime)
+  const plateTexture = new THREE.CanvasTexture(drawn.canvas)
+  plateTexture.colorSpace = THREE.SRGBColorSpace
+  plateTexture.anisotropy = s.renderer.capabilities.getMaxAnisotropy()
+  const plateGeometry = new THREE.PlaneGeometry(size.width, size.height)
+  const plateMaterial = new THREE.MeshStandardMaterial({ map: plateTexture, roughness: 0.45, emissive: 0xffffff, emissiveMap: plateTexture, emissiveIntensity: 0.12 })
+  const plate = new THREE.Mesh(plateGeometry, plateMaterial)
+  plate.position.set(0, spot.y, spot.z - 0.005)
+  plate.rotation.set(spot.tilt, Math.PI, 0)
+  group.add(plate)
+  if (kind === 'car') {
+    // Cars carry a plate at the front too
+    const front = new THREE.Mesh(plateGeometry, plateMaterial)
+    front.position.set(0, 0.36, 2.48)
+    group.add(front)
+  }
+  group.position.set(kind === 'car' ? 0 : 0.4, 0, -30)
+  s.scene.add(group)
+
+  // Canvas pixels -> plate metres (texture u runs along the plane's local x, v upwards)
+  const toLocalX = (px: number) => (px / drawn.canvas.width - 0.5) * size.width
+  const toLocalY = (py: number) => (0.5 - py / drawn.canvas.height) * size.height
+  const glyphs = drawn.glyphs.map((g) => ({ char: g.char, x0: toLocalX(g.x), x1: toLocalX(g.x + g.width), y0: toLocalY(g.y + g.height), y1: toLocalY(g.y) }))
+
+  return {
+    group,
+    plate,
+    kind,
+    glyphs,
+    dispose: () => {
+      s.scene.remove(group)
+      paint.dispose()
+      plateTexture.dispose()
+      plateGeometry.dispose()
+      plateMaterial.dispose()
+    },
+  }
+}
+
+/** Where a rectangle on the plate lands in the frame; null when it is out of view. */
+function projectBox(plate: THREE.Mesh, camera: THREE.Camera, x0: number, y0: number, x1: number, y1: number): FrameBox | null {
+  const corners = [
+    [x0, y0],
+    [x1, y0],
+    [x1, y1],
+    [x0, y1],
+  ].map(([x, y]) => new THREE.Vector3(x, y, 0).applyMatrix4(plate.matrixWorld).project(camera))
+  if (!corners.every((c) => c.z < 1)) return null
+  const xs = corners.map((c) => (c.x + 1) / 2)
+  const ys = corners.map((c) => (1 - c.y) / 2)
+  if (Math.max(...xs) <= 0 || Math.min(...xs) >= 1 || Math.max(...ys) <= 0 || Math.min(...ys) >= 1) return null
+  const x = clamp01(Math.min(...xs))
+  const y = clamp01(Math.min(...ys))
+  const width = clamp01(Math.max(...xs)) - x
+  const height = clamp01(Math.max(...ys)) - y
+  return width > 0 && height > 0 ? { x, y, width, height } : null
+}
+
+/** Plate and character boxes of a vehicle in the current frame. */
+function labelsOf(vehicle: BuiltVehicle, camera: THREE.Camera): Pick<LaneFrame, 'plateBox' | 'chars'> {
+  vehicle.group.updateMatrixWorld(true)
+  const { width, height } = PLATE_SIZE[REAR_PLATE[vehicle.kind].shape]
+  const plateBox = projectBox(vehicle.plate, camera, -width / 2, -height / 2, width / 2, height / 2)
+  const chars = vehicle.glyphs.flatMap((g) => {
+    const box = projectBox(vehicle.plate, camera, g.x0, g.y0, g.x1, g.y1)
+    return box ? [{ char: g.char, box }] : []
+  })
+  return { plateBox, chars: plateBox ? chars : [] }
 }
 
 /** Red and white stripes for the barrier arm. */
@@ -126,8 +277,9 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     models: Record<LaneVehicleKind, VehicleModel>
     materials: Record<PartSlot, THREE.Material>
     render: () => void
+    resize: () => void
     play: () => void
-    current: { group: THREE.Group; plate: THREE.Mesh; kind: LaneVehicleKind; startedAt: number; dispose: () => void } | null
+    current: (BuiltVehicle & { startedAt: number }) | null
   } | null>(null)
 
   /* Static scene: lane, booth, barrier, walls, lights and the camera */
@@ -160,7 +312,7 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     room.dispose()
     pmrem.dispose()
 
-    const camera = new THREE.PerspectiveCamera(34, 16 / 9, 0.1, 60)
+    const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 16 / 9, 0.1, 60)
     camera.position.copy(CAMERA_POS)
     camera.lookAt(CAMERA_TARGET)
 
@@ -312,7 +464,7 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     observer.observe(host)
     resize()
 
-    stage.current = { renderer, scene, camera, barrier, models: { car, motorbike: bike }, materials, render, play, current: null }
+    stage.current = { renderer, scene, camera, barrier, models: { car, motorbike: bike }, materials, render, resize, play, current: null }
 
     return () => {
       cancelAnimationFrame(frame)
@@ -330,47 +482,7 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     const s = stage.current
     if (!s || !vehicle) return
     s.current?.dispose()
-
-    const group = new THREE.Group()
-    const paint = (s.materials.paint as THREE.MeshStandardMaterial).clone()
-    paint.color.setHex(PAINTS[hash(vehicle.plate) % PAINTS.length])
-    for (const [slot, geometry] of s.models[vehicle.kind]) {
-      group.add(new THREE.Mesh(geometry, slot === 'paint' ? paint : s.materials[slot]))
-    }
-
-    const spot = REAR_PLATE[vehicle.kind]
-    const size = PLATE_SIZE[spot.shape]
-    const plateTexture = new THREE.CanvasTexture(drawPlate(vehicle.plate, spot.shape))
-    plateTexture.colorSpace = THREE.SRGBColorSpace
-    plateTexture.anisotropy = s.renderer.capabilities.getMaxAnisotropy()
-    const plateGeometry = new THREE.PlaneGeometry(size.width, size.height)
-    const plateMaterial = new THREE.MeshStandardMaterial({ map: plateTexture, roughness: 0.45, emissive: 0xffffff, emissiveMap: plateTexture, emissiveIntensity: 0.12 })
-    const plate = new THREE.Mesh(plateGeometry, plateMaterial)
-    plate.position.set(0, spot.y, spot.z - 0.005)
-    plate.rotation.set(spot.tilt, Math.PI, 0)
-    group.add(plate)
-    if (vehicle.kind === 'car') {
-      // Cars carry a plate at the front too
-      const front = new THREE.Mesh(plateGeometry, plateMaterial)
-      front.position.set(0, 0.36, 2.48)
-      group.add(front)
-    }
-    group.position.set(vehicle.kind === 'car' ? 0 : 0.4, 0, -30)
-    s.scene.add(group)
-
-    s.current = {
-      group,
-      plate,
-      kind: vehicle.kind,
-      startedAt: performance.now(),
-      dispose: () => {
-        s.scene.remove(group)
-        paint.dispose()
-        plateTexture.dispose()
-        plateGeometry.dispose()
-        plateMaterial.dispose()
-      },
-    }
+    s.current = { ...buildVehicle(s, vehicle.plate, vehicle.kind, PAINTS[hash(vehicle.plate) % PAINTS.length]), startedAt: performance.now() }
     s.play()
   }, [vehicle])
 
@@ -381,30 +493,50 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
       // Draw and read in the same task: the drawing buffer is not kept between frames
       s.render()
       const canvas = s.renderer.domElement
-      let plateBox: LaneFrame['plateBox'] = null
-      const current = s.current
-      if (current) {
-        current.group.updateMatrixWorld(true)
-        const { width, height } = PLATE_SIZE[REAR_PLATE[current.kind].shape]
-        const corners = [
-          [-width / 2, -height / 2],
-          [width / 2, -height / 2],
-          [width / 2, height / 2],
-          [-width / 2, height / 2],
-        ].map(([x, y]) => new THREE.Vector3(x, y, 0).applyMatrix4(current.plate.matrixWorld).project(s.camera))
-        if (corners.every((c) => c.z < 1)) {
-          const xs = corners.map((c) => (c.x + 1) / 2)
-          const ys = corners.map((c) => (1 - c.y) / 2)
-          const x = clamp01(Math.min(...xs))
-          const y = clamp01(Math.min(...ys))
-          const w = clamp01(Math.max(...xs)) - x
-          const h = clamp01(Math.max(...ys)) - y
-          if (w > 0 && h > 0) plateBox = { x, y, width: w, height: h }
-        }
-      }
+      const labels = s.current ? labelsOf(s.current, s.camera) : { plateBox: null, chars: [] }
       return new Promise((resolve) =>
-        canvas.toBlob((blob) => resolve(blob ? { image: blob, width: canvas.width, height: canvas.height, plateBox } : null), 'image/png'),
+        canvas.toBlob((blob) => resolve(blob ? { image: blob, width: canvas.width, height: canvas.height, ...labels } : null), 'image/png'),
       )
+    },
+
+    renderSample: (sample, size) => {
+      const s = stage.current
+      // Only on a lane with no live vehicle, so the training pose never fights the animation
+      if (!s || s.current) return Promise.resolve(null)
+      const { renderer, camera, barrier } = s
+      const vehicle = buildVehicle(s, sample.plate, sample.kind, sample.paint, sample.grime)
+      const stopZ = READ_Z - REAR_PLATE[sample.kind].z
+      vehicle.group.position.set((sample.kind === 'car' ? 0 : 0.4) + sample.offsetX, 0, stopZ + sample.offsetZ)
+      vehicle.group.rotation.y = sample.yaw
+
+      // Pose: camera off its mount, brightness, barrier; drawn at a fixed size
+      const exposure = renderer.toneMappingExposure
+      const pixelRatio = renderer.getPixelRatio()
+      renderer.setPixelRatio(1)
+      renderer.setSize(size.width, size.height, false)
+      renderer.toneMappingExposure = 1.05 * sample.exposure
+      camera.aspect = size.width / size.height
+      camera.fov = sample.camera.fov
+      camera.position.copy(CAMERA_POS).add(new THREE.Vector3(sample.camera.dx, sample.camera.dy, sample.camera.dz))
+      camera.lookAt(CAMERA_TARGET)
+      camera.updateProjectionMatrix()
+      barrier.rotation.z = (Math.PI / 2) * 0.94 * sample.barrierLift
+
+      s.render()
+      const canvas = renderer.domElement
+      const labels = labelsOf(vehicle, camera)
+      return new Promise<LaneFrame | null>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob ? { image: blob, width: size.width, height: size.height, ...labels } : null), 'image/jpeg', 0.92)
+        // toBlob has copied the picture: put the lane back as it was
+        vehicle.dispose()
+        renderer.toneMappingExposure = exposure
+        renderer.setPixelRatio(pixelRatio)
+        camera.fov = CAMERA_FOV
+        camera.position.copy(CAMERA_POS)
+        camera.lookAt(CAMERA_TARGET)
+        barrier.rotation.z = 0
+        s.resize()
+      })
     },
   }))
 

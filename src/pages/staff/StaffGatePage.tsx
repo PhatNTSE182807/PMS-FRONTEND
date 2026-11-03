@@ -1,15 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { toast } from 'sonner'
 import {
   BadgeCheck,
   Car,
   CircleCheck,
-  Cpu,
   DoorOpen,
   LogIn,
   LogOut,
-  ScanLine,
   Search,
   ShieldCheck,
   TriangleAlert,
@@ -157,21 +154,6 @@ function AnprTelemetry({
         Live optical ANPR telemetry
       </SectionTitle>
       <GateLaneCameras sessions={sessions} history={history?.items} />
-      <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-xl bg-slate-50 px-4 py-3">
-        <div>
-          <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Optical edge server</p>
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-950">
-            <Cpu className="size-4 text-slate-500" aria-hidden /> NVIDIA Jetson AGX #04
-          </p>
-        </div>
-        <div>
-          <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Barrier hardware</p>
-          <p className="text-sm font-semibold text-indigo-700">FAAC B680 Pro • Operational</p>
-        </div>
-        <Button variant="secondary" className="ml-auto" onClick={() => toast.success('ANPR recalibration queued')}>
-          <ScanLine /> Recalibrate ANPR
-        </Button>
-      </div>
     </Panel>
   )
 }
