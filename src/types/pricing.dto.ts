@@ -8,6 +8,48 @@
 export type PricingChargeModel = 'Block' | 'DayNight' | 'Hourly' | 'PerEntry'
 export type PricingRuleStatus = 'Draft' | 'Active' | 'Inactive' | 'Archived'
 
+/**
+ * What happened to the charging fields of a rule update. Only the PUT response carries it; the list and the
+ * single-rule reads leave it null, so a rule that is waiting is recognised by `pendingPrice`.
+ *  - Applied: the lot was empty, the new price is live.
+ *  - Pending: vehicles are inside, the new price is saved and goes live when the last one leaves.
+ *  - Unchanged: the request equals the live price; any waiting price was withdrawn.
+ */
+export type PriceUpdateStatus = 'Applied' | 'Pending' | 'Unchanged'
+
+/** PricingRulePrices: the charging fields of a rule, i.e. what a price change replaces as a whole. */
+export interface PendingPricesDTO {
+  chargeModel: PricingChargeModel
+  entryFee: number
+  firstBlockMinutes: number | null
+  firstBlockPrice: number | null
+  blockMinutes: number | null
+  blockPrice: number | null
+  dayStartTime: string | null
+  nightStartTime: string | null
+  dayPrice: number | null
+  nightPrice: number | null
+  maxDailyFee: number | null
+  graceMinutes: number
+  overnightSurcharge: number
+  overstayAfterHours: number | null
+  overstaySurchargePerDay: number
+  lostTicketFee: number
+  noShowFee: number
+}
+
+/** PendingPriceModel: a price waiting for the lot to become empty. The rule's own fields stay the live price. */
+export interface PendingPriceDTO {
+  prices: PendingPricesDTO
+  /** The same price in words, e.g. "25,000 VND per 60 min". */
+  summary: string
+  /** 1 for the first request; +1 each time the Manager replaced it before it was applied. */
+  revisionNo: number
+  requestedBy: string
+  requestedAt: string
+  updatedAt: string | null
+}
+
 /** PricingRuleModel */
 export interface PricingRuleDTO {
   id: number
@@ -47,6 +89,10 @@ export interface PricingRuleDTO {
   versionNo: number
   createdAt: string
   updatedAt: string | null
+  /** Set on the PUT response only (see PriceUpdateStatus). */
+  priceUpdateStatus?: PriceUpdateStatus | null
+  /** The price waiting for an empty lot; null or missing when none. */
+  pendingPrice?: PendingPriceDTO | null
 }
 
 /** The editable part of a rule (create and update share it). */
