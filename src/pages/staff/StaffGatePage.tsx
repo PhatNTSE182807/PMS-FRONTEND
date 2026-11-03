@@ -9,7 +9,6 @@ import {
   DoorOpen,
   LogIn,
   LogOut,
-  Lock,
   ScanLine,
   Search,
   ShieldCheck,
@@ -19,8 +18,9 @@ import {
   TicketX
 } from 'lucide-react'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
+import { GateLaneCameras } from '@/components/features/staff/GateLaneCameras'
 import { GateLanesPanel } from '@/components/features/staff/GateLanesPanel'
-import { CameraFrame, Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
+import { Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -32,7 +32,7 @@ import { useStaffLot } from '@/hooks/useStaffLot'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/features/staff/LostTicketPapersDialog'
-import { demoCameras, demoGateStats, demoStation } from '@/mocks/staffOps.mock'
+import { demoGateStats, demoStation } from '@/mocks/staffOps.mock'
 import type { ParkingSessionDTO, StaffPaymentHistoryPageDTO, ZoneCounterDTO } from '@/types/operations.dto'
 
 const clockWithSeconds = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -149,34 +149,6 @@ function AnprTelemetry({
   sessions: ParkingSessionDTO[] | undefined
   history: { items: ParkingSessionDTO[]; totalCount: number } | undefined
 }) {
-  const latestEntry = sessions?.[0]
-  const latestExit = history?.items?.find((h) => h.exitTime)
-
-  const cameras = useMemo(() => {
-    const list = [...demoCameras]
-    if (latestEntry && latestEntry.plateNumber) {
-      list[0] = {
-        ...list[0],
-        plate: latestEntry.plateNumber,
-        vehicle: latestEntry.vehicleTypeName || 'Passenger vehicle',
-        tag: latestEntry.sessionType === 'Reservation' ? 'Reserved' : 'OCR locked',
-        status: latestEntry.status === 'Active' ? 'PASSING' : 'AWAITING',
-        capturedAt: Date.parse(latestEntry.entryTime) || Date.now(),
-      }
-    }
-    if (latestExit && latestExit.plateNumber) {
-      list[1] = {
-        ...list[1],
-        plate: latestExit.plateNumber,
-        vehicle: latestExit.vehicleTypeName || 'Passenger vehicle',
-        tag: 'Plate verified',
-        status: 'PASSING',
-        capturedAt: latestExit.exitTime ? Date.parse(latestExit.exitTime) : Date.now(),
-      }
-    }
-    return list
-  }, [latestEntry, latestExit])
-
   return (
     <Panel>
       <SectionTitle
@@ -184,36 +156,7 @@ function AnprTelemetry({
       >
         Live optical ANPR telemetry
       </SectionTitle>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {cameras.map((cam) => (
-          <figure key={cam.id} className="overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-200">
-            <CameraFrame
-              image={cam.image}
-              alt={`${cam.id} ${cam.label} camera still`}
-              className="rounded-none"
-              topLeft={`${cam.id} [${cam.label}]`}
-              topRight={`${cam.accuracy}% accuracy`}
-              overlay={
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="rounded bg-indigo-300 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-950 uppercase">{cam.tag}</span>
-                  <span className="rounded-md bg-black/75 px-3 py-1 font-mono text-lg font-bold tracking-[0.15em] text-slate-950 ring-1 ring-slate-300">
-                    {cam.plate}
-                  </span>
-                </div>
-              }
-              bottomLeft="REC • 60 FPS"
-              bottomRight={clockWithSeconds.format(cam.capturedAt)}
-            />
-            <figcaption className="flex items-center justify-between gap-3 px-4 py-3 text-xs font-bold tracking-wider uppercase">
-              <span className={cn('flex items-center gap-2', cam.status === 'PASSING' ? 'text-indigo-700' : 'text-amber-500')}>
-                {cam.status === 'PASSING' ? <DoorOpen className="size-4" aria-hidden /> : <Lock className="size-4" aria-hidden />}
-                {cam.status === 'PASSING' ? 'Barrier open • Vehicle passing' : 'Awaiting clearance validation'}
-              </span>
-              <span className="text-right font-mono text-slate-700">{cam.vehicle}</span>
-            </figcaption>
-          </figure>
-        ))}
-      </div>
+      <GateLaneCameras sessions={sessions} history={history?.items} />
       <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-xl bg-slate-50 px-4 py-3">
         <div>
           <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Optical edge server</p>
