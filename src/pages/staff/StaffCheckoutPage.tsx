@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@/components/ui/dialog'
 import { QrCode } from '@/components/ui/qr-code'
 import { useCancelPaymentRequest, useCheckout, usePayCash, usePayOnline, useQuote } from '@/hooks/useGate'
 import { useNow } from '@/hooks/useNow'
+import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { formatNumber } from '@/lib/format'
@@ -37,19 +38,23 @@ export default function StaffCheckoutPage() {
   const lotKey = lot?.id ?? myLots.data?.[0]?.id
   const [params, setParams] = useSearchParams()
   const queryClient = useQueryClient()
-  // Vehicles that still have to pay: fee already requested (lane, counter or app) first, then the ones parked
-  const waiting = useQuery({
+  // Only vehicles on their way out: the fee was requested (Force check-out at the gate dashboard, the lane or the
+  // counter), or the driver asked in the app to leave and pay at the exit lane (bookings included). Vehicles still
+  // parked are not listed; find one by plate to charge it anyway.
+  const exitRequests = useGateRequestQueue(lotKey, 'CheckOut')
+  const leavingIds = new Set((exitRequests.data ?? []).filter((r) => r.status === 'Waiting' && r.sessionId).map((r) => r.sessionId))
+  const sessions = useQuery({
     queryKey: ['staff-waiting-payment', lotKey],
-    queryFn: async () => {
-      const open = await gateService.getSessions(lotKey!)
-      const order = (status: string) => (status === 'PendingPayment' ? 0 : 1)
-      return open
-        .filter((s) => s.status === 'PendingPayment' || s.status === 'Active')
-        .sort((a, b) => order(a.status) - order(b.status) || Date.parse(a.entryTime) - Date.parse(b.entryTime))
-    },
+    queryFn: () => gateService.getSessions(lotKey!),
     enabled: Boolean(lotKey),
     refetchInterval: 5000,
   })
+  const waiting = {
+    ...sessions,
+    data: sessions.data
+      ?.filter((s) => s.status === 'PendingPayment' || ((s.status === 'Active' || s.status === 'Paid') && leavingIds.has(s.id)))
+      .sort((a, b) => Date.parse(a.entryTime) - Date.parse(b.entryTime)),
+  }
   const [queueFilter, setQueueFilter] = useState('')
   const queue = (waiting.data ?? []).filter((s) =>
     (s.plateNumber ?? '').replace(/[^A-Z0-9]/gi, '').toUpperCase().includes(queueFilter.replace(/[^A-Z0-9]/gi, '').toUpperCase()),
@@ -99,6 +104,8 @@ export default function StaffCheckoutPage() {
         {
           onSuccess: (q) => {
             setQuote(q)
+            // The vehicle now waits to pay: show it in the queue at once
+            void queryClient.invalidateQueries({ queryKey: ['staff-waiting-payment'] })
             setQr(null)
             setTendered(0)
             if (q.amountDue > 0 && q.exitWindowLateFee > 0) toast.warning(STAFF_TOAST.graceExceeded)
@@ -114,8 +121,15 @@ export default function StaffCheckoutPage() {
   const sessionParam = params.get('session')
   // The plate read at entry (passed by the gate dashboard, never in the URL), so the exit check starts filled in
   const plateParam = (useLocation().state as { plate?: string } | null)?.plate || null
+  // Ask for the fee once per opened session (React runs effects twice in development)
+  const openedSession = useRef<string | null>(null)
   useEffect(() => {
-    if (!sessionParam) return
+    if (!sessionParam) {
+      openedSession.current = null
+      return
+    }
+    if (openedSession.current === sessionParam) return
+    openedSession.current = sessionParam
     if (plateParam) setExitPlate(plateParam)
     loadQuote(Number(sessionParam), plateParam ?? undefined)
   }, [sessionParam, plateParam, loadQuote])
@@ -300,7 +314,7 @@ export default function StaffCheckoutPage() {
           aside={
             waiting.data && (
               <span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-500">
-                {waiting.data.filter((s) => s.status === 'PendingPayment').length} requested · {waiting.data.length} unpaid
+                {waiting.data.filter((s) => s.status === 'PendingPayment').length} fee requested · {waiting.data.filter((s) => leavingIds.has(s.id)).length} asked to exit
               </span>
             )
           }
@@ -317,7 +331,7 @@ export default function StaffCheckoutPage() {
           </>
         )}
         {waiting.data && queue.length === 0 && (
-          <p className="text-sm text-slate-700">{waiting.data.length === 0 ? 'No parked vehicle has an unpaid fee.' : 'No vehicle matches this plate.'}</p>
+          <p className="text-sm text-slate-700">{waiting.data.length === 0 ? 'No vehicle is waiting to pay. Use Force check-out on the gate dashboard, or find a vehicle by plate.' : 'No vehicle matches this plate.'}</p>
         )}
         {queue.length > 0 && (
           <ul className="divide-y divide-slate-200">
@@ -325,7 +339,7 @@ export default function StaffCheckoutPage() {
               <li key={s.id} className={cn('flex flex-wrap items-center gap-x-6 gap-y-1 py-3', session?.id === s.id && 'bg-amber-50/40')}>
                 <span className="w-36 font-mono text-lg font-bold text-slate-950">{s.plateNumber || 'NO PLATE'}</span>
                 <span className={cn('rounded px-2 py-0.5 text-xs font-bold', s.status === 'PendingPayment' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-700')}>
-                  {s.status === 'PendingPayment' ? 'Fee requested' : 'Parked'}
+                  {s.status === 'PendingPayment' ? 'Fee requested' : s.status === 'Paid' ? 'Paid, asked to exit' : 'Asked to exit'}
                 </span>
                 <span className="font-mono text-xs text-slate-700">{s.code}</span>
                 <span className="text-sm text-slate-700">{s.vehicleTypeName}</span>
