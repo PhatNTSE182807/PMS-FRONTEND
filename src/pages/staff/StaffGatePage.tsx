@@ -182,12 +182,6 @@ function AnprTelemetry({
     <Panel>
       <SectionTitle
         icon={<Video />}
-        aside={
-          <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-            <span className="rounded bg-slate-100 px-2 py-0.5 font-mono">4K dual RTSP</span>
-            Latency 12ms
-          </span>
-        }
       >
         Live optical ANPR telemetry
       </SectionTitle>

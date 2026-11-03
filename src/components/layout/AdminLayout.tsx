@@ -10,48 +10,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useManagerLot } from '@/hooks/useManagerLot'
-import { useParkingCapacity } from '@/hooks/useParking'
 import { useProfile } from '@/hooks/useProfile'
-import { formatNumber, resolveMediaUrl } from '@/lib/format'
+import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
-
-/** Live bay count of the whole network, shown at the bottom of the sidebar. */
-function NetworkFooter() {
-  const { data: lots = [] } = useParkingCapacity()
-  const totals = lots.reduce(
-    (sum, lot) => {
-      for (const d of lot.capacityByVehicle) {
-        sum.total += d.totalSlots
-        sum.occupied += d.totalSlots - d.availableSlots
-      }
-      return sum
-    },
-    { total: 0, occupied: 0 },
-  )
-
-  return (
-    <div className="space-y-3 px-4 pb-4">
-      <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
-        <div className="flex items-center justify-between text-xs font-medium text-slate-700">
-          IoT telemetry nodes
-          <span className="size-2 animate-pulse-soft rounded-full bg-amber-500" aria-hidden />
-        </div>
-        <div className="mt-1.5 flex items-center justify-between text-xs">
-          <span className="font-semibold text-slate-900">Bays occupied</span>
-          <span className="font-display text-base font-semibold text-indigo-700 tabular-nums">
-            {formatNumber(totals.occupied)} / {formatNumber(totals.total)}
-          </span>
-        </div>
-      </div>
-      <div className="flex items-center justify-between px-1 text-xs">
-        <span className="font-semibold text-slate-700">Command Node XXIV</span>
-        <span className="font-mono text-slate-500">{lots.length} hubs</span>
-      </div>
-    </div>
-  )
-}
 
 /** Manager top bar: which assigned lot the console is showing. */
 function ManagerLotSelect() {
@@ -115,13 +78,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <div className="mx-3 flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-xs font-semibold tracking-wider text-slate-700 uppercase">
-        Ops hub core
-        <span className="rounded bg-indigo-100 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-indigo-700 normal-case">
-          v4.8-prod
-        </span>
-      </div>
-
       <nav aria-label="Admin navigation" className="flex-1 space-y-1 px-3 py-4">
         {navigation.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -147,8 +103,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         ))}
       </nav>
-
-      <NetworkFooter />
     </div>
   )
 }
@@ -221,14 +175,7 @@ export function AdminLayout() {
             <Menu />
           </Button>
 
-          {user?.role === 'MANAGER' ? (
-            <ManagerLotSelect />
-          ) : (
-            <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-900 uppercase ring-1 ring-slate-200 md:inline-flex">
-              <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
-              Saigon edge cluster
-            </span>
-          )}
+          {user?.role === 'MANAGER' && <ManagerLotSelect />}
 
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
             <span className="hidden text-slate-500 sm:inline">Administration</span>

@@ -110,14 +110,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          <>
-            <span className="text-amber-500">Executive node alpha</span>
-            <span aria-hidden>•</span>
-            <span>Ho Chi Minh metro net</span>
-          </>
-        }
-        title="Central Command Telemetry"
+        eyebrow="Administration"
+        title="Network overview"
         description="Network revenue, bay utilisation and hub performance at a glance."
       />
 

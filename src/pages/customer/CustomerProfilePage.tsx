@@ -276,9 +276,6 @@ export default function CustomerProfilePage() {
           <h1 className="cx-page-title">User Profile &amp; Security</h1>
           <p className="cx-page-lead">Manage your personal details, contact information and sign-in security.</p>
         </div>
-        <span className="cx-pill">
-          <span className="cx-dot cx-dot--gold" aria-hidden="true" /> Telemetry link active
-        </span>
       </header>
 
       <div className="cx-split cx-split--sidebar">

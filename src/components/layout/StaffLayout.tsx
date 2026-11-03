@@ -16,7 +16,6 @@ import { useStaffLot } from '@/hooks/useStaffLot'
 import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
-import { demoStation } from '@/mocks/staffOps.mock'
 import { STAFF_NAV } from './adminNav'
 
 function Kbd({ children }: { children: string }) {
@@ -115,29 +114,19 @@ export function StaffLayout() {
               </select>
             ) : (
               <span className="text-sm font-semibold text-slate-950">
-                {lot ? `${lot.name} (#${lot.code})` : `${demoStation.facility} (#${demoStation.facilityCode})`}
+                {lot ? `${lot.name} (#${lot.code})` : 'No lot assigned yet'}
               </span>
             )}
           </div>
-          <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 whitespace-nowrap lg:flex 2xl:ml-0 ring-1 ring-slate-200/60">
-            <span className="text-xs font-semibold text-indigo-700 uppercase">Station</span>
-            <span className="text-sm font-semibold text-slate-950">
-              {demoStation.station} {lot ? `(${lot.code})` : `(${demoStation.lane})`}
-            </span>
-          </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <span className="hidden items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-slate-950 uppercase xl:inline-flex">
-              <span className="size-2 animate-pulse-soft rounded-full bg-indigo-400" aria-hidden />
-              Edge online ({demoStation.edgeLatencyMs}ms latency)
-            </span>
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
                 <p className="text-sm font-semibold text-slate-950">
                   {profile?.fullName || user?.fullName || user?.username}
                 </p>
                 <p className="text-xs text-slate-700">
-                  {profile?.employeeCode || user?.employeeCode || demoStation.employeeCode} • {demoStation.title}
+                  {[profile?.employeeCode || user?.employeeCode, 'Gate staff'].filter(Boolean).join(' • ')}
                 </p>
               </div>
               <img
@@ -201,10 +190,7 @@ export function StaffLayout() {
       </main>
 
       <footer className="flex flex-col gap-1 border-t border-slate-200 px-4 py-4 text-[11px] font-semibold tracking-wider text-slate-600 uppercase sm:flex-row sm:justify-between sm:px-6">
-        <span className="flex items-center gap-2">
-          <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
-          XXIV sovereign telemetry • hardware barrier enforcement synced
-        </span>
+        <span>XXIV Parking • Gate console</span>
         <span>All gate operations are logged</span>
       </footer>
 
