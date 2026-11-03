@@ -14,6 +14,7 @@ import CustomerDashboardPage from '@/pages/customer/CustomerDashboardPage'
 import CustomerProfilePage from '@/pages/customer/CustomerProfilePage'
 import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
 import CustomerBookingsPage from '@/pages/customer/CustomerBookingsPage'
+import CustomerActiveSessionsPage from '@/pages/customer/CustomerActiveSessionsPage'
 
 // Admin pages are code-split: drivers never download the dashboard (or its chart library).
 const DashboardPage = lazy(() => import('@/pages/admin/Dashboard'))
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
       { index: true, element: <CustomerDashboardPage /> },
       { path: 'profile', element: <CustomerProfilePage /> },
       { path: 'vehicles', element: <RegisterVehiclePage /> },
+      { path: 'sessions', element: <CustomerActiveSessionsPage /> },
       { path: 'bookings', element: <CustomerBookingsPage /> },
     ],
   },
