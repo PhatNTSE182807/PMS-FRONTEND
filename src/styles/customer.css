@@ -3155,3 +3155,10 @@
   color: #ef4444;
 }
 
+
+/* Active Sessions page: booking cards side by side, one per row on narrow screens */
+.cx-sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: 1.5rem;
+}

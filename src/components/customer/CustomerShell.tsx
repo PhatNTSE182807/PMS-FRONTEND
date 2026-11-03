@@ -15,7 +15,7 @@ import '@/styles/wallet.css'
 /** Hash links scroll to a dashboard section; the others are pages of their own. */
 const LINKS = [
   { to: '/me', label: 'Dashboard', end: true },
-  { to: '/me#session', label: 'Active Session' },
+  { to: '/me/sessions', label: 'Active Sessions' },
   { to: '/me/vehicles', label: 'My Vehicles' },
   { to: '/me/bookings', label: 'My Bookings' },
   { to: '/me#map', label: 'Book Slot' },

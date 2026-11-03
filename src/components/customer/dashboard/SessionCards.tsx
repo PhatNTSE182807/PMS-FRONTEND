@@ -20,10 +20,10 @@ const vnd = (amount: number) => `${formatNumber(amount)} VND`
 /** Google Maps directions to the lot (the bay is shown on the 3D model once inside). */
 const directionsUrl = (address: string) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
 
-/** "20,000 / started hour", "5,000 / 4 h block". */
+/** "20,000 / started hour", "5,000 / 4 h block"; null when the API sends no block price (the fee still counts). */
 function tariffText(session: CurrentSessionDTO) {
   const { blockMinutes, blockPrice } = session.tariff
-  if (!blockPrice) return 'Free'
+  if (!blockPrice) return null
   const block = blockMinutes === 60 ? 'started hour' : blockMinutes % 60 === 0 ? `${blockMinutes / 60} h block` : `${blockMinutes} min block`
   return `${formatNumber(blockPrice)} / ${block}`
 }
@@ -114,16 +114,10 @@ function GateRequestNotice({ request }: { request: GateRequestDTO }) {
   )
 }
 
-/** The car parked right now (GET /parking-sessions/current): running fee, prepay with VNPay or MoMo, exit pass. */
+/** Dashboard card: the first parked vehicle, with a link to the Active Sessions page when there are more. */
 export function ActiveSessionCard() {
-  const now = useNow(30_000)
   const { data: sessions = [], isPending } = useCurrentSessions()
-  const prepay = usePrepaySession()
-  const checkOut = useRequestCheckOut()
-  const [choosing, setChoosing] = useState(false)
-  const [showPass, setShowPass] = useState(false)
   const current = sessions[0]
-  const exitRequest = useLatestRequest((r) => r.kind === 'CheckOut' && r.sessionId === current?.session.id, now)
 
   if (isPending) return <article className="cx-card cx-card--accent-gold"><div className="cx-skeleton" style={{ height: '18rem' }} /></article>
 
@@ -144,6 +138,25 @@ export function ActiveSessionCard() {
     )
   }
 
+  return <SessionCard current={current} parkedCount={sessions.length} id="session" />
+}
+
+interface SessionCardProps {
+  current: CurrentSessionDTO
+  /** All vehicles parked now; above 1 the card links to the Active Sessions page. */
+  parkedCount?: number
+  id?: string
+}
+
+/** One parked vehicle (GET /parking-sessions/current): running fee, prepay with the wallet, VNPay or MoMo, exit pass, check-out. */
+export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) {
+  const now = useNow(30_000)
+  const prepay = usePrepaySession()
+  const checkOut = useRequestCheckOut()
+  const [choosing, setChoosing] = useState(false)
+  const [showPass, setShowPass] = useState(false)
+  const exitRequest = useLatestRequest((r) => r.kind === 'CheckOut' && r.sessionId === current.session.id, now)
+
   const s = current.session
   const entry = Date.parse(s.entryTime)
   // The meter ticks locally between refreshes; the fee comes from the API
@@ -158,14 +171,16 @@ export function ActiveSessionCard() {
     })
 
   return (
-    <article className="cx-card cx-card--accent-gold" id="session">
+    <article className="cx-card cx-card--accent-gold" id={id}>
       <div className="cx-session__head">
         <div className="cx-session__lot">
           <span className="cx-session__p" aria-hidden="true">P</span>
           <div>
             <span className="cx-eyebrow">
               <span className="cx-dot cx-dot--live" aria-hidden="true" /> Live active dwell
-              {sessions.length > 1 && <span style={{ color: 'var(--cx-on-variant)' }}>• {sessions.length} vehicles parked</span>}
+              {parkedCount > 1 && (
+                <Link to="/me/sessions" className="cx-link">• {parkedCount} vehicles parked, see all</Link>
+              )}
             </span>
             <h2 className="cx-session__name">{current.lotName ?? 'Parking lot'}</h2>
             <p className="cx-session__addr">{address || '—'}</p>
@@ -200,7 +215,7 @@ export function ActiveSessionCard() {
         <div>
           <span className="cx-label">Accrued total</span>
           <span className="cx-metric__big">{formatNumber(current.feeSoFar)}</span>
-          <span className="cx-metric__sub">VND ({tariffText(current)})</span>
+          <span className="cx-metric__sub">{tariffText(current) ? `VND (${tariffText(current)})` : 'VND so far'}</span>
         </div>
       </div>
 
@@ -288,18 +303,9 @@ function timesOf(booking: ReservationDTO): BookingTimes {
   }
 }
 
-/** The next booking (GET /reservations/upcoming): window, bay and vehicle, with change and cancel. */
+/** Dashboard card: the next booking (GET /reservations/upcoming). */
 export function ReservationCard() {
-  const now = useNow(30_000)
   const { data: booking, isPending } = useUpcomingReservation()
-  const update = useUpdateReservation()
-  const cancel = useCancelReservation()
-  const payDeposit = usePayDeposit()
-  const checkIn = useRequestCheckIn()
-  const entryRequest = useLatestRequest((r) => r.kind === 'CheckIn' && r.reservationId === booking?.id, now)
-  const [editing, setEditing] = useState(false)
-  const [times, setTimes] = useState<BookingTimes | null>(null)
-  const [error, setError] = useState('')
 
   if (isPending) return <article className="cx-card"><div className="cx-skeleton" style={{ height: '18rem' }} /></article>
 
@@ -319,6 +325,21 @@ export function ReservationCard() {
       </article>
     )
   }
+
+  return <BookingCard booking={booking} showAllLink />
+}
+
+/** One booking that has not started: window, bay and vehicle, deposit, check-in request, change and cancel. */
+export function BookingCard({ booking, showAllLink = false }: { booking: ReservationDTO; showAllLink?: boolean }) {
+  const now = useNow(30_000)
+  const update = useUpdateReservation()
+  const cancel = useCancelReservation()
+  const payDeposit = usePayDeposit()
+  const checkIn = useRequestCheckIn()
+  const entryRequest = useLatestRequest((r) => r.kind === 'CheckIn' && r.reservationId === booking.id, now)
+  const [editing, setEditing] = useState(false)
+  const [times, setTimes] = useState<BookingTimes | null>(null)
+  const [error, setError] = useState('')
 
   const pending = booking.status === 'PendingDeposit'
   const depositDue = booking.depositDueAt ? Date.parse(booking.depositDueAt) : null
@@ -447,7 +468,7 @@ export function ReservationCard() {
         )}
       </div>
       {entryRequest && <GateRequestNotice request={entryRequest} />}
-      <Link to="/me/bookings" className="cx-link" style={{ marginTop: '0.75rem' }}>All my bookings</Link>
+      {showAllLink && <Link to="/me/sessions" className="cx-link" style={{ marginTop: '0.75rem' }}>All active bookings and sessions</Link>}
     </article>
   )
 }

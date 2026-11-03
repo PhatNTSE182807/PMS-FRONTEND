@@ -6,7 +6,8 @@ import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { useNow } from '@/hooks/useNow'
 import { useVehicles } from '@/hooks/useProfile'
 import { usePaymentSimulation } from '@/hooks/usePaymentSimulation'
-import { useCreateReservation, usePayDeposit, useSimulateDeposit } from '@/hooks/useReservations'
+import { useCreateReservation, useMyReservations, usePayDeposit, useSimulateDeposit } from '@/hooks/useReservations'
+import { bookingAllowance } from '@/lib/bookingLimits'
 import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
 import { USER_TOAST, toastBookingError } from '@/lib/userToasts'
@@ -39,8 +40,13 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   const { data: vehicles = [] } = useVehicles()
   const allCars = useMemo(() => vehicles.filter((v) => v.isActive !== false && !/motor/i.test(v.vehicleType)), [vehicles])
   // Only a car whose papers Staff approved can be booked (the API refuses the others)
-  const cars = useMemo(() => allCars.filter((v) => v.verificationStatus === 'Approved'), [allCars])
-  const waitingCars = allCars.length - cars.length
+  const approvedCars = useMemo(() => allCars.filter((v) => v.verificationStatus === 'Approved'), [allCars])
+  const waitingCars = allCars.length - approvedCars.length
+  // One booking per vehicle and a few per account: cars that already have one are left out of the list
+  const { data: reservations = [] } = useMyReservations()
+  const allowance = useMemo(() => bookingAllowance(reservations), [reservations])
+  const cars = useMemo(() => approvedCars.filter((v) => !allowance.bookedVehicleIds.has(String(v.vehicleId))), [approvedCars, allowance])
+  const bookedCars = approvedCars.length - cars.length
   const [vehicleId, setVehicleId] = useState('')
   const [times, setTimes] = useState(() => defaultBookingTimes(Date.now()))
   const [held, setHeld] = useState<ReservationDTO | null>(null)
@@ -144,12 +150,27 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
     )
   }
 
+  if (allowance.atLimit) {
+    return (
+      <div className="cx-reserve">
+        <p className="cx-note" role="status">
+          You already have {allowance.activeCount} active bookings, the most an account can hold. Use or cancel one to book this bay.
+        </p>
+        <Link to="/me/sessions" className="cx-btn cx-btn--teal cx-btn--block">Open Active Sessions</Link>
+      </div>
+    )
+  }
+
   return (
     <div className="cx-reserve">
+      <p className="cx-field__hint">
+        Active bookings: {allowance.activeCount} of {allowance.limit}
+        {bookedCars > 0 && ` • ${bookedCars} ${bookedCars === 1 ? 'car already has' : 'cars already have'} a booking and ${bookedCars === 1 ? 'is' : 'are'} not listed`}
+      </p>
       <label className="cx-field">
         <span className="cx-field__label">Vehicle</span>
         <select className="cx-input" value={chosenVehicle} onChange={(e) => setVehicleId(e.target.value)} disabled={cars.length === 0}>
-          {cars.length === 0 && <option value="">{allCars.length ? 'No approved car yet' : 'No car in your profile yet'}</option>}
+          {cars.length === 0 && <option value="">{bookedCars > 0 ? 'Every approved car already has a booking' : allCars.length ? 'No approved car yet' : 'No car in your profile yet'}</option>}
           {cars.map((v) => (
             <option key={v.vehicleId} value={v.vehicleId}>
               {v.licensePlate} • {v.brand} {v.model}
