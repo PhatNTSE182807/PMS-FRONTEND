@@ -238,6 +238,19 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         )}
       </div>
 
+      <div className="cx-exit-pass">
+        <button type="button" className="cx-exit-pass__qr" aria-label="Open the exit gate pass" onClick={() => setShowPass(true)}>
+          <QrCode value={pass.token} label={`Exit pass ${pass.sessionCode}`} />
+        </button>
+        <div className="cx-exit-pass__body">
+          <span className="cx-label">Exit pass code</span>
+          <span className="cx-exit-pass__code cx-mono">{pass.sessionCode}</span>
+          <span className="cx-metric__sub">
+            {pass.prepaid ? 'Paid: show it at the exit lane to drive out.' : 'Show it at the exit lane; tap the QR to enlarge.'}
+          </span>
+        </div>
+      </div>
+
       {pass.prepaid ? (
         <p className="cx-prepay">
           <span><ShieldCheck size={15} aria-hidden style={{ verticalAlign: '-3px', color: '#6fdba8' }} /> Paid. Drive out before {pass.validUntil ? timeFormat.format(Date.parse(pass.validUntil)) : 'the exit window ends'}.</span>

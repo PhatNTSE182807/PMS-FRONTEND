@@ -9,6 +9,7 @@ import {
   FlaskConical,
   Headset,
   MapPin,
+  QrCode as QrIcon,
   ScanLine,
   Search,
   SlidersHorizontal,
@@ -20,6 +21,7 @@ import {
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { QrCode } from '@/components/ui/qr-code'
 import { useNow } from '@/hooks/useNow'
+import { useCurrentSessions } from '@/hooks/useParkingSessions'
 import { usePaymentSimulation } from '@/hooks/usePaymentSimulation'
 import { useCancelReservation, useMyReservations, usePayDeposit, useReservationQr, useSimulateDeposit, useUpdateReservation } from '@/hooks/useReservations'
 import { checkBookingTimes, describeWindow, toLocalInput, type BookingTimes } from '@/lib/bookingTime'
@@ -86,6 +88,9 @@ function timesOf(booking: ReservationDTO): BookingTimes {
 
 function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: number }) {
   const qr = useReservationQr(booking)
+  // Once checked in, the entry QR is used up: the panel shows the parked vehicle's exit pass instead
+  const { data: sessions = [] } = useCurrentSessions()
+  const parked = booking.status === 'CheckedIn' ? sessions.find((c) => c.session.reservationId === booking.id) : undefined
   const cancel = useCancelReservation()
   const update = useUpdateReservation()
   const [editing, setEditing] = useState(false)
@@ -195,22 +200,45 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
         </p>
       </div>
 
-      <aside className="cx-pass" aria-label="Check-in QR">
-        <div className="cx-pass__head">
-          <span className="cx-eyebrow"><ScanLine size={14} aria-hidden /> Check-in pass</span>
-          <span className="cx-label">Signed QR</span>
-        </div>
-        <div className="cx-pass__frame">
-          {qr.data ? (
-            <QrCode value={qr.data.qrPayload} label={`Reservation QR ${booking.code}`} className="cx-pass__qr" />
-          ) : (
-            <div className="cx-skeleton" style={{ width: '13rem', aspectRatio: '1' }} />
-          )}
-        </div>
-        <span className="cx-label" style={{ textAlign: 'center' }}>Reservation code</span>
-        <span className="cx-pass__token cx-mono">{booking.code}</span>
-        <p className="cx-pass__hint">Hold this code under the entry lane scanner during the check-in window, or arrive in a verified vehicle to check in by plate.</p>
-      </aside>
+      {parked ? (
+        <aside className="cx-pass" aria-label="Exit gate pass">
+          <div className="cx-pass__head">
+            <span className="cx-eyebrow"><QrIcon size={14} aria-hidden /> Exit gate pass</span>
+            <span className="cx-label">{parked.exitPass.prepaid ? 'Paid' : 'Signed QR'}</span>
+          </div>
+          <div className="cx-pass__frame">
+            <QrCode value={parked.exitPass.token} label={`Exit pass ${parked.exitPass.sessionCode}`} className="cx-pass__qr" />
+          </div>
+          <span className="cx-label" style={{ textAlign: 'center' }}>Exit pass code</span>
+          <span className="cx-pass__token cx-mono">{parked.exitPass.sessionCode}</span>
+          <p className="cx-pass__hint">
+            {parked.exitPass.prepaid
+              ? 'Paid. Show this pass at the exit lane before your exit window ends.'
+              : 'Your vehicle is parked. Show this pass at the exit lane and pay there, or prepay on Active Sessions to drive straight out.'}
+          </p>
+        </aside>
+      ) : (
+        <aside className="cx-pass" aria-label="Check-in QR">
+          <div className="cx-pass__head">
+            <span className="cx-eyebrow"><ScanLine size={14} aria-hidden /> Check-in pass</span>
+            <span className="cx-label">Signed QR</span>
+          </div>
+          <div className="cx-pass__frame">
+            {qr.data ? (
+              <QrCode value={qr.data.qrPayload} label={`Reservation QR ${booking.code}`} className="cx-pass__qr" />
+            ) : booking.status === 'Confirmed' && !qr.isError ? (
+              <div className="cx-skeleton cx-pass__qr" style={{ aspectRatio: '1' }} />
+            ) : (
+              <p className="cx-pass__empty">
+                {booking.status === 'CheckedIn' ? 'Checked in. The entry QR has been used.' : 'The QR code could not be loaded.'}
+              </p>
+            )}
+          </div>
+          <span className="cx-label" style={{ textAlign: 'center' }}>Reservation code</span>
+          <span className="cx-pass__token cx-mono">{booking.code}</span>
+          <p className="cx-pass__hint">Hold this code under the entry lane scanner during the check-in window, or arrive in a verified vehicle to check in by plate.</p>
+        </aside>
+      )}
     </section>
   )
 }
