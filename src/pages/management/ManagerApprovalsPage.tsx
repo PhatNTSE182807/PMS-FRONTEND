@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Ban, CircleCheck, ClipboardCheck, FileSearch, Info, ListChecks, Search, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { Ban, Banknote, CircleCheck, ClipboardCheck, FileSearch, Info, ListChecks, Search, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatClock, formatMinutes } from '@/components/features/manager/managerFormat'
@@ -13,6 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useDecideLostTicket, usePendingLostTickets } from '@/hooks/useApprovals'
 import { useAuth } from '@/hooks/useAuth'
+import { useCashCloses, useConfirmCashClose } from '@/hooks/useCashDrawer'
+import { formatNumber } from '@/lib/format'
+import type { CashDrawerDTO } from '@/types/cashDrawer.dto'
 import { useNow } from '@/hooks/useNow'
 import { cn } from '@/lib/utils'
 import type { ApprovalDecision, LostTicketApprovalDTO } from '@/types/approval.dto'
@@ -194,10 +197,90 @@ function Detail({ request, own }: { request: LostTicketApprovalDTO; own: boolean
   )
 }
 
+const dayClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+
+/** One Staff cash close waiting for the Manager: counted vs expected, and the confirmation (a note when off). */
+function CashCloseCard({ close }: { close: CashDrawerDTO }) {
+  const { user } = useAuth()
+  const confirm = useConfirmCashClose()
+  const [note, setNote] = useState('')
+  const difference = close.difference ?? 0
+  const off = close.status === 'HasDifference'
+  const own = close.staffUserId === user?.userId
+  return (
+    <Card className={cn('p-4', off && 'ring-amber-300')}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-slate-950">{close.staffName ?? 'Staff'} • drawer {close.closeNo}</p>
+          <p className="text-xs text-slate-600">
+            {close.businessDate}
+            {close.closedAt ? ` • closed at ${dayClock.format(Date.parse(close.closedAt))}` : ''}
+          </p>
+        </div>
+        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', off ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700')}>
+          {off ? 'Difference over the limit' : 'Within the limit'}
+        </span>
+      </div>
+      <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+        <div><dt className="text-xs text-slate-600">Counted</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.countedTotal ?? 0)}</dd></div>
+        <div><dt className="text-xs text-slate-600">Expected</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.expectedTotal)}</dd></div>
+        <div>
+          <dt className="text-xs text-slate-600">Difference</dt>
+          <dd className={cn('font-mono font-bold', difference === 0 ? 'text-emerald-700' : off ? 'text-rose-700' : 'text-amber-500')}>
+            {difference > 0 ? '+' : ''}
+            {formatNumber(difference)}
+          </dd>
+        </div>
+      </dl>
+      {close.differenceReason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">Staff reason:</strong> {close.differenceReason}</p>}
+      {off && (
+        <Input className="mt-3" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="What you checked (required for a difference)" aria-label="Confirmation note" />
+      )}
+      <div className="mt-3 flex justify-end">
+        <Button
+          size="sm"
+          disabled={own || confirm.isPending || (off && !note.trim())}
+          title={own ? 'You closed this drawer: another Manager confirms it' : undefined}
+          onClick={() => confirm.mutate({ id: close.id!, note: note.trim() || undefined })}
+        >
+          <CircleCheck /> Confirm cash close
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
+/** Staff cash closes of the lot waiting for the Manager (BR-12). */
+function CashCloses({ lot }: { lot: ManagedLot }) {
+  const closes = useCashCloses(lot.id)
+  return (
+    <section className="space-y-3" aria-labelledby="cash-closes-title">
+      <h2 id="cash-closes-title" className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
+        <Banknote className="size-5 text-amber-500" aria-hidden /> Cash closes to confirm
+      </h2>
+      {closes.isPending && <Skeleton className="h-28 rounded-xl" />}
+      {closes.isError && (
+        <Card>
+          <ErrorState message={getErrorMessage(closes.error)} onRetry={() => closes.refetch()} />
+        </Card>
+      )}
+      {closes.isSuccess && closes.data.length === 0 && (
+        <Card className="p-6 text-center text-sm text-slate-600">No Staff cash close is waiting for you.</Card>
+      )}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {(closes.data ?? []).map((close) => (
+          <CashCloseCard key={close.id} close={close} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function Approvals({ lot }: { lot: ManagedLot }) {
   const now = useNow(30_000)
   const { user } = useAuth()
   const pending = usePendingLostTickets(lot.id)
+  const cashCloses = useCashCloses(lot.id)
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState('')
 
@@ -221,7 +304,7 @@ function Approvals({ lot }: { lot: ManagedLot }) {
         actions={
           <span className="rounded-xl bg-slate-50 px-4 py-3 text-right ring-1 ring-slate-200">
             <span className="block text-xs font-bold tracking-wider text-slate-700 uppercase">Waiting</span>
-            <span className="font-display text-2xl font-bold text-amber-500">{requests.length} requests</span>
+            <span className="font-display text-2xl font-bold text-amber-500">{requests.length + (cashCloses.data?.length ?? 0)} requests</span>
           </span>
         }
       />
@@ -254,11 +337,13 @@ function Approvals({ lot }: { lot: ManagedLot }) {
           <Card className="p-8 text-sm text-slate-600">Select a request to review it.</Card>
         )}
       </div>
+
+      <CashCloses lot={lot} />
     </div>
   )
 }
 
-/** /management/approvals. Lost-ticket reports raised by Staff wait here for the lot's Manager. */
+/** /management/approvals. Lost-ticket reports and Staff cash closes wait here for the lot's Manager. */
 export default function ManagerApprovalsPage() {
   return <WithManagerLot>{(lot) => <Approvals lot={lot} />}</WithManagerLot>
 }

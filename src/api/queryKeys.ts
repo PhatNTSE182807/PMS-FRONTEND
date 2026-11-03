@@ -65,6 +65,12 @@ export const queryKeys = {
     hubs: () => [...queryKeys.adminDashboard.all, 'hubs'] as const,
   },
   /** The Admin's parking simulation (fees and booking times in seconds). */
+  /** Staff cash drawers (daily cash close) and the Manager's confirmations. */
+  cashDrawer: {
+    all: ['cash-drawer'] as const,
+    current: (lotId: string) => ['cash-drawer', 'current', lotId] as const,
+    closes: (lotId: string) => ['cash-drawer', 'closes', lotId] as const,
+  },
   parkingSimulation: ['parking-simulation'] as const,
   /** Simulated walk-ins (Admin demo traffic), per lot or all. */
   walkInSimulation: (lotId?: number) => ['parking-simulation', 'walk-ins', lotId ?? 'all'] as const,

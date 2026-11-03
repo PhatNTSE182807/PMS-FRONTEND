@@ -294,6 +294,13 @@ Keep this list current; it is the first place to look when code and SRS disagree
   block while the simulation is on), then pays cash at the exit lane and leaves by itself (`ParkingJobs` minutely
   run and simulation tick). Their sessions carry `IsSimulated`; fees, payments and counters are real and nothing
   is deleted. The screen can also report a lost ticket for a simulated vehicle and park a walk-in in a booked bay.
+- Daily cash close (BR-12, built 2026-11-03): one `DailyCashClose` row per Staff drawer of a lot and business day
+  (`CashDrawerService`, `/api/staff/lots/{id}/cash-drawer`, `/api/manager/…/cash-closes`). The Staff opens it with a
+  counted float (or it opens on its own, empty, with their first cash payment; cash after a close opens drawer 2, 3…).
+  At the lane the Staff can tap the banknotes handed over; the payment then stores the notes received and the change
+  (`Payment.CashReceivedJson` / `CashChangeJson`) and the screen suggests change from the drawer. The close is a blind
+  count; a difference over 20,000 VND needs a reason (`HasDifference`) and the lot's Manager confirms every close
+  (never their own) in the Approval Queue, with a note when it is off. Not built yet: the 23:00 deadline and escalation.
 - Booked bay taken (BR-08): when a booking checks in and another vehicle is in its bay, the entry lane moves the
   booking to a free bay of its type and waives the first hour (`ParkingSession.FirstHourWaived`; one block while
   simulating), or, with no bay left, lets it park as a walk-in and refunds the whole deposit.

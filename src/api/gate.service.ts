@@ -1,3 +1,4 @@
+import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { SERVICE_PATHS } from '@/config/env'
 import type {
   CheckInRequest,
@@ -91,8 +92,9 @@ export const gateService = {
     return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/cancel-payment`)
   },
 
-  payCash(sessionId: number, amount: number, prepaid = false): Promise<PaymentDTO> {
-    return http.post<PaymentDTO>(`${sessionPath(sessionId)}/payments/cash`, { amount, prepaid })
+  /** Cash: `received` / `change` (banknote counts) are optional and feed the Staff's cash drawer. */
+  payCash(sessionId: number, amount: number, prepaid = false, received?: BanknoteCounts, change?: BanknoteCounts): Promise<PaymentDTO> {
+    return http.post<PaymentDTO>(`${sessionPath(sessionId)}/payments/cash`, { amount, prepaid, received, change })
   },
 
   /** Dynamic QR (VNPay / MoMo) for a Guest: show `payUrl` as a QR code. */

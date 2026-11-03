@@ -19,11 +19,14 @@ import { useNow } from '@/hooks/useNow'
 import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
+import { useCashDrawer } from '@/hooks/useCashDrawer'
+import { queryKeys } from '@/api/queryKeys'
+import { BANKNOTES, cleanNotes, describeNotes, notesTotal, suggestChange } from '@/lib/cashNotes'
+import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/operations.dto'
 
-const FAST_NOTES = [50_000, 100_000, 200_000, 500_000]
 
 /**
  * Payment counter / exit lane POS (SRS FR-OPS-02, FR-PAY-01/03/07/08, UC-02): pick a vehicle waiting to pay
@@ -74,7 +77,19 @@ export default function StaffCheckoutPage() {
   const [lookup, setLookup] = useState('')
   const [quote, setQuote] = useState<CheckoutQuoteDTO | null>(null)
   const [qr, setQr] = useState<PaymentDTO | null>(null)
-  const [tendered, setTendered] = useState(0)
+  // Cash taken note by note (it feeds the Staff's drawer), or typed as an amount when the notes are not entered
+  const [receivedNotes, setReceivedNotes] = useState<BanknoteCounts>({})
+  const [typedAmount, setTypedAmount] = useState(0)
+  const byNotes = notesTotal(receivedNotes) > 0
+  const tendered = byNotes ? notesTotal(receivedNotes) : typedAmount
+  const setTendered = (amount: number) => {
+    setReceivedNotes({})
+    setTypedAmount(amount)
+  }
+  const addNote = (value: number) => {
+    setTypedAmount(0)
+    setReceivedNotes((notes) => ({ ...notes, [value]: (notes[value] ?? 0) + 1 }))
+  }
   const [exitPlate, setExitPlate] = useState('')
   const [photoChecked, setPhotoChecked] = useState(false)
   const [allowMismatch, setAllowMismatch] = useState(false)
@@ -93,6 +108,12 @@ export default function StaffCheckoutPage() {
   const session = quote?.session
   const due = quote?.amountDue ?? 0
   const change = tendered - due
+  // Change from what is in the drawer now, the notes just handed over included
+  const drawer = useCashDrawer(lotKey)
+  // A closed drawer's notes are no longer at hand: the next one starts empty
+  const inDrawer: BanknoteCounts = { ...(drawer.data?.status === 'Open' ? drawer.data.expectedNotes : {}) }
+  for (const [value, count] of Object.entries(receivedNotes)) inDrawer[Number(value)] = (inDrawer[Number(value)] ?? 0) + count
+  const changeNotes = change > 0 ? suggestChange(change, inDrawer) : {}
   const qrLeft = qr?.callbackDeadline ? Math.max(0, Math.ceil((Date.parse(qr.callbackDeadline) - now) / 1000)) : 0
   const blocking = quote?.alerts.filter((a) => a.blocking) ?? []
 
@@ -168,11 +189,20 @@ export default function StaffCheckoutPage() {
   const takeCash = () => {
     if (!session) return
     payCash.mutate(
-      { sessionId: session.id, amount: tendered },
+      {
+        sessionId: session.id,
+        amount: tendered,
+        // Note by note only when the change can be given from the drawer; otherwise the amount alone is recorded
+        received: byNotes && changeNotes ? cleanNotes(receivedNotes) : undefined,
+        change: byNotes && changeNotes ? cleanNotes(changeNotes) : undefined,
+      },
       {
         onSuccess: (p) => {
           setConfirmCash(false)
-          toast.success(`Cash ${vnd(p.amount)} recorded`, { description: change > 0 ? `Give back ${vnd(change)}.` : undefined })
+          toast.success(`Cash ${vnd(p.amount)} recorded`, {
+            description: change > 0 ? `Give back ${vnd(change)}${changeNotes && describeNotes(changeNotes) ? `: ${describeNotes(changeNotes)}` : ''}.` : undefined,
+          })
+          void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
           void queryClient.invalidateQueries({ queryKey: ['staff-payment-history'] })
           void queryClient.invalidateQueries({ queryKey: ['staff-waiting-payment'] })
           loadQuote(session.id, exitPlate)
@@ -490,17 +520,27 @@ export default function StaffCheckoutPage() {
                       <p className="font-display text-lg font-bold text-slate-950 uppercase">Cash</p>
                       <Key>F5</Key>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      {[due, ...FAST_NOTES.filter((n) => n > due)].slice(0, 4).map((note) => (
+                    <p className="mt-3 text-xs font-bold tracking-wider text-slate-700 uppercase">Notes handed over</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {BANKNOTES.slice(0, 6).map((note) => (
                         <button
                           key={note}
                           type="button"
-                          onClick={() => setTendered(note)}
-                          className={cn('rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors', tendered === note ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100')}
+                          onClick={() => addNote(note)}
+                          className={cn('relative rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors', receivedNotes[note] ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100')}
                         >
-                          {formatNumber(note)}
+                          {formatNumber(note / 1000)}k
+                          {receivedNotes[note] ? <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-amber-500 text-[11px] text-slate-950">{receivedNotes[note]}</span> : null}
                         </button>
                       ))}
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <Button size="sm" variant="secondary" className="flex-1" onClick={() => setReceivedNotes(suggestChange(due, Object.fromEntries(BANKNOTES.map((v) => [v, 999]))) ?? {})}>
+                        Exact {formatNumber(due)}
+                      </Button>
+                      <Button size="sm" variant="ghost" disabled={!tendered} onClick={() => setTendered(0)}>
+                        Clear
+                      </Button>
                     </div>
                     <label htmlFor="cash-received" className="mt-4 block text-xs font-bold tracking-wider text-slate-700 uppercase">Cash received (VND)</label>
                     <input
@@ -515,6 +555,18 @@ export default function StaffCheckoutPage() {
                     <p className="mt-2 flex justify-between text-sm">
                       <span className="text-slate-700">{change >= 0 ? 'Change' : 'Still due'}</span>
                       <span className={cn('font-mono font-bold', change >= 0 ? 'text-amber-500' : 'text-rose-700')}>{vnd(Math.abs(change))}</span>
+                    </p>
+                    {change > 0 && (
+                      <p className={cn('mt-1 text-xs', changeNotes ? 'text-slate-700' : 'text-rose-700')}>
+                        {changeNotes
+                          ? `Give back: ${describeNotes(changeNotes)}`
+                          : 'The drawer has no notes for this change: give it from elsewhere, the amount is still recorded.'}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs text-slate-600">
+                      {drawer.data?.status === 'Open'
+                        ? `Drawer ${drawer.data.closeNo} is open. Typing an amount instead of tapping notes keeps them out of the drawer count.`
+                        : 'No cash drawer open: one opens with this payment.'}
                     </p>
                     <Button className="mt-3 w-full" disabled={tendered < due || payCash.isPending} onClick={() => setConfirmCash(true)}>
                       <Banknote /> Take cash
@@ -652,6 +704,8 @@ export default function StaffCheckoutPage() {
               <div className="flex justify-between"><dt>Amount due</dt><dd className="font-mono font-bold">{vnd(due)}</dd></div>
               <div className="flex justify-between"><dt>Cash received</dt><dd className="font-mono font-bold">{vnd(tendered)}</dd></div>
               <div className="flex justify-between border-t border-slate-200 pt-1.5"><dt>Change to give back</dt><dd className="font-mono font-bold">{vnd(Math.max(0, change))}</dd></div>
+              {byNotes && <div className="flex justify-between"><dt>Notes received</dt><dd className="font-mono">{describeNotes(receivedNotes)}</dd></div>}
+              {change > 0 && changeNotes && describeNotes(changeNotes) && <div className="flex justify-between"><dt>Notes to give back</dt><dd className="font-mono">{describeNotes(changeNotes)}</dd></div>}
             </dl>
           }
         />
