@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Navigation } from 'lucide-react'
+import { Navigation, Route } from 'lucide-react'
+import { LotDirectionsDialog } from '@/components/customer/LotDirectionsDialog'
 import { FleetCard } from '@/components/customer/dashboard/FleetCard'
 import { NotificationCard } from '@/components/customer/dashboard/NotificationCard'
 import { RecentSessions } from '@/components/customer/dashboard/RecentSessions'
@@ -10,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
 import { useProfile, useVehicles } from '@/hooks/useProfile'
 import { usePublicLots } from '@/hooks/usePublicLots'
+import type { PublicLotDTO } from '@/types/publicLot.dto'
 
 /** Customer home at /me: the parked vehicle, the next booking, live terminals, the fleet and the history. */
 export default function CustomerDashboardPage() {
@@ -25,6 +27,8 @@ export default function CustomerDashboardPage() {
   const lots = [...(publicLots.data ?? [])].sort((a, b) => Number(b.isBookable) - Number(a.isBookable) || a.name.localeCompare(b.name))
   const [lotId, setLotId] = useState<string>()
   const selectedLotId = lotId ?? (lots[0] ? String(lots[0].id) : undefined)
+  // Lot whose Google map (with the customer's position and route) is open
+  const [directionsLot, setDirectionsLot] = useState<PublicLotDTO | null>(null)
 
   const vehicles = vehiclesQuery.data ?? []
   const defaultVehicle = vehicles.find((v) => v.isDefault) ?? vehicles[0]
@@ -58,19 +62,29 @@ export default function CustomerDashboardPage() {
               <Navigation aria-hidden /> Parking lots:
             </span>
             {lots.map((lot) => (
-              <button
-                key={lot.id}
-                type="button"
-                className={`cx-tab ${String(lot.id) === selectedLotId ? 'cx-tab--active' : ''}`}
-                title={lot.isBookable ? `${lot.freeBays} of ${lot.totalBays} bays free` : (lot.maintenanceNotice ?? 'Under maintenance')}
-                onClick={() => {
-                  setLotId(String(lot.id))
-                  document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }}
-              >
-                {lot.name}
-                {!lot.isBookable && ' (maintenance)'}
-              </button>
+              <span key={lot.id} className="cx-tab-group">
+                <button
+                  type="button"
+                  className={`cx-tab ${String(lot.id) === selectedLotId ? 'cx-tab--active' : ''}`}
+                  title={lot.isBookable ? `${lot.freeBays} of ${lot.totalBays} bays free` : (lot.maintenanceNotice ?? 'Under maintenance')}
+                  onClick={() => {
+                    setLotId(String(lot.id))
+                    document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
+                >
+                  {lot.name}
+                  {!lot.isBookable && ' (maintenance)'}
+                </button>
+                <button
+                  type="button"
+                  className="cx-tab cx-tab--icon"
+                  title={`Directions to ${lot.name}`}
+                  aria-label={`Directions to ${lot.name}`}
+                  onClick={() => setDirectionsLot(lot)}
+                >
+                  <Route aria-hidden />
+                </button>
+              </span>
             ))}
           </div>
         )}
@@ -91,6 +105,8 @@ export default function CustomerDashboardPage() {
       <NotificationCard />
 
       <RecentSessions />
+
+      {directionsLot && <LotDirectionsDialog lot={directionsLot} onClose={() => setDirectionsLot(null)} />}
     </>
   )
 }

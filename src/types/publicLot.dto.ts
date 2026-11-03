@@ -21,6 +21,9 @@ export interface PublicLotDTO {
   address: string
   city: string | null
   district: string | null
+  /** Map position; null until an Admin sets it (the map then finds the lot by address). */
+  latitude: number | null
+  longitude: number | null
   layoutTemplate: string | null
   /** Active, or Maintenance (also while the lot has no Manager and Staff on duty). */
   status: string
