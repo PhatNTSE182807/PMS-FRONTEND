@@ -117,6 +117,7 @@ export const queryKeys = {
     history: (lotId: string, page = 1) => [...queryKeys.gate.all, 'history', lotId, page] as const,
     payments: (lotId: string, method?: string) => [...queryKeys.gate.all, 'payments', lotId, method ?? ''] as const,
     reservation: (lotId: string, entry: string) => [...queryKeys.gate.all, 'reservation', lotId, entry] as const,
+    anprHealth: () => [...queryKeys.gate.all, 'anpr-health'] as const,
   },
   /** Manager sign-off queues of a lot. */
   approvals: {

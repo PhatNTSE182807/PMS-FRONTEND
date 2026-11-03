@@ -63,7 +63,8 @@ export interface LaneSample {
 }
 
 export interface GateLaneSceneHandle {
-  captureFrame: () => Promise<LaneFrame | null>
+  /** The current frame; `size` draws it at that resolution (as the real camera would send it). */
+  captureFrame: (options?: { size?: { width: number; height: number }; type?: 'image/png' | 'image/jpeg' }) => Promise<LaneFrame | null>
   /** Poses the sample, draws it at the given size and returns the labelled frame (JPEG). */
   renderSample: (sample: LaneSample, size: { width: number; height: number }) => Promise<LaneFrame | null>
 }
@@ -487,16 +488,32 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
   }, [vehicle])
 
   useImperativeHandle(ref, () => ({
-    captureFrame: () => {
+    captureFrame: (options) => {
       const s = stage.current
       if (!s) return Promise.resolve(null)
+      const { renderer, camera } = s
+      const size = options?.size
+      const pixelRatio = renderer.getPixelRatio()
+      if (size) {
+        // Draw at the camera's own resolution, whatever the size on screen
+        renderer.setPixelRatio(1)
+        renderer.setSize(size.width, size.height, false)
+        camera.aspect = size.width / size.height
+        camera.updateProjectionMatrix()
+      }
       // Draw and read in the same task: the drawing buffer is not kept between frames
       s.render()
-      const canvas = s.renderer.domElement
-      const labels = s.current ? labelsOf(s.current, s.camera) : { plateBox: null, chars: [] }
-      return new Promise((resolve) =>
-        canvas.toBlob((blob) => resolve(blob ? { image: blob, width: canvas.width, height: canvas.height, ...labels } : null), 'image/png'),
-      )
+      const canvas = renderer.domElement
+      const width = canvas.width
+      const height = canvas.height
+      const labels = s.current ? labelsOf(s.current, camera) : { plateBox: null, chars: [] }
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob ? { image: blob, width, height, ...labels } : null), options?.type ?? 'image/png', 0.92)
+        if (size) {
+          renderer.setPixelRatio(pixelRatio)
+          s.resize()
+        }
+      })
     },
 
     renderSample: (sample, size) => {
