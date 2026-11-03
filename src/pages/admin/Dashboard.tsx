@@ -1,4 +1,4 @@
-import { CarFront, Gauge, ParkingSquare, UserCog, Users, Wallet } from 'lucide-react'
+import { Banknote, CarFront, Gauge, ParkingSquare, UserCog, Users, Wallet } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { LEVEL_STYLES } from '@/components/features/capacity/occupancyStyles'
 import { HubPerformanceList } from '@/components/features/dashboard/HubPerformanceList'
@@ -10,10 +10,23 @@ import { useDashboardHubs, useDashboardOverview } from '@/hooks/useAdminDashboar
 import { formatNumber } from '@/lib/format'
 import { occupancyLevel } from '@/lib/occupancy'
 import { cn } from '@/lib/utils'
-import type { DashboardOverviewDTO } from '@/types/dashboard.dto'
+import type { DashboardOverviewDTO, HubPerformanceDTO } from '@/types/dashboard.dto'
 
 /** The six headline numbers; renders skeleton cards while `overview` is still on its way. */
-function OverviewStats({ overview, isLoading }: { overview?: DashboardOverviewDTO; isLoading: boolean }) {
+function OverviewStats({
+  overview,
+  isLoading,
+  hubs,
+  hubsLoading,
+}: {
+  overview?: DashboardOverviewDTO
+  isLoading: boolean
+  /** Per-hub figures; today's revenue of the network is their sum. */
+  hubs?: HubPerformanceDTO[]
+  hubsLoading: boolean
+}) {
+  const todayRevenue = (hubs ?? []).reduce((sum, hub) => sum + hub.todayRevenue, 0)
+  const earningHubs = (hubs ?? []).filter((hub) => hub.todayRevenue > 0).length
   const totalBays = overview?.totalBays ?? 0
   const occupiedBays = overview?.occupiedBays ?? 0
   const loadFactor = overview?.networkLoadFactor ?? 0
@@ -21,7 +34,7 @@ function OverviewStats({ overview, isLoading }: { overview?: DashboardOverviewDT
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <StatCard
           size="lg"
           tone="gold"
@@ -31,6 +44,16 @@ function OverviewStats({ overview, isLoading }: { overview?: DashboardOverviewDT
           value={formatNumber(Math.round(overview?.totalGrossRevenue ?? 0))}
           unit="VND"
           caption="Consolidated revenue across every hub"
+        />
+        <StatCard
+          size="lg"
+          tone="gold"
+          icon={Banknote}
+          label="Today's revenue"
+          isLoading={hubsLoading}
+          value={formatNumber(Math.round(todayRevenue))}
+          unit="VND"
+          caption={`Collected today across the network${hubs ? ` • ${earningHubs} of ${hubs.length} hubs earning` : ''}`}
         />
         <StatCard
           size="lg"
@@ -120,7 +143,7 @@ export default function Dashboard() {
           <ErrorState message={getErrorMessage(overview.error)} onRetry={() => void overview.refetch()} />
         </Card>
       ) : (
-        <OverviewStats overview={overview.data} isLoading={overview.isPending} />
+        <OverviewStats overview={overview.data} isLoading={overview.isPending} hubs={hubs.data} hubsLoading={hubs.isPending} />
       )}
 
       <HubPerformanceList
