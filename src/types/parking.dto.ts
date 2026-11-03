@@ -15,6 +15,12 @@ export interface ParkingLotSummaryDTO {
   address: string
   /** The lot's one Manager, when the backend sends it; a lot never has more than one. */
   managerUserId?: string | null
+  /** Active, or Maintenance (also when nobody is on duty), TemporarilyClosed…, when the backend sends it. */
+  status?: string
+  /** False while the lot is under maintenance or closed. */
+  isBookable?: boolean
+  /** 3D building template, when the backend sends it. */
+  layoutTemplate?: string | null
 }
 
 export interface VehicleCapacityDetail {
