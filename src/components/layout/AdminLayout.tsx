@@ -10,11 +10,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useManagerLot } from '@/hooks/useManagerLot'
+import { useCashAlerts } from '@/hooks/useCashAlerts'
 import { useProfile } from '@/hooks/useProfile'
 import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
+
+/** Manager console: cash drawer alerts (closed, overdue) of the chosen lot on every page. */
+function ManagerCashAlerts() {
+  const { lot } = useManagerLot()
+  useCashAlerts(lot?.id)
+  return null
+}
 
 /** Manager top bar: which assigned lot the console is showing. */
 function ManagerLotSelect() {
@@ -170,6 +178,7 @@ export function AdminLayout() {
           </Button>
 
           {user?.role === 'MANAGER' && <ManagerLotSelect />}
+          {user?.role === 'MANAGER' && <ManagerCashAlerts />}
 
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
             <span className="hidden text-slate-500 sm:inline">Administration</span>
