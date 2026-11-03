@@ -284,14 +284,24 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
                   {e.sessionType === 'Reservation' ? `Reservation ${e.reservationCode ?? ''}` : e.sessionType === 'Whitelist' ? 'Whitelist (free)' : 'Walk-in'}
                   {e.isOverdue && <span className="ml-2 rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">Overdue</span>}
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-slate-900">{e.slotCode ?? e.zoneName ?? '—'}</td>
+                <td className="px-4 py-3 text-xs text-slate-900">
+                  {e.slotCode ? (
+                    <>
+                      <span className="font-mono text-sm font-bold text-slate-950">Bay {e.slotCode}</span>
+                      {e.zoneName && <span className="block text-slate-600">{e.zoneName}</span>}
+                    </>
+                  ) : (
+                    // A walk-in the lane did not give a bay: only its zone counter knows it
+                    <span className="font-mono">{e.zoneName ?? '—'}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <span className={cn('rounded px-2 py-0.5 text-xs font-bold tracking-wide uppercase', SESSION_TONE[e.status] ?? 'bg-slate-100 text-slate-800')}>{e.status}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/staff/checkout?session=${e.id}`}>
-                      <LogOut /> Exit
+                  <Button variant="ghost" size="sm" asChild title="Ask for the fee now and open this vehicle on the checkout screen">
+                    <Link to={`/staff/checkout?session=${e.id}`} state={{ plate: e.hasPlate ? e.plateNumber : '' }}>
+                      <LogOut /> Force check-out
                     </Link>
                   </Button>
                 </td>
