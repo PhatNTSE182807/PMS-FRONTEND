@@ -50,9 +50,8 @@ const COLOR = {
   concreteDark: 0x8f9396,
   asphalt: 0x3a3f44,
   paint: 0xe3e83a,
-  grass: 0x58804a,
-  sidewalk: 0xc9c9c2,
-  road: 0x2f3337,
+  backdrop: 0x1b252d,
+  base: 0x39434b,
   glass: 0x1d2a33,
   available: 0x22c55e,
   reserved: 0xe9c349,
@@ -112,24 +111,6 @@ function noiseTexture(base: [number, number, number], spread: number, size = 256
   }
   const texture = new THREE.CanvasTexture(canvas)
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping
-  texture.colorSpace = THREE.SRGBColorSpace
-  return texture
-}
-
-function skyTexture() {
-  const canvas = document.createElement('canvas')
-  canvas.width = 16
-  canvas.height = 256
-  const ctx = canvas.getContext('2d')
-  if (ctx) {
-    const g = ctx.createLinearGradient(0, 0, 0, 256)
-    g.addColorStop(0, '#4f6f91')
-    g.addColorStop(0.55, '#a9bccb')
-    g.addColorStop(1, '#e4e9ec')
-    ctx.fillStyle = g
-    ctx.fillRect(0, 0, 16, 256)
-  }
-  const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   return texture
 }
@@ -299,8 +280,8 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
     renderer.domElement.style.touchAction = 'none'
 
     const scene = new THREE.Scene()
-    scene.background = track(skyTexture())
-    scene.fog = new THREE.Fog(0xdfe6ea, span * 2.6, span * 5.5)
+    // Plain backdrop: only the car park is drawn, so bays and vehicles stand out
+    scene.background = new THREE.Color(COLOR.backdrop)
     // Soft studio reflections so paint, glass and chrome read as such.
     const pmrem = new THREE.PMREMGenerator(renderer)
     const room = new RoomEnvironment()
@@ -322,7 +303,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
     controls.target.set(0, buildingHeight / 2, 0)
 
     /* Lights */
-    scene.add(new THREE.HemisphereLight(0xe6eef5, 0x4d5b3e, 0.75))
+    scene.add(new THREE.HemisphereLight(0xe6eef5, 0x3a4048, 0.75))
     const sun = new THREE.DirectionalLight(0xfff3e0, 2.2)
     sun.position.set(-span * 0.8, span * 1.4, span * 0.9)
     sun.castShadow = true
@@ -347,44 +328,12 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
     const steel = std({ color: 0x6b7178, metalness: 0.8, roughness: 0.35 })
     const darkGlass = std({ color: 0x22313b, metalness: 0.7, roughness: 0.15 })
 
-    /* Ground: grass, sidewalk, road, entrance booth and barrier, trees */
+    /* Base: a plain plinth under the building that catches its shadow (no grass, road or trees) */
     const site = staticBatch()
-    const ground = new THREE.Mesh(track(new THREE.PlaneGeometry(span * 10, span * 10)), std({ color: COLOR.grass, roughness: 1 }))
-    ground.rotation.x = -Math.PI / 2
-    ground.position.y = -0.02
-    ground.receiveShadow = true
-    scene.add(ground)
-    const sidewalk = new THREE.Mesh(track(new THREE.BoxGeometry(SLAB.width + 22, 0.12, SLAB.depth + 18)), std({ color: COLOR.sidewalk, roughness: 0.9 }))
-    sidewalk.position.y = 0.04
-    sidewalk.receiveShadow = true
-    scene.add(sidewalk)
-    const roadZ = SLAB.depth / 2 + 16
-    const road = new THREE.Mesh(track(new THREE.PlaneGeometry(span * 10, 12)), std({ color: COLOR.road, roughness: 1 }))
-    road.rotation.x = -Math.PI / 2
-    road.position.set(0, 0.11, roadZ)
-    scene.add(road)
-    const dashGeo = track(new THREE.PlaneGeometry(3, 0.25))
-    const roadPaint = basic({ color: 0xf4f4f2 })
-    for (let x = -span * 2.5; x <= span * 2.5; x += 7) site.add(dashGeo, roadPaint, x, 0.12, roadZ, -Math.PI / 2)
-    const boothX = SLAB.width / 2 - 6
-    const boothZ = SLAB.depth / 2 + 6
-    const boothMat = std({ color: 0xe9e4d8, roughness: 0.8 })
-    site.add(track(new THREE.BoxGeometry(2.4, 2.6, 2.4)), boothMat, boothX, 1.35, boothZ)
-    site.add(track(new THREE.BoxGeometry(3, 0.25, 3)), concreteDark, boothX, 2.75, boothZ)
-    site.add(track(new THREE.BoxGeometry(6, 0.14, 0.14)), std({ color: 0xffffff, emissive: 0xef4444, emissiveIntensity: 0.25 }), boothX - 4.2, 1.1, boothZ + 1.6)
-
-    const trunkGeo = track(new THREE.CylinderGeometry(0.22, 0.3, 2, 8))
-    const leafGeo = track(new THREE.SphereGeometry(1.5, 10, 8))
-    const trunkMat = std({ color: 0x6b4a2f, roughness: 1 })
-    const leafMat = std({ color: 0x3f7a35, roughness: 0.9 })
-    const plantTree = (x: number, z: number) => {
-      site.add(trunkGeo, trunkMat, x, 1, z)
-      site.add(leafGeo, leafMat, x, 3, z)
-    }
-    const ringX = SLAB.width / 2 + 8
-    const ringZ = SLAB.depth / 2 + 6
-    for (let x = -ringX; x <= ringX; x += 8) plantTree(x, -ringZ - 2)
-    for (let z = -ringZ + 4; z <= ringZ; z += 8) for (const x of [-ringX - 2, ringX + 2]) plantTree(x, z)
+    const base = new THREE.Mesh(track(new THREE.BoxGeometry(SLAB.width + 14, 0.12, SLAB.depth + 8)), std({ color: COLOR.base, roughness: 0.9 }))
+    base.position.y = -0.06
+    base.receiveShadow = true
+    scene.add(base)
 
     /* Stair and lift core with the vertical "CAR PARK" sign */
     const coreHeight = buildingHeight + 3
@@ -395,7 +344,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
     for (let level = 0; level < floors.length + 1; level++) {
       for (const z of [-1.8, 0, 1.8]) site.add(windowGeo, darkGlass, coreX - 3.02, 1.6 + level * STOREY, coreZ + z)
     }
-    site.flush(scene, track, [boothMat, concrete, leafMat])
+    site.flush(scene, track, [concrete])
     const signTex = track(
       textCanvas(
         (ctx) => {
