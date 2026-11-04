@@ -9,6 +9,7 @@ import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { formatNumber } from '@/lib/format'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 import type { PublicLotPriceDTO } from '@/types/pricing.dto'
+import { vehicleKind } from '../customerFormat'
 import { GarageView } from '../garage/GarageView'
 import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
 import { ParkMotorbikePanel } from './ParkMotorbikePanel'
@@ -89,7 +90,8 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const selectedFloor = selected ? floors[selected.floorIndex] : null
   // Highlighted in the model as "your booking"
   const myBayId = myActive[0] ? String(myActive[0].slotId) : null
-  const myVehicleColor = vehicles.data?.find((v) => v.vehicleId === myActive[0]?.vehicleId)?.color ?? null
+  const myVehicle = vehicles.data?.find((v) => v.vehicleId === myActive[0]?.vehicleId)
+  const myVehicleKind = myVehicle && vehicleKind({ name: myVehicle.vehicleType }) === 'suv' ? 'suv' : 'car'
   // The lot's real prices (the same rule the exit gate uses): motorbike floors show the motorbike price, car floors the 4-seat car price
   const prices = usePublicPrices(lot?.id)
   const price = prices.data?.find((p) => p.vehicleTypeCode === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR_4'))
@@ -166,7 +168,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               </div>
             </div>
 
-            <GarageView floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} myVehicleColor={myVehicleColor} onSelectBay={selectBay} />
+            <GarageView floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} myVehicleColor={myVehicle?.color} myVehicleKind={myVehicleKind} onSelectBay={selectBay} />
 
             <div className="cx-map__footer">
               <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>

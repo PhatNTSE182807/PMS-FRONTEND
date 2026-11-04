@@ -2,17 +2,17 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 /**
- * Low-poly vehicles for the 3D car park: a fastback saloon and a classic roadster motorbike.
- * Each model is baked once into one geometry per material, so a parked vehicle costs a handful
- * of draw calls however many parts it has. Models point their nose at +z and stand on y = 0.
+ * Vehicles for the 3D car park: the shared part bag and a classic roadster motorbike (the cars are in
+ * carModels.ts). Each model is baked once into one geometry per material, so a parked vehicle costs a
+ * handful of draw calls however many parts it has. Models point their nose at +z and stand on y = 0.
  */
 
-export type PartSlot = 'paint' | 'glass' | 'tyre' | 'rim' | 'trim' | 'chrome' | 'frame' | 'seat' | 'headlight' | 'taillight'
+export type PartSlot = 'paint' | 'glass' | 'tyre' | 'rim' | 'trim' | 'chrome' | 'frame' | 'seat' | 'interior' | 'caliper' | 'headlight' | 'taillight'
 export type VehicleModel = Map<PartSlot, THREE.BufferGeometry>
 
-type Vec = [number, number, number]
+export type Vec = [number, number, number]
 
-class PartBag {
+export class PartBag {
   private parts = new Map<PartSlot, THREE.BufferGeometry[]>()
 
   add(slot: PartSlot, geo: THREE.BufferGeometry, pos: Vec = [0, 0, 0], rot: Vec | THREE.Quaternion = [0, 0, 0], scale: Vec = [1, 1, 1]) {
@@ -44,74 +44,6 @@ class PartBag {
     }
     return model
   }
-}
-
-/** A side profile drawn along x (forward) and y, extruded across the car's width. */
-function sideExtrude(shape: THREE.Shape, width: number, bevel: number) {
-  const depth = Math.max(0.01, width - bevel * 2)
-  const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 8 })
-  g.translate(0, 0, -depth / 2)
-  g.rotateY(-Math.PI / 2) // profile x (forward) -> +z
-  return g
-}
-
-/** Fastback saloon, about 4.8 m long and 1.9 m wide. */
-export function buildCarModel(): VehicleModel {
-  const bag = new PartBag()
-
-  const body = new THREE.Shape()
-  body.moveTo(-2.3, 0.32)
-  body.lineTo(-1.95, 0.32)
-  body.absarc(-1.45, 0.38, 0.5, Math.PI, 0, true) // rear wheel arch
-  body.lineTo(0.95, 0.32)
-  body.absarc(1.45, 0.38, 0.5, Math.PI, 0, true) // front wheel arch
-  body.lineTo(2.3, 0.32)
-  body.quadraticCurveTo(2.44, 0.46, 2.36, 0.66) // nose
-  body.quadraticCurveTo(2.2, 0.84, 1.6, 0.9) // bonnet
-  body.lineTo(1.05, 0.98)
-  body.lineTo(-1.55, 0.98) // shoulder line
-  body.quadraticCurveTo(-2.15, 0.99, -2.32, 0.88) // boot lip
-  body.quadraticCurveTo(-2.44, 0.66, -2.3, 0.32) // tail
-  bag.add('paint', sideExtrude(body, 1.9, 0.1))
-
-  const cabin = new THREE.Shape()
-  cabin.moveTo(-1.78, 0.96)
-  cabin.quadraticCurveTo(-1.1, 1.2, -0.55, 1.36) // long sloping rear glass
-  cabin.quadraticCurveTo(0, 1.42, 0.35, 1.36)
-  cabin.quadraticCurveTo(0.75, 1.2, 1.08, 0.96) // raked windscreen
-  cabin.lineTo(-1.78, 0.96)
-  bag.add('glass', sideExtrude(cabin, 1.62, 0.06))
-
-  const roof = new THREE.Shape()
-  roof.moveTo(-0.66, 1.41)
-  roof.quadraticCurveTo(0, 1.54, 0.44, 1.41)
-  roof.lineTo(0.44, 1.36)
-  roof.quadraticCurveTo(0, 1.49, -0.66, 1.36)
-  roof.lineTo(-0.66, 1.41)
-  bag.add('paint', sideExtrude(roof, 1.5, 0.03))
-
-  // Pillars between the side windows
-  for (const x of [-0.79, 0.79]) bag.add('paint', new THREE.BoxGeometry(0.06, 0.4, 0.1), [x, 1.2, -0.05], [-0.12, 0, 0])
-
-  // Single-frame grille, lights, mirrors, sills
-  bag.add('trim', new THREE.BoxGeometry(0.86, 0.3, 0.1), [0, 0.5, 2.46], [0.15, 0, 0])
-  bag.add('chrome', new THREE.BoxGeometry(0.9, 0.04, 0.11), [0, 0.66, 2.44], [0.15, 0, 0])
-  for (const x of [-0.66, 0.66]) {
-    bag.add('headlight', new THREE.BoxGeometry(0.44, 0.08, 0.2), [x, 0.74, 2.36], [0.45, x > 0 ? 0.2 : -0.2, 0])
-    bag.add('paint', new THREE.BoxGeometry(0.2, 0.12, 0.1), [x * 1.48, 1.05, 0.88])
-    bag.add('trim', new THREE.BoxGeometry(0.04, 0.12, 1.9), [x * 1.46, 0.36, 0])
-  }
-  bag.add('taillight', new THREE.BoxGeometry(1.6, 0.07, 0.08), [0, 0.86, -2.42])
-  for (const x of [-0.62, 0.62]) bag.add('taillight', new THREE.BoxGeometry(0.36, 0.12, 0.08), [x, 0.82, -2.42])
-  bag.add('trim', new THREE.BoxGeometry(1.5, 0.16, 0.12), [0, 0.4, -2.38])
-
-  // Wheels: tyre, alloy and a dark centre
-  for (const [x, z] of [[-0.86, 1.45], [0.86, 1.45], [-0.86, -1.45], [0.86, -1.45]] as const) {
-    bag.add('tyre', new THREE.CylinderGeometry(0.36, 0.36, 0.26, 26), [x, 0.36, z], [0, 0, Math.PI / 2])
-    bag.add('rim', new THREE.CylinderGeometry(0.24, 0.24, 0.27, 20), [x, 0.36, z], [0, 0, Math.PI / 2])
-    bag.add('trim', new THREE.CylinderGeometry(0.07, 0.07, 0.28, 10), [x, 0.36, z], [0, 0, Math.PI / 2])
-  }
-  return bag.bake()
 }
 
 /** Classic roadster motorbike: spoked wheels, round headlamp, teardrop tank, about 2 m long. */
