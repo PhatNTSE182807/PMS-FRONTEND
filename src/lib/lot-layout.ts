@@ -20,16 +20,21 @@ const parkedKind = (vehicleTypeCode: string | null | undefined) => (vehicleTypeC
 export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
   const walkIns = walkInBays(plan)
   return plan.floors.map((floor, index) => {
-    const bays: Bay[] = floor.cells.map((cell) => ({
-      id: String(cell.slotId),
-      code: cell.code,
-      floorIndex: index,
-      row: cell.row,
-      col: cell.col,
-      status: walkIns.has(cell.slotId) ? 'OCCUPIED' : BAY_STATUS[cell.status],
-      vehicleColor: cell.vehicleColor ?? walkIns.get(cell.slotId)?.vehicleColor ?? null,
-      vehicleKind: parkedKind(cell.parkedVehicleTypeCode ?? walkIns.get(cell.slotId)?.vehicleTypeCode ?? cell.vehicleTypeCode),
-    }))
+    const bays: Bay[] = floor.cells.map((cell) => {
+      // Only a vehicle known to be in the bay fixes its body; a booked bay then shows the booked vehicle
+      const parkedCode = cell.parkedVehicleTypeCode ?? walkIns.get(cell.slotId)?.vehicleTypeCode ?? null
+      return {
+        id: String(cell.slotId),
+        code: cell.code,
+        floorIndex: index,
+        row: cell.row,
+        col: cell.col,
+        status: walkIns.has(cell.slotId) ? 'OCCUPIED' : BAY_STATUS[cell.status],
+        vehicleColor: cell.vehicleColor ?? walkIns.get(cell.slotId)?.vehicleColor ?? null,
+        vehicleKind: parkedCode ? parkedKind(parkedCode) : null,
+        bayKind: parkedKind(cell.vehicleTypeCode),
+      }
+    })
     return {
       index,
       level: floor.name,
