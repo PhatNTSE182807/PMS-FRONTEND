@@ -1,6 +1,6 @@
 import type { CustomerListQuery, ManagedStaffQuery, StaffListQuery } from '@/types/identity.dto'
 import type { ParkingHistoryQuery } from '@/types/parkingHistory.dto'
-import type { RevenueReportQuery } from '@/types/report.dto'
+import type { AdminRevenueQuery } from '@/types/report.dto'
 
 /** React Query cache keys, grouped by service so invalidation can target one service. */
 export const queryKeys = {
@@ -134,7 +134,8 @@ export const queryKeys = {
   },
   reports: {
     all: ['reports'] as const,
-    admin: (query: RevenueReportQuery) => [...queryKeys.reports.all, 'admin', query] as const,
+    admin: (query: AdminRevenueQuery) => [...queryKeys.reports.all, 'admin', query] as const,
+    adminTimeSeries: (query: AdminRevenueQuery) => [...queryKeys.reports.all, 'admin-timeseries', query] as const,
     manager: (query: object) => [...queryKeys.reports.all, 'manager', query] as const,
     managerAllTime: (lotId?: string) => [...queryKeys.reports.all, 'manager-all-time', lotId ?? 'all'] as const,
   },

@@ -12,30 +12,30 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/card'
 import { ErrorState } from '@/components/ui/states'
 import { useParkingLots } from '@/hooks/useParking'
-import { useAdminRevenue, useAdminRevenuePeriods } from '@/hooks/useRevenueReport'
+import { useAdminRevenue, useAdminRevenueTimeSeries } from '@/hooks/useRevenueReport'
 import { previousRange } from '@/lib/revenuePeriods'
-import type { RevenueReportQuery } from '@/types/report.dto'
+import type { AdminRevenueQuery } from '@/types/report.dto'
 
 const BREAKDOWN_PAGE_SIZE = 10
 
 /** /admin/revenue: settled revenue of every lot, or one lot, over a date range (GET /admin/reports/revenue). */
 export default function RevenueReportPage() {
-  const [filters, setFilters] = useState<RevenueFilterState>(() => ({ preset: 'thisMonth', ...presetRange('thisMonth') }))
+  const [filters, setFilters] = useState<RevenueFilterState>(() => ({ preset: 'thisMonth', ...presetRange('thisMonth'), vehicleType: 'ALL' }))
   const [breakdownPage, setBreakdownPage] = useState(1)
 
-  const { startDate, endDate, parkingLotId } = filters
-  const query: RevenueReportQuery = { startDate, endDate, parkingLotId }
+  const { startDate, endDate, parkingLotId, vehicleType } = filters
+  const query: AdminRevenueQuery = { startDate, endDate, parkingLotId, vehicleType }
   const lotSelected = Boolean(parkingLotId)
 
   const parkingLots = useParkingLots()
   const report = useAdminRevenue(query)
-  const previous = useAdminRevenue({ ...previousRange(query), parkingLotId })
+  const previous = useAdminRevenue({ ...previousRange(query), parkingLotId, vehicleType })
   // Every lot in the same period: the same request as `report` when no lot is picked.
-  const network = useAdminRevenue({ startDate, endDate })
-  const periods = useAdminRevenuePeriods(query)
-  const rows = useMemo(() => (periods.periods ? periodLotRows(periods.periods) : undefined), [periods.periods])
+  const network = useAdminRevenue({ startDate, endDate, vehicleType })
+  const timeSeries = useAdminRevenueTimeSeries(query)
+  const rows = useMemo(() => (timeSeries.data ? periodLotRows(timeSeries.data.points) : undefined), [timeSeries.data])
 
-  const firstError = report.error ?? periods.error
+  const firstError = report.error ?? timeSeries.error
 
   const handleFiltersChange = (next: RevenueFilterState) => {
     setFilters(next)
@@ -50,7 +50,7 @@ export default function RevenueReportPage() {
     <div className="space-y-6">
       <PageHeader
         title="Revenue Report"
-        description="Settled parking revenue over time, by parking lot and payment method."
+        description="Settled parking revenue over time, by parking lot, vehicle type and payment method."
       />
 
       <RevenueFilterBar
@@ -67,7 +67,7 @@ export default function RevenueReportPage() {
             message={getErrorMessage(firstError)}
             onRetry={() => {
               if (report.isError) void report.refetch()
-              periods.refetch()
+              if (timeSeries.isError) void timeSeries.refetch()
             }}
           />
         </Card>
@@ -82,7 +82,7 @@ export default function RevenueReportPage() {
           />
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <RevenueTrendChart periods={periods.periods} granularity={periods.granularity} isLoading={periods.isPending} />
+            <RevenueTrendChart data={timeSeries.data} isLoading={timeSeries.isPending} canCompare={!vehicleType || vehicleType === 'ALL'} />
             <PaymentMethodChart data={report.data?.paymentMethods} isLoading={report.isPending} />
           </div>
 
@@ -90,8 +90,8 @@ export default function RevenueReportPage() {
 
           <RevenueBreakdownTable
             rows={rows}
-            granularity={periods.granularity}
-            isLoading={periods.isPending}
+            granularity={timeSeries.data?.granularity ?? 'DAY'}
+            isLoading={timeSeries.isPending}
             pageNumber={breakdownPage}
             pageSize={BREAKDOWN_PAGE_SIZE}
             onPageChange={setBreakdownPage}
