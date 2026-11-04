@@ -1,14 +1,21 @@
 import type { ReactNode } from 'react'
-import { ArrowDownRight, ArrowUpRight, Banknote, Car, Receipt, Ticket } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Banknote, Car, Receipt, Trophy } from 'lucide-react'
 import { SERIES_COLORS } from '@/components/charts/chartTheme'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatNumber, formatPercent, formatVnd } from '@/lib/format'
+import { formatNumber, formatPercent, formatVnd, formatVndCompact } from '@/lib/format'
+import { percentChange } from '@/lib/revenuePeriods'
 import { cn } from '@/lib/utils'
-import type { RevenueKpiSummaryDTO } from '@/types/report.dto'
+import type { AdminRevenueReportDTO } from '@/types/report.dto'
 
-/** Signed change versus the previous period; arrow + text, so it never relies on colour alone. */
-function Delta({ value }: { value: number }) {
+/**
+ * Signed change versus the previous period; arrow + text, so it never relies on colour alone.
+ * `undefined` while the previous period loads, `null` when there is nothing to compare with.
+ */
+function Delta({ value }: { value: number | null | undefined }) {
+  if (value === undefined) return <Skeleton className="mt-2 h-5 w-36" />
+  if (value === null) return <p className="mt-2 text-xs text-slate-500">No figures for the previous period to compare</p>
+
   const up = value >= 0
   const Icon = up ? ArrowUpRight : ArrowDownRight
   return (
@@ -49,8 +56,88 @@ function KpiSkeleton() {
   )
 }
 
-export function RevenueKpiCards({ data, isLoading }: { data?: RevenueKpiSummaryDTO; isLoading: boolean }) {
-  if (isLoading || !data) {
+/** A lot's slice of a total as a thin bar, with the lot's amount and a short caption. */
+function ShareBar({ part, total, label, caption }: { part: number; total: number; label: string; caption: string }) {
+  const percent = total > 0 ? (part / total) * 100 : 0
+  return (
+    <>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${label}: ${percent.toFixed(1)}%`}>
+        <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: SERIES_COLORS.blue }} />
+      </div>
+      <p className="mt-2 truncate text-xs text-slate-500">
+        <span className="font-semibold text-slate-900 tabular-nums">{formatVnd(part)}</span> · {caption}
+      </p>
+    </>
+  )
+}
+
+/** All lots: the lot that earned the most in the period. */
+function TopLotCard({ report }: { report: AdminRevenueReportDTO }) {
+  const top = report.byLot.reduce<AdminRevenueReportDTO['byLot'][number] | undefined>(
+    (best, lot) => (!best || lot.totalRevenue > best.totalRevenue ? lot : best),
+    undefined,
+  )
+  return (
+    <KpiCard label="Top parking lot" icon={<Trophy />}>
+      {top && top.totalRevenue > 0 ? (
+        <>
+          <p className="mt-3 truncate text-lg font-semibold tracking-tight text-slate-900" title={top.parkingLotName}>
+            {top.parkingLotName}
+          </p>
+          <ShareBar
+            part={top.totalRevenue}
+            total={report.systemTotalRevenue}
+            label="Share of revenue"
+            caption={`${((top.totalRevenue / report.systemTotalRevenue) * 100).toFixed(1)}% of revenue`}
+          />
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-slate-500">No lot earned revenue in this period.</p>
+      )}
+    </KpiCard>
+  )
+}
+
+/** One lot: its slice of the whole network in the same period. */
+function NetworkShareCard({ report, network }: { report: AdminRevenueReportDTO; network?: AdminRevenueReportDTO | null }) {
+  const lotRevenue = report.systemTotalRevenue
+  const networkRevenue = network?.systemTotalRevenue ?? 0
+  return (
+    <KpiCard label="Share of network revenue" icon={<Trophy />}>
+      {network === undefined ? (
+        <>
+          <Skeleton className="mt-4 h-7 w-24" />
+          <Skeleton className="mt-3 h-4 w-40" />
+        </>
+      ) : (
+        <>
+          <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
+            {networkRevenue > 0 ? `${((lotRevenue / networkRevenue) * 100).toFixed(1)}%` : '—'}
+          </p>
+          <ShareBar
+            part={lotRevenue}
+            total={networkRevenue}
+            label="Share of network revenue"
+            caption={`of ${formatVndCompact(networkRevenue)} in all lots`}
+          />
+        </>
+      )}
+    </KpiCard>
+  )
+}
+
+interface RevenueKpiCardsProps {
+  report?: AdminRevenueReportDTO
+  /** The period of the same length right before: undefined while it loads, null when it failed. */
+  previous?: AdminRevenueReportDTO | null
+  /** Every lot in the same period, for the share of one selected lot: undefined while it loads, null when it failed. */
+  network?: AdminRevenueReportDTO | null
+  lotSelected: boolean
+  isLoading: boolean
+}
+
+export function RevenueKpiCards({ report, previous, network, lotSelected, isLoading }: RevenueKpiCardsProps) {
+  if (isLoading || !report) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
@@ -60,55 +147,31 @@ export function RevenueKpiCards({ data, isLoading }: { data?: RevenueKpiSummaryD
     )
   }
 
-  const average = data.totalTransactions > 0 ? data.totalRevenue / data.totalTransactions : 0
-  const subscriptionShare = data.totalRevenue > 0 ? (data.subscriptionRevenue / data.totalRevenue) * 100 : 0
+  const revenue = report.systemTotalRevenue
+  const sessions = report.systemTotalSessions
+  const average = sessions > 0 ? revenue / sessions : 0
+  const change = (current: number, pick: (r: AdminRevenueReportDTO) => number) =>
+    previous === undefined ? undefined : previous === null ? null : percentChange(current, pick(previous))
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard label="Total revenue" icon={<Banknote />}>
-        <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(data.totalRevenue)}</p>
-        <Delta value={data.revenueGrowthPercent} />
+        <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(revenue)}</p>
+        <Delta value={change(revenue, (r) => r.systemTotalRevenue)} />
       </KpiCard>
 
-      <KpiCard label="Total entries and exits" icon={<Car />}>
+      <KpiCard label="Settled parking sessions" icon={<Car />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
-          {formatNumber(data.totalTransactions)} <span className="text-base font-medium text-slate-500">entries</span>
+          {formatNumber(sessions)} <span className="text-base font-medium text-slate-500">sessions</span>
         </p>
-        <Delta value={data.transactionGrowthPercent} />
+        <Delta value={change(sessions, (r) => r.systemTotalSessions)} />
       </KpiCard>
 
-      <KpiCard label="Monthly passes vs single tickets" icon={<Ticket />}>
-        <div className="mt-3 space-y-2">
-          <div
-            className="flex h-2 gap-0.5 overflow-hidden rounded-full"
-            role="img"
-            aria-label={`Monthly passes ${subscriptionShare.toFixed(0)}%, single tickets ${(100 - subscriptionShare).toFixed(0)}%`}
-          >
-            <div className="rounded-l-full" style={{ width: `${subscriptionShare}%`, backgroundColor: SERIES_COLORS.blue }} />
-            <div className="flex-1 rounded-r-full" style={{ backgroundColor: SERIES_COLORS.orange }} />
-          </div>
-          <dl className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <dt className="flex items-center gap-1.5 text-slate-500">
-                <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: SERIES_COLORS.blue }} />
-                Monthly passes
-              </dt>
-              <dd className="mt-0.5 text-sm font-semibold text-slate-900">{formatVnd(data.subscriptionRevenue)}</dd>
-            </div>
-            <div>
-              <dt className="flex items-center gap-1.5 text-slate-500">
-                <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: SERIES_COLORS.orange }} />
-                Single tickets
-              </dt>
-              <dd className="mt-0.5 text-sm font-semibold text-slate-900">{formatVnd(data.walkInRevenue)}</dd>
-            </div>
-          </dl>
-        </div>
-      </KpiCard>
+      {lotSelected ? <NetworkShareCard report={report} network={network} /> : <TopLotCard report={report} />}
 
-      <KpiCard label="Average value per transaction" icon={<Receipt />}>
+      <KpiCard label="Average per session" icon={<Receipt />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(Math.round(average))}</p>
-        <p className="mt-2 text-xs text-slate-500">Total revenue ÷ number of transactions</p>
+        <p className="mt-2 text-xs text-slate-500">Total revenue ÷ settled sessions</p>
       </KpiCard>
     </div>
   )

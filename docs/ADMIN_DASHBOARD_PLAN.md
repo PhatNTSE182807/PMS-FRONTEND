@@ -123,7 +123,7 @@ Key rules:
 Organize the backend by feature folders, so each one can be lifted into its own service:
 - `Identity`: `POST /api/v1/identity/staff` (Admin creates a Manager/Staff account), `GET /api/v1/identity/staff?page&role&lotId&status&search`, `PATCH .../{id}/status`, `POST .../{id}/reset-password`. Seed the Manager/Staff roles.
 - `Parking`: `GET /api/v1/parking/lots/capacity`, `GET /api/v1/parking/lots/{id}/zones`. These aggregate `ZoneOccupancy` grouped by `VehicleType`.
-- `Reports`: `GET /api/v1/reports/revenue/kpi|timeseries|payment-methods|by-lot|breakdown?startDate&endDate&parkingLotId&vehicleType`.
+- `Reports`: `GET /api/v1/reports/revenue/kpi|timeseries|payment-methods|by-lot|breakdown?startDate&endDate&parkingLotId&vehicleType`. Built instead (2026-11-04): one `GET /api/admin/reports/revenue?startDate&endDate&parkingLotId` (totals, by lot, by payment method); the page derives the rest.
 - Cross-cutting:
   - Add `PagedResult<T>`.
   - Add API versioning, or simply prefix new routes with `/api/v1`.
