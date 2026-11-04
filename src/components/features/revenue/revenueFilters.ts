@@ -1,5 +1,5 @@
 import { toIsoDate } from '@/lib/format'
-import type { PaymentMethod } from '@/types/report.dto'
+import type { PaymentMethod, ReportVehicleType } from '@/types/report.dto'
 
 export type DatePreset = 'today' | 'last7' | 'thisMonth' | 'thisQuarter' | 'thisYear' | 'custom'
 
@@ -24,6 +24,12 @@ export function presetRange(preset: Exclude<DatePreset, 'custom'>, today = new D
   }[preset]
   return { startDate: toIsoDate(start), endDate: toIsoDate(today) }
 }
+
+export const VEHICLE_TYPE_OPTIONS: { value: ReportVehicleType; label: string }[] = [
+  { value: 'ALL', label: 'All vehicles' },
+  { value: 'CAR', label: 'Cars' },
+  { value: 'MOTORBIKE', label: 'Motorbikes' },
+]
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   QR_BANKING: 'QR Pay / Bank transfer',

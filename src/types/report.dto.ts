@@ -16,6 +16,14 @@ export interface RevenueReportQuery {
   parkingLotId?: string
 }
 
+/** Cars (4 and 7 seats) or motorbikes; ALL keeps both. */
+export type ReportVehicleType = 'ALL' | 'CAR' | 'MOTORBIKE'
+
+/** The Admin report also filters by vehicle family (GET /admin/reports/revenue and /timeseries). */
+export interface AdminRevenueQuery extends RevenueReportQuery {
+  vehicleType?: ReportVehicleType
+}
+
 /** QR_BANKING = VNPay / MoMo, RFID_WALLET = the in-app wallet; OTHER = any other method or no matching payment. */
 export type PaymentMethod = 'QR_BANKING' | 'RFID_WALLET' | 'CASH' | 'OTHER'
 
@@ -50,6 +58,51 @@ export interface AdminRevenueReportDTO {
   /** One row per lot, sorted by name; lots without revenue come with 0. */
   byLot: ParkingLotRevenueDTO[]
   paymentMethods: PaymentMethodBreakdownDTO[]
+  /** CAR and MOTORBIKE always; OTHER (no vehicle type recorded) only when above 0. */
+  byVehicleType: VehicleKindRevenueDTO[]
+}
+
+/** VehicleKindRevenueModel */
+export interface VehicleKindRevenueDTO {
+  vehicleType: 'CAR' | 'MOTORBIKE' | 'OTHER'
+  totalRevenue: number
+  totalSessions: number
+}
+
+export type RevenueGranularityDTO = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR'
+
+/** AdminRevenueTimeSeriesResponse (GET /admin/reports/revenue/timeseries). */
+export interface AdminRevenueTimeSeriesDTO {
+  startDate: string
+  endDate: string
+  granularity: RevenueGranularityDTO
+  /** Every period of the range, oldest first, empty ones included; the first and last are clipped to the range. */
+  points: RevenueTimeSeriesPointDTO[]
+}
+
+/** RevenueTimeSeriesPointModel */
+export interface RevenueTimeSeriesPointDTO {
+  /** First and last day of the period, yyyy-MM-dd, inclusive. */
+  startDate: string
+  endDate: string
+  totalRevenue: number
+  totalSessions: number
+  carRevenue: number
+  carSessions: number
+  motorbikeRevenue: number
+  motorbikeSessions: number
+  /** Lots with at least one settled session in the period, sorted by name. */
+  byLot: RevenueTimeSeriesLotDTO[]
+}
+
+/** RevenueTimeSeriesLotModel */
+export interface RevenueTimeSeriesLotDTO {
+  parkingLotId: number
+  parkingLotName: string
+  totalRevenue: number
+  totalSessions: number
+  carSessions: number
+  motorbikeSessions: number
 }
 
 /** ManagerRevenueReportResponse: the same report, limited to the signed-in Manager's lots. */
