@@ -47,7 +47,7 @@ type Handled = { request: GateRequestDTO; phase: 'done'; sessionId: number | nul
 /** The 3D camera of each lane: Check-in requests use the entry lane, Check-out requests the exit lane. */
 const laneOf = (kind: GateRequestKind) => (kind === 'CheckIn' ? 'entry' : 'exit')
 
-const laneVehicleOf = (r: GateRequestDTO) => ({ key: `request-${r.id}`, plate: r.plateNumber ?? '', kind: laneVehicleKind(r.vehicleTypeName) })
+const laneVehicleOf = (r: GateRequestDTO) => ({ key: `request-${r.id}`, plate: r.plateNumber ?? '', kind: laneVehicleKind(r.vehicleTypeName), paint: r.paintColor })
 
 /**
  * Staff lanes for the check-in / check-out requests. Check-in requests come from the customer app; the

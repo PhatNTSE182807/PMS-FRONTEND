@@ -44,6 +44,20 @@ export function vehiclePaint(name: string | null | undefined): number | null {
   return PAINTS.find(([keywords]) => keywords.some((k) => text.includes(` ${k} `)))?.[1] ?? null
 }
 
+/**
+ * The paint the 3D scenes use for a colour name: the colour it names, or, for a name with no known colour
+ * ("Unicorn"), one picked from the name itself, so every scene paints the same vehicle the same way.
+ * Null only without a name.
+ */
+export function scenePaint(name: string | null | undefined): number | null {
+  if (!name?.trim()) return null
+  const known = vehiclePaint(name)
+  if (known !== null) return known
+  let hash = 0
+  for (const ch of normalize(name)) hash = (hash * 31 + ch.charCodeAt(0)) | 0
+  return PAINTS[Math.abs(hash) % PAINTS.length][1]
+}
+
 /** The same paint as a CSS colour, for swatches. */
 export function vehiclePaintCss(name: string | null | undefined): string | null {
   const paint = vehiclePaint(name)

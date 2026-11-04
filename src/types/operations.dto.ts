@@ -271,6 +271,8 @@ export interface ParkingSessionDTO {
   hasPlate: boolean
   vehicleTypeId: number | null
   vehicleTypeName: string | null
+  /** Colour the 3D gate cameras and lot map paint this vehicle: registered, or picked from the plate. */
+  paintColor?: string | null
   entryTime: string
   entryConfirmedAt: string | null
   entryGateId: number

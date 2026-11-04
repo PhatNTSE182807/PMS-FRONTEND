@@ -113,7 +113,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
         const s = r.session
         if (!s) return
         // The entry camera shows the barrier lifting and the vehicle driving in
-        gateLaneSignals.open('entry', { key: `manual-${s.id}`, plate: s.plateNumber ?? '', kind: laneVehicleKind(s.vehicleTypeName) })
+        gateLaneSignals.open('entry', { key: `manual-${s.id}`, plate: s.plateNumber ?? '', kind: laneVehicleKind(s.vehicleTypeName), paint: s.paintColor })
         // Opening the barrier is the last step: the entry is confirmed at once, no "vehicle passed" press
         if (s.status === 'PendingEntry') {
           confirm.mutate(s.id, {

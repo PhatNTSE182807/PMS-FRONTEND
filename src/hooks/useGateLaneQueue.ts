@@ -23,7 +23,12 @@ export function useGateLaneQueue(sessions: ParkingSessionDTO[] | undefined, time
     const passed = sessions
       .filter((s) => s.hasPlate && s.plateNumber && timeOf(s))
       .sort((a, b) => Date.parse(timeOf(a)!) - Date.parse(timeOf(b)!))
-    const toVehicle = (s: ParkingSessionDTO): LaneVehicle => ({ key: `${s.id}-${timeOf(s)}`, plate: s.plateNumber, kind: laneVehicleKind(s.vehicleTypeName) })
+    const toVehicle = (s: ParkingSessionDTO): LaneVehicle => ({
+      key: `${s.id}-${timeOf(s)}`,
+      plate: s.plateNumber,
+      kind: laneVehicleKind(s.vehicleTypeName),
+      paint: s.paintColor,
+    })
 
     if (!seen.current) {
       seen.current = new Set(passed.map((s) => s.id))

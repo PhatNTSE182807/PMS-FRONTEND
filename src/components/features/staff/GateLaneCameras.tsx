@@ -175,7 +175,7 @@ function LaneCamera({ id, direction, sessions, now, anpr }: { id: string; direct
           )}
           {vehicle && (
             <span className="font-mono text-slate-700">
-              {vehicle.kind === 'motorbike' ? 'Motorbike' : 'Car'}
+              {vehicle.kind === 'motorbike' ? 'Motorbike' : vehicle.kind === 'suv' ? '7-seat car' : 'Car'}
               {waiting > 0 ? ` • ${waiting} waiting` : ''}
             </span>
           )}
