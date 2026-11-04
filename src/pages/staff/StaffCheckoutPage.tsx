@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Banknote, Car, Clock, CreditCard, DoorOpen, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2 } from 'lucide-react'
+import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2 } from 'lucide-react'
 import { ApiError, getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
 import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
+import { CashTopUpDialog, CashTopUpStatusLine } from '@/components/features/staff/CashTopUp'
 import { STAFF_TOAST } from '@/components/features/staff/staffToasts'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { formatClock, formatMinutes, vnd } from '@/components/features/manager/managerFormat'
@@ -21,7 +22,7 @@ import { useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { useCashDrawer } from '@/hooks/useCashDrawer'
 import { queryKeys } from '@/api/queryKeys'
-import { BANKNOTES, cleanNotes, describeNotes, notesTotal, suggestChange } from '@/lib/cashNotes'
+import { BANKNOTES, cleanNotes, describeNotes, notesTotal, smallNotesFor, suggestChange } from '@/lib/cashNotes'
 import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -111,6 +112,9 @@ export default function StaffCheckoutPage() {
   const inDrawer: BanknoteCounts = { ...(drawer.data?.status === 'Open' ? drawer.data.expectedNotes : {}) }
   for (const [value, count] of Object.entries(receivedNotes)) inDrawer[Number(value)] = (inDrawer[Number(value)] ?? 0) + count
   const changeNotes = change > 0 ? suggestChange(change, inDrawer) : {}
+  // A cash request the Manager has not decided yet (shown instead of asking again)
+  const pendingTopUp = drawer.data?.topUps?.find((r) => r.status === 'Pending') ?? null
+  const [askingCash, setAskingCash] = useState(false)
   const qrLeft = qr?.callbackDeadline ? Math.max(0, Math.ceil((Date.parse(qr.callbackDeadline) - now) / 1000)) : 0
   const blocking = quote?.alerts.filter((a) => a.blocking) ?? []
 
@@ -520,6 +524,27 @@ export default function StaffCheckoutPage() {
                           ? `Give back: ${describeNotes(changeNotes)}`
                           : 'The drawer has no notes for this change: give it from elsewhere, the amount is still recorded.'}
                       </p>
+                    )}
+                    {/* Out of notes for change: ask the Manager for small notes (once at a time) */}
+                    {lotKey && pendingTopUp ? (
+                      <div className="mt-2">
+                        <CashTopUpStatusLine lotId={lotKey} request={pendingTopUp} />
+                      </div>
+                    ) : (
+                      lotKey && change > 0 && !changeNotes && (
+                        <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setAskingCash(true)}>
+                          <HandCoins /> Ask the Manager for notes
+                        </Button>
+                      )
+                    )}
+                    {lotKey && askingCash && (
+                      <CashTopUpDialog
+                        lotId={lotKey}
+                        open={askingCash}
+                        onOpenChange={setAskingCash}
+                        initialNotes={smallNotesFor(Math.max(change, 100_000))}
+                        initialReason={`Out of notes to give ${vnd(change)} change`}
+                      />
                     )}
                     <p className="mt-1 text-xs text-slate-600">
                       {drawer.data?.status === 'Open'
