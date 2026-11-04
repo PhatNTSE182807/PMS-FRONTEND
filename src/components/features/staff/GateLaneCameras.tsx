@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Camera, DoorOpen, Hourglass, Lock, ScanLine } from 'lucide-react'
 import { anprService } from '@/api/anpr.service'
 import { GateLaneScene, type GateLaneSceneHandle, type LaneDirection, type LanePhase } from '@/components/features/staff/GateLaneScene'
 import { useAnprStatus, type AnprStatus } from '@/hooks/useAnpr'
 import { useGateLaneQueue } from '@/hooks/useGateLaneQueue'
+import { gateLaneSignals, useLaneSignal } from '@/lib/gateLaneSignals'
 import { useNow } from '@/hooks/useNow'
 import { cn } from '@/lib/utils'
 import type { ParkingSessionDTO } from '@/types/operations.dto'
@@ -58,7 +59,7 @@ const exitTimeOf = (s: ParkingSessionDTO) => s.exitTime
 const PHASE_TEXT: Record<LanePhase, string> = {
   idle: 'Lane clear • Barrier closed',
   arriving: 'Vehicle approaching',
-  reading: 'Vehicle at the camera • Reading plate',
+  reading: 'Vehicle at the barrier • Waiting for Staff',
   passing: 'Barrier open • Vehicle passing',
 }
 
@@ -80,7 +81,15 @@ function downloadFrame(image: Blob, name: string) {
 }
 
 function LaneCamera({ id, direction, sessions, now, anpr }: { id: string; direction: LaneDirection; sessions: ParkingSessionDTO[] | undefined; now: number; anpr: AnprStatus }) {
-  const { vehicle, waiting, next } = useGateLaneQueue(sessions, direction === 'entry' ? entryTimeOf : exitTimeOf)
+  const queue = useGateLaneQueue(sessions, direction === 'entry' ? entryTimeOf : exitTimeOf)
+  const queueNext = queue.next
+  // The vehicle the Staff is handling at this lane comes first: it waits at the barrier until they open it
+  const signal = useLaneSignal(direction)
+  const vehicle = signal?.vehicle ?? queue.vehicle
+  const open = signal ? signal.open : true
+  const waiting = queue.waiting + (signal && queue.vehicle ? 1 : 0)
+  const signalKey = signal?.vehicle.key
+  const next = useCallback(() => (signalKey ? gateLaneSignals.done(direction, signalKey) : queueNext()), [direction, signalKey, queueNext])
   const [phase, setPhase] = useState<LanePhase>('idle')
   const [read, setRead] = useState<PlateRead | null>(null)
   const [score, setScore] = useState({ reads: 0, matches: 0 })
@@ -131,7 +140,7 @@ function LaneCamera({ id, direction, sessions, now, anpr }: { id: string; direct
   return (
     <figure className="overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-200">
       <div className="relative aspect-video overflow-hidden bg-[#060f16]">
-        <GateLaneScene ref={scene} direction={direction} vehicle={vehicle} onPhase={setPhase} onDone={next} className="absolute inset-0" />
+        <GateLaneScene ref={scene} direction={direction} vehicle={vehicle} open={open} onPhase={setPhase} onDone={next} className="absolute inset-0" />
         <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2 font-mono text-[11px] font-bold tracking-wider uppercase">
           <span className="rounded bg-black/60 px-1.5 py-0.5 text-slate-950">
             {id} [{label}]

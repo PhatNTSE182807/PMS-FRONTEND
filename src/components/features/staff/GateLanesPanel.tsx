@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowRight, CircleCheck, CircleX, Clock, DoorOpen, Hourglass, Keyboard, LogIn, LogOut, Phone, ShieldAlert, SkipForward, Undo2, UserRound } from 'lucide-react'
@@ -6,9 +6,10 @@ import { ApiError, getErrorMessage } from '@/api/apiError'
 import { Button } from '@/components/ui/button'
 import { Checkbox, Input } from '@/components/ui/form-controls'
 import { useApproveGateRequest, useGateRequestQueue, useRefuseGateRequest } from '@/hooks/useGateRequests'
-import { useCancelEntry, useConfirmEntry } from '@/hooks/useGate'
+import { useConfirmEntry } from '@/hooks/useGate'
 import { useNow } from '@/hooks/useNow'
 import { formatNumber } from '@/lib/format'
+import { gateLaneSignals, laneVehicleKind } from '@/lib/gateLaneSignals'
 import { cn } from '@/lib/utils'
 import type { ApproveGateRequestRequest, GateRequestDTO, GateRequestKind } from '@/types/gateRequest.dto'
 import type { GateAlertDTO } from '@/types/operations.dto'
@@ -38,10 +39,15 @@ const OVERRIDES: Partial<Record<string, { flag: keyof ApproveGateRequestRequest;
 }
 
 /**
- * What the lane is doing with the request it handles: deciding, barrier open (check-in waits for the
- * vehicle to pass the sensor), or done (the next vehicle can be called).
+ * The request the lane has just handled: barrier opened (the entry is confirmed at once, team decision
+ * 2026-11-04: no "vehicle passed the sensor" step) or refused. The next vehicle can then be called.
  */
-type Handled = { request: GateRequestDTO; phase: 'entering' | 'done'; sessionId: number | null; message: string }
+type Handled = { request: GateRequestDTO; phase: 'done'; sessionId: number | null; message: string }
+
+/** The 3D camera of each lane: Check-in requests use the entry lane, Check-out requests the exit lane. */
+const laneOf = (kind: GateRequestKind) => (kind === 'CheckIn' ? 'entry' : 'exit')
+
+const laneVehicleOf = (r: GateRequestDTO) => ({ key: `request-${r.id}`, plate: r.plateNumber ?? '', kind: laneVehicleKind(r.vehicleTypeName) })
 
 /**
  * Staff lanes for the check-in / check-out requests. Check-in requests come from the customer app; the
@@ -102,6 +108,14 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
   const current = handled ? null : (queue.find((r) => r.id === currentId) ?? queue[0] ?? null)
   const others = queue.filter((r) => r.id !== (handled?.request.id ?? current?.id))
 
+  // The 3D camera of this lane shows the vehicle waiting at the closed barrier
+  const currentKey = current ? laneVehicleOf(current).key : null
+  useEffect(() => {
+    gateLaneSignals.wait(laneOf(kind), current ? laneVehicleOf(current) : null)
+    // Only when the handled vehicle changes, not on every queue refresh
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentKey, kind])
+
   /** Moves to the next request (after the current one was handled, or to skip it for now). */
   const next = () => {
     const position = current ? queue.findIndex((r) => r.id === current.id) : -1
@@ -127,7 +141,7 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
   return (
     <div className="space-y-4">
       {handled ? (
-        <HandledView handled={handled} kind={kind} onDone={(message) => setHandled({ ...handled, phase: 'done', message })} />
+        <HandledView handled={handled} kind={kind} />
       ) : current ? (
         <RequestView
           key={current.id}
@@ -201,6 +215,7 @@ function LaneHeader({ title, detail, aside }: { title: string; detail?: string; 
 /** One waiting request: the vehicle and customer, what may block it, and the Open barrier / Refuse decision. */
 function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now: number; onHandled: (h: Handled) => void }) {
   const approve = useApproveGateRequest()
+  const confirmEntry = useConfirmEntry()
   const refuse = useRefuseGateRequest()
   const [alerts, setAlerts] = useState<GateAlertDTO[]>([])
   const [options, setOptions] = useState<ApproveGateRequestRequest>({})
@@ -222,10 +237,20 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
             if (checkIn) toastEntryAlerts(decision.alerts, { status: request.reservationStatus, checkInUntil: request.checkInUntil })
             return
           }
+          // The barrier lifts in the lane's 3D camera and the vehicle drives through
+          gateLaneSignals.open(laneOf(request.kind), laneVehicleOf(request))
           if (checkIn) {
             const session = decision.checkIn?.session ?? null
             toast.success(STAFF_TOAST.checkedIn)
-            onHandled({ request: decision.request, phase: 'entering', sessionId: session?.id ?? null, message: '' })
+            // Opening the barrier is the last step: the entry is confirmed at once, no "vehicle passed" press
+            if (session?.status === 'PendingEntry') {
+              confirmEntry.mutate(session.id, {
+                onSuccess: (s) => onHandled({ request: decision.request, phase: 'done', sessionId: s.id, message: `Checked in to ${s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot')}.` }),
+                onError: (e) => onHandled({ request: decision.request, phase: 'done', sessionId: session.id, message: `Barrier opened, but the entry was not recorded: ${getErrorMessage(e)}` }),
+              })
+            } else {
+              onHandled({ request: decision.request, phase: 'done', sessionId: session?.id ?? null, message: session?.slotCode ? `Checked in to bay ${session.slotCode}.` : 'Checked in.' })
+            }
           } else {
             const refund = decision.checkOut?.depositRefund ?? 0
             const message = refund > 0 ? `Exit barrier opened. ${formatNumber(refund)} VND of the deposit goes back to the customer.` : 'Exit barrier opened. Session completed.'
@@ -381,7 +406,7 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
         </div>
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-          <Button variant="gold" className="h-11" disabled={approve.isPending || (usesOverride && !options.overrideReason?.trim())} onClick={open}>
+          <Button variant="gold" className="h-11" disabled={approve.isPending || confirmEntry.isPending || (usesOverride && !options.overrideReason?.trim())} onClick={open}>
             <DoorOpen /> {alerts.length ? 'Check again & open barrier' : 'Open barrier'}
           </Button>
           <Button variant="outline" className="h-11 text-rose-700" onClick={() => setRefusing(true)}>
@@ -393,58 +418,20 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
   )
 }
 
-/** After the barrier opened (check-in waits for the sensor) or the request was refused. */
-function HandledView({ handled, kind, onDone }: { handled: Handled; kind: GateRequestKind; onDone: (message: string) => void }) {
-  const confirm = useConfirmEntry()
-  const cancel = useCancelEntry()
+/** After the barrier opened (the vehicle is in or out) or the request was refused. */
+function HandledView({ handled, kind }: { handled: Handled; kind: GateRequestKind }) {
   const r = handled.request
-
   return (
     <div className="space-y-4">
       <LaneHeader title={kind === 'CheckIn' ? 'Entry barrier' : 'Exit barrier'} />
-      <div className={cn('rounded-xl p-5 ring-1', handled.phase === 'entering' ? 'bg-emerald-50 ring-emerald-200' : r.status === 'Refused' ? 'bg-rose-50 ring-rose-200' : 'bg-slate-50 ring-slate-200')}>
+      <div className={cn('rounded-xl p-5 ring-1', r.status === 'Refused' ? 'bg-rose-50 ring-rose-200' : 'bg-emerald-50 ring-emerald-200')}>
         <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{r.plateNumber ?? 'NO PLATE'}</p>
         <p className="mt-1 text-sm text-slate-700">{[r.vehicleLabel, r.customerName].filter(Boolean).join(' • ')}</p>
         <p className={cn('mt-3 flex items-start gap-2 text-sm font-medium', r.status === 'Refused' ? 'text-rose-800' : 'text-emerald-700')}>
           {r.status === 'Refused' ? <CircleX className="mt-0.5 size-4 shrink-0" aria-hidden /> : <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden />}
-          {handled.phase === 'entering' ? 'Barrier open: confirm when the vehicle has passed the sensor.' : handled.message}
+          {handled.message}
         </p>
       </div>
-
-      {handled.phase === 'entering' && handled.sessionId != null && (
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="success"
-            disabled={confirm.isPending}
-            onClick={() =>
-              confirm.mutate(handled.sessionId!, {
-                onSuccess: (s) => {
-                  toast.success(`${s.plateNumber || s.code} is in`, { description: 'Session valid; bay and zone counter updated.' })
-                  onDone(`Checked in to ${s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot')}.`)
-                },
-                onError: (e) => toast.error(getErrorMessage(e)),
-              })
-            }
-          >
-            <DoorOpen /> Vehicle passed (sensor)
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={cancel.isPending}
-            onClick={() =>
-              cancel.mutate(handled.sessionId!, {
-                onSuccess: () => {
-                  toast.info('Entry cancelled: the vehicle turned around.')
-                  onDone('Entry cancelled: the vehicle turned around.')
-                },
-                onError: (e) => toast.error(getErrorMessage(e)),
-              })
-            }
-          >
-            <Undo2 /> Turned around
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
