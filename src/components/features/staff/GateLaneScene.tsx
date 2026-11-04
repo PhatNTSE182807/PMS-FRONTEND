@@ -1,7 +1,8 @@
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { buildCoupeModel } from '@/components/customer/garage/carModels'
+import { buildCoupeModel, buildSuvModel } from '@/components/customer/garage/carModels'
+import { scenePaint } from '@/lib/vehicleColor'
 import { buildBikeModel, type PartSlot, type VehicleModel } from '@/components/customer/garage/vehicleModels'
 import { drawPlate, PLATE_SIZE, type PlateShape } from '@/lib/vnPlate'
 import { cn } from '@/lib/utils'
@@ -14,7 +15,8 @@ import { cn } from '@/lib/utils'
  */
 
 export type LaneDirection = 'entry' | 'exit'
-export type LaneVehicleKind = 'car' | 'motorbike'
+/** car: 4-seat car; suv: 7-seat car. */
+export type LaneVehicleKind = 'car' | 'suv' | 'motorbike'
 /** idle: lane empty; arriving: driving up; reading: stopped at the camera; passing: barrier open, driving through. */
 export type LanePhase = 'idle' | 'arriving' | 'reading' | 'passing'
 
@@ -23,6 +25,8 @@ export interface LaneVehicle {
   key: string
   plate: string
   kind: LaneVehicleKind
+  /** Colour name the API gives the vehicle (`paintColor`), so it looks the same at both lanes and on the lot map. */
+  paint?: string | null
 }
 
 /** A box in the frame, 0..1 from the top-left corner. */
@@ -98,16 +102,21 @@ const CAMERA_TARGET = new THREE.Vector3(0, 0.5, -2.2)
 const BARRIER_Z = 0.7
 export const CAMERA_FOV = 34
 
-/** Where the rear plate sits on each model (models face +z, rear at -z). */
-const REAR_PLATE: Record<LaneVehicleKind, { shape: PlateShape; y: number; z: number; tilt: number }> = {
-  car: { shape: 'long', y: 0.57, z: -2.47, tilt: 0 },
-  motorbike: { shape: 'square', y: 0.79, z: -0.86, tilt: 0.2 },
+/**
+ * Where the plates sit on each model (models face +z, rear at -z). Plates are drawn larger than real life
+ * (`scale`) so Staff can read them on the small camera view.
+ */
+const REAR_PLATE: Record<LaneVehicleKind, { shape: PlateShape; y: number; z: number; tilt: number; scale: number; front?: { y: number; z: number } }> = {
+  car: { shape: 'long', y: 0.57, z: -2.47, tilt: 0, scale: 1.5, front: { y: 0.36, z: 2.48 } },
+  suv: { shape: 'long', y: 0.78, z: -2.5, tilt: 0, scale: 1.5, front: { y: 0.5, z: 2.5 } },
+  motorbike: { shape: 'square', y: 0.79, z: -0.86, tilt: 0.2, scale: 1.5 },
 }
 
-/** Plates are drawn larger than real life so Staff can read them on the small camera view. */
-const PLATE_SCALE = 1.5
-
+/** Only for a vehicle the API gives no colour (e.g. the training samples): picked from its plate. */
 const PAINTS = [0xd9dde2, 0x1d2329, 0x9a1f24, 0x2f4f7a, 0x6e7378, 0xf1f1ee, 0x2e5e4e, 0xb88a2c]
+
+/** Motorbikes ride to the right of the lane centre, cars in the middle. */
+const laneX = (kind: LaneVehicleKind) => (kind === 'motorbike' ? 0.4 : 0)
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3
 const easeIn = (t: number) => t ** 3
@@ -176,16 +185,16 @@ function buildVehicle(
   const plate = new THREE.Mesh(plateGeometry, plateMaterial)
   plate.position.set(0, spot.y, spot.z - 0.005)
   plate.rotation.set(spot.tilt, Math.PI, 0)
-  plate.scale.setScalar(PLATE_SCALE)
+  plate.scale.setScalar(spot.scale)
   group.add(plate)
-  if (kind === 'car') {
+  if (spot.front) {
     // Cars carry a plate at the front too
     const front = new THREE.Mesh(plateGeometry, plateMaterial)
-    front.position.set(0, 0.36, 2.48)
-    front.scale.setScalar(PLATE_SCALE)
+    front.position.set(0, spot.front.y, spot.front.z)
+    front.scale.setScalar(spot.scale)
     group.add(front)
   }
-  group.position.set(kind === 'car' ? 0 : 0.4, 0, -30)
+  group.position.set(laneX(kind), 0, -30)
   s.scene.add(group)
 
   // Canvas pixels -> plate metres (texture u runs along the plane's local x, v upwards)
@@ -393,8 +402,9 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
 
     /* Vehicles: shared geometry and materials */
     const car = buildCoupeModel()
+    const suv = buildSuvModel()
     const bike = buildBikeModel()
-    ;[...car.values(), ...bike.values()].forEach((g) => track(g))
+    ;[...car.values(), ...suv.values(), ...bike.values()].forEach((g) => track(g))
     const materials: Record<PartSlot, THREE.Material> = {
       paint: std({ color: 0xffffff, metalness: 0.45, roughness: 0.32, side: THREE.DoubleSide }),
       glass: std({ color: 0x1b2833, metalness: 0.6, roughness: 0.12, transparent: true, opacity: 0.78, side: THREE.DoubleSide }),
@@ -482,7 +492,7 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
     observer.observe(host)
     resize()
 
-    stage.current = { renderer, scene, camera, barrier, models: { car, motorbike: bike }, materials, render, resize, play, current: null }
+    stage.current = { renderer, scene, camera, barrier, models: { car, suv, motorbike: bike }, materials, render, resize, play, current: null }
 
     return () => {
       cancelAnimationFrame(frame)
@@ -516,7 +526,8 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
     s.current?.dispose()
     const startedAt = performance.now()
     s.current = {
-      ...buildVehicle(s, vehicle.plate, vehicle.kind, PAINTS[hash(vehicle.plate) % PAINTS.length]),
+      // The colour the API gives it, the same the lot map and the other lane use
+      ...buildVehicle(s, vehicle.plate, vehicle.kind, scenePaint(vehicle.paint) ?? PAINTS[hash(vehicle.plate) % PAINTS.length]),
       startedAt,
       // Already allowed through: a short stop at the camera, then the barrier lifts
       openAt: openRef.current ? startedAt + (T_ARRIVE + T_READ) * 1000 : null,
@@ -568,7 +579,7 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
       const { renderer, camera, barrier } = s
       const vehicle = buildVehicle(s, sample.plate, sample.kind, sample.paint, sample.grime)
       const stopZ = READ_Z - REAR_PLATE[sample.kind].z
-      vehicle.group.position.set((sample.kind === 'car' ? 0 : 0.4) + sample.offsetX, 0, stopZ + sample.offsetZ)
+      vehicle.group.position.set(laneX(sample.kind) + sample.offsetX, 0, stopZ + sample.offsetZ)
       vehicle.group.rotation.y = sample.yaw
 
       // Pose: camera off its mount, brightness, barrier; drawn at a fixed size

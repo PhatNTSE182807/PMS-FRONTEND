@@ -33,9 +33,9 @@ function subscribe(listener: () => void) {
   }
 }
 
-/** Car or motorbike, from the vehicle type name the API sends. */
+/** Motorbike, 7-seat car or 4-seat car, from the vehicle type name the API sends ("7-Seat Car"). */
 export const laneVehicleKind = (vehicleTypeName: string | null | undefined): LaneVehicleKind =>
-  /motor|bike/i.test(vehicleTypeName ?? '') ? 'motorbike' : 'car'
+  /motor|bike/i.test(vehicleTypeName ?? '') ? 'motorbike' : /7|seven|suv/i.test(vehicleTypeName ?? '') ? 'suv' : 'car'
 
 export const gateLaneSignals = {
   /** The vehicle the lane handles now (null: none). A vehicle already let through keeps driving until it is out. */

@@ -6,7 +6,7 @@ import type { Bay, BayStatus, GarageFloor, ParkedKind } from './garageModel'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { buildCoupeModel, buildSuvModel } from './carModels'
 import { buildBikeModel, type PartSlot } from './vehicleModels'
-import { vehiclePaint } from '@/lib/vehicleColor'
+import { scenePaint } from '@/lib/vehicleColor'
 
 export interface Garage3DProps {
   floors: GarageFloor[]
@@ -500,7 +500,8 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
           return mesh
         })
         const paintMesh = meshes[[...model.keys()].indexOf('paint')]
-        paintMesh.setColorAt(0, paintColors[0])
+        // Creates the per-vehicle colour buffer; a level with no bays has nothing to paint
+        if (count > 0) paintMesh.setColorAt(0, new THREE.Color(palette[0]))
         return { kind, meshes, paint: paintMesh }
       })
 
@@ -586,7 +587,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
             const c = level.centres[i]
             m.compose(new THREE.Vector3(c.x, level.deckY + 0.02, c.z), rotate.setFromAxisAngle(up, facing(bay) === 1 ? 0 : Math.PI), scale)
             for (const mesh of fleet.meshes) mesh.setMatrixAt(slot, m)
-            const registered = vehiclePaint(bay.vehicleColor ?? (isMine ? myColor : null))
+            const registered = scenePaint(bay.vehicleColor ?? (isMine ? myColor : null))
             fleet.paint.setColorAt(slot, registered === null ? level.paintColors[i] : color.setHex(registered))
           }
           if (isSelected || isMine) {
