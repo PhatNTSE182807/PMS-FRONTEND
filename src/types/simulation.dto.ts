@@ -46,10 +46,12 @@ export const SIMULATION_MAX_SECONDS = 3600
 /** DeployWalkInsModel: a batch of walk-ins with random plates sent through the lot's entry lane. */
 export interface DeployWalkInsCommand {
   lotId: number
-  /** 1–500; the batch stops early when a zone is full. */
+  /** From 1 up to the lot's free bays; the batch stops early when a zone is full. */
   count: number
-  /** Share of cars, 0–100; the rest are motorbikes. */
+  /** Share of 4-seat cars, 0–100. */
   carPercent: number
+  /** Share of 7-seat cars, 0–100; with the 4-seat share at most 100, the rest are motorbikes. */
+  car7Percent: number
   /** Stay bounds in hours (at most 72). While the simulation is on, one hour lasts one pricing block. */
   minStayHours: number
   maxStayHours: number
@@ -57,7 +59,6 @@ export interface DeployWalkInsCommand {
   noPlatePercent: number
 }
 
-export const WALK_IN_MAX_COUNT = 500
 export const WALK_IN_MAX_STAY_HOURS = 72
 
 export interface DeployWalkInsResultDTO {
@@ -88,6 +89,10 @@ export interface WalkInSimulationOverviewDTO {
   inside: SimulatedWalkInDTO[]
   completedCount: number
   revenue: number
+  /** Bays of the chosen lot in active zones; null when no lot is chosen. */
+  totalBays?: number | null
+  /** Bays a vehicle can park in now: the most one batch can send; null when no lot is chosen. */
+  freeBays?: number | null
 }
 
 export interface WalkInCheckOutResultDTO {
