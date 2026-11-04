@@ -115,6 +115,11 @@ const VIEWS: Record<LaneView, { position: THREE.Vector3; target: THREE.Vector3 }
   front: { position: new THREE.Vector3(0.2, 3.0, 4.4), target: new THREE.Vector3(0, 0.55, -1.8) },
 }
 export const CAMERA_FOV = 34
+/**
+ * A motorbike stops with its rear plate at the reading line, far from the front camera, and has no front plate:
+ * the front camera narrows onto it, as a real camera zooms, so its face and rider area fill the picture.
+ */
+const FRONT_BIKE = { target: new THREE.Vector3(0.4, 0.75, -4.0), fov: 15 }
 
 /**
  * Where the plates sit on each model (models face +z, rear at -z). Plates are drawn larger than real life
@@ -538,6 +543,13 @@ export function GateLaneScene({ direction, view = 'rear', vehicle, open = true, 
       return
     }
     s.current?.dispose()
+    if (view === 'front') {
+      // Zoom onto a motorbike; cars fill the wide view with their front plate
+      const bike = vehicle.kind === 'motorbike'
+      s.camera.fov = bike ? FRONT_BIKE.fov : CAMERA_FOV
+      s.camera.lookAt(bike ? FRONT_BIKE.target : VIEWS.front.target)
+      s.camera.updateProjectionMatrix()
+    }
     const startedAt = performance.now()
     s.current = {
       // The colour the API gives it, the same the lot map and the other lane use
@@ -547,7 +559,7 @@ export function GateLaneScene({ direction, view = 'rear', vehicle, open = true, 
       openAt: openRef.current ? startedAt + (T_ARRIVE + T_READ) * 1000 : null,
     }
     s.play()
-  }, [vehicle])
+  }, [vehicle, view])
 
   /* The Staff opened the barrier: lift it as soon as the vehicle has driven up */
   useEffect(() => {
