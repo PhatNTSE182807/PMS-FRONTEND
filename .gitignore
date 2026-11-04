@@ -8,3 +8,4 @@ dist-ssr
 backend/
 # Local Claude Code settings: never committed
 .claude/
+.githooks/
