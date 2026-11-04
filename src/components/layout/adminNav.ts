@@ -11,8 +11,8 @@ export const MANAGER_NAV: AdminNavItem[] = [
   { to: '/management/console', label: 'Overview Console', icon: LayoutDashboard },
   { to: '/management/reservations', label: 'Reservations & Slots', icon: CalendarCheck },
   { to: '/management/approvals', label: 'Approval Queue', icon: ClipboardCheck },
-  { to: '/management/pricing', label: 'Pricing & Tariffs', icon: BadgeDollarSign },
-  { to: '/management/staff', label: 'Staff & POS Assignment', icon: UserCog },
+  { to: '/management/pricing', label: 'Pricing Rule', icon: BadgeDollarSign },
+  { to: '/management/staff', label: 'Staff Assignment', icon: UserCog },
 ]
 
 /** Tabs of the Staff (gate attendant) POS terminal console. */
