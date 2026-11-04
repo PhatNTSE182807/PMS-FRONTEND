@@ -18,7 +18,7 @@ interface LotResponse {
   layoutTemplate?: string | null
 }
 
-/** Parking service: lots (PMS.API LotsController) and live occupancy (no endpoint yet). */
+/** Parking service: lots (PMS.API LotsController) and live occupancy (/v1/parking/lots/capacity). */
 export const parkingService = {
   async getParkingLots(): Promise<ParkingLotSummaryDTO[]> {
     if (isMockService('parking')) return capacityMock.getParkingLots()
