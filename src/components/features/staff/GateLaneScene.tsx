@@ -72,6 +72,11 @@ export interface GateLaneSceneHandle {
 interface GateLaneSceneProps {
   direction: LaneDirection
   vehicle: LaneVehicle | null
+  /**
+   * The barrier may open for the vehicle. False: it drives up and waits at the closed barrier until this
+   * turns true (the Staff opened it). True from the start: it drives up, stops briefly and drives through.
+   */
+  open?: boolean
   onPhase?: (phase: LanePhase) => void
   /** The vehicle has left the picture: the next one can come. */
   onDone?: () => void
@@ -84,7 +89,6 @@ const T_ARRIVE = 3
 const T_READ = 1.8
 const T_BARRIER = 0.8
 const T_PASS = 2.6
-const T_TOTAL = T_ARRIVE + T_READ + T_PASS + 0.6
 
 /** Rear plate of every vehicle stops here, about 3.7 m in front of the camera. */
 const READ_Z = -5
@@ -262,7 +266,7 @@ function signTexture(direction: LaneDirection) {
   return texture
 }
 
-export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, ref }: GateLaneSceneProps) {
+export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone, className, ref }: GateLaneSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const callbacks = useRef({ onPhase, onDone })
   useEffect(() => {
@@ -280,7 +284,8 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     render: () => void
     resize: () => void
     play: () => void
-    current: (BuiltVehicle & { startedAt: number }) | null
+    /** openAt: when the barrier starts lifting (performance.now() time); null while waiting for the Staff. */
+    current: (BuiltVehicle & { startedAt: number; openAt: number | null }) | null
   } | null>(null)
 
   /* Static scene: lane, booth, barrier, walls, lights and the camera */
@@ -416,29 +421,33 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
         render()
         return
       }
-      const t = (performance.now() - current.startedAt) / 1000
+      const now = performance.now()
+      const t = (now - current.startedAt) / 1000
       const stopZ = READ_Z - REAR_PLATE[current.kind].z
-      let z: number
-      if (t < T_ARRIVE) {
-        z = stopZ - 14 * (1 - easeOut(t / T_ARRIVE))
-        setPhase('arriving')
-      } else if (t < T_ARRIVE + T_READ) {
-        z = stopZ
-        setPhase('reading')
-      } else {
-        z = stopZ + 24 * easeIn(clamp01((t - T_ARRIVE - T_READ) / T_PASS))
-        setPhase('passing')
+      const opening = current.openAt != null && now >= current.openAt
+      if (!opening) {
+        // Driving up, then waiting at the reading line with the barrier down
+        const arrived = t >= T_ARRIVE
+        current.group.position.z = arrived ? stopZ : stopZ - 14 * (1 - easeOut(t / T_ARRIVE))
+        barrier.rotation.z = 0
+        setPhase(arrived ? 'reading' : 'arriving')
+        render()
+        // Nothing moves while it waits for the Staff: the loop starts again when the barrier opens
+        if (arrived && current.openAt == null) return
+        frame = requestAnimationFrame(tick)
+        return
       }
-      current.group.position.z = z
 
-      // The barrier lifts near the end of the reading and drops once the vehicle is through
-      const openAt = T_ARRIVE + T_READ - T_BARRIER * 0.6
-      const closeAt = T_ARRIVE + T_READ + T_PASS - 0.4
-      const lift = t < closeAt ? clamp01((t - openAt) / T_BARRIER) : 1 - clamp01((t - closeAt) / T_BARRIER)
+      // The barrier lifts; the vehicle moves off once it is half up, then the barrier drops behind it
+      const u = (now - current.openAt!) / 1000
+      const drive = Math.max(0, u - T_BARRIER * 0.6)
+      current.group.position.z = stopZ + 24 * easeIn(clamp01(drive / T_PASS))
+      const lift = drive < T_PASS - 0.4 ? clamp01(u / T_BARRIER) : 1 - clamp01((drive - (T_PASS - 0.4)) / T_BARRIER)
       barrier.rotation.z = (Math.PI / 2) * 0.94 * easeOut(lift)
-
+      setPhase('passing')
       render()
-      if (t >= T_TOTAL) {
+
+      if (drive >= T_PASS + 0.6) {
         current.dispose()
         if (stage.current) stage.current.current = null
         barrier.rotation.z = 0
@@ -478,14 +487,42 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     }
   }, [direction])
 
-  /* A new vehicle: build it with its own paint and plate, then start the pass */
+  const openRef = useRef(open)
+  useEffect(() => {
+    openRef.current = open
+  }, [open])
+
+  /* A new vehicle: build it with its own paint and plate, then drive it up */
   useEffect(() => {
     const s = stage.current
-    if (!s || !vehicle) return
+    if (!s) return
+    if (!vehicle) {
+      // The Staff refused (or moved on from) the waiting vehicle: it leaves the picture; one already let through drives on
+      if (s.current && s.current.openAt == null) {
+        s.current.dispose()
+        s.current = null
+        s.play()
+      }
+      return
+    }
     s.current?.dispose()
-    s.current = { ...buildVehicle(s, vehicle.plate, vehicle.kind, PAINTS[hash(vehicle.plate) % PAINTS.length]), startedAt: performance.now() }
+    const startedAt = performance.now()
+    s.current = {
+      ...buildVehicle(s, vehicle.plate, vehicle.kind, PAINTS[hash(vehicle.plate) % PAINTS.length]),
+      startedAt,
+      // Already allowed through: a short stop at the camera, then the barrier lifts
+      openAt: openRef.current ? startedAt + (T_ARRIVE + T_READ) * 1000 : null,
+    }
     s.play()
   }, [vehicle])
+
+  /* The Staff opened the barrier: lift it as soon as the vehicle has driven up */
+  useEffect(() => {
+    const s = stage.current
+    if (!open || !s?.current || s.current.openAt != null) return
+    s.current.openAt = Math.max(performance.now(), s.current.startedAt + T_ARRIVE * 1000)
+    s.play()
+  }, [open, vehicle])
 
   useImperativeHandle(ref, () => ({
     captureFrame: (options) => {

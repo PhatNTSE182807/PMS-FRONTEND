@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import { Ban, CircleCheck, DoorOpen, LogIn, ShieldAlert, TriangleAlert, Undo2 } from 'lucide-react'
+import { Ban, CircleCheck, DoorOpen, LogIn, ShieldAlert, TriangleAlert } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { Button } from '@/components/ui/button'
 import { Checkbox, Input, Label, NativeSelect } from '@/components/ui/form-controls'
 import { QrCode } from '@/components/ui/qr-code'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { useCancelEntry, useCheckIn, useConfirmEntry, useFindReservationByPlate, useGates, useReservationLookup } from '@/hooks/useGate'
+import { useCheckIn, useConfirmEntry, useFindReservationByPlate, useGates, useReservationLookup } from '@/hooks/useGate'
 import { useVehicleTypes } from '@/hooks/useProfile'
+import { gateLaneSignals, laneVehicleKind } from '@/lib/gateLaneSignals'
 import { cn } from '@/lib/utils'
 import type { CheckInRequest, CheckInResultDTO, GateAlertDTO, GateReservationLookupDTO } from '@/types/operations.dto'
 import { Panel, SectionTitle } from './StaffBits'
@@ -31,8 +32,8 @@ const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour:
  * Entry lane console (SRS FR-OPS-01, 4.2.1). The Staff scans the reservation QR or types its code first:
  * the booking and its vehicle show at once and fill the plate and vehicle type. Walk-ins leave it empty and
  * type the plate. Every gate check then runs on the server; a blocked entry lists the alerts and the Staff
- * clears the ones they may override, with a reason. The lot's entry lane is picked automatically. Once the
- * barrier opens the session waits for the loop sensor (or the Staff's "Vehicle passed" press).
+ * clears the ones they may override, with a reason. The lot's entry lane is picked automatically. Opening the
+ * barrier is the last step: the entry is confirmed at once (team decision 2026-11-04, no "vehicle passed" press).
  * `embedded` drops the panel frame, for use inside the lanes panel (manual / walk-in entry).
  */
 export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; embedded?: boolean }) {
@@ -40,7 +41,6 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
   const vehicleTypes = useVehicleTypes()
   const checkIn = useCheckIn(lotId)
   const confirm = useConfirmEntry()
-  const cancel = useCancelEntry()
   const [form, setForm] = useState<CheckInRequest>(EMPTY)
   const [result, setResult] = useState<CheckInResultDTO | null>(null)
   // Reservation QR payload or RSV… code, looked up as the Staff types or scans
@@ -105,8 +105,22 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
     checkIn.mutate(request, {
       onSuccess: (r) => {
         setResult(r)
-        if (r.outcome === 'Created') toast.success(STAFF_TOAST.checkedIn)
-        else toastEntryAlerts(r.alerts, found?.reservation)
+        if (r.outcome !== 'Created') {
+          toastEntryAlerts(r.alerts, found?.reservation)
+          return
+        }
+        toast.success(STAFF_TOAST.checkedIn)
+        const s = r.session
+        if (!s) return
+        // The entry camera shows the barrier lifting and the vehicle driving in
+        gateLaneSignals.open('entry', { key: `manual-${s.id}`, plate: s.plateNumber ?? '', kind: laneVehicleKind(s.vehicleTypeName) })
+        // Opening the barrier is the last step: the entry is confirmed at once, no "vehicle passed" press
+        if (s.status === 'PendingEntry') {
+          confirm.mutate(s.id, {
+            onSuccess: (confirmed) => setResult((current) => (current ? { ...current, session: confirmed } : current)),
+            onError: (e) => toast.error(getErrorMessage(e, 'The barrier opened, but the entry was not recorded.')),
+          })
+        }
       },
       onError: (e) => toast.error(getErrorMessage(e)),
     })
@@ -140,44 +154,13 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
             )}
           </div>
           {result?.alerts.filter((a) => !a.blocking).map((a) => <AlertRow key={a.code} alert={a} />)}
-          {session.status === 'PendingEntry' ? (
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="success"
-                disabled={confirm.isPending}
-                onClick={() =>
-                  confirm.mutate(session.id, {
-                    onSuccess: (s) => {
-                      setResult((r) => (r ? { ...r, session: s } : r))
-                      toast.success(`${s.plateNumber || s.code} is in`, { description: 'Session valid; slot and zone counter updated.' })
-                    },
-                    onError: (e) => toast.error(getErrorMessage(e)),
-                  })
-                }
-              >
-                <DoorOpen /> Vehicle passed (sensor)
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={cancel.isPending}
-                onClick={() =>
-                  cancel.mutate(session.id, {
-                    onSuccess: () => {
-                      toast.info('Entry cancelled: the vehicle turned around.')
-                      next()
-                    },
-                    onError: (e) => toast.error(getErrorMessage(e)),
-                  })
-                }
-              >
-                <Undo2 /> Turned around
-              </Button>
-            </div>
-          ) : (
-            <Button className="w-full" onClick={next}>
-              <CircleCheck /> Next vehicle
-            </Button>
-          )}
+          <p className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+            <CircleCheck className="size-4 shrink-0" aria-hidden />
+            {session.status === 'PendingEntry' ? 'Barrier open: recording the entry…' : 'Barrier open: the vehicle is in.'}
+          </p>
+          <Button className="w-full" disabled={confirm.isPending} onClick={next}>
+            <CircleCheck /> Next vehicle
+          </Button>
         </div>
       ) : (
         <form className="space-y-3" onSubmit={submit}>
