@@ -331,6 +331,10 @@ Keep this list current; it is the first place to look when code and SRS disagree
   `DayNight` charge model: a block costs the day or night price of the hour it starts in.
 - Saving a pricing rule edits it in place (new `VersionNo`, old values in `PricingRuleHistory`); the
   gates use the current Active rule at checkout, not a copy frozen at entry as BR-22 describes.
+- Price changes (user request, 2026-11-04): a new price is live as soon as the Manager saves it. Vehicles already
+  inside keep the price they entered with; every vehicle entering afterwards pays the new one, including one booked
+  before the change. Saving a new price on an Active rule puts a `PriceChanged` notification in every active
+  customer's bell. See the backend's AGENTS.md.
 - Deposit is optional when booking (team decision, 2026-10-24). With a deposit (BR-06, paid by
   wallet, VNPay or MoMo) the booking waits in `PendingDeposit` and the slot is held **30 minutes**
   after arrival (`Parking:Reservations:DepositHoldMinutes`). Without a deposit
