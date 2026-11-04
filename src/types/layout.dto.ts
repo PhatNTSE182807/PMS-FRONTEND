@@ -72,7 +72,13 @@ export interface LotPlan2DDTO {
   version: number
   detail: Layout2DDetail
   /** Live free and total spaces per zone (zone counters): walk-ins only move these. */
-  zoneCounters?: { zoneId: number; total: number; free: number }[]
+  zoneCounters?: {
+    zoneId: number
+    total: number
+    free: number
+    /** Registered colours of the vehicles counted here without a bay of their own, oldest entry first. */
+    walkInColors?: string[]
+  }[]
   floors: {
     floorNo: number
     name: string
@@ -90,6 +96,8 @@ export interface LotPlan2DDTO {
       col: number
       rotation: number
       status: SlotStatus
+      /** Registered colour of the vehicle parked here, when known. Never a plate. */
+      vehicleColor?: string | null
     }[]
     zoneBlocks: {
       zoneId: number

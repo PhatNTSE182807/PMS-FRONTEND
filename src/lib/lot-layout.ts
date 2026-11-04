@@ -23,6 +23,7 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
       row: cell.row,
       col: cell.col,
       status: walkIns.has(cell.slotId) ? 'OCCUPIED' : BAY_STATUS[cell.status],
+      vehicleColor: cell.vehicleColor ?? walkIns.get(cell.slotId) ?? null,
     }))
     return {
       index,
@@ -43,21 +44,20 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
  * Walk-ins are not given a bay: only the zone counter knows how many are inside. The model still shows them,
  * filling free bays of their zone in a fixed order (front rows first) so the same bays stay filled between
  * refreshes. Spaces used = counter total - counter free; bays already shown as held or taken count first.
+ * Each filled bay maps to the registered colour of one of those vehicles; the others have none (null).
  */
-function walkInBays(plan: LotPlan2DDTO): Set<number> {
-  const filled = new Set<number>()
+function walkInBays(plan: LotPlan2DDTO): Map<number, string | null> {
+  const filled = new Map<number, string | null>()
   const cells = plan.floors.flatMap((floor, floorIndex) => floor.cells.map((cell) => ({ ...cell, floorIndex })))
   for (const zone of plan.zoneCounters ?? []) {
     const inZone = cells.filter((c) => c.zoneId === zone.zoneId)
     const shown = inZone.filter((c) => c.status !== 'Available').length
-    let missing = Math.max(0, zone.total - zone.free - shown)
+    const missing = Math.max(0, zone.total - zone.free - shown)
     const free = inZone
       .filter((c) => c.status === 'Available')
       .sort((a, b) => a.floorIndex - b.floorIndex || a.row - b.row || a.col - b.col)
-    for (const cell of free) {
-      if (missing-- <= 0) break
-      filled.add(cell.slotId)
-    }
+    const colors = zone.walkInColors ?? []
+    free.slice(0, Math.max(0, missing)).forEach((cell, i) => filled.set(cell.slotId, colors[i] ?? null))
   }
   return filled
 }

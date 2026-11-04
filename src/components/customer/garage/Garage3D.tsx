@@ -5,6 +5,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import type { Bay, BayStatus, GarageFloor } from './garageModel'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { buildBikeModel, buildCarModel, type PartSlot } from './vehicleModels'
+import { vehiclePaint } from '@/lib/vehicleColor'
 
 export interface Garage3DProps {
   floors: GarageFloor[]
@@ -13,6 +14,8 @@ export interface Garage3DProps {
   selectedBayId: string | null
   /** The bay the customer booked in this session. */
   myBayId: string | null
+  /** Registered colour of the vehicle on that booking, drawn in the bay until it has parked. */
+  myVehicleColor?: string | null
   onSelectBay: (bay: Bay) => void
   className?: string
 }
@@ -221,6 +224,8 @@ interface LevelObjects {
   pads: THREE.InstancedMesh
   lights: THREE.InstancedMesh
   vehicles: THREE.InstancedMesh[]
+  paint: THREE.InstancedMesh
+  /** Colour of each bay's vehicle when its registered colour is not known. */
   paintColors: THREE.Color[]
   marker: THREE.Mesh
 }
@@ -230,12 +235,12 @@ const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion:
 /**
  * Three.js model of a multi-level concrete car park: motorbikes on the ground level, cars above
  * and an open-air rooftop. The footprint follows the levels' bay layout. Parked vehicles and bay
- * lights follow the live status; clicking a bay reports it.
+ * lights follow the live status, and a vehicle wears its registered colour; clicking a bay reports it.
  *
  * Kept light on purpose: static pieces are merged, bays and vehicles are instanced, shadows are
  * baked once per change and a frame is drawn only when something moved.
  */
-export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, onSelectBay, className }: Garage3DProps) {
+export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, myVehicleColor, onSelectBay, className }: Garage3DProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<{
     levels: LevelObjects[]
@@ -247,8 +252,8 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
     invalidate: (shadows?: boolean) => void
   } | null>(null)
 
-  const latest = useRef({ selectedBayId, myBayId, onSelectBay, floors })
-  latest.current = { selectedBayId, myBayId, onSelectBay, floors }
+  const latest = useRef({ selectedBayId, myBayId, myVehicleColor, onSelectBay, floors })
+  latest.current = { selectedBayId, myBayId, myVehicleColor, onSelectBay, floors }
 
   const layoutKey = floors.map((f) => `${f.level}:${f.kind}:${f.rows}x${f.cols}:${f.bays.length}:${f.bays[0]?.id}`).join('|')
 
@@ -482,6 +487,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
         group.add(mesh)
         return mesh
       })
+      const paintMesh = vehicles[[...model.keys()].indexOf('paint')]
 
       // Selection marker, moved onto the selected bay
       const marker = new THREE.Mesh(markerGeo, std({ color: COLOR.selected, emissive: COLOR.selected, emissiveIntensity: 0.8 }))
@@ -500,7 +506,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
       labels.push(label)
 
       scene.add(group)
-      levels.push({ floor, group, deckY, centres, pads, lights, vehicles, paintColors, marker })
+      levels.push({ floor, group, deckY, centres, pads, lights, vehicles, paint: paintMesh, paintColors, marker })
     })
 
     // Ramps between levels along the right side
@@ -536,7 +542,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
     const refresh = () => {
       const state = sceneRef.current
       if (!state) return
-      const { selectedBayId: sel, myBayId: mine, floors: current } = latest.current
+      const { selectedBayId: sel, myBayId: mine, myVehicleColor: myColor, floors: current } = latest.current
       let shadowsChanged = false
       for (const level of state.levels) {
         const floor = current.find((f) => f.index === level.floor.index) ?? level.floor
@@ -550,6 +556,9 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
           const padColor = isSelected ? COLOR.selected : bay.id === state.hoverId ? 0xffffff : bay.status === 'OCCUPIED' && !isMine ? COLOR.asphalt : status
           level.pads.setColorAt(i, color.setHex(padColor))
           level.lights.setColorAt(i, color.setHex(status))
+
+          const registered = vehiclePaint(bay.vehicleColor ?? (isMine ? myColor : null))
+          level.paint.setColorAt(i, registered === null ? level.paintColors[i] : color.setHex(registered))
 
           const show = bay.status === 'OCCUPIED' || isMine
           if (parked[i] !== show) {
@@ -571,6 +580,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
         parkedOf.set(level.pads, parked)
         if (level.pads.instanceColor) level.pads.instanceColor.needsUpdate = true
         if (level.lights.instanceColor) level.lights.instanceColor.needsUpdate = true
+        if (level.paint.instanceColor) level.paint.instanceColor.needsUpdate = true
         for (const mesh of level.vehicles) {
           mesh.instanceMatrix.needsUpdate = true
           mesh.computeBoundingSphere()
@@ -691,7 +701,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, o
   /* Live status, selection and the customer's booking */
   useEffect(() => {
     sceneRef.current?.refresh()
-  }, [floors, selectedBayId, myBayId])
+  }, [floors, selectedBayId, myBayId, myVehicleColor])
 
   /* Level labels follow the live numbers */
   useEffect(() => {
