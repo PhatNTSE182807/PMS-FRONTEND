@@ -10,9 +10,9 @@ const MAX_WAITING = 4
 /**
  * Turns the lot's live sessions into vehicles for one 3D gate lane, one at a time.
  * `timeOf` picks the moment that counts (entry time for the entry lane, exit time for the exit lane);
- * sessions without it are ignored. On first load the latest vehicle is replayed so the lane is not empty;
- * after that only vehicles that pass the gate while the screen is open are added, except those the Staff opened
- * the barrier for here (the lane already showed them, see gateLaneSignals).
+ * sessions without it are ignored. Vehicles already through when the screen opens are not replayed, so a lane
+ * only shows a vehicle that passes its own gate while the screen is open, except those the Staff opened the
+ * barrier for here (the lane already showed them, see gateLaneSignals).
  */
 export function useGateLaneQueue(sessions: ParkingSessionDTO[] | undefined, timeOf: (session: ParkingSessionDTO) => string | null) {
   const seen = useRef<Set<number> | null>(null)
@@ -32,8 +32,6 @@ export function useGateLaneQueue(sessions: ParkingSessionDTO[] | undefined, time
 
     if (!seen.current) {
       seen.current = new Set(passed.map((s) => s.id))
-      const latest = passed.at(-1)
-      if (latest) setQueue([toVehicle(latest)])
       return
     }
     const known = seen.current
