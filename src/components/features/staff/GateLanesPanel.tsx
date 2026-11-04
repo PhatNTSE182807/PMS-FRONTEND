@@ -89,16 +89,16 @@ export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: strin
 
       {/* Both lanes stay mounted so switching tabs keeps the vehicle each one is handling */}
       <div hidden={tab !== 'CheckIn'}>
-        <Lane lotId={lotId} kind="CheckIn" queue={checkIns.data ?? []} loading={checkIns.isPending} />
+        <Lane lotId={lotId} kind="CheckIn" active={tab === 'CheckIn'} queue={checkIns.data ?? []} loading={checkIns.isPending} />
       </div>
       <div hidden={tab !== 'CheckOut'}>
-        <Lane lotId={lotId} kind="CheckOut" queue={checkOuts.data ?? []} loading={checkOuts.isPending} />
+        <Lane lotId={lotId} kind="CheckOut" active={tab === 'CheckOut'} queue={checkOuts.data ?? []} loading={checkOuts.isPending} />
       </div>
     </Panel>
   )
 }
 
-function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateRequestKind; queue: GateRequestDTO[]; loading: boolean }) {
+function Lane({ lotId, kind, active, queue, loading }: { lotId: string; kind: GateRequestKind; active: boolean; queue: GateRequestDTO[]; loading: boolean }) {
   const now = useNow(15_000)
   const [currentId, setCurrentId] = useState<number | null>(null)
   const [handled, setHandled] = useState<Handled | null>(null)
@@ -108,11 +108,13 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
   const current = handled ? null : (queue.find((r) => r.id === currentId) ?? queue[0] ?? null)
   const others = queue.filter((r) => r.id !== (handled?.request.id ?? current?.id))
 
-  // The 3D camera of this lane shows the vehicle waiting at the closed barrier
-  const currentKey = current ? laneVehicleOf(current).key : null
+  // The 3D camera of this lane shows the vehicle waiting at the closed barrier, only while the Staff is on
+  // this lane's tab: checking a vehicle in never shows one waiting at the exit camera, and the other way round.
+  // A vehicle already let through keeps driving out (gateLaneSignals.wait leaves it alone).
+  const currentKey = current && active ? laneVehicleOf(current).key : null
   useEffect(() => {
-    gateLaneSignals.wait(laneOf(kind), current ? laneVehicleOf(current) : null)
-    // Only when the handled vehicle changes, not on every queue refresh
+    gateLaneSignals.wait(laneOf(kind), current && active ? laneVehicleOf(current) : null)
+    // Only when the handled vehicle or the tab changes, not on every queue refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentKey, kind])
 
