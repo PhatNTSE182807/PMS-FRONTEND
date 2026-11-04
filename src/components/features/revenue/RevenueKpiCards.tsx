@@ -150,6 +150,7 @@ export function RevenueKpiCards({ report, previous, network, lotSelected, isLoad
   const revenue = report.systemTotalRevenue
   const sessions = report.systemTotalSessions
   const average = sessions > 0 ? revenue / sessions : 0
+  const vehicleSessions = (kind: 'CAR' | 'MOTORBIKE') => report.byVehicleType?.find((v) => v.vehicleType === kind)?.totalSessions ?? 0
   const change = (current: number, pick: (r: AdminRevenueReportDTO) => number) =>
     previous === undefined ? undefined : previous === null ? null : percentChange(current, pick(previous))
 
@@ -165,6 +166,9 @@ export function RevenueKpiCards({ report, previous, network, lotSelected, isLoad
           {formatNumber(sessions)} <span className="text-base font-medium text-slate-500">sessions</span>
         </p>
         <Delta value={change(sessions, (r) => r.systemTotalSessions)} />
+        <p className="mt-2 text-xs text-slate-500 tabular-nums">
+          {formatNumber(vehicleSessions('CAR'))} cars · {formatNumber(vehicleSessions('MOTORBIKE'))} motorbikes
+        </p>
       </KpiCard>
 
       {lotSelected ? <NetworkShareCard report={report} network={network} /> : <TopLotCard report={report} />}

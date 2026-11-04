@@ -44,7 +44,8 @@ export function RevenueBreakdownTable({ rows, granularity, isLoading, pageNumber
               <TableRow className="hover:bg-transparent">
                 <TableHead>Period</TableHead>
                 <TableHead>Parking lot</TableHead>
-                <TableHead className={NUMERIC}>Settled sessions</TableHead>
+                <TableHead className={NUMERIC}>Car sessions</TableHead>
+                <TableHead className={NUMERIC}>Motorbike sessions</TableHead>
                 <TableHead className={NUMERIC}>Average per session</TableHead>
                 <TableHead className={NUMERIC}>Revenue</TableHead>
               </TableRow>
@@ -53,7 +54,7 @@ export function RevenueBreakdownTable({ rows, granularity, isLoading, pageNumber
               {isLoading || !rows
                 ? Array.from({ length: 8 }, (_, i) => (
                     <TableRow key={i} className="hover:bg-transparent">
-                      {Array.from({ length: 5 }, (_, j) => (
+                      {Array.from({ length: 6 }, (_, j) => (
                         <TableCell key={j}>
                           <Skeleton className={j < 2 ? 'h-4 w-28' : 'ml-auto h-4 w-20'} />
                         </TableCell>
@@ -64,7 +65,8 @@ export function RevenueBreakdownTable({ rows, granularity, isLoading, pageNumber
                     <TableRow key={`${row.startDate}-${row.parkingLotId}`}>
                       <TableCell className="whitespace-nowrap">{formatPeriod(row)}</TableCell>
                       <TableCell className="whitespace-nowrap text-slate-900">{row.parkingLotName}</TableCell>
-                      <TableCell className={NUMERIC}>{formatNumber(row.totalSessions)}</TableCell>
+                      <TableCell className={NUMERIC}>{formatNumber(row.carSessions)}</TableCell>
+                      <TableCell className={NUMERIC}>{formatNumber(row.motorbikeSessions)}</TableCell>
                       <TableCell className={NUMERIC}>
                         {row.totalSessions > 0 ? formatVnd(Math.round(row.totalRevenue / row.totalSessions)) : '—'}
                       </TableCell>
