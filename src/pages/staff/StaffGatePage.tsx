@@ -309,15 +309,9 @@ export default function StaffGatePage() {
 
       <KpiRow counters={counters.data} sessions={sessions.data} history={history.data} payments={cashPayments.data} />
 
-      {/* Cameras get the full width so the lane and the plate are easy to read */}
-      <AnprTelemetry sessions={sessions.data} history={history.data} />
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
-        {myLots.isPending ? (
-          <Skeleton className="h-[30rem] rounded-2xl" />
-        ) : (
-          <LiveLotModel lots={myLots.data ?? []} lotId={lotId} onLotChange={setLotId} />
-        )}
+      {/* Four cameras (entry lane on top, exit lane below) with the Check-in / Check-out lanes beside them */}
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
+        <AnprTelemetry sessions={sessions.data} history={history.data} />
         {lotKey ? (
           <GateLanesPanel lotId={lotKey} initialTab={lane === 'checkout' ? 'CheckOut' : 'CheckIn'} />
         ) : (
@@ -327,6 +321,12 @@ export default function StaffGatePage() {
           </Panel>
         )}
       </div>
+
+      {myLots.isPending ? (
+        <Skeleton className="h-[30rem] rounded-2xl" />
+      ) : (
+        <LiveLotModel lots={myLots.data ?? []} lotId={lotId} onLotChange={setLotId} />
+      )}
 
       <ActivityStream sessions={sessions.data ?? []} isLoading={sessions.isPending} query={query} setQuery={setQuery} />
     </div>
