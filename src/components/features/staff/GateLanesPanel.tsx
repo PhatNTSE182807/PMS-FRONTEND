@@ -44,13 +44,15 @@ const OVERRIDES: Partial<Record<string, { flag: keyof ApproveGateRequestRequest;
 type Handled = { request: GateRequestDTO; phase: 'entering' | 'done'; sessionId: number | null; message: string }
 
 /**
- * Staff lanes for the check-in / check-out requests sent from the customer app. Each tab works through
+ * Staff lanes for the check-in / check-out requests. Check-in requests come from the customer app; the
+ * Check-out lane also gets every paid vehicle (paid at the POS or in the app, walk-ins included), since the
+ * exit barrier is only opened here (team decision, 2026-11-04). Each tab works through
  * its queue oldest first: the vehicle's details show, the Staff opens the barrier (the normal gate checks
  * run) or refuses with a reason, and "Next vehicle" moves to the next request. Walk-ins and scanned QR
  * codes still go through the manual entry form under the Check-in tab.
  */
-export function GateLanesPanel({ lotId }: { lotId: string }) {
-  const [tab, setTab] = useState<GateRequestKind>('CheckIn')
+export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: string; initialTab?: GateRequestKind }) {
+  const [tab, setTab] = useState<GateRequestKind>(initialTab)
   const checkIns = useGateRequestQueue(lotId, 'CheckIn')
   const checkOuts = useGateRequestQueue(lotId, 'CheckOut')
   const counts = { CheckIn: checkIns.data?.length ?? 0, CheckOut: checkOuts.data?.length ?? 0 }
@@ -140,7 +142,7 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
           <p className="mt-1 text-sm text-slate-700">
             {kind === 'CheckIn'
               ? 'Customers who press "Check in" on their booking appear here, oldest first.'
-              : 'Customers who press "Check out" on their parked vehicle appear here, oldest first.'}
+              : 'Paid vehicles (at the POS or in the app, walk-ins too) and customers who press "Check out" appear here, oldest first.'}
           </p>
         </div>
       )}
@@ -244,7 +246,9 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
       { requestId: request.id, reason: text },
       {
         onSuccess: (r) => {
-          toast.info(`${request.plateNumber ?? 'Request'} refused`, { description: 'The customer sees your reason in the app.' })
+          toast.info(`${request.plateNumber ?? 'Request'} refused`, {
+            description: request.customerName ? 'The customer sees your reason in the app.' : 'Walk-in: tell the driver the reason at the lane.',
+          })
           onHandled({ request: r, phase: 'done', sessionId: null, message: `Refused: ${text}` })
         },
         onError: (e) => toast.error(getErrorMessage(e, 'Could not refuse the request.')),
@@ -254,7 +258,11 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
   return (
     <div className="space-y-4">
       <LaneHeader
-        title={checkIn ? `App check-in · Reservation ${request.reservationCode ?? ''}` : `App check-out · Session ${request.sessionCode ?? ''}`}
+        title={
+          checkIn
+            ? `App check-in · Reservation ${request.reservationCode ?? ''}`
+            : `${request.customerName ? 'Check-out' : 'Walk-in check-out'} · Session ${request.sessionCode ?? ''}`
+        }
         aside={
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
             <Clock className="size-3.5" aria-hidden /> {waited(request.createdAt, now)}
@@ -271,7 +279,7 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
           <div>
             <dt className="text-xs text-slate-600">Customer</dt>
             <dd className="flex items-center gap-1.5 font-medium text-slate-900">
-              <UserRound className="size-3.5 text-slate-600" aria-hidden /> {request.customerName ?? '—'}
+              <UserRound className="size-3.5 text-slate-600" aria-hidden /> {request.customerName ?? 'Walk-in (no account)'}
             </dd>
           </div>
           <div>

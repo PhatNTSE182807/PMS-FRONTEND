@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   BadgeCheck,
   Car,
@@ -263,6 +263,8 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
 }
 
 export default function StaffGatePage() {
+  // /staff/gate?lane=checkout (from the POS after a payment) opens the Check-out lane
+  const lane = useSearchParams()[0].get('lane')
   const { open } = useDemoIncidents()
   const myLots = useMyStaffLots()
   const { lot } = useStaffLot()
@@ -310,7 +312,7 @@ export default function StaffGatePage() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
         <AnprTelemetry sessions={sessions.data} history={history.data} />
         {lotKey ? (
-          <GateLanesPanel lotId={lotKey} />
+          <GateLanesPanel lotId={lotKey} initialTab={lane === 'checkout' ? 'CheckOut' : 'CheckIn'} />
         ) : (
           <Panel>
             <SectionTitle icon={<LogIn />}>Entry lane</SectionTitle>

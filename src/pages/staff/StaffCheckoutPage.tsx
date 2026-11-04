@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { useLocation, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ArrowUp, Banknote, Car, Clock, CreditCard, Lock, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, Wifi } from 'lucide-react'
+import { Banknote, Car, Clock, CreditCard, DoorOpen, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2 } from 'lucide-react'
 import { ApiError, getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
 import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
-import { STAFF_TOAST, isPast, toastUnsettled } from '@/components/features/staff/staffToasts'
+import { STAFF_TOAST } from '@/components/features/staff/staffToasts'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { formatClock, formatMinutes, vnd } from '@/components/features/manager/managerFormat'
 import { Button } from '@/components/ui/button'
-import { Checkbox, Input } from '@/components/ui/form-controls'
+import { Input } from '@/components/ui/form-controls'
 import { ConfirmDialog } from '@/components/ui/dialog'
 import { QrCode } from '@/components/ui/qr-code'
-import { useCancelPaymentRequest, useCheckout, usePayCash, usePayOnline, useQuote } from '@/hooks/useGate'
+import { useCancelPaymentRequest, usePayCash, usePayOnline, useQuote } from '@/hooks/useGate'
 import { useNow } from '@/hooks/useNow'
 import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useMyStaffLots } from '@/hooks/useParking'
@@ -32,8 +32,9 @@ import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/oper
  * Payment counter / exit lane POS (SRS FR-OPS-02, FR-PAY-01/03/07/08, UC-02): pick a vehicle waiting to pay
  * (or find one), request the fee
  * (deposit deducted, Exit Window checked), take cash after the Staff confirms the amounts (or show a VNPay/MoMo
- * QR), then lift the barrier. Every payment is listed in the payment history below.
- * Keyboard: F5 cash, F8 check gateway, Space lift barrier, Esc next vehicle.
+ * QR). A paid vehicle then waits in the Check-out lane of the gate dashboard, where the barrier is opened
+ * (team decision, 2026-11-04: never from the POS). Every payment is listed in the payment history below.
+ * Keyboard: F5 cash, F8 check gateway, Esc next vehicle.
  */
 export default function StaffCheckoutPage() {
   const myLots = useMyStaffLots()
@@ -54,8 +55,9 @@ export default function StaffCheckoutPage() {
   })
   const waiting = {
     ...sessions,
+    // Paid vehicles are done here: they wait in the Check-out lane of the gate dashboard
     data: sessions.data
-      ?.filter((s) => s.status === 'PendingPayment' || ((s.status === 'Active' || s.status === 'Paid') && leavingIds.has(s.id)))
+      ?.filter((s) => s.status === 'PendingPayment' || (s.status === 'Active' && leavingIds.has(s.id)))
       .sort((a, b) => Date.parse(a.entryTime) - Date.parse(b.entryTime)),
   }
   const [queueFilter, setQueueFilter] = useState('')
@@ -91,10 +93,6 @@ export default function StaffCheckoutPage() {
     setReceivedNotes((notes) => ({ ...notes, [value]: (notes[value] ?? 0) + 1 }))
   }
   const [exitPlate, setExitPlate] = useState('')
-  const [photoChecked, setPhotoChecked] = useState(false)
-  const [allowMismatch, setAllowMismatch] = useState(false)
-  const [overrideReason, setOverrideReason] = useState('')
-  const [cleared, setCleared] = useState<{ plate: string; refund: number } | null>(null)
   const [searching, setSearching] = useState(false)
   const cashRef = useRef<HTMLInputElement>(null)
   const now = useNow(1000)
@@ -103,7 +101,6 @@ export default function StaffCheckoutPage() {
   const payCash = usePayCash()
   const payOnline = usePayOnline()
   const cancelRequest = useCancelPaymentRequest()
-  const checkout = useCheckout()
 
   const session = quote?.session
   const due = quote?.amountDue ?? 0
@@ -176,12 +173,8 @@ export default function StaffCheckoutPage() {
     setQuote(null)
     setQr(null)
     setTendered(0)
-    setCleared(null)
     setLookup('')
     setExitPlate('')
-    setPhotoChecked(false)
-    setAllowMismatch(false)
-    setOverrideReason('')
     setParams({})
   }, [setParams])
 
@@ -258,38 +251,6 @@ export default function StaffCheckoutPage() {
     }
   }, [exitPlate, loadQuote, qr, qrLeft, session])
 
-  const liftBarrier = useCallback(() => {
-    if (!session || cleared) return
-    if (session.status !== 'Paid') {
-      toastUnsettled(session.exitWindowEndsAt)
-      return
-    }
-    checkout.mutate(
-      {
-        sessionId: session.id,
-        request: { plateNumber: exitPlate || undefined, photoChecked, allowPlateMismatch: allowMismatch, overrideReason: overrideReason || undefined },
-      },
-      {
-        onSuccess: (r) => {
-          if (!r.barrierOpen) {
-            // No popup in the spec for a plate / photo check: refresh so the alerts show in the barrier panel
-            loadQuote(session.id, exitPlate)
-            return
-          }
-          setCleared({ plate: r.session.plateNumber || r.session.code, refund: r.depositRefund })
-          toast.success(STAFF_TOAST.checkedOut)
-        },
-        onError: (e) => {
-          // The pre-payment ran past the exit window while the Staff was at the lane: more is due now
-          if (e instanceof ApiError && e.status === 400 && isPast(session.exitWindowEndsAt)) {
-            toastUnsettled(session.exitWindowEndsAt)
-            loadQuote(session.id, exitPlate)
-          } else toast.error(getErrorMessage(e))
-        },
-      },
-    )
-  }, [allowMismatch, checkout, cleared, exitPlate, loadQuote, overrideReason, photoChecked, session])
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -303,14 +264,11 @@ export default function StaffCheckoutPage() {
       } else if (e.key === 'F8') {
         e.preventDefault()
         void checkGateway()
-      } else if (e.code === 'Space' && !(e.target instanceof HTMLButtonElement)) {
-        e.preventDefault()
-        liftBarrier()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [checkGateway, liftBarrier, reset])
+  }, [checkGateway, reset])
 
   return (
     <div className="space-y-6">
@@ -320,9 +278,9 @@ export default function StaffCheckoutPage() {
         <span className="flex items-center gap-1.5 text-indigo-700">
           <ShieldCheck className="size-4" aria-hidden /> Entry/exit plate check active
         </span>
-        <span className="ml-auto flex items-center gap-1.5">
-          <Wifi className="size-4 text-indigo-700" aria-hidden /> Barrier: {cleared ? 'raised' : 'ready'}
-        </span>
+        <Link to="/staff/gate?lane=checkout" className="ml-auto flex items-center gap-1.5 text-indigo-700 hover:underline">
+          <DoorOpen className="size-4" aria-hidden /> Barrier: Check-out lane
+        </Link>
       </div>
 
       <Panel>
@@ -369,7 +327,7 @@ export default function StaffCheckoutPage() {
               <li key={s.id} className={cn('flex flex-wrap items-center gap-x-6 gap-y-1 py-3', session?.id === s.id && 'bg-amber-50/40')}>
                 <span className="w-36 font-mono text-lg font-bold text-slate-950">{s.plateNumber || 'NO PLATE'}</span>
                 <span className={cn('rounded px-2 py-0.5 text-xs font-bold', s.status === 'PendingPayment' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-700')}>
-                  {s.status === 'PendingPayment' ? 'Fee requested' : s.status === 'Paid' ? 'Paid, asked to exit' : 'Asked to exit'}
+                  {s.status === 'PendingPayment' ? 'Fee requested' : 'Asked to exit'}
                 </span>
                 <span className="font-mono text-xs text-slate-700">{s.code}</span>
                 <span className="text-sm text-slate-700">{s.vehicleTypeName}</span>
@@ -479,7 +437,7 @@ export default function StaffCheckoutPage() {
               <SectionTitle icon={<Banknote />}>Payment</SectionTitle>
               {due === 0 ? (
                 <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 ring-1 ring-emerald-200">
-                  Nothing to collect{quote.zeroFeeReason ? ` (${quote.zeroFeeReason})` : ''}: the barrier may open.
+                  Nothing to collect{quote.zeroFeeReason ? ` (${quote.zeroFeeReason})` : ''}: the vehicle goes to the Check-out lane.
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -586,48 +544,38 @@ export default function StaffCheckoutPage() {
               )}
             </Panel>
 
+            {/* The barrier is opened from the Check-out lane of the gate dashboard, never from here */}
             <Panel>
-              <SectionTitle icon={<Lock />}>Barrier</SectionTitle>
-              {blocking.length > 0 && !cleared && (
+              <SectionTitle icon={<DoorOpen />}>Exit</SectionTitle>
+              {blocking.length > 0 && (
                 <div className="mb-3 space-y-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">
                   {blocking.map((a) => (
                     <p key={a.code} className="flex items-start gap-2 text-sm text-rose-800">
                       <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden /> {a.message}
                     </p>
                   ))}
-                  {blocking.some((a) => a.code !== 'PLATE_MISMATCH') && (
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                      <Checkbox checked={photoChecked} onChange={(e) => setPhotoChecked(e.target.checked)} /> I compared the entry and exit photos
-                    </label>
-                  )}
-                  {blocking.some((a) => a.code === 'PLATE_MISMATCH') && (
-                    <>
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                        <Checkbox checked={allowMismatch} onChange={(e) => setAllowMismatch(e.target.checked)} /> Let it pass despite the plate difference
-                      </label>
-                      {allowMismatch && <Input value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} placeholder="Reason (required)" />}
-                    </>
-                  )}
+                  <p className="text-xs text-slate-700">The Staff at the Check-out lane sees this too and checks it before opening the barrier.</p>
                 </div>
               )}
-              {cleared ? (
+              {session.status === 'Paid' ? (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-100 px-5 py-4 ring-1 ring-emerald-300">
                   <p className="font-display text-lg font-bold text-emerald-800">
-                    Barrier raised • {cleared.plate} cleared to exit{cleared.refund > 0 ? ` • refund ${vnd(cleared.refund)}` : ''}
+                    Paid • {session.plateNumber || session.code} moved to the Check-out lane
+                    {quote.depositRefund > 0 ? ` • refund ${vnd(quote.depositRefund)} at exit` : ''}
                   </p>
-                  <Button variant="success" onClick={reset}>Next vehicle</Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" asChild>
+                      <Link to="/staff/gate?lane=checkout">
+                        <DoorOpen /> Open the Check-out lane
+                      </Link>
+                    </Button>
+                    <Button variant="success" onClick={reset}>Next vehicle</Button>
+                  </div>
                 </div>
               ) : (
-                <Button
-                  variant="gold"
-                  className="h-auto min-h-16 w-full rounded-xl py-3 font-display text-lg tracking-wide whitespace-normal uppercase"
-                  disabled={checkout.isPending}
-                  onClick={liftBarrier}
-                >
-                  <Lock className="size-5!" />
-                  <span className="font-mono">[Space]</span> {session.status === 'Paid' ? 'Lift barrier' : `Collect ${vnd(due)} first`}
-                  <ArrowUp className="size-5!" />
-                </Button>
+                <p className="rounded-xl bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-900">
+                  Collect {vnd(due)} first. Once paid, the vehicle moves to the Check-out lane of the gate dashboard, where the barrier is opened.
+                </p>
               )}
             </Panel>
           </div>
