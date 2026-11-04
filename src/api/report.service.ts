@@ -1,58 +1,26 @@
 import { isMockService, SERVICE_PATHS } from '@/config/env'
 import { revenueMock } from '@/mocks/revenue.mock'
-import type { PaginatedResponse } from '@/types/common.dto'
-import type {
-  ManagerRevenueReportDTO,
-  PaymentMethodBreakdownDTO,
-  RevenueBreakdownQuery,
-  RevenueBreakdownRowDTO,
-  RevenueByParkingLotDTO,
-  RevenueFilterQuery,
-  RevenueKpiSummaryDTO,
-  RevenueTimeSeriesResultDTO,
-} from '@/types/report.dto'
+import type { AdminRevenueReportDTO, ManagerRevenueReportDTO, RevenueReportQuery } from '@/types/report.dto'
 import { http } from './axiosClient'
 
-const base = `${SERVICE_PATHS.reports}/revenue`
 const mocked = () => isMockService('reports')
 
-/** Report service: read-only revenue aggregations (a CQRS read model after the split). */
+/** Report service: read-only revenue of settled parking sessions (RevenueReportService). */
 export const reportService = {
+  /** GET /admin/reports/revenue: revenue, sessions, lots and payment methods of every lot (or one) in a date range. */
+  getAdminRevenue(query: RevenueReportQuery): Promise<AdminRevenueReportDTO> {
+    return mocked()
+      ? revenueMock.getAdminRevenue(query)
+      : http.get<AdminRevenueReportDTO>(`${SERVICE_PATHS.reports}/revenue`, { params: query })
+  },
+
   /** Real revenue of the signed-in Manager's lots (cash, QR and wallet), never demo data. */
-  getManagerRevenue(query: { startDate: string; endDate: string; parkingLotId?: string }): Promise<ManagerRevenueReportDTO> {
+  getManagerRevenue(query: RevenueReportQuery): Promise<ManagerRevenueReportDTO> {
     return http.get<ManagerRevenueReportDTO>('/manager/reports/revenue', { params: query })
   },
 
   /** GET /manager/reports/revenue/all-time: everything the lot (or every managed lot) earned since its first session. */
   getManagerAllTimeRevenue(parkingLotId?: string): Promise<ManagerRevenueReportDTO> {
     return http.get<ManagerRevenueReportDTO>('/manager/reports/revenue/all-time', { params: parkingLotId ? { parkingLotId } : undefined })
-  },
-
-  getKpiSummary(query: RevenueFilterQuery): Promise<RevenueKpiSummaryDTO> {
-    return mocked() ? revenueMock.getKpiSummary(query) : http.get<RevenueKpiSummaryDTO>(`${base}/kpi`, { params: query })
-  },
-
-  getTimeSeries(query: RevenueFilterQuery): Promise<RevenueTimeSeriesResultDTO> {
-    return mocked()
-      ? revenueMock.getTimeSeries(query)
-      : http.get<RevenueTimeSeriesResultDTO>(`${base}/timeseries`, { params: query })
-  },
-
-  getPaymentMethods(query: RevenueFilterQuery): Promise<PaymentMethodBreakdownDTO[]> {
-    return mocked()
-      ? revenueMock.getPaymentMethods(query)
-      : http.get<PaymentMethodBreakdownDTO[]>(`${base}/payment-methods`, { params: query })
-  },
-
-  getRevenueByParkingLot(query: RevenueFilterQuery): Promise<RevenueByParkingLotDTO[]> {
-    return mocked()
-      ? revenueMock.getRevenueByParkingLot(query)
-      : http.get<RevenueByParkingLotDTO[]>(`${base}/by-lot`, { params: query })
-  },
-
-  getBreakdown(query: RevenueBreakdownQuery): Promise<PaginatedResponse<RevenueBreakdownRowDTO>> {
-    return mocked()
-      ? revenueMock.getBreakdown(query)
-      : http.get<PaginatedResponse<RevenueBreakdownRowDTO>>(`${base}/breakdown`, { params: query })
   },
 }

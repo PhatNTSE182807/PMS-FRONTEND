@@ -3,6 +3,7 @@ import { ChartTooltip } from '@/components/charts/ChartTooltip'
 import { SERIES_COLORS } from '@/components/charts/chartTheme'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/states'
 import { formatVnd, formatVndCompact } from '@/lib/format'
 import type { PaymentMethod, PaymentMethodBreakdownDTO } from '@/types/report.dto'
 import { PAYMENT_METHOD_LABELS } from './revenueFilters'
@@ -12,8 +13,10 @@ const METHOD_COLORS: Record<PaymentMethod, string> = {
   QR_BANKING: SERIES_COLORS.blue,
   CASH: SERIES_COLORS.orange,
   RFID_WALLET: SERIES_COLORS.aqua,
+  // Rare: revenue with no matching payment, or a method outside the three channels.
+  OTHER: '#B48EAD',
 }
-const METHOD_ORDER: PaymentMethod[] = ['QR_BANKING', 'RFID_WALLET', 'CASH']
+const METHOD_ORDER: PaymentMethod[] = ['QR_BANKING', 'RFID_WALLET', 'CASH', 'OTHER']
 
 export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBreakdownDTO[]; isLoading: boolean }) {
   const rows = METHOD_ORDER.map((method) => data?.find((d) => d.method === method)).filter(
@@ -37,6 +40,8 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
         </div>
+      ) : total === 0 ? (
+        <EmptyState title="No revenue" description="No payments in this period." />
       ) : (
         <div className="flex flex-1 flex-col justify-center gap-4 p-5">
           <div className="relative mx-auto h-48 w-full max-w-60">
