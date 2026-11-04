@@ -68,6 +68,7 @@ function apply(rule: PricingRuleDTO, input: PricingRuleInput) {
     vehicleTypeCode: type.code,
     vehicleTypeName: type.name,
     chargeModel: input.chargeModel,
+    entryFee: input.entryFee,
     graceMinutes: input.graceMinutes,
     firstBlockMinutes: input.firstBlockMinutes,
     firstBlockPrice: input.firstBlockPrice,
@@ -129,7 +130,11 @@ function simulate(rule: PricingRuleDTO, request: PricingSimulationRequest): Pric
       let cursor = new Date(dayStart)
       let blocks = 0
       let amount = 0
-      if (first && rule.firstBlockMinutes && rule.firstBlockPrice != null) {
+      if (rule.chargeModel === 'PerEntry') {
+        blocks = 1
+        amount = rule.entryFee
+        remaining = 0
+      } else if (first && rule.firstBlockMinutes && rule.firstBlockPrice != null) {
         blocks++
         amount += rule.firstBlockPrice
         remaining -= rule.firstBlockMinutes
@@ -149,7 +154,7 @@ function simulate(rule: PricingRuleDTO, request: PricingSimulationRequest): Pric
       dayStart = dayEnd
       first = false
     }
-    gross += rule.entryFee
+    if (rule.chargeModel !== 'PerEntry') gross += rule.entryFee
   }
   const fee = gross <= 0 ? 0 : Math.ceil(gross / ROUNDING_STEP) * ROUNDING_STEP
   const lost = request.isLostTicket ? rule.lostTicketFee : 0
@@ -221,7 +226,8 @@ export const pricingMock = {
           vehicleTypeId: type.id,
           vehicleTypeCode: type.code,
           vehicleTypeName: type.name,
-          chargeModel: dayNight ? 'DayNight' : 'Block',
+          chargeModel: dayNight ? 'DayNight' : rule.chargeModel === 'PerEntry' ? 'PerEntry' : 'Block',
+          entryFee: rule.entryFee,
           graceMinutes: rule.graceMinutes,
           firstBlockMinutes: rule.firstBlockMinutes,
           firstBlockPrice: rule.firstBlockPrice,

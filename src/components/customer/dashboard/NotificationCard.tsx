@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, LogIn, LogOut, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react'
+import { Bell, Check, CheckCheck, LogIn, LogOut, ShieldAlert, ShieldCheck, ShieldX, Tag } from 'lucide-react'
 import { useNotifications, useMarkRead, useMarkAllRead, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
 
@@ -7,6 +7,7 @@ const ICON_MAP: Record<string, typeof Bell> = {
   VehicleRejected: ShieldX,
   CheckIn: LogIn,
   CheckOut: LogOut,
+  PriceChanged: Tag,
 }
 
 const BADGE_MAP: Record<string, { label: string; className: string }> = {
@@ -14,6 +15,7 @@ const BADGE_MAP: Record<string, { label: string; className: string }> = {
   VehicleRejected: { label: 'Vehicle Rejected', className: 'cx-chip--muted' },
   CheckIn: { label: 'Gate Check-In', className: '' },
   CheckOut: { label: 'Gate Check-Out', className: '' },
+  PriceChanged: { label: 'Price Change', className: 'cx-chip--gold' },
 }
 
 export function NotificationCard() {
@@ -38,7 +40,7 @@ export function NotificationCard() {
             )}
           </h2>
           <p className="cx-card__subtitle">
-            Vehicle approvals, gate check-in &amp; check-out events
+            Vehicle approvals, gate check-in &amp; check-out events, price changes
           </p>
         </div>
 
