@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, Check, CheckCheck, Trash2, Car, ShieldCheck, ShieldX, LogIn, LogOut as LogOutIcon } from 'lucide-react'
+import { Bell, Check, CheckCheck, Trash2, Car, ShieldCheck, ShieldX, LogIn, LogOut as LogOutIcon, Tag } from 'lucide-react'
 import { useNotifications, useMarkRead, useMarkAllRead, useDeleteNotification, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
 
@@ -8,6 +8,7 @@ const ICON_MAP: Record<string, typeof Bell> = {
   VehicleRejected: ShieldX,
   CheckIn: LogIn,
   CheckOut: LogOutIcon,
+  PriceChanged: Tag,
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -15,6 +16,7 @@ const COLOR_MAP: Record<string, string> = {
   VehicleRejected: 'cx-notif__icon--danger',
   CheckIn: 'cx-notif__icon--info',
   CheckOut: 'cx-notif__icon--warning',
+  PriceChanged: 'cx-notif__icon--warning',
 }
 
 /** Notification bell with dropdown for the customer nav bar. */
