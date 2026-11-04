@@ -1,6 +1,6 @@
 /*
  * Parking service (/v1/parking). Not implemented by the backend yet: served from
- * mocks/capacity.mock.ts. Source data: ParkingLot, Zone, ZoneOccupancy, ZoneVehicleCapacity.
+ * Live occupancy and performance: /v1/parking/lots/capacity. Source data: ParkingLot, Zone, ZoneCounter, Slots.
  */
 
 export type ParkingLotStatus = 'OPEN' | 'FULL' | 'MAINTENANCE' | 'CLOSED'

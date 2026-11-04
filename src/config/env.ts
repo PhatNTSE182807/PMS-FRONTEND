@@ -73,7 +73,7 @@ export function setApiBaseUrlOverride(url: string | null): void {
 
 const mockAllServices = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 const mockedServices = new Set(
-  (import.meta.env.VITE_MOCK_SERVICES ?? 'capacity')
+  (import.meta.env.VITE_MOCK_SERVICES ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),

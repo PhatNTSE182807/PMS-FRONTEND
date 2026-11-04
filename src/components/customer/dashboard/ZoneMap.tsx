@@ -28,8 +28,9 @@ const STATUS_LABEL: Record<BayStatus, string> = {
   OCCUPIED: 'Occupied',
 }
 
-/** "20,000 VND / 1h", "35,000 VND first 2h", or day and night prices, from the lot's public price. */
+/** "20,000 VND / 1h", "35,000 VND first 2h", "5,000 VND / day", or day and night prices, from the lot's public price. */
 function priceLabel(p: PublicLotPriceDTO): string {
+  if (p.chargeModel === 'PerEntry') return `${formatNumber(p.entryFee)} VND / day`
   const block = p.blockMinutes % 60 === 0 ? `${p.blockMinutes / 60}h` : `${p.blockMinutes} min`
   if (p.chargeModel === 'DayNight' && p.dayPrice != null && p.nightPrice != null)
     return `${formatNumber(p.dayPrice)} day • ${formatNumber(p.nightPrice)} night VND / ${block}`

@@ -45,9 +45,8 @@ This repo is one of two. Keep both in mind on every task:
 8. **No AI co-author or attribution in git.** Commit messages, merge messages, PR titles and
    descriptions never contain `Co-Authored-By: Claude …`, `noreply@anthropic.com`,
    "Generated with Claude Code" or any other AI-assistant credit. Turn Claude Code's attribution
-   off in your own `~/.claude/settings.json` (`"attribution": { "commit": "", "pr": "" }`);
-   `.githooks/commit-msg` strips it as a safety net: run `git config core.hooksPath .githooks`
-   once after cloning. The `.claude/` folder is local and never committed. Pushed history is
+   off in your own `~/.claude/settings.json` (`"attribution": { "commit": "", "pr": "" }`).
+   The `.claude/` and `.githooks/` folders are local and never committed. Pushed history is
    not rewritten.
 
 ## 2. The system in one screen (SRS v1.4)
@@ -266,8 +265,8 @@ git checkout features/<name>               # keep working on the branch afterwar
 - DTOs live in `src/types/*.dto.ts` and mirror the backend contracts exactly; change them on the
   same feature branch as the backend change.
 - Every service supports mock mode through `isMockService()` in `src/config/env.ts`
-  (`VITE_USE_MOCK_DATA=true` mocks everything; `VITE_MOCK_SERVICES` picks services, default
-  `capacity`). Mock data lives in `src/mocks`. Show mock data as demo data in the UI.
+  (`VITE_USE_MOCK_DATA=true` mocks everything; `VITE_MOCK_SERVICES` picks services, none by
+  default). Mock data lives in `src/mocks`. Show mock data as demo data in the UI.
 - 3D: `src/components/customer/garage/*` (three.js, instanced meshes, on-demand rendering). Keep
   it light: SRS NFR-3D-01 asks for ≥ 30 FPS with 500 slots on a mid-range device.
 - Styling: the admin, manager and staff consoles use Tailwind scoped to `.admin-root`; the
@@ -331,6 +330,10 @@ Keep this list current; it is the first place to look when code and SRS disagree
   `DayNight` charge model: a block costs the day or night price of the hour it starts in.
 - Saving a pricing rule edits it in place (new `VersionNo`, old values in `PricingRuleHistory`); the
   gates use the current Active rule at checkout, not a copy frozen at entry as BR-22 describes.
+- Price changes (user request, 2026-11-04): a new price is live as soon as the Manager saves it. Vehicles already
+  inside keep the price they entered with; every vehicle entering afterwards pays the new one, including one booked
+  before the change. Saving a new price on an Active rule puts a `PriceChanged` notification in every active
+  customer's bell. See the backend's AGENTS.md.
 - Deposit is optional when booking (team decision, 2026-10-24). With a deposit (BR-06, paid by
   wallet, VNPay or MoMo) the booking waits in `PendingDeposit` and the slot is held **30 minutes**
   after arrival (`Parking:Reservations:DepositHoldMinutes`). Without a deposit

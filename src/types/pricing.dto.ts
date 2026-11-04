@@ -4,51 +4,16 @@
  * Only the fields the gate's fee calculator uses are edited in the UI.
  */
 
-/** "Block": one price per block all day. "DayNight": block price depends on the hour the block starts. */
+/** "Block": one price per block all day. "DayNight": block price depends on the hour the block starts. "PerEntry": one flat fee per calendar day. */
 export type PricingChargeModel = 'Block' | 'DayNight' | 'Hourly' | 'PerEntry'
 export type PricingRuleStatus = 'Draft' | 'Active' | 'Inactive' | 'Archived'
 
 /**
- * What happened to the charging fields of a rule update. Only the PUT response carries it; the list and the
- * single-rule reads leave it null, so a rule that is waiting is recognised by `pendingPrice`.
- *  - Applied: the lot was empty, the new price is live.
- *  - Pending: vehicles are inside, the new price is saved and goes live when the last one leaves.
- *  - Unchanged: the request equals the live price; any waiting price was withdrawn.
+ * What happened to the charging fields of a rule update. Only the PUT response carries it.
+ *  - Applied: the new price is live for every vehicle entering from now on.
+ *  - Unchanged: the request equals the live price.
  */
-export type PriceUpdateStatus = 'Applied' | 'Pending' | 'Unchanged'
-
-/** PricingRulePrices: the charging fields of a rule, i.e. what a price change replaces as a whole. */
-export interface PendingPricesDTO {
-  chargeModel: PricingChargeModel
-  entryFee: number
-  firstBlockMinutes: number | null
-  firstBlockPrice: number | null
-  blockMinutes: number | null
-  blockPrice: number | null
-  dayStartTime: string | null
-  nightStartTime: string | null
-  dayPrice: number | null
-  nightPrice: number | null
-  maxDailyFee: number | null
-  graceMinutes: number
-  overnightSurcharge: number
-  overstayAfterHours: number | null
-  overstaySurchargePerDay: number
-  lostTicketFee: number
-  noShowFee: number
-}
-
-/** PendingPriceModel: a price waiting for the lot to become empty. The rule's own fields stay the live price. */
-export interface PendingPriceDTO {
-  prices: PendingPricesDTO
-  /** The same price in words, e.g. "25,000 VND per 60 min". */
-  summary: string
-  /** 1 for the first request; +1 each time the Manager replaced it before it was applied. */
-  revisionNo: number
-  requestedBy: string
-  requestedAt: string
-  updatedAt: string | null
-}
+export type PriceUpdateStatus = 'Applied' | 'Unchanged'
 
 /** PricingRuleModel */
 export interface PricingRuleDTO {
@@ -91,8 +56,6 @@ export interface PricingRuleDTO {
   updatedAt: string | null
   /** Set on the PUT response only (see PriceUpdateStatus). */
   priceUpdateStatus?: PriceUpdateStatus | null
-  /** The price waiting for an empty lot; null or missing when none. */
-  pendingPrice?: PendingPriceDTO | null
 }
 
 /** The editable part of a rule (create and update share it). */
@@ -101,7 +64,14 @@ export interface PricingRuleInput {
   name: string
   vehicleTypeId: number
   chargeModel: PricingChargeModel
+  /** "PerEntry": the flat fee per calendar day. Other models: added once on top of the blocks. */
+  entryFee: number
   graceMinutes: number
+  /** Not edited in the UI: an update sends the rule's own values so a save does not reset them. */
+  overnightSurcharge?: number
+  overstayAfterHours?: number | null
+  overstaySurchargePerDay?: number
+  noShowFee?: number
   firstBlockMinutes: number | null
   firstBlockPrice: number | null
   blockMinutes: number
@@ -123,7 +93,9 @@ export interface PublicLotPriceDTO {
   vehicleTypeId: number
   vehicleTypeCode: string
   vehicleTypeName: string
-  chargeModel: 'Block' | 'DayNight'
+  chargeModel: 'Block' | 'DayNight' | 'PerEntry'
+  /** "PerEntry": the fee per calendar day. Other models: added once on top of the blocks. */
+  entryFee: number
   graceMinutes: number
   firstBlockMinutes: number | null
   firstBlockPrice: number | null
