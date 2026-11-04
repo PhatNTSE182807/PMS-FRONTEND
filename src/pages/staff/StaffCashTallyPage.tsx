@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Banknote, CalendarDays, CircleCheck, Lock, LockKeyhole, Minus, PiggyBank, Plus, RotateCcw, Store, TriangleAlert, UserCheck } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { Metric, Panel, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
+import { CashTopUpPanel } from '@/components/features/staff/CashTopUp'
 import { vnd } from '@/components/features/manager/managerFormat'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/dialog'
@@ -399,6 +400,7 @@ export default function StaffCashTallyPage() {
           </div>
 
           {d.status === 'NotOpened' && lotKey && <OpenDrawer lotId={lotKey} />}
+          {d.status === 'Open' && lotKey && <CashTopUpPanel lotId={lotKey} drawer={d} />}
           {d.status === 'Open' && lotKey && <CountDrawer key={d.id ?? 0} lotId={lotKey} drawer={d} />}
           {(d.status === 'Closed' || d.status === 'HasDifference' || d.status === 'Confirmed') && <ClosedDrawer drawer={d} />}
         </>
