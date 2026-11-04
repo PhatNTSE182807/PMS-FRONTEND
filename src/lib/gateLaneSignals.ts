@@ -16,6 +16,8 @@ export interface LaneSignal {
 const RECENT_MS = 3 * 60_000
 
 const state: Record<LaneDirection, LaneSignal | null> = { entry: null, exit: null }
+/** The next vehicle of a lane, held while the one let through is still driving out. */
+const pending: Record<LaneDirection, LaneVehicle | null> = { entry: null, exit: null }
 const recent = new Map<string, number>()
 const listeners = new Set<() => void>()
 
@@ -41,11 +43,17 @@ export const gateLaneSignals = {
   /** The vehicle the lane handles now (null: none). A vehicle already let through keeps driving until it is out. */
   wait(direction: LaneDirection, vehicle: LaneVehicle | null) {
     const current = state[direction]
-    if (!vehicle) {
-      if (current && !current.open) set(direction, null)
+    if (current?.open) {
+      // Still driving out: this one drives up once it has gone
+      pending[direction] = vehicle && vehicle.key !== current.vehicle.key ? vehicle : null
       return
     }
-    if (current?.vehicle.key === vehicle.key || current?.open) return
+    pending[direction] = null
+    if (!vehicle) {
+      if (current) set(direction, null)
+      return
+    }
+    if (current?.vehicle.key === vehicle.key) return
     set(direction, { vehicle, open: false })
   },
 
@@ -53,12 +61,16 @@ export const gateLaneSignals = {
   open(direction: LaneDirection, vehicle: LaneVehicle) {
     if (vehicle.plate) recent.set(plain(vehicle.plate), Date.now())
     const current = state[direction]
+    if (pending[direction]?.key === vehicle.key) pending[direction] = null
     set(direction, { vehicle: current?.vehicle.key === vehicle.key ? current.vehicle : vehicle, open: true })
   },
 
-  /** The vehicle has left the picture. */
+  /** The vehicle has left the picture: the next vehicle waiting at this lane, if any, drives up. */
   done(direction: LaneDirection, key: string) {
-    if (state[direction]?.vehicle.key === key) set(direction, null)
+    if (state[direction]?.vehicle.key !== key) return
+    const next = pending[direction]
+    pending[direction] = null
+    set(direction, next ? { vehicle: next, open: false } : null)
   },
 
   /** The Staff let this plate through a moment ago (its session should not be replayed). */
