@@ -18,7 +18,7 @@ import { presetRange } from '@/components/features/revenue/revenueFilters'
 import { DemoTag, EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { usePendingLostTickets } from '@/hooks/useApprovals'
+import { useCashCloses, useCashTopUps } from '@/hooks/useCashDrawer'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useLotOccupancy } from '@/hooks/useParking'
 import { useManagerAllTimeRevenue, useManagerRevenue } from '@/hooks/useRevenueReport'
@@ -58,7 +58,27 @@ function Console({ lot }: { lot: ManagedLot }) {
   const cash = methods.find((m) => m.method === 'CASH')?.amount ?? 0
   const wallet = methods.find((m) => m.method === 'RFID_WALLET')?.amount ?? 0
 
-  const pending = usePendingLostTickets(lot.id).data ?? []
+  // What still needs the Manager: Staff cash requests and cash closes (lost tickets are decided by the Staff)
+  const cashTopUps = useCashTopUps(lot.id).data ?? []
+  const cashCloses = useCashCloses(lot.id).data ?? []
+  const pending = [
+    ...cashTopUps.map((r) => ({
+      key: `top-up-${r.id}`,
+      title: 'Cash request',
+      code: `Drawer ${r.closeNo}`,
+      who: r.staffName ?? 'Staff',
+      detail: `${formatNumber(r.total)} VND in banknotes${r.reason ? `: ${r.reason}` : ''}`,
+      at: r.createdAt,
+    })),
+    ...cashCloses.map((c) => ({
+      key: `close-${c.id}`,
+      title: c.status === 'Open' ? 'Cash drawer not closed' : 'Cash close to confirm',
+      code: `Drawer ${c.closeNo}`,
+      who: c.staffName ?? 'Staff',
+      detail: c.status === 'Open' ? `${formatNumber(c.expectedTotal)} VND expected` : `Difference ${formatNumber(c.difference ?? 0)} VND`,
+      at: c.closedAt ?? c.openedAt,
+    })),
+  ]
 
   const totals = { total: live?.totalBays ?? 0, free: live?.freeBays ?? 0 }
   const occupied = live?.occupiedBays ?? 0
@@ -241,32 +261,33 @@ function Console({ lot }: { lot: ManagedLot }) {
                 <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
                   Approval &amp; Incident Queue
                 </h2>
-                <p className="mt-0.5 text-sm text-slate-700">Exceptions that need the Facility Manager's sign-off.</p>
+                <p className="mt-0.5 text-sm text-slate-700">Staff cash requests and cash closes that need the Facility Manager's sign-off.</p>
               </div>
               <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">{pending.length} active</span>
             </div>
             <ul className="mt-4 space-y-3">
               {pending.slice(0, 3).map((a) => (
-                <li key={a.id} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <li key={a.key} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
                   <div className="flex items-center justify-between gap-2">
                     <p className="flex items-center gap-2 font-semibold text-slate-950">
-                      <ReceiptText className="size-4 text-amber-500" aria-hidden /> Lost ticket report
+                      <ReceiptText className="size-4 text-amber-500" aria-hidden /> {a.title}
                     </p>
-                    <span className="font-mono text-xs text-slate-600">#{a.code}</span>
+                    <span className="font-mono text-xs text-slate-600">{a.code}</span>
                   </div>
-                  {a.plateNumber && <p className="mt-2 font-mono text-lg font-bold text-indigo-700">{a.plateNumber}</p>}
+                  <p className="mt-2 font-semibold text-indigo-700">{a.who}</p>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-700">
-                    {a.vehicleTypeName ?? 'Vehicle'} inside since {formatClock(Date.parse(a.entryTime))}
+                    {a.detail}
+                    {a.at ? ` • ${formatClock(Date.parse(a.at))}` : ''}
                   </p>
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold text-amber-500">Awaiting sign-off</span>
                     <Button size="sm" asChild>
-                      <Link to={`/management/approvals?id=${a.id}`}>Review</Link>
+                      <Link to="/management/approvals">Review</Link>
                     </Button>
                   </div>
                 </li>
               ))}
-              {pending.length === 0 && <li className="text-sm text-slate-600">Nothing waiting for sign-off.</li>}
+              {pending.length === 0 && <li className="text-sm text-slate-600">Nothing waiting for sign-off. Lost tickets are decided by the Staff.</li>}
             </ul>
           </section>
 

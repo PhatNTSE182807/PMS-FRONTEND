@@ -40,7 +40,7 @@ const STATUS_LABEL: Record<string, string> = {
   PendingEntry: 'Entering',
   PendingPayment: 'Paying',
   Paid: 'Paid, leaving',
-  LostTicketPending: 'Lost ticket: waiting for a Manager',
+  LostTicketPending: 'Lost ticket: waiting for the Staff',
 }
 
 interface Draft {
@@ -102,7 +102,7 @@ function WalkInRow({ vehicle }: { vehicle: SimulatedWalkInDTO }) {
             size="sm"
             variant="outline"
             disabled={busy || vehicle.status !== 'Active' || vehicle.lostTicket}
-            title="The driver says the paper ticket is lost: Staff checks the papers, or a Manager must decide"
+            title="The driver says the paper ticket is lost: the Staff checks the papers and decides"
             onClick={() => {
               const conditionsMet = window.confirm(
                 'Do the photos and papers match (Staff approves on the spot)?\nOK = approve at the lane, Cancel = send to the lot\'s Manager.',

@@ -69,7 +69,7 @@ export function useSimulateLostTicket() {
   return useWalkInMutation(
     ({ sessionId, conditionsMet }: { sessionId: number; conditionsMet: boolean }) =>
       walkInSimulationService.reportLostTicket(sessionId, conditionsMet),
-    (_r) => toast.success('Lost ticket reported. Open the Staff or Manager screens to handle it.'),
+    (_r) => toast.success('Lost ticket reported. The Staff decides it in Exceptions & Alerts.'),
   )
 }
 
