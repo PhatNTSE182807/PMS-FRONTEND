@@ -177,7 +177,8 @@ export function StaffLayout() {
       </header>
 
       <main className="flex-1 px-4 py-6 sm:px-6 lg:py-8">
-        <div key={pathname} className="admin-page-enter mx-auto max-w-[1400px]">
+        {/* The gate dashboard uses the whole width for its four cameras and the lane panel */}
+        <div key={pathname} className={cn('admin-page-enter mx-auto', pathname.startsWith('/staff/gate') ? 'max-w-none' : 'max-w-[1400px]')}>
           <CashDeadlineBanner lotId={lot?.id} />
           <ErrorBoundary
             fallback={(error, reset) => (
