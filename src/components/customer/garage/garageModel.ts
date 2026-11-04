@@ -2,6 +2,8 @@ import type { ParkingLotCapacityDTO, ZoneCapacityDTO } from '@/types/parking.dto
 
 export type BayStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED'
 export type FloorKind = 'car' | 'motorbike'
+/** The two car bodies: a 4-seat coupe and a 7-seat SUV. */
+export type ParkedKind = 'car' | 'suv'
 
 export interface Bay {
   id: string
@@ -10,6 +12,10 @@ export interface Bay {
   row: number
   col: number
   status: BayStatus
+  /** Registered colour of the vehicle parked here, when known; otherwise the model picks one. */
+  vehicleColor?: string | null
+  /** Body of the car parked here, when known; otherwise a 4-seat car. */
+  vehicleKind?: ParkedKind | null
 }
 
 export interface GarageFloor {

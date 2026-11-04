@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { USER_TOAST, isPlateDuplicate } from '@/lib/userToasts'
+import { VEHICLE_COLOR_NAMES, vehiclePaint, vehiclePaintCss } from '@/lib/vehicleColor'
 import { KIND_ICON, vehicleKind, vehicleTitle } from '@/components/customer/customerFormat'
 import { VehicleDocumentsPanel } from '@/components/customer/VehicleDocumentsPanel'
 import { useAuth } from '@/hooks/useAuth'
@@ -49,13 +50,6 @@ const PLATE_PATTERN = /^\d{2}[A-Z]{1,2}\d?[-\s]?\d{3,4}(\.?\d{2})?$/
 
 const EMPTY_FORM = { licensePlate: '', vehicleTypeId: 0, brand: '', model: '', color: '', isDefault: false, consent: false }
 const CITIZEN_ID_PATTERN = /^\d{12}$/
-
-/** Best guess at a CSS colour for the swatch next to the colour name ("Gentian Blue" -> blue). */
-function swatchColor(name: string): string {
-  const words = name.toLowerCase().split(/\s+/).reverse()
-  const match = words.find((w) => typeof CSS !== 'undefined' && CSS.supports('color', w))
-  return match ?? '#41484c'
-}
 
 /** Registration status chip of a vehicle in the fleet list. */
 const REGISTRATION_CHIP: Record<string, { label: string; className: string }> = {
@@ -414,10 +408,16 @@ export default function RegisterVehiclePage() {
                 <label className="cx-field__label" htmlFor="vehicle-color">Exterior colour</label>
                 <div className="cx-control">
                   <span className="cx-control__icon">
-                    <span className="cx-swatch" style={{ background: swatchColor(form.color) }} aria-hidden="true" />
+                    <span className="cx-swatch" style={{ background: vehiclePaintCss(form.color) ?? '#41484c' }} aria-hidden="true" />
                   </span>
-                  <input id="vehicle-color" className="cx-input cx-input--with-icon" placeholder="Gentian Blue Metallic" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+                  <input id="vehicle-color" className="cx-input cx-input--with-icon" list="vehicle-color-names" placeholder="Gentian Blue Metallic" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+                  <datalist id="vehicle-color-names">
+                    {VEHICLE_COLOR_NAMES.map((name) => <option key={name} value={name} />)}
+                  </datalist>
                 </div>
+                {form.color.trim() && vehiclePaint(form.color) === null && (
+                  <p className="cx-field__hint">We do not recognise this colour, so the 3D map will not show your vehicle in it. Try a basic name such as Red or Silver.</p>
+                )}
               </div>
 
               <div className="cx-field">
