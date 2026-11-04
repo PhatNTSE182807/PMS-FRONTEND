@@ -18,7 +18,6 @@ const base = (lotId: string) => `/manager/lots/${lotId}/pricing-rules`
 function body(input: PricingRuleInput) {
   return {
     ...input,
-    entryFee: 0,
     dayStartTime: input.chargeModel === 'DayNight' ? input.dayStartTime : null,
     nightStartTime: input.chargeModel === 'DayNight' ? input.nightStartTime : null,
     dayPrice: input.chargeModel === 'DayNight' ? input.dayPrice : null,

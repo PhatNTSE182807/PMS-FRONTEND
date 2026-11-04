@@ -6,7 +6,7 @@ import { http } from './axiosClient'
 
 export interface NotificationModel {
   id: number
-  type: 'VehicleApproved' | 'VehicleRejected' | 'CheckIn' | 'CheckOut'
+  type: 'VehicleApproved' | 'VehicleRejected' | 'CheckIn' | 'CheckOut' | 'PriceChanged'
   title: string
   message: string
   refType: string | null
