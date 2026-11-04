@@ -102,7 +102,7 @@ grep -n "^#### 4.2" document/SRS_v1.4.md        # exception flows per area
 | Payments & receipts | FR-PAY-01…11 | `PaymentsController`, `WalletController`, `Services/Payments` (VNPay, MoMo) | `PaymentReturnPage`, `pages/staff/StaffCashTallyPage` |
 | Customer app | FR-CUS-01…06 | `UsersController` (profile), `VehicleDocumentsController`, `IParkingHistoryService` | `pages/customer/*` |
 | Vehicle verification | FR-VER-01…06 | `VehicleVerificationsController`, `Hubs/VehicleVerificationHub`, `Jobs/VehicleDocumentJobs` | `pages/staff/StaffVehicleVerificationPage` |
-| Reports | FR-RPT-01…07 | no report controller yet | `pages/admin/RevenueReportPage`, `pages/admin/Dashboard` (`api/admin.service.ts`) |
+| Reports | FR-RPT-01…07 | `AdminRevenueController` (`/api/admin/reports/revenue`), `ManagerRevenueController`, `AdminDashboardController`, `IRevenueReportService`; contract in the backend's `docs/LOT_PERFORMANCE_API.md` | `pages/admin/RevenueReportPage` (`api/report.service.ts`, `hooks/useRevenueReport.ts`), `pages/admin/Dashboard` (`api/admin.service.ts`) |
 | Staff, devices, settings | FR-SYS-01…08 | `NotificationsController`, `SystemSetting`, `Device`, `Gate` entities | `api/system.service.ts`, `api/notification.service.ts` |
 
 ## 4. Business rules you will hit most
@@ -265,8 +265,8 @@ git checkout features/<name>               # keep working on the branch afterwar
 - DTOs live in `src/types/*.dto.ts` and mirror the backend contracts exactly; change them on the
   same feature branch as the backend change.
 - Every service supports mock mode through `isMockService()` in `src/config/env.ts`
-  (`VITE_USE_MOCK_DATA=true` mocks everything; `VITE_MOCK_SERVICES` picks services, default
-  `capacity,reports`). Mock data lives in `src/mocks`. Show mock data as demo data in the UI.
+  (`VITE_USE_MOCK_DATA=true` mocks everything; `VITE_MOCK_SERVICES` picks services, none by
+  default). Mock data lives in `src/mocks`. Show mock data as demo data in the UI.
 - 3D: `src/components/customer/garage/*` (three.js, instanced meshes, on-demand rendering). Keep
   it light: SRS NFR-3D-01 asks for ≥ 30 FPS with 500 slots on a mid-range device.
 - Styling: the admin, manager and staff consoles use Tailwind scoped to `.admin-root`; the
@@ -349,8 +349,11 @@ Keep this list current; it is the first place to look when code and SRS disagree
   The single source is `src/lib/password.ts` (`PASSWORD_RULES`, `isValidPassword`); the backend
   uses the same rule in `UserValidatorConfiguration`.
 - Some screens run on demo data until their API exists (as of 2026-10-25): manager approvals,
-  staff exceptions / incidents and cash tally, revenue reports. Manager pricing uses the API. Re-check with the
+  staff exceptions / incidents and cash tally. Manager pricing and the Admin revenue report use the API. Re-check with the
   commands in section 7 before relying on this line.
+- The Admin revenue report (2026-11-04) has no time series or vehicle-type split in the backend yet: the trend
+  chart and the per-period table ask `GET /api/admin/reports/revenue` once per day, week, month or year of the range
+  (`src/lib/revenuePeriods.ts`), and the page has no vehicle-type filter. Export is a CSV built in the browser.
 - The 3D lot model is built from three building templates chosen by the Admin
   (`garageModel.ts`), not yet from a published `Layout3D` with draft/publish versions (FR-3D-05).
 - Motorbikes park at once (team decision, 2026-10-30): BR-01 allows cars only, but on a motorbike floor

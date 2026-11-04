@@ -20,7 +20,8 @@ export const SERVICE_PATHS: Record<ServiceKey, string> = {
   team: '/manager',
   parking: '',
   capacity: '/v1/parking',
-  reports: '/v1/reports',
+  // Admin revenue reports (AdminRevenueController); the Manager's own are under /manager/reports.
+  reports: '/admin/reports',
   // Reservations and VNPay/MoMo payments (ReservationsController, PaymentsController, ParkingSessionsController).
   booking: '',
   // Entry/exit lanes of the Staff's lot (StaffGateController, /staff/...).
@@ -72,7 +73,7 @@ export function setApiBaseUrlOverride(url: string | null): void {
 
 const mockAllServices = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 const mockedServices = new Set(
-  (import.meta.env.VITE_MOCK_SERVICES ?? 'reports')
+  (import.meta.env.VITE_MOCK_SERVICES ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),

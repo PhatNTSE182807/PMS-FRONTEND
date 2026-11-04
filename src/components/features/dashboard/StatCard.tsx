@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import { ArrowRight, type LucideIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,9 @@ interface StatCardProps {
   isLoading?: boolean
   /** Extra content under the caption, e.g. a meter. Hidden while loading. */
   children?: ReactNode
+  /** Makes the whole card a link to this route, with `linkLabel` as the hint at the bottom. */
+  to?: string
+  linkLabel?: string
   className?: string
 }
 
@@ -41,13 +45,23 @@ export function StatCard({
   size = 'md',
   isLoading = false,
   children,
+  to,
+  linkLabel = 'View details',
   className,
 }: StatCardProps) {
   const large = size === 'lg'
   const t = TONES[tone]
 
-  return (
-    <Card aria-busy={isLoading} className={cn('relative overflow-hidden', large ? 'p-6' : 'p-5', className)}>
+  const card = (
+    <Card
+      aria-busy={isLoading}
+      className={cn(
+        'relative overflow-hidden',
+        large ? 'p-6' : 'p-5',
+        to && 'h-full transition-shadow group-hover:ring-slate-300 group-focus-visible:ring-2 group-focus-visible:ring-indigo-500',
+        className,
+      )}
+    >
       <span
         aria-hidden
         className={cn('absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-current to-transparent opacity-60', t.accent)}
@@ -81,6 +95,20 @@ export function StatCard({
           {children}
         </>
       )}
+
+      {to && (
+        <p className={cn('mt-4 flex items-center gap-1.5 text-sm font-semibold', t.accent)}>
+          {linkLabel}
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+        </p>
+      )}
     </Card>
+  )
+
+  if (!to) return card
+  return (
+    <Link to={to} className="group block rounded-xl outline-none">
+      {card}
+    </Link>
   )
 }

@@ -1,14 +1,14 @@
-import { CalendarRange, FileSpreadsheet, FileText } from 'lucide-react'
+import { CalendarRange, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input, NativeSelect } from '@/components/ui/form-controls'
 import { toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ParkingLotSummaryDTO } from '@/types/parking.dto'
-import type { ReportVehicleType, RevenueFilterQuery } from '@/types/report.dto'
-import { DATE_PRESETS, presetRange, VEHICLE_TYPE_OPTIONS, type DatePreset } from './revenueFilters'
+import type { RevenueReportQuery } from '@/types/report.dto'
+import { DATE_PRESETS, presetRange, type DatePreset } from './revenueFilters'
 
-export interface RevenueFilterState extends RevenueFilterQuery {
+export interface RevenueFilterState extends RevenueReportQuery {
   preset: DatePreset
 }
 
@@ -16,11 +16,13 @@ interface RevenueFilterBarProps {
   value: RevenueFilterState
   onChange: (value: RevenueFilterState) => void
   parkingLots: ParkingLotSummaryDTO[]
-  onExport: (format: 'excel' | 'pdf') => void
+  onExport: () => void
+  /** Off until the rows to export have loaded. */
+  canExport: boolean
 }
 
 /** Global filters for every widget on the revenue report — one row above the charts. */
-export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: RevenueFilterBarProps) {
+export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canExport }: RevenueFilterBarProps) {
   const today = toIsoDate(new Date())
 
   const setCustomDate = (key: 'startDate' | 'endDate', date: string) => {
@@ -93,28 +95,11 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport }: Rev
             ))}
           </NativeSelect>
         </div>
-        <div className="w-full sm:w-52">
-          <NativeSelect
-            aria-label="Vehicle type"
-            value={value.vehicleType ?? 'ALL'}
-            onChange={(e) => onChange({ ...value, vehicleType: e.target.value as ReportVehicleType })}
-          >
-            {VEHICLE_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
 
         <div className="flex gap-2 sm:ml-auto">
-          <Button variant="outline" onClick={() => onExport('excel')}>
+          <Button variant="outline" onClick={onExport} disabled={!canExport}>
             <FileSpreadsheet className="text-emerald-600" />
-            Export Excel
-          </Button>
-          <Button variant="outline" onClick={() => onExport('pdf')}>
-            <FileText className="text-rose-600" />
-            Export PDF
+            Export CSV
           </Button>
         </div>
       </div>
