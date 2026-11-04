@@ -108,7 +108,9 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
   const current = handled ? null : (queue.find((r) => r.id === currentId) ?? queue[0] ?? null)
   const others = queue.filter((r) => r.id !== (handled?.request.id ?? current?.id))
 
-  // The 3D camera of this lane shows the vehicle waiting at the closed barrier
+  // The 3D camera of this lane shows the vehicle waiting at its closed barrier, whichever tab is open: a vehicle
+  // waiting to check in stands at the entry camera while another waits at the exit camera. Once one is let
+  // through, the next one comes up after it has driven out (gateLaneSignals keeps it until then).
   const currentKey = current ? laneVehicleOf(current).key : null
   useEffect(() => {
     gateLaneSignals.wait(laneOf(kind), current ? laneVehicleOf(current) : null)

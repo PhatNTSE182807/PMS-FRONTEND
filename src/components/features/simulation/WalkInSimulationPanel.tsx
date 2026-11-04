@@ -20,7 +20,7 @@ import {
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { formatNumber } from '@/lib/format'
 import type { ParkingLotSummaryDTO } from '@/types/parking.dto'
-import { WALK_IN_MAX_COUNT, WALK_IN_MAX_STAY_HOURS, type SimulatedWalkInDTO } from '@/types/simulation.dto'
+import { WALK_IN_MAX_STAY_HOURS, type SimulatedWalkInDTO } from '@/types/simulation.dto'
 
 /** A lot simulated vehicles may enter: open and staffed (the API says so with status and isBookable). */
 const isOpen = (lot: ParkingLotSummaryDTO) => (lot.status ?? 'Active') === 'Active' && lot.isBookable !== false
@@ -46,25 +46,30 @@ const STATUS_LABEL: Record<string, string> = {
 interface Draft {
   count: string
   carPercent: string
+  car7Percent: string
   minStayHours: string
   maxStayHours: string
   noPlatePercent: string
 }
 
-const DEFAULT_DRAFT: Draft = { count: '20', carPercent: '50', minStayHours: '2', maxStayHours: '4', noPlatePercent: '5' }
+const DEFAULT_DRAFT: Draft = { count: '20', carPercent: '40', car7Percent: '15', minStayHours: '2', maxStayHours: '4', noPlatePercent: '5' }
 
-/** The form's numbers, or an error message in plain words. */
-function check(draft: Draft) {
+/** The form's numbers, or an error message in plain words. `maxCount` is the lot's free bays. */
+function check(draft: Draft, maxCount: number | undefined) {
   const count = Number(draft.count)
   const car = Number(draft.carPercent)
+  const car7 = Number(draft.car7Percent)
   const noPlate = Number(draft.noPlatePercent)
   const min = Number(draft.minStayHours)
   const max = Number(draft.maxStayHours)
-  if (!Number.isInteger(count) || count < 1 || count > WALK_IN_MAX_COUNT) return { error: `Send between 1 and ${WALK_IN_MAX_COUNT} vehicles.` }
-  if (![car, noPlate].every((p) => Number.isInteger(p) && p >= 0 && p <= 100)) return { error: 'Percentages are whole numbers from 0 to 100.' }
+  if (maxCount === 0) return { error: 'No free bay is left in this lot.' }
+  if (!Number.isInteger(count) || count < 1 || (maxCount !== undefined && count > maxCount))
+    return { error: maxCount === undefined ? 'Send at least 1 vehicle.' : `This lot has ${formatNumber(maxCount)} free bays: send between 1 and ${formatNumber(maxCount)} vehicles.` }
+  if (![car, car7, noPlate].every((p) => Number.isInteger(p) && p >= 0 && p <= 100)) return { error: 'Percentages are whole numbers from 0 to 100.' }
+  if (car + car7 > 100) return { error: '4-seat and 7-seat cars together cannot be more than 100%.' }
   if (!(min > 0) || !(max >= min) || max > WALK_IN_MAX_STAY_HOURS)
     return { error: `The stay is more than 0 and at most ${WALK_IN_MAX_STAY_HOURS} hours; the shortest is not longer than the longest.` }
-  return { value: { count, carPercent: car, noPlatePercent: noPlate, minStayHours: min, maxStayHours: max } }
+  return { value: { count, carPercent: car, car7Percent: car7, noPlatePercent: noPlate, minStayHours: min, maxStayHours: max } }
 }
 
 function NumberField({ id, label, hint, value, onChange }: { id: string; label: string; hint: string; value: string; onChange: (v: string) => void }) {
@@ -140,9 +145,13 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
   const checkOutAll = useCheckOutAllWalkIns()
   const occupy = useOccupyBookedBay()
 
-  const checked = check(draft)
-  const set = (key: keyof Draft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }))
   const inside = overview.data?.inside ?? []
+  // The batch is capped by the chosen lot's free bays, not a fixed number
+  const freeBays = overview.data?.freeBays ?? undefined
+  const totalBays = overview.data?.totalBays ?? undefined
+  const checked = check(draft, freeBays)
+  const set = (key: keyof Draft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }))
+  const motorbikePercent = Math.max(0, 100 - (Number(draft.carPercent) || 0) - (Number(draft.car7Percent) || 0))
 
   return (
     <div className="space-y-6">
@@ -170,9 +179,26 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
               ))}
             </NativeSelect>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <NumberField id="walkin-count" label="Vehicles" hint={`1 to ${WALK_IN_MAX_COUNT}`} value={draft.count} onChange={set('count')} />
-            <NumberField id="walkin-cars" label="Cars (%)" hint="The rest are motorbikes" value={draft.carPercent} onChange={set('carPercent')} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <NumberField
+              id="walkin-count"
+              label="Vehicles"
+              hint={
+                freeBays === undefined
+                  ? 'Loading the free bays…'
+                  : `1 to ${formatNumber(freeBays)} (free bays${totalBays !== undefined ? ` of ${formatNumber(totalBays)}` : ''})`
+              }
+              value={draft.count}
+              onChange={set('count')}
+            />
+            <NumberField id="walkin-cars" label="4-seat cars (%)" hint="e.g. 40" value={draft.carPercent} onChange={set('carPercent')} />
+            <NumberField
+              id="walkin-cars7"
+              label="7-seat cars (%)"
+              hint={`The rest (${motorbikePercent}%) are motorbikes`}
+              value={draft.car7Percent}
+              onChange={set('car7Percent')}
+            />
             <NumberField id="walkin-min" label="Shortest stay (h)" hint="e.g. 2" value={draft.minStayHours} onChange={set('minStayHours')} />
             <NumberField id="walkin-max" label="Longest stay (h)" hint="e.g. 4" value={draft.maxStayHours} onChange={set('maxStayHours')} />
             <NumberField id="walkin-noplate" label="No readable plate (%)" hint="Paper ticket only" value={draft.noPlatePercent} onChange={set('noPlatePercent')} />

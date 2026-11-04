@@ -575,7 +575,9 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
           level.lights.setColorAt(i, color.setHex(status))
 
           const show = bay.status === 'OCCUPIED' || isMine
-          const fleet = !show ? null : floor.kind === 'motorbike' ? level.fleets[0] : level.fleets[(bay.vehicleKind ?? (isMine ? myKind : null)) === 'suv' ? 1 : 0]
+          // The vehicle parked there, else the customer's booked vehicle, else what the bay is laid out for
+          const body = bay.vehicleKind ?? (isMine ? myKind : null) ?? bay.bayKind
+          const fleet = !show ? null : floor.kind === 'motorbike' ? level.fleets[0] : level.fleets[body === 'suv' ? 1 : 0]
           const kind = fleet?.kind ?? null
           if (parked[i] !== kind) {
             parked[i] = kind

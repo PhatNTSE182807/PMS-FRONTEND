@@ -14,8 +14,10 @@ export interface Bay {
   status: BayStatus
   /** Registered colour of the vehicle parked here, when known; otherwise the model picks one. */
   vehicleColor?: string | null
-  /** Body of the car parked here, when known; otherwise a 4-seat car. */
+  /** Body of the car parked here, only when a vehicle is known to be in the bay. */
   vehicleKind?: ParkedKind | null
+  /** Body the bay is laid out for (a 7-seat bay or not), drawn when nothing better is known. */
+  bayKind?: ParkedKind | null
 }
 
 export interface GarageFloor {

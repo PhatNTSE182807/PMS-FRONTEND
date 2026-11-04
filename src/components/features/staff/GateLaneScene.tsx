@@ -74,8 +74,13 @@ export interface GateLaneSceneHandle {
   renderSample: (sample: LaneSample, size: { width: number; height: number }) => Promise<LaneFrame | null>
 }
 
+/** rear: the ANPR camera behind the reading line, on the rear plate; front: past the barrier, facing the front plate. */
+export type LaneView = 'rear' | 'front'
+
 interface GateLaneSceneProps {
   direction: LaneDirection
+  /** Which of the lane's two cameras this is (default rear). */
+  view?: LaneView
   vehicle: LaneVehicle | null
   /**
    * The barrier may open for the vehicle. False: it drives up and waits at the closed barrier until this
@@ -95,12 +100,26 @@ const T_READ = 1.8
 const T_BARRIER = 0.8
 const T_PASS = 2.6
 
-/** Rear plate of every vehicle stops here, about 3.7 m in front of the camera. */
+/** Rear plate of every vehicle stops here, about 3.7 m in front of the rear camera. */
 const READ_Z = -5
 const CAMERA_POS = new THREE.Vector3(0.9, 2.2, -8.4)
 const CAMERA_TARGET = new THREE.Vector3(0, 0.5, -2.2)
 const BARRIER_Z = 0.7
+/**
+ * Where each camera hangs and what it looks at. The front camera is past the barrier, facing the vehicle
+ * stopped at the reading line, so a car's front plate (just before the barrier) sits about 3.5 m from it.
+ */
+const VIEWS: Record<LaneView, { position: THREE.Vector3; target: THREE.Vector3 }> = {
+  rear: { position: CAMERA_POS, target: CAMERA_TARGET },
+  // Centred over the lane and high enough that the barrier arm passes above the front plate
+  front: { position: new THREE.Vector3(0.2, 3.0, 4.4), target: new THREE.Vector3(0, 0.55, -1.8) },
+}
 export const CAMERA_FOV = 34
+/**
+ * A motorbike stops with its rear plate at the reading line, far from the front camera, and has no front plate:
+ * the front camera narrows onto it, as a real camera zooms, so its face and rider area fill the picture.
+ */
+const FRONT_BIKE = { target: new THREE.Vector3(0.4, 0.75, -4.0), fov: 15 }
 
 /**
  * Where the plates sit on each model (models face +z, rear at -z). Plates are drawn larger than real life
@@ -108,7 +127,7 @@ export const CAMERA_FOV = 34
  */
 const REAR_PLATE: Record<LaneVehicleKind, { shape: PlateShape; y: number; z: number; tilt: number; scale: number; front?: { y: number; z: number } }> = {
   car: { shape: 'long', y: 0.57, z: -2.47, tilt: 0, scale: 1.5, front: { y: 0.36, z: 2.48 } },
-  suv: { shape: 'long', y: 0.78, z: -2.5, tilt: 0, scale: 1.5, front: { y: 0.5, z: 2.5 } },
+  suv: { shape: 'long', y: 0.78, z: -2.5, tilt: 0, scale: 1.5, front: { y: 0.42, z: 2.5 } },
   motorbike: { shape: 'square', y: 0.79, z: -0.86, tilt: 0.2, scale: 1.5 },
 }
 
@@ -281,7 +300,7 @@ function signTexture(direction: LaneDirection) {
   return texture
 }
 
-export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone, className, ref }: GateLaneSceneProps) {
+export function GateLaneScene({ direction, view = 'rear', vehicle, open = true, onPhase, onDone, className, ref }: GateLaneSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const callbacks = useRef({ onPhase, onDone })
   useEffect(() => {
@@ -334,8 +353,8 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
     pmrem.dispose()
 
     const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 16 / 9, 0.1, 60)
-    camera.position.copy(CAMERA_POS)
-    camera.lookAt(CAMERA_TARGET)
+    camera.position.copy(VIEWS[view].position)
+    camera.lookAt(VIEWS[view].target)
 
     const std = (params: THREE.MeshStandardMaterialParameters) => track(new THREE.MeshStandardMaterial(params))
     const box = (w: number, h: number, d: number) => track(new THREE.BoxGeometry(w, h, d))
@@ -503,7 +522,7 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
       renderer.dispose()
       renderer.domElement.remove()
     }
-  }, [direction])
+  }, [direction, view])
 
   const openRef = useRef(open)
   useEffect(() => {
@@ -524,6 +543,13 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
       return
     }
     s.current?.dispose()
+    if (view === 'front') {
+      // Zoom onto a motorbike; cars fill the wide view with their front plate
+      const bike = vehicle.kind === 'motorbike'
+      s.camera.fov = bike ? FRONT_BIKE.fov : CAMERA_FOV
+      s.camera.lookAt(bike ? FRONT_BIKE.target : VIEWS.front.target)
+      s.camera.updateProjectionMatrix()
+    }
     const startedAt = performance.now()
     s.current = {
       // The colour the API gives it, the same the lot map and the other lane use
@@ -533,7 +559,7 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
       openAt: openRef.current ? startedAt + (T_ARRIVE + T_READ) * 1000 : null,
     }
     s.play()
-  }, [vehicle])
+  }, [vehicle, view])
 
   /* The Staff opened the barrier: lift it as soon as the vehicle has driven up */
   useEffect(() => {
@@ -590,8 +616,8 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
       renderer.toneMappingExposure = 1.05 * sample.exposure
       camera.aspect = size.width / size.height
       camera.fov = sample.camera.fov
-      camera.position.copy(CAMERA_POS).add(new THREE.Vector3(sample.camera.dx, sample.camera.dy, sample.camera.dz))
-      camera.lookAt(CAMERA_TARGET)
+      camera.position.copy(VIEWS[view].position).add(new THREE.Vector3(sample.camera.dx, sample.camera.dy, sample.camera.dz))
+      camera.lookAt(VIEWS[view].target)
       camera.updateProjectionMatrix()
       barrier.rotation.z = (Math.PI / 2) * 0.94 * sample.barrierLift
 
@@ -605,8 +631,8 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
         renderer.toneMappingExposure = exposure
         renderer.setPixelRatio(pixelRatio)
         camera.fov = CAMERA_FOV
-        camera.position.copy(CAMERA_POS)
-        camera.lookAt(CAMERA_TARGET)
+        camera.position.copy(VIEWS[view].position)
+        camera.lookAt(VIEWS[view].target)
         barrier.rotation.z = 0
         s.resize()
       })
