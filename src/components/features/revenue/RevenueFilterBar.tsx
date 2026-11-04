@@ -5,10 +5,10 @@ import { Input, NativeSelect } from '@/components/ui/form-controls'
 import { toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ParkingLotSummaryDTO } from '@/types/parking.dto'
-import type { RevenueReportQuery } from '@/types/report.dto'
-import { DATE_PRESETS, presetRange, type DatePreset } from './revenueFilters'
+import type { AdminRevenueQuery, ReportVehicleType } from '@/types/report.dto'
+import { DATE_PRESETS, presetRange, VEHICLE_TYPE_OPTIONS, type DatePreset } from './revenueFilters'
 
-export interface RevenueFilterState extends RevenueReportQuery {
+export interface RevenueFilterState extends AdminRevenueQuery {
   preset: DatePreset
 }
 
@@ -91,6 +91,19 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
             {parkingLots.map((lot) => (
               <option key={lot.id} value={lot.id}>
                 {lot.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+        <div className="w-full sm:w-52">
+          <NativeSelect
+            aria-label="Vehicle type"
+            value={value.vehicleType ?? 'ALL'}
+            onChange={(e) => onChange({ ...value, vehicleType: e.target.value as ReportVehicleType })}
+          >
+            {VEHICLE_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </NativeSelect>
