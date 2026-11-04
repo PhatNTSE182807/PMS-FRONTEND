@@ -9,3 +9,5 @@ backend/
 # Local Claude Code settings: never committed
 .claude/
 .githooks/
+AGENTS.md
+CLAUDE.md
