@@ -121,10 +121,6 @@ export const queryKeys = {
     anprHealth: () => [...queryKeys.gate.all, 'anpr-health'] as const,
   },
   /** Manager sign-off queues of a lot. */
-  approvals: {
-    all: ['approvals'] as const,
-    lostTickets: (lotId: string) => [...queryKeys.approvals.all, 'lost-tickets', lotId] as const,
-  },
   layout: {
     all: ['layout'] as const,
     templates: () => [...queryKeys.layout.all, 'templates'] as const,

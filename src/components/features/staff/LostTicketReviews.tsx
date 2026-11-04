@@ -84,7 +84,7 @@ function Review({ session }: { session: ParkingSessionDTO }) {
   })
 
   const refuse = () => {
-    if (!note.trim()) return setError('Say why the papers do not match before refusing.')
+    if (!note.trim()) return setError('Say why you refuse the lost ticket (for example, the papers do not match).')
     setError(null)
     decide.mutate(false)
   }
@@ -100,10 +100,17 @@ function Review({ session }: { session: ParkingSessionDTO }) {
         {session.lostTicketReason && <span className="w-full text-slate-700">Reason: {session.lostTicketReason}</span>}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <PaperImage sessionId={session.id} kind="citizen-id" label="Citizen ID (CCCD)" />
-        <PaperImage sessionId={session.id} kind="registration" label="Vehicle registration certificate" />
-      </div>
+      {session.lostTicketHasPapers ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <PaperImage sessionId={session.id} kind="citizen-id" label="Citizen ID (CCCD)" />
+          <PaperImage sessionId={session.id} kind="registration" label="Vehicle registration certificate" />
+        </div>
+      ) : (
+        <p className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
+          <ImageOff className="mt-0.5 size-4 shrink-0" aria-hidden />
+          No photos were uploaded for this case: ask the driver for the Citizen ID and the vehicle registration certificate at the counter.
+        </p>
+      )}
 
       <fieldset className="space-y-2">
         <legend className="mb-1 text-xs font-bold tracking-wider text-slate-700 uppercase">Before approving, check that</legend>
@@ -151,13 +158,15 @@ function Review({ session }: { session: ParkingSessionDTO }) {
 }
 
 /**
- * Lost tickets whose papers were uploaded and wait for the Staff's check. Opened from the upload popup with
- * the vehicle selected; the list keeps the others so nothing is forgotten.
+ * Lost tickets waiting for the Staff's decision: the Staff decides every case, the Manager no longer does (team
+ * decision 2026-11-04). Opened from the upload popup with the vehicle selected; the list keeps the others so
+ * nothing is forgotten.
  */
 export function LostTicketReviews({ lotId, selectedSessionId }: { lotId: string | undefined; selectedSessionId?: number }) {
   const waiting = useQuery({
     queryKey: ['lost-ticket-reviews', lotId],
-    queryFn: async () => (await gateService.getSessions(lotId!, 'LostTicketPending')).filter((s) => s.lostTicketApprovalMode === 'Staff'),
+    // Every waiting case is the Staff's to decide (the Manager no longer does), with or without uploaded papers
+    queryFn: () => gateService.getSessions(lotId!, 'LostTicketPending'),
     enabled: Boolean(lotId),
     refetchInterval: 10_000,
   })
@@ -173,7 +182,7 @@ export function LostTicketReviews({ lotId, selectedSessionId }: { lotId: string 
         icon={<FileSearch className="size-5 text-amber-500" aria-hidden />}
         aside={<span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-500">{sessions.length} to check</span>}
       >
-        Lost tickets: check the papers
+        Lost tickets: check the papers and decide
       </SectionTitle>
       {waiting.isPending && <Skeleton className="h-64 rounded-xl" />}
       {sessions.length > 1 && (
