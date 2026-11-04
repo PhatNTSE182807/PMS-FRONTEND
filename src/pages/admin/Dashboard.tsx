@@ -44,6 +44,8 @@ function OverviewStats({
           value={formatNumber(Math.round(overview?.totalGrossRevenue ?? 0))}
           unit="VND"
           caption="Consolidated revenue across every hub"
+          to="/admin/revenue"
+          linkLabel="Open revenue report"
         />
         <StatCard
           size="lg"
