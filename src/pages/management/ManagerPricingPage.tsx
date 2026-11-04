@@ -3,7 +3,6 @@ import {
   Archive,
   Bike,
   CalendarClock,
-  ArrowRight,
   Car,
   CarFront,
   Clock,
@@ -37,7 +36,7 @@ import {
 } from '@/hooks/usePricing'
 import { cn } from '@/lib/utils'
 import type { ManagedLot } from '@/types/lot-management.dto'
-import type { PendingPricesDTO, PricingRuleDTO, PricingRuleInput } from '@/types/pricing.dto'
+import type { PricingRuleDTO, PricingRuleInput } from '@/types/pricing.dto'
 import type { VehicleTypeDTO } from '@/types/profile.dto'
 
 /** Minutes a pre-paid vehicle has to leave (BR-10). A system setting, not part of a rule. */
@@ -59,29 +58,17 @@ type RuleProps = {
   unit?: string
   note: string
   tone?: 'gold' | 'red'
-  /** The price waiting for an empty lot, when it differs from `value`: shown as old ➔ new. */
-  next?: string
 }
 
-function Rule({ icon: Icon, label, value, unit, note, tone, next }: RuleProps) {
+function Rule({ icon: Icon, label, value, unit, note, tone }: RuleProps) {
   return (
-    <div className={cn('rounded-xl p-4 ring-1', next ? 'bg-amber-50/60 ring-amber-300' : 'bg-slate-50 ring-slate-200')}>
+    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
       <div className="flex items-start justify-between gap-2">
         <p className={cn('text-xs font-bold tracking-wider uppercase', tone === 'red' ? 'text-rose-700' : 'text-slate-800')}>{label}</p>
         <Icon className={cn('size-4', tone === 'red' ? 'text-rose-400' : 'text-amber-500')} aria-hidden />
       </div>
       <p className={cn('mt-2 font-mono text-2xl font-bold', tone === 'gold' ? 'text-amber-500' : tone === 'red' ? 'text-rose-400' : 'text-slate-950')}>
-        {next === undefined ? (
-          value
-        ) : (
-          <>
-            <span className="text-base font-semibold text-slate-400 line-through">{value}</span>
-            <ArrowRight className="mx-1.5 inline size-4 text-amber-600" aria-hidden />
-            <span className="sr-only">will become</span>
-            <span className="text-amber-600">{next}</span>
-          </>
-        )}{' '}
-        {unit && <span className="font-sans text-xs font-medium text-slate-700">{unit}</span>}
+        {value} {unit && <span className="font-sans text-xs font-medium text-slate-700">{unit}</span>}
       </p>
       <p className="mt-2 text-xs text-slate-700">{note}</p>
     </div>
@@ -96,8 +83,10 @@ const capText = (value: number | null) => (value == null ? 'No cap' : vnd(value)
  * What a vehicle owes the moment it enters: the first block's price, or one normal block (the day price
  * for day/night rules, as a guide; the gate prices it by the hour of entry).
  */
-const startingPrice = (prices: PendingPricesDTO) =>
-  prices.firstBlockPrice ?? (prices.chargeModel === 'DayNight' ? prices.dayPrice : prices.blockPrice) ?? 0
+const startingPrice = (prices: PricingRuleDTO) =>
+  prices.chargeModel === 'PerEntry'
+    ? prices.entryFee
+    : (prices.firstBlockPrice ?? (prices.chargeModel === 'DayNight' ? prices.dayPrice : prices.blockPrice) ?? 0)
 
 /** One rule as the gates apply it, with its edit / activate / archive actions. */
 function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
@@ -109,23 +98,26 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
   const Icon = typeIcon(rule.vehicleTypeCode)
   const block = rule.blockMinutes ?? 60
   const dayNight = rule.chargeModel === 'DayNight'
+  const perEntry = rule.chargeModel === 'PerEntry'
   const active = rule.status === 'Active'
-
-  // The price waiting for an empty lot. The list read leaves `priceUpdateStatus` empty, so `pendingPrice` decides.
-  const pending = rule.pendingPrice ?? null
-  // Field-by-field comparison only while the card keeps its shape (a new charge model shows other cards)
-  const next = pending && pending.prices.chargeModel === rule.chargeModel ? pending.prices : null
-  const waitingMoney = (pick: (prices: PendingPricesDTO) => number | null) => {
-    if (!next) return undefined
-    const live = pick(rule)
-    const waiting = pick(next)
-    return (live ?? 0) !== (waiting ?? 0) ? money(waiting) : undefined
-  }
-  const capChanges = next != null && next.maxDailyFee !== rule.maxDailyFee
 
   const save =(input: Omit<PricingRuleInput, 'vehicleTypeId'>) =>
     update.mutate(
-      { id: rule.id, input: { ...input, vehicleTypeId: rule.vehicleTypeId, status: rule.status, effectiveFrom: rule.effectiveFrom } },
+      {
+        id: rule.id,
+        input: {
+          ...input,
+          // Fields this page does not edit go back as they are: the API replaces the whole rule
+          graceMinutes: rule.graceMinutes,
+          overnightSurcharge: rule.overnightSurcharge,
+          overstayAfterHours: rule.overstayAfterHours,
+          overstaySurchargePerDay: rule.overstaySurchargePerDay,
+          noShowFee: rule.noShowFee,
+          vehicleTypeId: rule.vehicleTypeId,
+          status: rule.status,
+          effectiveFrom: rule.effectiveFrom,
+        },
+      },
       { onSuccess: () => setEditing(false) },
     )
 
@@ -148,51 +140,29 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
         </div>
         <div className="rounded-lg bg-[#060f16] px-3 py-2 text-right">
           <p className="text-[10px] font-bold tracking-wider text-slate-700 uppercase">Max per day</p>
-          <p className="font-mono font-bold text-amber-500">
-            {capChanges ? (
-              <>
-                <span className="text-xs font-semibold text-slate-400 line-through">{capText(rule.maxDailyFee)}</span>
-                <ArrowRight className="mx-1 inline size-3.5 text-amber-300" aria-hidden />
-                <span className="sr-only">will become</span>
-                <span className="text-amber-300">{capText(next.maxDailyFee)}</span>
-              </>
-            ) : (
-              capText(rule.maxDailyFee)
-            )}
-          </p>
+          <p className="font-mono font-bold text-amber-500">{capText(rule.maxDailyFee)}</p>
         </div>
       </div>
 
-      {pending && (
-        <div role="status" className="mt-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3.5 text-amber-900 ring-1 ring-amber-300">
-          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600" aria-hidden />
-          <div className="text-sm">
-            <p className="font-semibold">The new price is waiting to be applied.</p>
-            <p>The system switches to it automatically when the lot has no vehicles. Vehicles already inside keep the price they entered with.</p>
-            <p className="mt-1 text-xs">
-              Waiting price: <span className="font-mono font-semibold">{pending.summary}</span>
-            </p>
-          </div>
-        </div>
-      )}
-
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <Rule
-          icon={Hourglass}
-          label={`Starting price (${formatMinutes(rule.firstBlockMinutes ?? block)})`}
-          value={money(startingPrice(rule))}
-          next={waitingMoney(startingPrice)}
-          unit="VND"
-          tone="gold"
-          note={rule.firstBlockMinutes != null ? 'First block, charged as soon as the vehicle enters.' : 'The first block, charged as soon as the vehicle enters.'}
-        />
-        {dayNight ? (
+        {perEntry ? (
+          <Rule icon={CalendarClock} label="Fee per day" value={money(rule.entryFee)} unit="VND" tone="gold" note="Charged once for each calendar day of the stay, from entry." />
+        ) : (
+          <Rule
+            icon={Hourglass}
+            label={`Starting price (${formatMinutes(rule.firstBlockMinutes ?? block)})`}
+            value={money(startingPrice(rule))}
+            unit="VND"
+            tone="gold"
+            note={rule.firstBlockMinutes != null ? 'First block, charged as soon as the vehicle enters.' : 'The first block, charged as soon as the vehicle enters.'}
+          />
+        )}
+        {perEntry ? null : dayNight ? (
           <>
             <Rule
               icon={Sun}
               label={`Day • each ${formatMinutes(block)}`}
               value={money(rule.dayPrice)}
-              next={waitingMoney((p) => p.dayPrice)}
               unit="VND"
               tone="gold"
               note={`Blocks starting ${rule.dayStartTime?.slice(0, 5)} – ${rule.nightStartTime?.slice(0, 5)}.`}
@@ -201,7 +171,6 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
               icon={Moon}
               label={`Night • each ${formatMinutes(block)}`}
               value={money(rule.nightPrice)}
-              next={waitingMoney((p) => p.nightPrice)}
               unit="VND"
               note={`Blocks starting ${rule.nightStartTime?.slice(0, 5)} – ${rule.dayStartTime?.slice(0, 5)}.`}
             />
@@ -211,13 +180,12 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
             icon={CalendarClock}
             label={`Each next ${formatMinutes(block)}`}
             value={money(rule.blockPrice)}
-            next={waitingMoney((p) => p.blockPrice)}
             unit="VND"
             note="Charged per started block, the same at any hour."
           />
         )}
         <Rule icon={LogOut} label="Exit window" value={String(EXIT_WINDOW_MINUTES)} unit="min" note="Time to leave after paying at the counter or in the app." />
-        <Rule icon={TicketX} label="Lost ticket fee" value={money(rule.lostTicketFee)} next={waitingMoney((p) => p.lostTicketFee)} unit="VND + stay" tone="red" note="Added to the parking fee, after identity checks." />
+        <Rule icon={TicketX} label="Lost ticket fee" value={money(rule.lostTicketFee)} unit="VND + stay" tone="red" note="Added to the parking fee, after identity checks." />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -255,6 +223,7 @@ function starterRule(type: VehicleTypeDTO): PricingRuleInput {
     name: `${type.name} standard`,
     vehicleTypeId: type.id,
     chargeModel: 'Block',
+    entryFee: 0,
     graceMinutes: 0,
     firstBlockMinutes: null,
     firstBlockPrice: null,
@@ -291,7 +260,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
       <PageHeader
         eyebrow={<span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-700">Applied at every gate checkout</span>}
         title="Pricing Rules"
-        description={`${lot.name} • 4-seat cars, 7-seat cars and motorbikes. Saved prices apply from the next checkout.`}
+        description={`${lot.name} • 4-seat cars, 7-seat cars and motorbikes. Saved prices apply at once to vehicles entering from now on.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
