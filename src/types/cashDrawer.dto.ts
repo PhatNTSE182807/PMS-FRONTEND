@@ -28,7 +28,7 @@ export interface CashDrawerDTO {
   cashPayments: number
   /** Float + notes received − change given (payments entered note by note). */
   expectedNotes: BanknoteCounts
-  /** Float + cash collected. */
+  /** Float + cash collected + cash the Manager added. */
   expectedTotal: number
   /** Cash entered as an amount only: in the total, not in expectedNotes. */
   untrackedCash: number
@@ -46,4 +46,31 @@ export interface CashDrawerDTO {
   differenceThreshold: number
   /** Banknote values, largest first. */
   denominations: number[]
+  /** Cash the Manager approved into this drawer (already in expectedTotal and expectedNotes). */
+  topUpTotal: number
+  /** Requests for more banknotes made for this drawer, newest first. */
+  topUps: CashTopUpDTO[]
+}
+
+export type CashTopUpStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'
+
+/** CashTopUpModel: banknotes a Staff asked the Manager to add to their open drawer. */
+export interface CashTopUpDTO {
+  id: number
+  parkingLotId: number
+  drawerId: number
+  closeNo: number
+  staffUserId: string
+  staffName: string | null
+  notes: BanknoteCounts
+  total: number
+  reason: string | null
+  status: CashTopUpStatus
+  createdAt: string
+  decidedBy: string | null
+  decidedByName: string | null
+  decidedAt: string | null
+  decisionNote: string | null
+  /** The drawer is still open, so the notes can still go into it. */
+  drawerOpen: boolean
 }

@@ -61,3 +61,51 @@ export function useConfirmCashClose() {
     onError: (error) => toast.error(getErrorMessage(error, 'Could not confirm the cash close.')),
   })
 }
+
+/** Staff: asks the Manager for banknotes; errors are left to the dialog so the Staff can fix the list. */
+export function useRequestCashTopUp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lotId, notes, reason }: { lotId: string; notes: BanknoteCounts; reason?: string }) =>
+      cashDrawerService.requestTopUp(lotId, notes, reason),
+    onSuccess: () => {
+      toast.success('Cash request sent to your Manager.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
+    },
+  })
+}
+
+export function useCancelCashTopUp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lotId, id }: { lotId: string; id: number }) => cashDrawerService.cancelTopUp(lotId, id),
+    onSuccess: () => {
+      toast.info('Cash request cancelled.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Could not cancel the cash request.')),
+  })
+}
+
+/** Manager: the lot's requests for more banknotes waiting for a decision. */
+export function useCashTopUps(lotId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.cashDrawer.topUps(lotId ?? ''),
+    queryFn: () => cashDrawerService.topUpsForLot(lotId!),
+    enabled: Boolean(lotId),
+    refetchInterval: 15_000,
+  })
+}
+
+export function useDecideCashTopUp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, approve, note }: { id: number; approve: boolean; note?: string }) =>
+      approve ? cashDrawerService.approveTopUp(id, note) : cashDrawerService.rejectTopUp(id, note ?? ''),
+    onSuccess: (request) => {
+      toast.success(request.status === 'Approved' ? 'Cash request approved: hand the notes to the Staff.' : 'Cash request rejected.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Could not decide on the cash request.')),
+  })
+}
