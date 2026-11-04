@@ -34,3 +34,20 @@ export const describeNotes = (notes: BanknoteCounts) =>
   BANKNOTES.filter((v) => (notes[v] ?? 0) > 0)
     .map((v) => `${notes[v]} × ${v.toLocaleString('en-US')}`)
     .join(' + ')
+
+/**
+ * Banknotes that make up `amount` in small notes (at most 50,000 each), so the Staff can give change again.
+ * A starting point for the request; the Staff edits it.
+ */
+export function smallNotesFor(amount: number): BanknoteCounts {
+  const notes: BanknoteCounts = {}
+  let left = Math.max(0, Math.ceil(amount / 1_000) * 1_000)
+  for (const value of BANKNOTES.filter((v) => v <= 50_000)) {
+    const count = Math.floor(left / value)
+    if (count > 0) {
+      notes[value] = count
+      left -= count * value
+    }
+  }
+  return notes
+}

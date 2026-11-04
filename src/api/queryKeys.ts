@@ -70,6 +70,7 @@ export const queryKeys = {
     all: ['cash-drawer'] as const,
     current: (lotId: string) => ['cash-drawer', 'current', lotId] as const,
     closes: (lotId: string) => ['cash-drawer', 'closes', lotId] as const,
+    topUps: (lotId: string) => ['cash-drawer', 'top-ups', lotId] as const,
   },
   parkingSimulation: ['parking-simulation'] as const,
   /** Simulated walk-ins (Admin demo traffic), per lot or all. */
