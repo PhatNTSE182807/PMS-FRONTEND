@@ -1,7 +1,8 @@
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { buildBikeModel, buildCarModel, type PartSlot, type VehicleModel } from '@/components/customer/garage/vehicleModels'
+import { buildCoupeModel } from '@/components/customer/garage/carModels'
+import { buildBikeModel, type PartSlot, type VehicleModel } from '@/components/customer/garage/vehicleModels'
 import { drawPlate, PLATE_SIZE, type PlateShape } from '@/lib/vnPlate'
 import { cn } from '@/lib/utils'
 
@@ -386,18 +387,20 @@ export function GateLaneScene({ direction, vehicle, open = true, onPhase, onDone
     sign.rotation.y = Math.PI
 
     /* Vehicles: shared geometry and materials */
-    const car = buildCarModel()
+    const car = buildCoupeModel()
     const bike = buildBikeModel()
     ;[...car.values(), ...bike.values()].forEach((g) => track(g))
     const materials: Record<PartSlot, THREE.Material> = {
-      paint: std({ color: 0xffffff, metalness: 0.45, roughness: 0.32 }),
-      glass: std({ color: 0x1b2833, metalness: 0.6, roughness: 0.12 }),
+      paint: std({ color: 0xffffff, metalness: 0.45, roughness: 0.32, side: THREE.DoubleSide }),
+      glass: std({ color: 0x1b2833, metalness: 0.6, roughness: 0.12, transparent: true, opacity: 0.78, side: THREE.DoubleSide }),
       tyre: std({ color: 0x17191c, roughness: 0.92 }),
       rim: std({ color: 0xc9ccd1, metalness: 0.85, roughness: 0.3 }),
       trim: std({ color: 0x1b1e22, metalness: 0.3, roughness: 0.6 }),
       chrome: std({ color: 0xdfe3e8, metalness: 1, roughness: 0.22 }),
       frame: std({ color: 0x2a2d31, metalness: 0.5, roughness: 0.5 }),
       seat: std({ color: 0x3b2a20, roughness: 0.8 }),
+      interior: std({ color: 0xa8784f, roughness: 0.75 }),
+      caliper: std({ color: 0xb3121b, roughness: 0.4 }),
       headlight: std({ color: 0xffffff, emissive: 0xfff4d6, emissiveIntensity: 1.2 }),
       taillight: std({ color: 0x8b0000, emissive: 0xff2b2b, emissiveIntensity: 1.1 }),
     }
