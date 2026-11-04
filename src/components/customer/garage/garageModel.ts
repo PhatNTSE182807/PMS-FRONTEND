@@ -10,6 +10,8 @@ export interface Bay {
   row: number
   col: number
   status: BayStatus
+  /** Registered colour of the vehicle parked here, when known; otherwise the model picks one. */
+  vehicleColor?: string | null
 }
 
 export interface GarageFloor {

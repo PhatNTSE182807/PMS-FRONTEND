@@ -4,6 +4,7 @@ import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, Wren
 import { isMockService } from '@/config/env'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
 import { usePublicPrices } from '@/hooks/usePricing'
+import { useVehicles } from '@/hooks/useProfile'
 import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { formatNumber } from '@/lib/format'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
@@ -77,6 +78,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const myReservations = useMyReservations()
+  const vehicles = useVehicles()
   const myActive = (myReservations.data ?? []).filter(
     (r) => (r.status === 'PendingDeposit' || r.status === 'Confirmed') && lot && (String(r.parkingLotId) === lot.id || r.parkingLotName === lot.name),
   )
@@ -87,6 +89,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const selectedFloor = selected ? floors[selected.floorIndex] : null
   // Highlighted in the model as "your booking"
   const myBayId = myActive[0] ? String(myActive[0].slotId) : null
+  const myVehicleColor = vehicles.data?.find((v) => v.vehicleId === myActive[0]?.vehicleId)?.color ?? null
   // The lot's real prices (the same rule the exit gate uses): motorbike floors show the motorbike price, car floors the 4-seat car price
   const prices = usePublicPrices(lot?.id)
   const price = prices.data?.find((p) => p.vehicleTypeCode === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR_4'))
@@ -163,7 +166,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               </div>
             </div>
 
-            <GarageView floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} onSelectBay={selectBay} />
+            <GarageView floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} myVehicleColor={myVehicleColor} onSelectBay={selectBay} />
 
             <div className="cx-map__footer">
               <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>
