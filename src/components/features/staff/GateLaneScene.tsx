@@ -104,6 +104,9 @@ const REAR_PLATE: Record<LaneVehicleKind, { shape: PlateShape; y: number; z: num
   motorbike: { shape: 'square', y: 0.79, z: -0.86, tilt: 0.2 },
 }
 
+/** Plates are drawn larger than real life so Staff can read them on the small camera view. */
+const PLATE_SCALE = 1.5
+
 const PAINTS = [0xd9dde2, 0x1d2329, 0x9a1f24, 0x2f4f7a, 0x6e7378, 0xf1f1ee, 0x2e5e4e, 0xb88a2c]
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3
@@ -173,11 +176,13 @@ function buildVehicle(
   const plate = new THREE.Mesh(plateGeometry, plateMaterial)
   plate.position.set(0, spot.y, spot.z - 0.005)
   plate.rotation.set(spot.tilt, Math.PI, 0)
+  plate.scale.setScalar(PLATE_SCALE)
   group.add(plate)
   if (kind === 'car') {
     // Cars carry a plate at the front too
     const front = new THREE.Mesh(plateGeometry, plateMaterial)
     front.position.set(0, 0.36, 2.48)
+    front.scale.setScalar(PLATE_SCALE)
     group.add(front)
   }
   group.position.set(kind === 'car' ? 0 : 0.4, 0, -30)
