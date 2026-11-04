@@ -5,16 +5,17 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { Skeleton } from '@/components/ui/skeleton'
 import { useElementWidth } from '@/hooks/useElementWidth'
 import { formatVnd, formatVndCompact } from '@/lib/format'
-import type { RevenueByParkingLotDTO } from '@/types/report.dto'
+import type { ParkingLotRevenueDTO } from '@/types/report.dto'
 
 const BAR_SIZE = 18
 const ROW_HEIGHT = 44
 
 /** Horizontal bars comparing lots; single series, so the title names it and no legend is needed. */
-export function RevenueByLotChart({ data, isLoading }: { data?: RevenueByParkingLotDTO[]; isLoading: boolean }) {
+export function RevenueByLotChart({ data, isLoading }: { data?: ParkingLotRevenueDTO[]; isLoading: boolean }) {
   const [containerRef, width] = useElementWidth<HTMLDivElement>()
   const isNarrow = width > 0 && width < 520
-  const rows = (data ?? []).map((row) => {
+  // Highest first; the backend sorts by name.
+  const rows = [...(data ?? [])].sort((a, b) => b.totalRevenue - a.totalRevenue).map((row) => {
     const shortName = row.parkingLotName.replace(/ Parking$/, '')
     return { ...row, shortName: isNarrow && shortName.length > 16 ? `${shortName.slice(0, 15)}…` : shortName }
   })
@@ -51,7 +52,7 @@ export function RevenueByLotChart({ data, isLoading }: { data?: RevenueByParking
                 content={(props) => (
                   <ChartTooltip
                     active={props.active}
-                    payload={props.payload?.map((p) => ({ ...p, name: 'Doanh thu' }))}
+                    payload={props.payload?.map((p) => ({ ...p, name: 'Revenue' }))}
                     label={props.label}
                     formatValue={formatVnd}
                   />
