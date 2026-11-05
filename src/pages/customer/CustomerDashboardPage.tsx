@@ -5,6 +5,7 @@ import { FleetCard } from '@/components/customer/dashboard/FleetCard'
 import { NotificationCard } from '@/components/customer/dashboard/NotificationCard'
 import { RecentSessions } from '@/components/customer/dashboard/RecentSessions'
 import { ActiveSessionCard, ReservationCard } from '@/components/customer/dashboard/SessionCards'
+import { TestNotificationButton } from '@/components/customer/dashboard/TestNotificationButton'
 import { UtilitiesCard } from '@/components/customer/dashboard/UtilitiesCard'
 import { ZoneMap } from '@/components/customer/dashboard/ZoneMap'
 import { useAuth } from '@/hooks/useAuth'
@@ -54,6 +55,7 @@ export default function CustomerDashboardPage() {
                 ? 'The parking network cannot be reached right now.'
                 : `${openLots} of ${lots.length} parking lot${lots.length === 1 ? '' : 's'} open for bookings, ${freeBays.toLocaleString('en-US')} bays free right now.`}
           </p>
+          {import.meta.env.DEV && <TestNotificationButton />}
         </div>
 
         {lots.length > 0 && (
