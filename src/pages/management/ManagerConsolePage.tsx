@@ -13,6 +13,7 @@ import {
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatClock, vnd } from '@/components/features/manager/managerFormat'
+import { arrivesWithinHour, dayRange, isAwaitingArrival, VOID_RESERVATION } from '@/components/features/manager/managerReservations'
 import { presetRange } from '@/components/features/revenue/revenueFilters'
 import { EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -25,22 +26,10 @@ import { useNow } from '@/hooks/useNow'
 import { formatNumber, toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { LOT_STATES, type ManagedLot } from '@/types/lot-management.dto'
-import type { ReservationStatus } from '@/types/operations.dto'
 import type { CapacityVehicleType } from '@/types/parking.dto'
 
 const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
 const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes' }
-
-/** Bookings that will never use their bay do not count towards the day's total. */
-const VOID_RESERVATION: ReservationStatus[] = ['Cancelled', 'LotCancelled', 'Expired']
-
-function dayRange(ts: number) {
-  const from = new Date(ts)
-  from.setHours(0, 0, 0, 0)
-  const to = new Date(ts)
-  to.setHours(23, 59, 59, 999)
-  return { from: from.toISOString(), to: to.toISOString() }
-}
 
 function yesterdayRange() {
   const d = new Date()
@@ -78,13 +67,13 @@ function Console({ lot }: { lot: ManagedLot }) {
   const allTimeMethods = allTime.data?.paymentMethods ?? []
   const allTimeOf = (method: string) => allTimeMethods.find((m) => m.method === method)?.amount ?? 0
 
-  // Bookings arriving today, earliest first; a confirmed one still counts until its hold ends
+  // Bookings arriving today, earliest first
   const { from, to } = dayRange(now)
   const reservationsQuery = useLotReservations(lot.id, from, to)
   const reservations = reservationsQuery.data ?? []
   const bookings = reservations.filter((r) => !VOID_RESERVATION.includes(r.status)).length
-  const upcoming = reservations.filter((r) => r.status === 'Confirmed' && Date.parse(r.checkInUntil) >= now)
-  const withinHour = upcoming.filter((r) => Date.parse(r.arrivalTime) - now < 60 * 60_000).length
+  const upcoming = reservations.filter((r) => isAwaitingArrival(r, now))
+  const withinHour = upcoming.filter((r) => arrivesWithinHour(r, now)).length
   const checkedIn = reservations.filter((r) => r.status === 'CheckedIn' || r.status === 'Completed').length
   const next = upcoming[0]
 
