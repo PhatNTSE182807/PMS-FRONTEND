@@ -6,7 +6,6 @@ import {
   CarFront,
   Landmark,
   MapPin,
-  ReceiptText,
   TrendingDown,
   TrendingUp,
   UserPlus,
@@ -15,22 +14,33 @@ import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatClock, vnd } from '@/components/features/manager/managerFormat'
 import { presetRange } from '@/components/features/revenue/revenueFilters'
-import { DemoTag, EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
+import { EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCashCloses, useCashTopUps } from '@/hooks/useCashDrawer'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useLotOccupancy } from '@/hooks/useParking'
+import { useLotReservations } from '@/hooks/useReservations'
 import { useManagerAllTimeRevenue, useManagerRevenue } from '@/hooks/useRevenueReport'
 import { useNow } from '@/hooks/useNow'
 import { formatNumber, toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { demoReservations } from '@/mocks/managerOps.mock'
 import { LOT_STATES, type ManagedLot } from '@/types/lot-management.dto'
+import type { ReservationStatus } from '@/types/operations.dto'
 import type { CapacityVehicleType } from '@/types/parking.dto'
 
 const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
 const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes' }
+
+/** Bookings that will never use their bay do not count towards the day's total. */
+const VOID_RESERVATION: ReservationStatus[] = ['Cancelled', 'LotCancelled', 'Expired']
+
+function dayRange(ts: number) {
+  const from = new Date(ts)
+  from.setHours(0, 0, 0, 0)
+  const to = new Date(ts)
+  to.setHours(23, 59, 59, 999)
+  return { from: from.toISOString(), to: to.toISOString() }
+}
 
 function yesterdayRange() {
   const d = new Date()
@@ -58,28 +68,6 @@ function Console({ lot }: { lot: ManagedLot }) {
   const cash = methods.find((m) => m.method === 'CASH')?.amount ?? 0
   const wallet = methods.find((m) => m.method === 'RFID_WALLET')?.amount ?? 0
 
-  // What still needs the Manager: Staff cash requests and cash closes (lost tickets are decided by the Staff)
-  const cashTopUps = useCashTopUps(lot.id).data ?? []
-  const cashCloses = useCashCloses(lot.id).data ?? []
-  const pending = [
-    ...cashTopUps.map((r) => ({
-      key: `top-up-${r.id}`,
-      title: 'Cash request',
-      code: `Drawer ${r.closeNo}`,
-      who: r.staffName ?? 'Staff',
-      detail: `${formatNumber(r.total)} VND in banknotes${r.reason ? `: ${r.reason}` : ''}`,
-      at: r.createdAt,
-    })),
-    ...cashCloses.map((c) => ({
-      key: `close-${c.id}`,
-      title: c.status === 'Open' ? 'Cash drawer not closed' : 'Cash close to confirm',
-      code: `Drawer ${c.closeNo}`,
-      who: c.staffName ?? 'Staff',
-      detail: c.status === 'Open' ? `${formatNumber(c.expectedTotal)} VND expected` : `Difference ${formatNumber(c.difference ?? 0)} VND`,
-      at: c.closedAt ?? c.openedAt,
-    })),
-  ]
-
   const totals = { total: live?.totalBays ?? 0, free: live?.freeBays ?? 0 }
   const occupied = live?.occupiedBays ?? 0
   const occupancy = live?.occupancyRate ?? 0
@@ -90,10 +78,14 @@ function Console({ lot }: { lot: ManagedLot }) {
   const allTimeMethods = allTime.data?.paymentMethods ?? []
   const allTimeOf = (method: string) => allTimeMethods.find((m) => m.method === method)?.amount ?? 0
 
-  const upcoming = demoReservations
-    .filter((r) => r.status === 'CONFIRMED' && r.start >= now - 30 * 60_000)
-    .sort((a, b) => a.start - b.start)
-  const checkedIn = demoReservations.filter((r) => r.status === 'CHECKED_IN' || r.status === 'COMPLETED').length
+  // Bookings arriving today, earliest first; a confirmed one still counts until its hold ends
+  const { from, to } = dayRange(now)
+  const reservationsQuery = useLotReservations(lot.id, from, to)
+  const reservations = reservationsQuery.data ?? []
+  const bookings = reservations.filter((r) => !VOID_RESERVATION.includes(r.status)).length
+  const upcoming = reservations.filter((r) => r.status === 'Confirmed' && Date.parse(r.checkInUntil) >= now)
+  const withinHour = upcoming.filter((r) => Date.parse(r.arrivalTime) - now < 60 * 60_000).length
+  const checkedIn = reservations.filter((r) => r.status === 'CheckedIn' || r.status === 'Completed').length
   const next = upcoming[0]
 
   return (
@@ -254,86 +246,59 @@ function Console({ lot }: { lot: ManagedLot }) {
           </ul>
         </section>
 
-        <div className="space-y-6">
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-                  Approval &amp; Incident Queue
-                </h2>
-                <p className="mt-0.5 text-sm text-slate-700">Staff cash requests and cash closes that need the Facility Manager's sign-off.</p>
-              </div>
-              <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">{pending.length} active</span>
+        <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl font-semibold text-slate-950">Reservations Today</h2>
+              <p className="mt-0.5 text-sm text-slate-700">Scheduled pre-booked parking bays.</p>
             </div>
-            <ul className="mt-4 space-y-3">
-              {pending.slice(0, 3).map((a) => (
-                <li key={a.key} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="flex items-center gap-2 font-semibold text-slate-950">
-                      <ReceiptText className="size-4 text-amber-500" aria-hidden /> {a.title}
-                    </p>
-                    <span className="font-mono text-xs text-slate-600">{a.code}</span>
-                  </div>
-                  <p className="mt-2 font-semibold text-indigo-700">{a.who}</p>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-700">
-                    {a.detail}
-                    {a.at ? ` • ${formatClock(Date.parse(a.at))}` : ''}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-amber-500">Awaiting sign-off</span>
-                    <Button size="sm" asChild>
-                      <Link to="/management/approvals">Review</Link>
-                    </Button>
-                  </div>
-                </li>
-              ))}
-              {pending.length === 0 && <li className="text-sm text-slate-600">Nothing waiting for sign-off. Lost tickets are decided by the Staff.</li>}
-            </ul>
-          </section>
-
-          <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-                  Reservations Today <DemoTag />
-                </h2>
-                <p className="mt-0.5 text-sm text-slate-700">Scheduled pre-booked parking bays.</p>
-              </div>
-              <span className="font-mono text-lg font-bold text-indigo-700">{demoReservations.length} bookings</span>
-            </div>
+            {reservationsQuery.isPending ? (
+              <Skeleton className="h-7 w-24" />
+            ) : (
+              <span className="font-mono text-lg font-bold text-indigo-700">
+                {formatNumber(bookings)} {bookings === 1 ? 'booking' : 'bookings'}
+              </span>
+            )}
+          </div>
+          {reservationsQuery.isPending ? (
+            <Skeleton className="mt-4 h-16 rounded-xl" />
+          ) : (
             <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 rounded-xl bg-slate-50 py-3 text-center text-xs text-slate-700">
               <span><strong className="block text-lg text-slate-950">{checkedIn}</strong>Checked in</span>
-              <span><strong className="block text-lg text-amber-500">{upcoming.filter((r) => r.start - now < 60 * 60_000).length}</strong>Within 1 hour</span>
+              <span><strong className="block text-lg text-amber-500">{withinHour}</strong>Within 1 hour</span>
               <span><strong className="block text-lg text-slate-950">{upcoming.length}</strong>Upcoming</span>
             </div>
-            {next && (
-              <div className="mt-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                <p className="flex items-center justify-between text-xs font-bold tracking-wider text-amber-500 uppercase">
-                  Next incoming arrival
-                  <span className="font-mono text-slate-700 normal-case">{formatClock(next.start)}</span>
-                </p>
-                <p className="mt-2 flex items-center gap-2 font-mono text-lg font-bold text-slate-950">
-                  {next.plate}
-                  <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">Bay {next.bay}</span>
-                </p>
-                <p className="text-sm text-slate-700">{next.vehicle} • {next.customer}</p>
-              </div>
-            )}
-            <ul className="mt-3 space-y-1.5 text-sm">
-              {upcoming.slice(1, 4).map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 text-slate-700">
-                  <span>
-                    <strong className="font-mono text-slate-950">{r.plate}</strong> • Bay {r.bay}
-                  </span>
-                  <span className="font-mono text-xs">{formatClock(r.start)}</span>
-                </li>
-              ))}
-            </ul>
-            <Link to="/management/reservations" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:underline">
-              All reservations <ArrowRight className="size-4" aria-hidden />
-            </Link>
-          </section>
-        </div>
+          )}
+          {reservationsQuery.isError && <p className="mt-3 text-sm text-rose-700">Reservations could not be loaded.</p>}
+          {reservationsQuery.isSuccess && !next && <p className="mt-4 text-sm text-slate-600">No more arrivals expected today.</p>}
+          {next && (
+            <div className="mt-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <p className="flex items-center justify-between text-xs font-bold tracking-wider text-amber-500 uppercase">
+                Next incoming arrival
+                <span className="font-mono text-slate-700 normal-case">{formatClock(Date.parse(next.arrivalTime))}</span>
+              </p>
+              <p className="mt-2 flex items-center gap-2 font-mono text-lg font-bold text-slate-950">
+                {next.plateNumber ?? 'No plate'}
+                {next.slotCode && <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">Bay {next.slotCode}</span>}
+              </p>
+              <p className="text-sm text-slate-700">{[next.vehicleLabel, next.code].filter(Boolean).join(' • ')}</p>
+            </div>
+          )}
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {upcoming.slice(1, 4).map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 text-slate-700">
+                <span>
+                  <strong className="font-mono text-slate-950">{r.plateNumber ?? 'No plate'}</strong>
+                  {r.slotCode && ` • Bay ${r.slotCode}`}
+                </span>
+                <span className="font-mono text-xs">{formatClock(Date.parse(r.arrivalTime))}</span>
+              </li>
+            ))}
+          </ul>
+          <Link to="/management/reservations" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:underline">
+            All reservations <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </section>
       </div>
     </div>
   )

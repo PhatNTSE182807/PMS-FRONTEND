@@ -51,6 +51,27 @@ export function useUpcomingReservation() {
   })
 }
 
+/** Manager: bookings of the lot arriving in the range; refreshed by the lot's reservation and session pushes. */
+export function useLotReservations(lotId: string | undefined, from: string, to: string) {
+  const queryClient = useQueryClient()
+  const live = parkingOpsRealtime.isAvailable('booking')
+
+  useEffect(() => {
+    if (!live || !lotId) return
+    return parkingOpsRealtime.subscribe((event) => {
+      if (event.type === 'ReservationChanged' || event.type === 'SessionChanged')
+        void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+    }, lotId)
+  }, [live, lotId, queryClient])
+
+  return useQuery({
+    queryKey: queryKeys.reservations.forLot(lotId ?? '', from, to),
+    queryFn: () => reservationService.getForLot(lotId!, from, to),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? 30_000 : RESERVATIONS_REFRESH_MS,
+  })
+}
+
 export function useReservationQr(reservation: ReservationDTO | undefined) {
   return useQuery({
     queryKey: queryKeys.reservations.qr(reservation?.id ?? 0),

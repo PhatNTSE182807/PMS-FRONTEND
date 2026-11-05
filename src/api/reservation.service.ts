@@ -36,6 +36,12 @@ export const reservationService = {
     return mocked() ? reservationMock.mine() : http.get<ReservationDTO[]>(`${base}/mine`)
   },
 
+  /** Manager: bookings of the lot whose arrival falls in the range, earliest first. */
+  getForLot(lotId: string, from: string, to: string): Promise<ReservationDTO[]> {
+    if (mocked()) return reservationMock.forLot(lotId, from, to)
+    return http.get<ReservationDTO[]>(`/manager/lots/${lotId}/reservations`, { params: { from, to } })
+  },
+
   get(id: number): Promise<ReservationDTO> {
     return mocked() ? reservationMock.get(id) : http.get<ReservationDTO>(`${base}/${id}`)
   },

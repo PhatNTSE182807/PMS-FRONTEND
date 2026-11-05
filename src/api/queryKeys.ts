@@ -86,6 +86,7 @@ export const queryKeys = {
     upcoming: () => [...queryKeys.reservations.all, 'upcoming'] as const,
     qr: (id: number) => [...queryKeys.reservations.all, 'qr', id] as const,
     lots: () => [...queryKeys.reservations.all, 'lots'] as const,
+    forLot: (lotId: string, from: string, to: string) => [...queryKeys.reservations.all, 'lot', lotId, from, to] as const,
   },
   /** The customer's vehicles parked right now (running fee, exit pass). */
   parkingSessions: {
