@@ -29,6 +29,10 @@ export interface ManagedLot {
   code: string
   name: string
   address: string
+  city: string
+  district: string
+  /** Lot contact phone shown to customers. */
+  phone: string
   /** Map position of the entrance for the customer's directions map; null: found by address. */
   latitude: number | null
   longitude: number | null

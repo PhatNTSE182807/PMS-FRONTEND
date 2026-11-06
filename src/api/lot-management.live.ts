@@ -19,6 +19,9 @@ interface LotResponse {
   code: string
   name: string
   address: string
+  city: string | null
+  district: string | null
+  phone: string | null
   latitude?: number | null
   longitude?: number | null
   openTime: string | null
@@ -116,6 +119,9 @@ function toLot(lot: LotResponse, zones: ZoneResponse[], slots: SlotResponse[]): 
     code: lot.code,
     name: lot.name,
     address: lot.address,
+    city: lot.city ?? '',
+    district: lot.district ?? '',
+    phone: lot.phone ?? '',
     latitude: lot.latitude ?? null,
     longitude: lot.longitude ?? null,
     is24Hours: lot.is24Hours,
@@ -160,6 +166,10 @@ export const lotManagementApi = {
     const body = {
       name: input.name.trim(),
       address: input.address.trim(),
+      // PUT replaces every field: send them all, or the backend clears what is missing
+      city: input.city.trim() || null,
+      district: input.district.trim() || null,
+      phone: input.phone.trim() || null,
       latitude: input.latitude,
       longitude: input.longitude,
       is24Hours: input.is24Hours,
@@ -170,7 +180,8 @@ export const lotManagementApi = {
       managerUserId: input.managerUserId || null,
     }
     if (id) {
-      await http.put<LotResponse>(`/lots/${id}`, body)
+      // On update null keeps the current Manager and an empty string removes it, so "Unassigned" sends ''
+      await http.put<LotResponse>(`/lots/${id}`, { ...body, managerUserId: input.managerUserId })
       if (!hasZones) await http.put<LotResponse>(`/lots/${id}/template`, { layoutTemplate: input.layoutTemplate })
       return id
     }

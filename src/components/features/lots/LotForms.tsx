@@ -107,6 +107,9 @@ const emptyLot: LotInput = {
   code: '',
   name: '',
   address: '',
+  city: '',
+  district: '',
+  phone: '',
   latitude: null,
   longitude: null,
   is24Hours: true,
@@ -136,7 +139,17 @@ export function LotForm({
 }) {
   // Lots saved in demo storage before positions existed have no latitude / longitude
   const [v, set] = useState<LotInput>(
-    lot ? { ...lot, layoutTemplate: lot.layoutTemplate ?? '', latitude: lot.latitude ?? null, longitude: lot.longitude ?? null } : emptyLot,
+    lot
+      ? {
+          ...lot,
+          layoutTemplate: lot.layoutTemplate ?? '',
+          city: lot.city ?? '',
+          district: lot.district ?? '',
+          phone: lot.phone ?? '',
+          latitude: lot.latitude ?? null,
+          longitude: lot.longitude ?? null,
+        }
+      : emptyLot,
   )
   const patch = (p: Partial<LotInput>) => set({ ...v, ...p })
   const template = findTemplate(v.layoutTemplate)
@@ -181,6 +194,16 @@ export function LotForm({
           />
         </Field>
       </div>
+      <Field label="District">
+        <Input maxLength={100} placeholder="e.g. Tan Binh District" value={v.district} onChange={(e) => patch({ district: e.target.value })} />
+      </Field>
+      <Field label="City">
+        <Input maxLength={100} placeholder="e.g. Ho Chi Minh City" value={v.city} onChange={(e) => patch({ city: e.target.value })} />
+      </Field>
+      <Field label="Lot phone">
+        <Input type="tel" maxLength={30} placeholder="e.g. 028 3812 3456" value={v.phone} onChange={(e) => patch({ phone: e.target.value })} />
+      </Field>
+      <div className="hidden sm:block" aria-hidden />
       <LotLocationPicker
         latitude={v.latitude}
         longitude={v.longitude}
