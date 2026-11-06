@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Bike, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { buildTemplateGarage, type Bay, type GarageFloor, type GarageTemplate, type ZoneStats } from './garageModel'
@@ -29,10 +29,28 @@ export function GaragePreview({
   return <GarageFloorsView floors={floors} className={className} />
 }
 
-/** Level tabs and the 3D model (or its 2D fallback) of ready-made levels, without booking. */
-export function GarageFloorsView({ floors, className }: { floors: GarageFloor[]; className?: string }) {
+/**
+ * Level tabs and the 3D model (or its 2D fallback) of ready-made levels, without booking. Hovering a bay shows
+ * its code; with `renderBayPopup`, clicking a bay that `canSelectBay` allows opens that popup over the model.
+ */
+export function GarageFloorsView({
+  floors,
+  className,
+  canSelectBay,
+  bayHint,
+  renderBayPopup,
+}: {
+  floors: GarageFloor[]
+  className?: string
+  canSelectBay?: (bay: Bay) => boolean
+  bayHint?: (bay: Bay) => string | null
+  renderBayPopup?: (bay: Bay, close: () => void) => ReactNode
+}) {
   const [focus, setFocus] = useState<number | null>(null)
-  const [selected, setSelected] = useState<Bay | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Live status: the same bay from the latest floors
+  const selected = selectedId ? (floors.flatMap((f) => f.bays).find((b) => b.id === selectedId) ?? null) : null
+  const close = () => setSelectedId(null)
   const height = cn('relative h-[24rem] w-full overflow-hidden rounded-xl bg-slate-900 sm:h-[30rem]', className)
   const tab = (active: boolean) =>
     cn(
@@ -52,20 +70,25 @@ export function GarageFloorsView({ floors, className }: { floors: GarageFloor[];
           </button>
         ))}
         <span className="ml-auto text-xs text-slate-500" aria-live="polite">
-          {selected ? `Bay ${selected.code} · ${STATUS_TEXT[selected.status]}` : 'Click a bay to see its status'}
+          {selected ? `Bay ${selected.code} · ${STATUS_TEXT[selected.status]}` : renderBayPopup ? 'Point at a bay to see its code, click a parked vehicle for details' : 'Click a bay to see its status'}
         </span>
       </div>
-      <GarageView
-        floors={floors}
-        focusFloor={focus}
-        selectedBayId={selected?.id ?? null}
-        myBayId={null}
-        onSelectBay={(bay) => {
-          setSelected(bay)
-          setFocus(bay.floorIndex)
-        }}
-        className={height}
-      />
+      <div className="relative">
+        <GarageView
+          floors={floors}
+          focusFloor={focus}
+          selectedBayId={selected?.id ?? null}
+          myBayId={null}
+          canSelectBay={canSelectBay}
+          bayHint={bayHint}
+          onSelectBay={(bay) => {
+            setSelectedId(bay.id)
+            setFocus(bay.floorIndex)
+          }}
+          className={height}
+        />
+        {selected && renderBayPopup?.(selected, close)}
+      </div>
     </div>
   )
 }

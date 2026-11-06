@@ -35,6 +35,22 @@ export function useGates(lotId: string | undefined) {
   })
 }
 
+/**
+ * The vehicle parked in one bay (Staff, Managers and Admins), for the 3D lot model's popup. The fee grows by
+ * block, so it refreshes every 30 s; gate pushes refresh it at once.
+ */
+export function useBaySession(lotId: string | undefined, slotId: string | null) {
+  useGateRealtime(lotId)
+  return useQuery({
+    queryKey: queryKeys.gate.baySession(lotId ?? '', slotId ?? ''),
+    queryFn: () => gateService.getBaySession(lotId!, slotId!),
+    enabled: Boolean(lotId && slotId),
+    refetchInterval: 30_000,
+    // An empty bay answers 404: show it, do not retry
+    retry: false,
+  })
+}
+
 export function useOpenSessions(lotId: string | undefined) {
   const live = useGateRealtime(lotId)
   return useQuery({

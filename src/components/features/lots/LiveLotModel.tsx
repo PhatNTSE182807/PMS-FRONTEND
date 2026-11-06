@@ -1,14 +1,23 @@
 import { useMemo } from 'react'
 import { Bike, Car, Rotate3d } from 'lucide-react'
 import { GarageFloorsView } from '@/components/customer/garage/GaragePreview'
-import { buildTemplateGarage, findTemplate, liveFloorStats, templateForLot } from '@/components/customer/garage/garageModel'
+import { buildTemplateGarage, findTemplate, liveFloorStats, templateForLot, type Bay } from '@/components/customer/garage/garageModel'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/hooks/useAuth'
+import type { AccountRole } from '@/types/identity.dto'
+import { BaySessionPopup } from './BaySessionPopup'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
 import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { useParkingCapacity } from '@/hooks/useParking'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { AssignedParkingLotDTO } from '@/types/parking.dto'
+
+/** Only these roles see who is parked in a bay (plate, customer, fee); everyone else gets the bay code on hover. */
+const INSPECTING_ROLES: AccountRole[] = ['STAFF', 'MANAGER', 'ADMIN']
+
+/** A vehicle is drawn in the bay: parked, at the barrier, or a walk-in counted in its zone. */
+const hasVehicle = (bay: Bay) => bay.status === 'OCCUPIED'
 
 const SOURCE_TEXT = {
   layout: 'live bay statuses from the gate and sensor feed',
@@ -34,10 +43,15 @@ export function LiveLotModel({
   className?: string
 }) {
   const lot = lots.find((l) => l.id === lotId) ?? lots[0]
+  const { user } = useAuth()
+  const canInspect = user !== null && INSPECTING_ROLES.includes(user.role)
   const capacity = useParkingCapacity()
   const live = capacity.data?.find((c) => c.id === lot?.id)
+  // Answered once (data or error). Not `!isPending`: a query that failed (Staff get 403 here) goes back to
+  // pending on every refetch, which unmounted the model and dropped the SignalR channel every few seconds.
+  const capacitySettled = capacity.data !== undefined || capacity.errorUpdateCount > 0
   // Live occupancy only exists for demo lots today; real lots read their published layout.
-  const planLotId = lot && !capacity.isPending && !live ? lot.id : undefined
+  const planLotId = lot && capacitySettled && !live ? lot.id : undefined
   const realtime = useLotRealtime(planLotId)
   const plan = useLotPlan2D(planLotId, 'slots', realtime.connected)
   const template = lot ? (findTemplate(lot.layoutTemplate) ?? templateForLot({ id: lot.id, layoutTemplate: live?.layoutTemplate })) : undefined
@@ -48,7 +62,8 @@ export function LiveLotModel({
     if (plan.data?.floors.length) return { source: realtime.connected ? ('pushed' as const) : ('layout' as const), floors: plan.data.floors }
     return { source: 'model' as const, floors: buildTemplateGarage(template, [], lot.id) }
   }, [lot, template, live, plan.data, realtime.connected])
-  const loading = capacity.isPending || (!live && plan.isLoading)
+  // First load only: refetches (and retries after an error) keep the model on screen
+  const loading = !capacitySettled || (!live && plan.isLoading && plan.errorUpdateCount === 0)
 
   return (
     <section className={cn('rounded-2xl bg-white p-5 ring-1 ring-slate-200', className)} aria-labelledby="lot-3d-title">
@@ -108,7 +123,18 @@ export function LiveLotModel({
             })}
           </ul>
           <div className="mt-3">
-            <GarageFloorsView key={lot.id} floors={view.floors} />
+            {canInspect && (view.source === 'layout' || view.source === 'pushed') ? (
+              // Real bays of the published layout: a parked vehicle opens its details (the API checks role and lot again)
+              <GarageFloorsView
+                key={lot.id}
+                floors={view.floors}
+                canSelectBay={hasVehicle}
+                bayHint={(bay) => (hasVehicle(bay) ? 'Click for vehicle details' : null)}
+                renderBayPopup={(bay, close) => <BaySessionPopup key={bay.id} lotId={lot.id} bay={bay} onClose={close} />}
+              />
+            ) : (
+              <GarageFloorsView key={lot.id} floors={view.floors} />
+            )}
           </div>
         </>
       )}

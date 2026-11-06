@@ -1,0 +1,72 @@
+import { BayVehicleCard, BayVehicleNotice } from '@/components/customer/garage/BayVehicleCard'
+import { formatStay, useStayMinutes, vndOrDash } from '@/components/customer/garage/bayVehicleFormat'
+import type { Bay } from '@/components/customer/garage/garageModel'
+import { getErrorMessage } from '@/api/apiError'
+import { useBaySession } from '@/hooks/useGate'
+import { formatDate, formatTime } from '@/lib/format'
+
+const TITLE = 'Vehicle in bay'
+
+const STATUS_TEXT: Record<string, string> = {
+  PendingEntry: 'At the entry barrier',
+  Active: 'Parked',
+  LostTicketPending: 'Lost ticket, waiting for a decision',
+  PendingPayment: 'Paying now',
+  Paid: 'Paid, on the way out',
+}
+
+/**
+ * Popup over the live 3D model for Staff, Managers and Admins: who parked in the bay (customer account or
+ * guest), the plate, how long it has been there and the fee so far. The API checks the role and the lot.
+ */
+export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: Bay; onClose: () => void }) {
+  // A counted walk-in is only drawn in this bay to show the zone counter: no session belongs to it
+  const query = useBaySession(lotId, bay.countedWalkIn ? null : bay.id)
+  const data = query.data
+  const stay = useStayMinutes(data?.session.entryTime)
+
+  if (bay.countedWalkIn)
+    return (
+      <BayVehicleNotice
+        bayCode={bay.code}
+        title={TITLE}
+        message="A walk-in counted in this zone. Walk-ins are not given a bay, so look the vehicle up by its plate in Vehicles in the lot."
+        onClose={onClose}
+      />
+    )
+  if (query.isPending) return <BayVehicleNotice bayCode={bay.code} title={TITLE} message="Loading the vehicle…" onClose={onClose} />
+  if (query.isError)
+    return (
+      <BayVehicleNotice
+        bayCode={bay.code}
+        title={TITLE}
+        // The API says why: an empty bay ("No vehicle is parked in this bay."), no access to the lot, or a failure
+        message={getErrorMessage(query.error, 'Could not load the vehicle in this bay.')}
+        onClose={onClose}
+      />
+    )
+  if (!data) return null
+
+  const { session } = data
+  const member = data.customerType === 'Member'
+  return (
+    <BayVehicleCard
+      bayCode={bay.code}
+      title={TITLE}
+      badge={{ text: member ? `Member${data.customerName ? ` · ${data.customerName}` : ''}` : 'Guest (walk-in)', tone: member ? 'member' : 'guest' }}
+      rows={[
+        { label: 'Plate', value: session.hasPlate ? session.plateNumber : 'No plate' },
+        { label: 'Vehicle', value: session.vehicleTypeName ?? '—' },
+        { label: 'Status', value: STATUS_TEXT[session.status] ?? session.status },
+        { label: 'Entered', value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
+        { label: 'Parked for', value: formatStay(stay ?? data.elapsedMinutes) },
+        { label: 'Fee so far', value: data.feeSoFar == null ? 'Not priced yet' : vndOrDash(data.feeSoFar), emphasis: data.feeSoFar != null },
+        ...(data.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(data.depositApplied)}` }] : []),
+        ...(data.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(data.alreadyPaid)}` }] : []),
+        ...(data.amountDue != null ? [{ label: 'Due now', value: vndOrDash(data.amountDue) }] : []),
+      ]}
+      footer={`Session ${session.code}${session.reservationCode ? ` · booking ${session.reservationCode}` : ''}. The fee refreshes every 30 seconds.`}
+      onClose={onClose}
+    />
+  )
+}

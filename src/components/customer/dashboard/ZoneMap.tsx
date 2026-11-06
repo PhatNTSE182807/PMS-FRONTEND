@@ -10,6 +10,11 @@ import { formatNumber } from '@/lib/format'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 import type { PublicLotPriceDTO } from '@/types/pricing.dto'
 import { vehicleKind } from '../customerFormat'
+import { useCurrentSessions } from '@/hooks/useParkingSessions'
+import { formatDate, formatTime } from '@/lib/format'
+import type { CurrentSessionDTO } from '@/types/operations.dto'
+import { BayVehicleCard } from '../garage/BayVehicleCard'
+import { formatStay, useStayMinutes, vndOrDash } from '../garage/bayVehicleFormat'
 import { GarageView } from '../garage/GarageView'
 import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
 import { ParkMotorbikePanel } from './ParkMotorbikePanel'
@@ -39,6 +44,34 @@ function priceLabel(p: PublicLotPriceDTO): string {
   if (p.firstBlockMinutes && p.firstBlockPrice != null)
     return `${formatNumber(p.firstBlockPrice)} VND first ${p.firstBlockMinutes % 60 === 0 ? `${p.firstBlockMinutes / 60}h` : `${p.firstBlockMinutes} min`}`
   return `${formatNumber(p.blockPrice)} VND / ${block}`
+}
+
+/** Popup over the 3D model when the customer clicks their own parked vehicle: where, how long, fee so far. */
+function MyVehicleCard({ current, bayCode, onClose }: { current: CurrentSessionDTO; bayCode: string; onClose: () => void }) {
+  const { session } = current
+  const stay = useStayMinutes(session.entryTime)
+  return (
+    <BayVehicleCard
+      bayCode={bayCode}
+      title="Your vehicle"
+      badge={{ text: current.vehicleLabel || session.vehicleTypeName || 'Parked', tone: 'mine' }}
+      rows={[
+        { label: 'Plate', value: session.hasPlate ? session.plateNumber : 'No plate' },
+        { label: 'Entered', value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
+        { label: 'Parked for', value: formatStay(stay ?? current.elapsedMinutes) },
+        { label: 'Fee so far', value: vndOrDash(current.feeSoFar), emphasis: true },
+        ...(current.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(current.depositApplied)}` }] : []),
+        ...(current.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(current.alreadyPaid)}` }] : []),
+        { label: 'Due now', value: vndOrDash(current.amountDue) },
+      ]}
+      footer={
+        <>
+          The fee refreshes every minute. <Link to="/me" className="cx-link">Pay or show the exit pass</Link>
+        </>
+      }
+      onClose={onClose}
+    />
+  )
 }
 
 interface ZoneMapProps {
@@ -85,11 +118,20 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   )
   const myBayIds = new Set(myActive.map((r) => String(r.slotId)))
 
+  // The customer's own vehicles parked in this lot (GET /parking-sessions/current, scoped to the signed-in account)
+  const currentSessions = useCurrentSessions()
+  const myParked = (currentSessions.data ?? []).filter(
+    (c) => c.session.slotId != null && lot && (String(c.session.parkingLotId) === lot.id || c.lotName === lot.name),
+  )
+  const myParkedByBay = new Map(myParked.map((c) => [String(c.session.slotId), c]))
+  const [myVehicleBayId, setMyVehicleBayId] = useState<string | null>(null)
+  const myVehicleOpen = myVehicleBayId ? myParkedByBay.get(myVehicleBayId) : undefined
+
   const allBays = floors.flatMap((f) => f.bays)
   const selected = allBays.find((b) => b.id === selectedId) ?? null
   const selectedFloor = selected ? floors[selected.floorIndex] : null
-  // Highlighted in the model as "your booking"
-  const myBayId = myActive[0] ? String(myActive[0].slotId) : null
+  // Highlighted in the model as "your booking", or else your parked vehicle
+  const myBayId = myActive[0] ? String(myActive[0].slotId) : myParked[0] ? String(myParked[0].session.slotId) : null
   const myVehicle = vehicles.data?.find((v) => v.vehicleId === myActive[0]?.vehicleId)
   const myVehicleKind = myVehicle && vehicleKind({ name: myVehicle.vehicleType }) === 'suv' ? 'suv' : 'car'
   // The lot's real prices (the same rule the exit gate uses): motorbike floors show the motorbike price, car floors the 4-seat car price
@@ -101,12 +143,15 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const changeLot = (id: string) => {
     onLotChange(id)
     setSelectedId(null)
+    setMyVehicleBayId(null)
     setFocusFloor(null)
   }
 
   const selectBay = (bay: Bay) => {
     setSelectedId(bay.id)
     setFocusFloor(bay.floorIndex)
+    // Only the customer's own parked vehicle opens a details popup; other vehicles stay anonymous
+    setMyVehicleBayId(myParkedByBay.has(bay.id) ? bay.id : null)
   }
 
   return (
@@ -168,7 +213,25 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               </div>
             </div>
 
-            <GarageView floors={floors} focusFloor={focusFloor} selectedBayId={selectedId} myBayId={myBayId} myVehicleColor={myVehicle?.color} myVehicleKind={myVehicleKind} onSelectBay={selectBay} />
+            <div style={{ position: 'relative' }}>
+              <GarageView
+                floors={floors}
+                focusFloor={focusFloor}
+                selectedBayId={selectedId}
+                myBayId={myBayId}
+                myVehicleColor={myVehicle?.color}
+                myVehicleKind={myVehicleKind}
+                onSelectBay={selectBay}
+                bayHint={(bay) => (myParkedByBay.has(bay.id) ? 'Your vehicle · click for details' : null)}
+              />
+              {myVehicleOpen && myVehicleBayId && (
+                <MyVehicleCard
+                  current={myVehicleOpen}
+                  bayCode={allBays.find((b) => b.id === myVehicleBayId)?.code ?? myVehicleOpen.session.slotCode ?? ''}
+                  onClose={() => setMyVehicleBayId(null)}
+                />
+              )}
+            </div>
 
             <div className="cx-map__footer">
               <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>
@@ -208,7 +271,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                   <div className="cx-map__cell">
                     <span className="cx-label">Status</span>
                     <strong className={selected.status === 'AVAILABLE' ? 'is-gold' : undefined}>
-                      {myBayIds.has(selected.id) ? 'Your booking' : STATUS_LABEL[selected.status]}
+                      {myBayIds.has(selected.id) ? 'Your booking' : myParkedByBay.has(selected.id) ? 'Your vehicle is parked here' : STATUS_LABEL[selected.status]}
                     </strong>
                   </div>
                   <div className="cx-map__cell">
