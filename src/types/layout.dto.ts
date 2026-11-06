@@ -100,6 +100,8 @@ export interface LotPlan2DDTO {
       vehicleColor?: string | null
       /** Type of the vehicle parked here, which a car bay does not fix (CAR_4 or CAR_7). */
       parkedVehicleTypeCode?: string | null
+      /** Free now but booked for later: counted walk-ins are drawn in bays without a booking first. */
+      bookedLater?: boolean
     }[]
     zoneBlocks: {
       zoneId: number

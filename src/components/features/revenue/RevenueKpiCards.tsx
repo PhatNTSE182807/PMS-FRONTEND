@@ -159,6 +159,11 @@ export function RevenueKpiCards({ report, previous, network, lotSelected, isLoad
       <KpiCard label="Total revenue" icon={<Banknote />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(revenue)}</p>
         <Delta value={change(revenue, (r) => r.systemTotalRevenue)} />
+        {(report.systemTotalCompensation ?? 0) > 0 && (
+          <p className="mt-2 text-xs text-slate-500 tabular-nums">
+            After {formatVnd(report.systemTotalCompensation ?? 0)} paid to customers whose booked bay was taken
+          </p>
+        )}
       </KpiCard>
 
       <KpiCard label="Settled parking sessions" icon={<Car />}>

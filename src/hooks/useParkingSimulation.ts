@@ -75,6 +75,11 @@ export function useSimulateLostTicket() {
 
 export function useOccupyBookedBay() {
   return useWalkInMutation(walkInSimulationService.occupyBookedBay, (r) =>
-    toast.success(`${r.plate} parked in booked bay ${r.bayCode} (booking ${r.reservationCode}). Check that booking in at the entry lane.`),
+    toast.success(
+      `${r.plate} parked in booked bay ${r.bayCode} (booking ${r.reservationCode}).` +
+        (r.caseId
+          ? ' The lot\'s Staff got the case in Exceptions & Alerts and the customer was told their bay is taken.'
+          : ' A case for that booking was already open.'),
+    ),
   )
 }

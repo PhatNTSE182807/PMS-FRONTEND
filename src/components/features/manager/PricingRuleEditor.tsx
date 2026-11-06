@@ -8,6 +8,7 @@ import type { PricingChargeModel, PricingRuleDTO, PricingRuleInput } from '@/typ
 
 /** Form values as typed text, so empty fields can be told apart from zeros. */
 interface Draft {
+  bookedBayCompensation: string
   name: string
   chargeModel: PricingChargeModel
   hasFirstBlock: boolean
@@ -50,6 +51,7 @@ function toDraft(rule: PricingRuleDTO): Draft {
     nightPrice: String(rule.nightPrice ?? rule.blockPrice ?? ''),
     maxDailyFee: rule.maxDailyFee == null ? '' : String(rule.maxDailyFee),
     lostTicketFee: String(rule.lostTicketFee),
+    bookedBayCompensation: String(rule.bookedBayCompensation ?? 0),
   }
 }
 
@@ -78,6 +80,9 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
     errors.nightStartTime = 'Night must start at a different time than the day.'
   const maxDailyFee = perEntry || d.maxDailyFee.trim() === '' ? null : whole('maxDailyFee', 0, 'Daily cap')
   const lostTicketFee = whole('lostTicketFee', 0, 'Lost ticket fee')
+  const bookedBayCompensation = whole('bookedBayCompensation', 0, 'Booked bay compensation')
+  if (!errors.bookedBayCompensation && bookedBayCompensation > 10_000_000)
+    errors.bookedBayCompensation = 'Booked bay compensation can be at most 10,000,000 VND.'
   if (Object.keys(errors).length) return { errors }
 
   return {
@@ -99,6 +104,7 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
       nightPrice,
       maxDailyFee,
       lostTicketFee,
+      bookedBayCompensation,
     },
   }
 }
@@ -258,6 +264,19 @@ export function PricingRuleEditor({
             )}
             <Field id="rule-lost" label="Lost ticket fee (VND)" hint="Added to the parking fee." error={errors.lostTicketFee}>
               <Input id="rule-lost" inputMode="numeric" value={draft.lostTicketFee} onChange={(e) => set('lostTicketFee', e.target.value)} />
+            </Field>
+            <Field
+              id="rule-compensation"
+              label="Booked bay compensation (VND)"
+              hint="Paid into the customer's XXIV wallet, and taken off this lot's revenue, when a walk-in took their booked bay and no other bay was free. Customers are not told when it changes."
+              error={errors.bookedBayCompensation}
+            >
+              <Input
+                id="rule-compensation"
+                inputMode="numeric"
+                value={draft.bookedBayCompensation}
+                onChange={(e) => set('bookedBayCompensation', e.target.value)}
+              />
             </Field>
           </div>
 

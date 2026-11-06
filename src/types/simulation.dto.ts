@@ -100,11 +100,16 @@ export interface WalkInCheckOutResultDTO {
   skipped: number
 }
 
-/** BookedBayTakenModel: a simulated walk-in now stands in a booked bay. */
+/**
+ * BookedBayTakenModel: a simulated walk-in now stands in a booked bay. A case is open for the lot's Staff and the
+ * booking's customer was told their bay is taken.
+ */
 export interface BookedBayTakenDTO {
   sessionId: number
   plate: string
   bayCode: string
   reservationId: number
   reservationCode: string
+  /** The case opened for the lot's Staff; null when one was already open for that booking. */
+  caseId: number | null
 }

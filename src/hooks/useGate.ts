@@ -21,6 +21,9 @@ function useGateRealtime(lotId: string | undefined) {
       if (event.type === 'SessionChanged' || event.type === 'ZoneCounterChanged' || event.type === 'PaymentChanged')
         void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
       if (event.type === 'OpsAlert' && !isCashAlert(event.code)) toast.warning(event.message)
+      // A walk-in parked in a booked bay: the Exceptions screen lists the new case at once
+      if (event.type === 'OpsAlert' && event.code === 'BOOKED_BAY_TAKEN')
+        void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
     }, lotId)
   }, [live, lotId, queryClient])
   return live
@@ -48,6 +51,35 @@ export function useBaySession(lotId: string | undefined, slotId: string | null) 
     refetchInterval: 30_000,
     // An empty bay answers 404: show it, do not retry
     retry: false,
+  })
+}
+
+/**
+ * Booked bays a walk-in took in the lot (open ones first). Gate pushes (a walk-in parks or leaves) refresh it; the
+ * server also settles cases that need no Staff when it is read.
+ */
+export function useBookedBayCases(lotId: string | undefined) {
+  const live = useGateRealtime(lotId)
+  return useQuery({
+    queryKey: queryKeys.gate.bookedBayCases(lotId ?? ''),
+    queryFn: () => gateService.getBookedBayCases(lotId!),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? 30_000 : GATE_REFRESH_MS * 3,
+  })
+}
+
+/** Moves a booking away from a taken bay, or cancels it with the refund and the compensation. */
+export function useResolveBookedBay(lotId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (action: { caseId: number; kind: 'reassign'; slotId: number } | { caseId: number; kind: 'compensate'; note?: string }) =>
+      action.kind === 'reassign'
+        ? gateService.reassignBookedBay(action.caseId, action.slotId)
+        : gateService.compensateBookedBay(action.caseId, action.note),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.gate.bookedBayCases(lotId ?? '') })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.layout.all })
+    },
   })
 }
 
