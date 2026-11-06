@@ -28,7 +28,7 @@ export default function CustomerDashboardPage() {
   const lots = [...(publicLots.data ?? [])].sort((a, b) => Number(b.isBookable) - Number(a.isBookable) || a.name.localeCompare(b.name))
   const [lotId, setLotId] = useState<string>()
   const selectedLotId = lotId ?? (lots[0] ? String(lots[0].id) : undefined)
-  // Lot whose Google map (with the customer's position and route) is open
+  // Lot whose directions map (with the customer's position and route) is open
   const [directionsLot, setDirectionsLot] = useState<PublicLotDTO | null>(null)
 
   const vehicles = vehiclesQuery.data ?? []
