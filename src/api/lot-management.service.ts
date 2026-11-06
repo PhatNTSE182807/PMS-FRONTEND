@@ -29,6 +29,8 @@ function read(): ManagedLot[] {
       code: l.code,
       name: l.name,
       address: l.address,
+      latitude: null,
+      longitude: null,
       is24Hours: true,
       openTime: '',
       closeTime: '',

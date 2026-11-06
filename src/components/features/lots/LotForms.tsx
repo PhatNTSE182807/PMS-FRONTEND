@@ -15,6 +15,8 @@ import type { UserDTO } from '@/types/identity.dto'
 import { GaragePreview } from '@/components/customer/garage/GaragePreview'
 import { findTemplate, GARAGE_TEMPLATES, templateCapacity } from '@/components/customer/garage/garageModel'
 import { cn } from '@/lib/utils'
+import { coordinateError } from '@/lib/lotCoordinates'
+import { LotLocationPicker } from './LotLocationPicker'
 
 export function Field({
   label,
@@ -105,6 +107,8 @@ const emptyLot: LotInput = {
   code: '',
   name: '',
   address: '',
+  latitude: null,
+  longitude: null,
   is24Hours: true,
   openTime: '07:00',
   closeTime: '22:00',
@@ -130,7 +134,10 @@ export function LotForm({
   onClose: () => void
   onSaved: () => Promise<void>
 }) {
-  const [v, set] = useState<LotInput>(lot ? { ...lot, layoutTemplate: lot.layoutTemplate ?? '' } : emptyLot)
+  // Lots saved in demo storage before positions existed have no latitude / longitude
+  const [v, set] = useState<LotInput>(
+    lot ? { ...lot, layoutTemplate: lot.layoutTemplate ?? '', latitude: lot.latitude ?? null, longitude: lot.longitude ?? null } : emptyLot,
+  )
   const patch = (p: Partial<LotInput>) => set({ ...v, ...p })
   const template = findTemplate(v.layoutTemplate)
   // Zones and slots are built from the model, so it is fixed once a lot has them
@@ -142,6 +149,8 @@ export function LotForm({
       wide
       onClose={onClose}
       onSave={async () => {
+        const positionError = coordinateError(v.latitude, v.longitude)
+        if (positionError) throw new Error(positionError)
         await service.saveLot(v, lot?.id)
         await onSaved()
       }}
@@ -172,6 +181,12 @@ export function LotForm({
           />
         </Field>
       </div>
+      <LotLocationPicker
+        latitude={v.latitude}
+        longitude={v.longitude}
+        address={v.address}
+        onChange={(latitude, longitude) => set((current) => ({ ...current, latitude, longitude }))}
+      />
       <fieldset className="grid gap-2 sm:col-span-2" disabled={modelLocked}>
         <legend className="mb-1.5 text-sm font-medium text-slate-700">Parking lot model *</legend>
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Parking lot model">

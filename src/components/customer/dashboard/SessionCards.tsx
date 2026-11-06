@@ -239,7 +239,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         )}
         {showDirections && (
           <LotDirectionsDialog
-            lot={{ name: current.lotName ?? 'Parking lot', address: current.lotAddress ?? '', district: current.lotDistrict, city: null, latitude: null, longitude: null }}
+            lot={{ name: current.lotName ?? 'Parking lot', address: current.lotAddress ?? '', district: current.lotDistrict, city: null, latitude: current.lotLatitude ?? null, longitude: current.lotLongitude ?? null }}
             onClose={() => setShowDirections(false)}
           />
         )}

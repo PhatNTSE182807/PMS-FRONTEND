@@ -29,6 +29,9 @@ export interface ManagedLot {
   code: string
   name: string
   address: string
+  /** Map position of the entrance for the customer's directions map; null: found by address. */
+  latitude: number | null
+  longitude: number | null
   is24Hours: boolean
   openTime: string
   closeTime: string
