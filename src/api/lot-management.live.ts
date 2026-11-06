@@ -19,6 +19,8 @@ interface LotResponse {
   code: string
   name: string
   address: string
+  latitude?: number | null
+  longitude?: number | null
   openTime: string | null
   closeTime: string | null
   is24Hours: boolean
@@ -114,6 +116,8 @@ function toLot(lot: LotResponse, zones: ZoneResponse[], slots: SlotResponse[]): 
     code: lot.code,
     name: lot.name,
     address: lot.address,
+    latitude: lot.latitude ?? null,
+    longitude: lot.longitude ?? null,
     is24Hours: lot.is24Hours,
     openTime: toTimeInput(lot.openTime),
     closeTime: toTimeInput(lot.closeTime),
@@ -156,6 +160,8 @@ export const lotManagementApi = {
     const body = {
       name: input.name.trim(),
       address: input.address.trim(),
+      latitude: input.latitude,
+      longitude: input.longitude,
       is24Hours: input.is24Hours,
       openTime: input.is24Hours ? null : toTimeOnly(input.openTime),
       closeTime: input.is24Hours ? null : toTimeOnly(input.closeTime),

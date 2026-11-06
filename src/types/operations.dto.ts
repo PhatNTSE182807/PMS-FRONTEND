@@ -210,6 +210,9 @@ export interface CurrentSessionDTO {
   lotName: string | null
   lotAddress: string | null
   lotDistrict: string | null
+  /** Map position of the lot; null (or missing on older APIs) when the Admin has not set it. */
+  lotLatitude?: number | null
+  lotLongitude?: number | null
   entryGateName: string | null
   /** How the entry was identified. */
   entryMethod: 'Plate' | 'Reservation' | 'Manual'
