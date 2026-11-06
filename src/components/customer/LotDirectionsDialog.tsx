@@ -36,11 +36,14 @@ function DirectionsMap({ lot, origin, onRoute }: { lot: DirectionsLot; origin: L
   const [map, setMap] = useState<MapboxMap | null>(null)
   const [lotPosition, setLotPosition] = useState<LngLat | null>(() => lotCoords(lot))
   const [route, setRoute] = useState<DrivingRoute | null>(null)
+  // Set when the dialog closes: the map is gone, so later cleanups must not touch it
+  const removedRef = useRef(false)
 
   // Create the map once; mapbox-gl is loaded only when the dialog opens
   useEffect(() => {
     let created: MapboxMap | null = null
     let cancelled = false
+    removedRef.current = false
     void Promise.all([import('mapbox-gl'), import('mapbox-gl/dist/mapbox-gl.css')]).then(([{ default: mapboxgl }]) => {
       if (cancelled || !containerRef.current) return
       const center = lotCoords(lot) ?? DEFAULT_CENTER
@@ -57,6 +60,7 @@ function DirectionsMap({ lot, origin, onRoute }: { lot: DirectionsLot; origin: L
     })
     return () => {
       cancelled = true
+      removedRef.current = true
       created?.remove()
     }
   }, [lot])
@@ -122,6 +126,7 @@ function DirectionsMap({ lot, origin, onRoute }: { lot: DirectionsLot; origin: L
       cancelled = true
       markers.forEach((m) => m.remove())
       markers = []
+      if (removedRef.current) return
       if (map.getLayer(ROUTE_SOURCE)) map.removeLayer(ROUTE_SOURCE)
       if (map.getSource(ROUTE_SOURCE)) map.removeSource(ROUTE_SOURCE)
     }
