@@ -6,8 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_MOCK_SERVICES?: string
   /** OAuth 2.0 Web client ID for "Sign in with Google"; the button is hidden when empty. */
   readonly VITE_GOOGLE_CLIENT_ID?: string
-  /** Mapbox public access token for the lot directions map; the map is hidden when empty. */
-  readonly VITE_MAPBOX_ACCESS_TOKEN?: string
+  /** Google Maps JavaScript API key for the lot directions map; the map is hidden when empty. */
+  readonly VITE_GOOGLE_MAPS_API_KEY?: string
   /** Plate reader service (backend repo tools/anpr/service.py); development defaults to http://127.0.0.1:8001. */
   readonly VITE_ANPR_SERVICE_URL?: string
 }
