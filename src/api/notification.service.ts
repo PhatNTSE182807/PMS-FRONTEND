@@ -6,7 +6,19 @@ import { http } from './axiosClient'
 
 export interface NotificationModel {
   id: number
-  type: 'VehicleApproved' | 'VehicleRejected' | 'CheckIn' | 'CheckOut' | 'PriceChanged'
+  type:
+    | 'VehicleApproved'
+    | 'VehicleRejected'
+    | 'CheckIn'
+    | 'CheckOut'
+    | 'PriceChanged'
+    /** A walk-in parked in the customer's booked bay, and what the lot did about it. */
+    | 'BookedBayTaken'
+    | 'BookedBayReassigned'
+    | 'BookedBayFreed'
+    | 'BookingCancelledByLot'
+    | 'DepositRefunded'
+    | 'CompensationPaid'
   title: string
   message: string
   refType: string | null

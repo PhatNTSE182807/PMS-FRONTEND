@@ -16,6 +16,7 @@ import { BookedVehicleError } from '@/hooks/useGate'
 import { gateService } from '@/api/gate.service'
 import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/features/staff/LostTicketPapersDialog'
 import { LostTicketReviews } from '@/components/features/staff/LostTicketReviews'
+import { BookedBayCases } from '@/components/features/staff/BookedBayCases'
 import { useNow } from '@/hooks/useNow'
 import { useMyStaffLots } from '@/hooks/useParking'
 import { cn } from '@/lib/utils'
@@ -286,6 +287,12 @@ function LostTicketDesk() {
   )
 }
 
+/** Booked bays a walk-in took in the Staff's lot. */
+function BookedBayCaseArea() {
+  const myLots = useMyStaffLots()
+  return <BookedBayCases lotId={myLots.data?.[0]?.id} />
+}
+
 /** The papers check, opened on the vehicle that was just uploaded (router state, never the URL). */
 function LostTicketReviewArea() {
   const myLots = useMyStaffLots()
@@ -319,6 +326,7 @@ export default function StaffExceptionsPage() {
         <span className="font-mono normal-case">Audit stamp: {stamp.format(now)}</span>
       </div>
 
+      <BookedBayCaseArea />
       <LostTicketReviewArea />
       <LostTicketDesk />
 

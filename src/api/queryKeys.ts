@@ -117,6 +117,7 @@ export const queryKeys = {
     counters: (lotId: string) => [...queryKeys.gate.all, 'counters', lotId] as const,
     sessions: (lotId: string) => [...queryKeys.gate.all, 'sessions', lotId] as const,
     baySession: (lotId: string, slotId: string) => [...queryKeys.gate.all, 'bay-session', lotId, slotId] as const,
+    bookedBayCases: (lotId: string) => [...queryKeys.gate.all, 'booked-bay-cases', lotId] as const,
     history: (lotId: string, page = 1) => [...queryKeys.gate.all, 'history', lotId, page] as const,
     payments: (lotId: string, method?: string) => [...queryKeys.gate.all, 'payments', lotId, method ?? ''] as const,
     reservation: (lotId: string, entry: string) => [...queryKeys.gate.all, 'reservation', lotId, entry] as const,

@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, Check, CheckCheck, Trash2, Car, ShieldCheck, ShieldX, LogIn, LogOut as LogOutIcon, Tag } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  Bell,
+  CalendarX,
+  Check,
+  CheckCheck,
+  CircleCheck,
+  HandCoins,
+  Trash2,
+  Car,
+  ShieldCheck,
+  ShieldX,
+  LogIn,
+  LogOut as LogOutIcon,
+  Tag,
+  TriangleAlert,
+  Undo2,
+} from 'lucide-react'
 import { useNotifications, useMarkRead, useMarkAllRead, useDeleteNotification, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
 
@@ -9,6 +26,12 @@ const ICON_MAP: Record<string, typeof Bell> = {
   CheckIn: LogIn,
   CheckOut: LogOutIcon,
   PriceChanged: Tag,
+  BookedBayTaken: TriangleAlert,
+  BookedBayReassigned: ArrowLeftRight,
+  BookedBayFreed: CircleCheck,
+  BookingCancelledByLot: CalendarX,
+  DepositRefunded: Undo2,
+  CompensationPaid: HandCoins,
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -17,6 +40,12 @@ const COLOR_MAP: Record<string, string> = {
   CheckIn: 'cx-notif__icon--info',
   CheckOut: 'cx-notif__icon--warning',
   PriceChanged: 'cx-notif__icon--warning',
+  BookedBayTaken: 'cx-notif__icon--danger',
+  BookedBayReassigned: 'cx-notif__icon--info',
+  BookedBayFreed: 'cx-notif__icon--success',
+  BookingCancelledByLot: 'cx-notif__icon--danger',
+  DepositRefunded: 'cx-notif__icon--success',
+  CompensationPaid: 'cx-notif__icon--success',
 }
 
 /** Notification bell with dropdown for the customer nav bar. */

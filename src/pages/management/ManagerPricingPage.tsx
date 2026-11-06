@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Sun,
   TicketX,
+  HandCoins,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { PricingRuleEditor } from '@/components/features/manager/PricingRuleEditor'
@@ -186,6 +187,13 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
         )}
         <Rule icon={LogOut} label="Exit window" value={String(EXIT_WINDOW_MINUTES)} unit="min" note="Time to leave after paying at the counter or in the app." />
         <Rule icon={TicketX} label="Lost ticket fee" value={money(rule.lostTicketFee)} unit="VND + stay" tone="red" note="Added to the parking fee, after identity checks." />
+        <Rule
+          icon={HandCoins}
+          label="Booked bay compensation"
+          value={money(rule.bookedBayCompensation ?? 0)}
+          unit="VND"
+          note="Paid to the wallet when a walk-in took the booked bay and no other bay was free. Off this lot's revenue."
+        />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -235,6 +243,7 @@ function starterRule(type: VehicleTypeDTO): PricingRuleInput {
     nightPrice: null,
     maxDailyFee: bike ? 20_000 : 150_000,
     lostTicketFee: bike ? 50_000 : 100_000,
+    bookedBayCompensation: bike ? 20_000 : 50_000,
     status: 'Draft',
   }
 }

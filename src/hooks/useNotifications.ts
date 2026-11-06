@@ -7,6 +7,15 @@ import { queryKeys } from '@/api/queryKeys'
 import { useAuth } from '@/hooks/useAuth'
 import { USER_TOAST } from '@/lib/userToasts'
 
+const BOOKED_BAY_TYPES = new Set<string>([
+  'BookedBayTaken',
+  'BookedBayReassigned',
+  'BookedBayFreed',
+  'BookingCancelledByLot',
+  'DepositRefunded',
+  'CompensationPaid',
+])
+
 /** Loads the bell's notifications and keeps them up-to-date through SignalR. */
 export function useNotifications(take = 30) {
   const { user } = useAuth()
@@ -42,6 +51,13 @@ export function useNotifications(take = 30) {
 
       // Popup for immediate feedback. The id stops several mounted copies of this hook showing it twice.
       // A check-out closed by the lot Manager (it carries a note) is not a normal exit: it keeps its own text.
+      // A taken booked bay moves or cancels the booking and may put money in the wallet: refresh both
+      if (BOOKED_BAY_TYPES.has(notification.type)) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+        if (notification.type === 'DepositRefunded' || notification.type === 'CompensationPaid')
+          window.dispatchEvent(new Event('xxiv-wallet-updated'))
+      }
+
       const id = `notification-${notification.id}`
       if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
       else if (notification.type === 'CheckOut' && !notification.data?.note) toast.success(USER_TOAST.checkedOut, { id })

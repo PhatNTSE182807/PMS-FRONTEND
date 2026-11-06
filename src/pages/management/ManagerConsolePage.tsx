@@ -174,6 +174,7 @@ function Console({ lot }: { lot: ManagedLot }) {
           {allTime.data && (
             <p className="mt-1 text-sm text-slate-700">
               {formatNumber(allTime.data.totalSessions)} paid sessions since {allTime.data.startDate}
+              {(allTime.data.totalCompensation ?? 0) > 0 && ` · after ${vnd(allTime.data.totalCompensation ?? 0)} booked bay compensation`}
             </p>
           )}
           <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-700">

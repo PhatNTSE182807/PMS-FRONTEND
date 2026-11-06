@@ -53,8 +53,9 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
 
 /**
  * Walk-ins are not given a bay: only the zone counter knows how many are inside. The model still shows them,
- * filling free bays of their zone in a fixed order (front rows first) so the same bays stay filled between
- * refreshes. Spaces used = counter total - counter free; bays already shown as held or taken count first.
+ * filling free bays of their zone in a fixed order (bays without a booking first, then front rows first) so the same
+ * bays stay filled between refreshes and a bay booked for later is the last one drawn as taken. Spaces used = counter
+ * total - counter free; bays already shown as held or taken count first.
  * Each filled bay maps to one of those vehicles, while the counter's list lasts; the others are not known (null).
  */
 function walkInBays(plan: LotPlan2DDTO): Map<number, WalkIn | null> {
@@ -64,9 +65,10 @@ function walkInBays(plan: LotPlan2DDTO): Map<number, WalkIn | null> {
     const inZone = cells.filter((c) => c.zoneId === zone.zoneId)
     const shown = inZone.filter((c) => c.status !== 'Available').length
     const missing = Math.max(0, zone.total - zone.free - shown)
+    // Bays without a booking first, as the lane and the simulation park walk-ins: a booked bay stays free as long as it can
     const free = inZone
       .filter((c) => c.status === 'Available')
-      .sort((a, b) => a.floorIndex - b.floorIndex || a.row - b.row || a.col - b.col)
+      .sort((a, b) => Number(Boolean(a.bookedLater)) - Number(Boolean(b.bookedLater)) || a.floorIndex - b.floorIndex || a.row - b.row || a.col - b.col)
     const vehicles = zone.walkIns ?? []
     free.slice(0, Math.max(0, missing)).forEach((cell, i) => filled.set(cell.slotId, vehicles[i] ?? null))
   }
