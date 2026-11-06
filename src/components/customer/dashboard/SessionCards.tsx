@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { CalendarClock, CircleCheck, Clock, CreditCard, Hourglass, LogIn, LogOut, Navigation, QrCode as QrIcon, ScanLine, ShieldAlert, ShieldCheck, Wallet, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
+import { LotDirectionsDialog } from '@/components/customer/LotDirectionsDialog'
 import { QrCode } from '@/components/ui/qr-code'
 import { useCancelGateRequest, useMyGateRequests, useRequestCheckIn, useRequestCheckOut } from '@/hooks/useGateRequests'
 import { useCurrentSessions, usePrepaySession } from '@/hooks/useParkingSessions'
@@ -17,8 +18,6 @@ import type { CurrentSessionDTO, ExitPassDTO, PaymentProvider, ReservationDTO } 
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 const vnd = (amount: number) => `${formatNumber(amount)} VND`
 
-/** Google Maps directions to the lot (the bay is shown on the 3D model once inside). */
-const directionsUrl = (address: string) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
 
 /** "20,000 / started hour", "5,000 / 4 h block"; null when the API sends no block price (the fee still counts). */
 function tariffText(session: CurrentSessionDTO) {
@@ -155,6 +154,8 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
   const checkOut = useRequestCheckOut()
   const [choosing, setChoosing] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  // Map popup with the route to the lot (the bay is shown on the 3D model once inside)
+  const [showDirections, setShowDirections] = useState(false)
   const exitRequest = useLatestRequest((r) => r.kind === 'CheckOut' && r.sessionId === current.session.id, now)
 
   const s = current.session
@@ -232,9 +233,15 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
           </div>
         </div>
         {address && (
-          <a className="cx-btn" href={directionsUrl(`${current.lotName ?? ''} ${address}`)} target="_blank" rel="noopener noreferrer">
+          <button type="button" className="cx-btn" onClick={() => setShowDirections(true)}>
             <Navigation aria-hidden /> Directions to lot
-          </a>
+          </button>
+        )}
+        {showDirections && (
+          <LotDirectionsDialog
+            lot={{ name: current.lotName ?? 'Parking lot', address: current.lotAddress ?? '', district: current.lotDistrict, city: null, latitude: null, longitude: null }}
+            onClose={() => setShowDirections(false)}
+          />
         )}
       </div>
 
