@@ -136,7 +136,8 @@ function PickerMap({ point, onPick }: { point: LngLat | null; onPick: (point: Ln
       created.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
       created.getCanvas().style.cursor = 'crosshair'
       created.on('click', (e) => onPickRef.current({ lat: round6(e.lngLat.lat), lng: round6(e.lngLat.lng) }))
-      created.on('load', () => {
+      // The pin only needs the style; "load" waits for every tile and never fires in a background tab
+      created.once('style.load', () => {
         if (cancelled || !created) return
         // The dialog opens with an animation: measure the map again once it has its final size
         created.resize()
