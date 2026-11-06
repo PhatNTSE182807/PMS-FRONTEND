@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { APIProvider, Map, Marker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { ExternalLink, LocateFixed, MapPin, X } from 'lucide-react'
 import type { PublicLotDTO } from '@/types/publicLot.dto'
+import { computeDrivingRoute, formatDistance, formatDuration } from '@/api/googleRoutes.service'
 
 type LatLng = google.maps.LatLngLiteral
 type DirectionsLot = Pick<PublicLotDTO, 'name' | 'address' | 'district' | 'city' | 'latitude' | 'longitude'>
@@ -33,40 +34,45 @@ interface RouteInfo {
 }
 
 /**
- * Draws the driving route from the customer to the lot. When there is no route (location refused,
- * or the Directions service is unavailable) it still shows the lot and, if known, the customer.
+ * Draws the driving route from the customer to the lot (Google Routes API). When there is no route
+ * (location refused, or the service is unavailable) it still shows the lot and, if known, the customer.
  */
 function RouteLayer({ lot, origin, onRoute }: { lot: DirectionsLot; origin: LatLng | null; onRoute: (route: RouteInfo | null) => void }) {
   const map = useMap()
-  const routes = useMapsLibrary('routes')
+  const geometry = useMapsLibrary('geometry')
   const geocoding = useMapsLibrary('geocoding')
   const [lotPosition, setLotPosition] = useState<LatLng | null>(() => lotCoords(lot))
   const [routeFailed, setRouteFailed] = useState(false)
 
   // Route from the customer's position to the lot
   useEffect(() => {
-    if (!map || !routes || !origin) return
-    const renderer = new routes.DirectionsRenderer({ map, suppressMarkers: true, polylineOptions: { strokeColor: '#1a73e8', strokeWeight: 6 } })
-    let cancelled = false
-    new routes.DirectionsService()
-      .route({ origin, destination: lotCoords(lot) ?? lotAddress(lot), travelMode: google.maps.TravelMode.DRIVING })
-      .then((result) => {
-        if (cancelled) return
-        renderer.setDirections(result)
-        const leg = result.routes[0]?.legs[0]
-        if (leg) setLotPosition((current) => current ?? leg.end_location.toJSON())
-        onRoute(leg ? { distance: leg.distance?.text ?? '', duration: leg.duration?.text ?? '' } : null)
+    if (!map || !geometry || !origin) return
+    let line: google.maps.Polyline | null = null
+    const abort = new AbortController()
+    computeDrivingRoute(apiKey, origin, lotCoords(lot) ?? lotAddress(lot), abort.signal)
+      .then((route) => {
+        if (abort.signal.aborted) return
+        if (!route) throw new Error('No route found')
+        const path = geometry.encoding.decodePath(route.encodedPolyline)
+        line = new google.maps.Polyline({ map, path, strokeColor: '#1a73e8', strokeWeight: 6, strokeOpacity: 0.9 })
+        const bounds = new google.maps.LatLngBounds()
+        path.forEach((p) => bounds.extend(p))
+        map.fitBounds(bounds, 64)
+        // A lot without saved coordinates sits at the end of the route
+        const end = path[path.length - 1]
+        if (end) setLotPosition((current) => current ?? end.toJSON())
+        onRoute({ distance: formatDistance(route.distanceMeters), duration: formatDuration(route.durationSeconds) })
       })
       .catch(() => {
-        if (cancelled) return
+        if (abort.signal.aborted) return
         setRouteFailed(true)
         onRoute(null)
       })
     return () => {
-      cancelled = true
-      renderer.setMap(null)
+      abort.abort()
+      line?.setMap(null)
     }
-  }, [map, routes, origin, lot, onRoute])
+  }, [map, geometry, origin, lot, onRoute])
 
   // No route to read the lot's position from: find it by address
   const needsGeocode = !lotPosition && (!origin || routeFailed)
