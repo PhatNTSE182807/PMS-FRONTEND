@@ -33,6 +33,7 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
         vehicleColor: cell.vehicleColor ?? walkIns.get(cell.slotId)?.vehicleColor ?? null,
         vehicleKind: parkedCode ? parkedKind(parkedCode) : null,
         bayKind: parkedKind(cell.vehicleTypeCode),
+        countedWalkIn: walkIns.has(cell.slotId) || undefined,
       }
     })
     return {

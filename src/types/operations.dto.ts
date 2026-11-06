@@ -451,3 +451,20 @@ export interface StaffPaymentHistoryPageDTO {
   pageSize: number
   totalCount: number
 }
+
+/**
+ * GET /api/staff/lots/{lotId}/slots/{slotId}/session: BaySessionModel. The vehicle parked in one bay, for the
+ * 3D lot model's popup (Staff, Managers and Admins only: it carries the plate).
+ */
+export interface BaySessionDTO {
+  session: ParkingSessionDTO
+  /** "Member": a customer account; "Guest": a walk-in without an account. */
+  customerType: 'Member' | 'Guest'
+  customerName: string | null
+  elapsedMinutes: number
+  /** Fee so far before the deposit and payments; null while it cannot be priced (lost-ticket case, still at the barrier). */
+  feeSoFar: number | null
+  depositApplied: number
+  alreadyPaid: number
+  amountDue: number | null
+}

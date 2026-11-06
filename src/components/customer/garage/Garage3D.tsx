@@ -20,6 +20,13 @@ export interface Garage3DProps {
   /** And its body: a 7-seat SUV or a 4-seat car. */
   myVehicleKind?: ParkedKind | null
   onSelectBay: (bay: Bay) => void
+  /**
+   * Which bays react to a click (pointer cursor, onSelectBay). Every bay by default. Hovering any bay always
+   * shows its code (e.g. L3-01), whatever this returns.
+   */
+  canSelectBay?: (bay: Bay) => boolean
+  /** Second line of the hover tooltip, e.g. "Click for details"; none by default. */
+  bayHint?: (bay: Bay) => string | null
   className?: string
 }
 
@@ -252,8 +259,9 @@ const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion:
  * Kept light on purpose: static pieces are merged, bays and vehicles are instanced, shadows are
  * baked once per change and a frame is drawn only when something moved.
  */
-export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, myVehicleColor, myVehicleKind, onSelectBay, className }: Garage3DProps) {
+export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, myVehicleColor, myVehicleKind, onSelectBay, canSelectBay, bayHint, className }: Garage3DProps) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<{
     levels: LevelObjects[]
     labels: THREE.Sprite[]
@@ -264,8 +272,8 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
     invalidate: (shadows?: boolean) => void
   } | null>(null)
 
-  const latest = useRef({ selectedBayId, myBayId, myVehicleColor, myVehicleKind, onSelectBay, floors })
-  latest.current = { selectedBayId, myBayId, myVehicleColor, myVehicleKind, onSelectBay, floors }
+  const latest = useRef({ selectedBayId, myBayId, myVehicleColor, myVehicleKind, onSelectBay, canSelectBay, bayHint, floors })
+  latest.current = { selectedBayId, myBayId, myVehicleColor, myVehicleKind, onSelectBay, canSelectBay, bayHint, floors }
 
   const layoutKey = floors.map((f) => `${f.level}:${f.kind}:${f.rows}x${f.cols}:${f.bays.length}:${f.bays[0]?.id}`).join('|')
 
@@ -650,13 +658,55 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
       if (!padHit || padHit.instanceId === undefined) return null
       if (first && !isPad(first.object) && first.distance < padHit.distance - 0.6) return null
       const level = levels.find((l) => l.pads === padHit.object)
+      // The level's latest bays (live status), at the same index as the instanced pads
       return level?.floor.bays[padHit.instanceId] ?? null
     }
+    const selectable = (bay: Bay) => latest.current.canSelectBay?.(bay) ?? true
+
+    /* Hover tooltip: the bay's code next to the pointer */
+    const showTooltip = (bay: Bay | null, event: PointerEvent | null) => {
+      const tip = tooltipRef.current
+      if (!tip) return
+      if (!bay || !event) {
+        tip.style.opacity = '0'
+        return
+      }
+      const hint = latest.current.bayHint?.(bay) ?? null
+      const title = tip.firstElementChild as HTMLElement | null
+      const sub = tip.lastElementChild as HTMLElement | null
+      if (title) title.textContent = bay.code
+      if (sub) {
+        sub.textContent = hint ?? ''
+        sub.style.display = hint ? 'block' : 'none'
+      }
+      const rect = host.getBoundingClientRect()
+      const x = event.clientX - rect.left
+      const y = event.clientY - rect.top
+      // Right of and above the pointer, flipped near the edges so it never leaves the model
+      const left = x + 14 + tip.offsetWidth > rect.width ? x - 14 - tip.offsetWidth : x + 14
+      const top = y - 12 - tip.offsetHeight < 0 ? y + 18 : y - 12 - tip.offsetHeight
+      tip.style.transform = `translate(${Math.max(4, left)}px, ${Math.max(4, top)}px)`
+      tip.style.opacity = '1'
+    }
+
     let downAt = { x: 0, y: 0 }
     let hoverQueued: PointerEvent | null = null
     const onMove = (event: PointerEvent) => {
-      if (event.buttons) return // orbiting: no need to pick
+      if (event.buttons) {
+        // Orbiting: no need to pick, and the tooltip would trail behind
+        showTooltip(null, null)
+        return
+      }
       hoverQueued = event
+    }
+    const onLeave = () => {
+      hoverQueued = null
+      showTooltip(null, null)
+      const state = sceneRef.current
+      if (state?.hoverId) {
+        state.hoverId = null
+        refresh()
+      }
     }
     const onDown = (event: PointerEvent) => {
       downAt = { x: event.clientX, y: event.clientY }
@@ -664,9 +714,10 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
     const onUp = (event: PointerEvent) => {
       if (Math.hypot(event.clientX - downAt.x, event.clientY - downAt.y) > 5) return // a drag, not a click
       const bay = pick(event)
-      if (bay) latest.current.onSelectBay(bay)
+      if (bay && selectable(bay)) latest.current.onSelectBay(bay)
     }
     renderer.domElement.addEventListener('pointermove', onMove)
+    renderer.domElement.addEventListener('pointerleave', onLeave)
     renderer.domElement.addEventListener('pointerdown', onDown)
     renderer.domElement.addEventListener('pointerup', onUp)
 
@@ -685,9 +736,11 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
       const state = sceneRef.current
       if (!state || !onScreen) return
       if (hoverQueued) {
-        const bay = pick(hoverQueued)
+        const event = hoverQueued
+        const bay = pick(event)
         hoverQueued = null
-        renderer.domElement.style.cursor = bay ? 'pointer' : 'grab'
+        renderer.domElement.style.cursor = bay && selectable(bay) ? 'pointer' : 'grab'
+        showTooltip(bay, event)
         if ((bay?.id ?? null) !== state.hoverId) {
           state.hoverId = bay?.id ?? null
           refresh()
@@ -710,6 +763,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
       observer.disconnect()
       visibility.disconnect()
       renderer.domElement.removeEventListener('pointermove', onMove)
+      renderer.domElement.removeEventListener('pointerleave', onLeave)
       renderer.domElement.removeEventListener('pointerdown', onDown)
       renderer.domElement.removeEventListener('pointerup', onUp)
       controls.dispose()
@@ -760,7 +814,33 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
       ref={hostRef}
       className={`garage3d ${className ?? ''}`}
       role="img"
-      aria-label="3D model of the car park. Drag to rotate, scroll to zoom, click a bay to select it."
-    />
+      aria-label="3D model of the car park. Drag to rotate, scroll to zoom, point at a bay to see its code."
+    >
+      {/* Moved and filled by the pointer handlers above, outside React, so hovering never re-renders */}
+      <div
+        ref={tooltipRef}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          zIndex: 5,
+          opacity: 0,
+          pointerEvents: 'none',
+          transition: 'opacity 120ms ease-out',
+          padding: '0.3rem 0.55rem',
+          borderRadius: '0.4rem',
+          background: 'rgba(6, 15, 22, 0.9)',
+          border: '1px solid rgba(233, 195, 73, 0.7)',
+          color: '#e9c349',
+          fontFamily: '"Plus Jakarta Sans", Inter, sans-serif',
+          whiteSpace: 'nowrap',
+          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)',
+        }}
+      >
+        <strong style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.02em' }} />
+        <span style={{ display: 'none', marginTop: '0.1rem', fontSize: '0.68rem', fontWeight: 500, color: '#dae4ed' }} />
+      </div>
+    </div>
   )
 }

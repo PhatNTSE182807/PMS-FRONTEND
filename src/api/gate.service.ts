@@ -1,6 +1,7 @@
 import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { SERVICE_PATHS } from '@/config/env'
 import type {
+  BaySessionDTO,
   CheckInRequest,
   CheckInResultDTO,
   CheckoutQuoteDTO,
@@ -32,6 +33,11 @@ export const gateService = {
 
   getZoneCounters(lotId: string): Promise<ZoneCounterDTO[]> {
     return http.get<ZoneCounterDTO[]>(`${lotPath(lotId)}/zone-counters`)
+  },
+
+  /** The vehicle parked in a bay, for the 3D lot model's popup: customer type, plate, time parked, fee so far. */
+  getBaySession(lotId: string, slotId: string): Promise<BaySessionDTO> {
+    return http.get<BaySessionDTO>(`${lotPath(lotId)}/slots/${slotId}/session`)
   },
 
   /** Open sessions (vehicles inside or entering) unless a status is given. */
