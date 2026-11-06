@@ -56,7 +56,15 @@ function DirectionsMap({ lot, origin, onRoute }: { lot: DirectionsLot; origin: L
         language: 'en',
       })
       created.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
-      created.on('load', () => !cancelled && setMap(created))
+      // Markers and the route only need the style, not every tile: "load" never fires while the tab is
+      // in the background, so waiting for it would leave the map empty
+      created.once('style.load', () => {
+        if (cancelled || !created) return
+        // The full-screen dialog may still be growing when the map is built: measure it again before
+        // the camera is fitted to the route
+        created.resize()
+        setMap(created)
+      })
     })
     return () => {
       cancelled = true
@@ -174,7 +182,7 @@ export function LotDirectionsDialog({ lot: openedLot, onClose }: { lot: Directio
           : 'This browser cannot share your location.'
 
   return (
-    <div className="cx-pass-backdrop" role="presentation" onClick={onClose}>
+    <div className="cx-pass-backdrop cx-pass-backdrop--map" role="presentation" onClick={onClose}>
       <div className="cx-map-dialog" role="dialog" aria-modal="true" aria-labelledby="lot-directions-title" onClick={(e) => e.stopPropagation()}>
         <div className="cx-map-dialog__head">
           <div>
