@@ -61,6 +61,7 @@ const LIFECYCLE_STYLE: Record<LotState, { chip: string; icon: string }> = {
   Active: { chip: 'bg-emerald-100 text-emerald-700', icon: 'text-indigo-700' },
   Maintenance: { chip: 'bg-amber-100 text-amber-700', icon: 'text-amber-500' },
   TemporarilyClosed: { chip: 'bg-rose-100 text-rose-700', icon: 'text-rose-400' },
+  Closed: { chip: 'bg-slate-800 text-white', icon: 'text-slate-700' },
   Inactive: { chip: 'bg-slate-100 text-slate-700', icon: 'text-slate-500' },
 }
 
@@ -70,7 +71,7 @@ const vehiclesInside = (lot: ManagedLot) =>
 
 /** Why a lot cannot be deleted yet; null when it can. It must be closed first and every vehicle must have left. */
 function deleteBlocker(lot: ManagedLot): string | null {
-  if (lot.status !== 'TemporarilyClosed') return 'Set the lot to Temporarily closed before deleting it.'
+  if (lot.status !== 'Closed') return 'Set the lot to Closed before deleting it.'
   const inside = vehiclesInside(lot)
   if (inside > 0) return `${inside} vehicle${inside === 1 ? ' is' : 's are'} still parked in this lot.`
   return null
@@ -299,7 +300,8 @@ export default function ParkingLotsPage() {
                   <p className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-800">
                     <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-600" />Active</span>
                     <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-500" />Maintenance</span>
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />Closed</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />Temporarily closed</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-slate-800" />Closed</span>
                   </p>
                 </div>
 

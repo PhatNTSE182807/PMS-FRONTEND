@@ -317,7 +317,7 @@ export function LotForm({
   )
 }
 /** Statuses offered in the operating status form, in the order shown. */
-const STATUS_CHOICES: ManagedLot['status'][] = ['Active', 'Maintenance', 'TemporarilyClosed', 'Inactive']
+const STATUS_CHOICES: ManagedLot['status'][] = ['Active', 'Maintenance', 'TemporarilyClosed', 'Closed', 'Inactive']
 
 /** The current local time in the format of a datetime-local input. */
 function nowLocal() {
@@ -345,7 +345,7 @@ export function OperationForm({
   return (
     <Editor
       title="Operating status"
-      description="Active: customers can book and park. Maintenance: no new bookings while the lot is repaired. Temporarily closed: the lot is shut until the reopening time. A lot cannot close while any of its slots is reserved or occupied."
+      description="Active: customers can book and park. Maintenance: no new bookings while the lot is repaired. Temporarily closed: the lot is shut until the reopening time. Closed: shut for good with no reopening time, the step before deleting a lot. A lot cannot close while any of its slots is reserved or occupied."
       onClose={onClose}
       onSave={async () => {
         await service.setOperation(lot.id, v)
