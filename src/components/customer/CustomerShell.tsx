@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { CreditCard, LogOut, Shield } from 'lucide-react'
 import { Toaster } from 'sonner'
+import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -133,6 +134,7 @@ export function CustomerShell() {
       <UserWalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} wallet={wallet} />
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
+      <AssistantWidget />
     </div>
   )
 }
