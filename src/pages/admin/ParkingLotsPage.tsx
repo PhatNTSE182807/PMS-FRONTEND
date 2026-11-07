@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Box,
@@ -41,8 +41,8 @@ import {
   VEHICLE_TYPES,
   type ManagedLot,
 } from '@/types/lot-management.dto'
-import { GaragePreview } from '@/components/customer/garage/GaragePreview'
-import { findTemplate, type ZoneStats } from '@/components/customer/garage/garageModel'
+import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
+import { findTemplate } from '@/components/customer/garage/garageModel'
 import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
 import { toSearchable } from '@/lib/text'
 import { formatPhone, initials } from '@/lib/format'
@@ -107,23 +107,8 @@ function exportLots(rows: ManagedLot[], managerName: (id: string) => string) {
   URL.revokeObjectURL(url)
 }
 
-/** Each level of the 3D model mirrors the zones on that floor: their capacity and slot states. */
-function layoutStats(lot: ManagedLot, levels: number): ZoneStats[] {
-  return Array.from({ length: levels }, (_, i) => {
-    const zones = lot.zones.filter((z) => z.floorNo === i + 1)
-    const slots = zones.flatMap((z) => z.slots)
-    return {
-      label: zones.map((z) => z.name).join(' + '),
-      total: zones.reduce((n, z) => n + z.capacity, 0),
-      occupied: slots.filter((s) => s.status === 'Occupied').length,
-      reserved: slots.filter((s) => s.status === 'Reserved').length,
-    }
-  })
-}
-
 function LotLayoutCard({ lot, onEdit }: { lot: ManagedLot; onEdit?: () => void }) {
   const template = findTemplate(lot.layoutTemplate)
-  const stats = useMemo(() => (template ? layoutStats(lot, template.floors.length) : []), [lot, template])
   return (
     <Card className="space-y-3 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -145,7 +130,15 @@ function LotLayoutCard({ lot, onEdit }: { lot: ManagedLot; onEdit?: () => void }
           </Button>
         )}
       </div>
-      {template && <GaragePreview key={`${lot.id}:${template.id}`} template={template} floorStats={stats} seed={lot.id} />}
+      {/* The lot's real bays (same model as the Staff and Manager screens), not counts spread over made-up bays */}
+      {template && (
+        <LiveLotModel
+          key={`${lot.id}:${template.id}`}
+          className="p-0 ring-0"
+          lots={[{ id: lot.id, code: lot.code, name: lot.name, layoutTemplate: lot.layoutTemplate }]}
+          lotId={lot.id}
+        />
+      )}
     </Card>
   )
 }
