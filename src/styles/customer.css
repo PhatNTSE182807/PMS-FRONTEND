@@ -1419,10 +1419,18 @@
 .cx-map__footer {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
   margin-top: auto;
   font-size: 0.75rem;
   color: var(--cx-on-variant);
+}
+
+/* "View map" under the 3D model: the route to the lot */
+.cx-map__view-map {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
 }
 
 .cx-map__detail {
