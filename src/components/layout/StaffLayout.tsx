@@ -13,7 +13,6 @@ import { useOpenSessions } from '@/hooks/useGate'
 import { useProfile } from '@/hooks/useProfile'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { useCashAlerts } from '@/hooks/useCashAlerts'
-import { CashDeadlineBanner } from '@/components/features/staff/CashDeadlineBanner'
 import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
@@ -177,7 +176,6 @@ export function StaffLayout() {
       <main className="flex-1 px-4 py-6 sm:px-6 lg:py-8">
         {/* The gate dashboard uses the whole width for its four cameras and the lane panel */}
         <div key={pathname} className={cn('admin-page-enter mx-auto', pathname.startsWith('/staff/gate') ? 'max-w-none' : 'max-w-[1400px]')}>
-          <CashDeadlineBanner lotId={lot?.id} />
           <ErrorBoundary
             fallback={(error, reset) => (
               <div className="rounded-xl bg-white ring-1 ring-slate-200">

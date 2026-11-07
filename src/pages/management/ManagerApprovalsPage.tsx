@@ -24,7 +24,6 @@ function CashCloseCard({ close }: { close: CashDrawerDTO }) {
   const [note, setNote] = useState('')
   const difference = close.difference ?? 0
   const off = close.status === 'HasDifference'
-  const notClosed = close.status === 'Open'
   const own = close.staffUserId === user?.userId
   return (
     <Card className={cn('p-4', off && 'ring-amber-300')}>
@@ -37,17 +36,12 @@ function CashCloseCard({ close }: { close: CashDrawerDTO }) {
           </p>
         </div>
         <span className="flex flex-wrap gap-1">
-          {notClosed ? (
-            <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">Not closed by the deadline</span>
-          ) : (
-            <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', off ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700')}>
-              {off ? 'Difference over the limit' : 'Within the limit'}
-            </span>
-          )}
-          {close.closedLate && <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">Closed late</span>}
+          <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', off ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700')}>
+            {off ? 'Difference over the limit' : 'Within the limit'}
+          </span>
         </span>
       </div>
-      <dl className={cn('mt-3 grid grid-cols-3 gap-2 text-sm', notClosed && 'hidden')}>
+      <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
         <div><dt className="text-xs text-slate-600">Counted</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.countedTotal ?? 0)}</dd></div>
         <div><dt className="text-xs text-slate-600">Expected</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.expectedTotal)}</dd></div>
         <div>
@@ -58,16 +52,11 @@ function CashCloseCard({ close }: { close: CashDrawerDTO }) {
           </dd>
         </div>
       </dl>
-      {notClosed && (
-        <p className="mt-3 text-sm text-rose-700">
-          Still open: {formatNumber(close.expectedTotal)} VND expected in the drawer. Ask the Staff to count and close it.
-        </p>
-      )}
       {close.differenceReason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">Staff reason:</strong> {close.differenceReason}</p>}
-      {off && !notClosed && (
+      {off && (
         <Input className="mt-3" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="What you checked (required for a difference)" aria-label="Confirmation note" />
       )}
-      <div className={cn('mt-3 flex justify-end', notClosed && 'hidden')}>
+      <div className="mt-3 flex justify-end">
         <Button
           size="sm"
           disabled={own || confirm.isPending || (off && !note.trim())}
