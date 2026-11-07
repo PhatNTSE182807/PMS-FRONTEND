@@ -128,7 +128,7 @@ function Reconciliation({ drawer, counted }: { drawer: CashDrawerDTO; counted: B
       )}
       {drawer.untrackedCash > 0 && (
         <p className="mt-3 text-xs text-slate-600">
-          {vnd(drawer.untrackedCash)} was taken as an amount, not note by note: it is in the expected total but not in the notes per value.
+          {vnd(drawer.untrackedCash)} was taken as an amount, not note by note: the In drawer column counts it as the fewest notes that make it. Count the notes that are really there.
         </p>
       )}
     </Panel>
@@ -352,7 +352,7 @@ function ClosedDrawer({ drawer }: { drawer: CashDrawerDTO }) {
         </table>
       </div>
       {drawer.untrackedCash > 0 && (
-        <p className="mt-2 text-xs text-slate-600">{vnd(drawer.untrackedCash)} was entered as an amount, not note by note, so it is in the totals but not in the notes.</p>
+        <p className="mt-2 text-xs text-slate-600">{vnd(drawer.untrackedCash)} was entered as an amount, not note by note; the notes count it as the fewest notes that make it.</p>
       )}
       <p className="mt-4 text-sm text-slate-700">Drawer {drawer.closeNo + 1} opened right after this one, with the standard float.</p>
     </Panel>
