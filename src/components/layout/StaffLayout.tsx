@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { LogOut } from 'lucide-react'
+import { StaffNotificationBell } from '@/components/features/staff/StaffNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -120,6 +121,8 @@ export function StaffLayout() {
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            {/* Booked bays a walk-in took, bookings moved and compensation sent to customers */}
+            <StaffNotificationBell />
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
                 <p className="text-sm font-semibold text-slate-950">
