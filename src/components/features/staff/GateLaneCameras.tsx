@@ -107,34 +107,6 @@ function useLaneSource(direction: LaneDirection, sessions: ParkingSessionDTO[] |
   }
 }
 
-type LaneSource = ReturnType<typeof useLaneSource>
-
-/** Which vehicle the four cameras follow: its lane and its pass key. */
-interface CameraFocus {
-  lane: LaneDirection
-  key: string
-}
-
-const otherLane = (lane: LaneDirection): LaneDirection => (lane === 'entry' ? 'exit' : 'entry')
-
-/**
- * Which vehicle the cameras follow:
- * 1. one driving through its barrier keeps them until it has left the picture;
- * 2. then a vehicle the Staff has just let through;
- * 3. then the vehicle at the lane whose tab the Staff has open;
- * 4. then the vehicle already on screen (waiting at its barrier);
- * 5. else the other lane first, so a busy lane does not hold the other one back.
- */
-function nextFocus(lanes: Record<LaneDirection, LaneSource>, last: CameraFocus | null, active: LaneDirection | null): CameraFocus | null {
-  const current = last && lanes[last.lane].vehicle?.key === last.key ? last : null
-  if (current && lanes[current.lane].open) return current
-  const at = (lane: LaneDirection | null | undefined) => (lane && lanes[lane].vehicle ? lane : undefined)
-  const order: LaneDirection[] = active ? [active, otherLane(active)] : last?.lane === 'entry' ? ['exit', 'entry'] : ['entry', 'exit']
-  const lane = order.find((l) => lanes[l].vehicle && lanes[l].handled && lanes[l].open) ?? at(active) ?? at(current?.lane) ?? order.find((l) => lanes[l].vehicle)
-  if (!lane) return null
-  return { lane, key: lanes[lane].vehicle!.key }
-}
-
 const NO_OP = () => {}
 
 interface LaneCameraProps {
@@ -286,57 +258,62 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
 
 const VIEW_TEXT: Record<LaneView, string> = { rear: 'Rear camera', front: 'Front camera' }
 
+type LaneSource = ReturnType<typeof useLaneSource>
+
+/** Vehicles at a lane the board does not show, for the "waiting" hint in its header. */
+const atLane = (source: LaneSource) => source.waiting + (source.vehicle ? 1 : 0)
+
+/** Check-in board: the entry cameras show the vehicle coming in; the exit cameras stay empty. */
+function CheckInBoard({ entry, exit, now, anpr }: { entry: LaneSource; exit: LaneSource; now: number; anpr: AnprStatus }) {
+  return (
+    <div className="space-y-5">
+      <LaneCamera ids={{ rear: 'CAM-01', front: 'CAM-02' }} direction="entry" vehicle={entry.vehicle} open={entry.open} onDone={entry.done} waiting={entry.waiting} replay={false} now={now} anpr={anpr} />
+      <LaneCamera ids={{ rear: 'CAM-03', front: 'CAM-04' }} direction="exit" vehicle={null} open={false} onDone={NO_OP} waiting={atLane(exit)} replay={false} now={now} anpr={anpr} />
+    </div>
+  )
+}
+
+/**
+ * Check-out board: the exit cameras show the vehicle leaving and the entry cameras replay how it came in, stopped at
+ * the reading line, so the Staff can check that the plate is the same.
+ */
+function CheckOutBoard({ entry, exit, now, anpr }: { entry: LaneSource; exit: LaneSource; now: number; anpr: AnprStatus }) {
+  const exitVehicle = exit.vehicle
+  // Its own key, so the entry cameras play the check-in drive from the start
+  const replayVehicle = useMemo<LaneVehicle | null>(() => (exitVehicle ? { ...exitVehicle, key: `check-in-${exitVehicle.key}` } : null), [exitVehicle])
+  return (
+    <div className="space-y-5">
+      {/* The replay stops at the reading line: the barrier stays down */}
+      <LaneCamera ids={{ rear: 'CAM-01', front: 'CAM-02' }} direction="entry" vehicle={replayVehicle} open={false} onDone={NO_OP} waiting={atLane(entry)} replay={Boolean(replayVehicle)} now={now} anpr={anpr} />
+      <LaneCamera ids={{ rear: 'CAM-03', front: 'CAM-04' }} direction="exit" vehicle={exitVehicle} open={exit.open} onDone={exit.done} waiting={exit.waiting} replay={false} now={now} anpr={anpr} />
+    </div>
+  )
+}
+
 /**
  * The gate cameras as 3D lanes, two per lane: the entry lane on top, the exit lane below. In each lane the rear
  * camera reads the plate on the back of the vehicle and the front camera faces its front (cars carry a plate
- * at both ends). All four cameras follow one vehicle at a time:
- * - check-in: the entry cameras show it coming in, the exit cameras stay empty;
- * - check-out: the exit cameras show it leaving and the entry cameras replay how it came in, stopped at the
- *   reading line, so the Staff can check that the plate is the same.
- * A vehicle at the other lane waits until the one on screen has left the picture.
+ * at both ends). Each tab of the lane panel has its own four cameras, shown with that tab:
+ * - Check-in: the entry cameras show the vehicle coming in, the exit cameras stay empty;
+ * - Check-out: the exit cameras show the vehicle leaving and the entry cameras replay how it came in.
+ * Both boards stay mounted and run on their own, so switching tabs never restarts a vehicle waiting on the other one.
  */
 export function GateLaneCameras({ sessions, history }: { sessions: ParkingSessionDTO[] | undefined; history: ParkingSessionDTO[] | undefined }) {
   const now = useNow(1000)
   const anpr = useAnprStatus()
   const entry = useLaneSource('entry', sessions)
   const exit = useLaneSource('exit', history)
-
-  const [focus, setFocus] = useState<CameraFocus | null>(null)
-  const active = useActiveLane()
-  const chosen = nextFocus({ entry, exit }, focus, active)
-  // Remember the choice so the vehicle keeps the cameras until it has gone (state set while rendering)
-  if (chosen?.lane !== focus?.lane || chosen?.key !== focus?.key) setFocus(chosen)
-
-  const lane = chosen?.lane ?? null
-  const exitVehicle = lane === 'exit' ? exit.vehicle : null
-  // Its own key, so the entry lane plays the check-in drive from the start
-  const replayVehicle = useMemo<LaneVehicle | null>(() => (exitVehicle ? { ...exitVehicle, key: `check-in-${exitVehicle.key}` } : null), [exitVehicle])
+  // The board of the lane panel's open tab (check-in when the panel is not there)
+  const showExit = useActiveLane() === 'exit'
 
   return (
-    <div className="space-y-5">
-      <LaneCamera
-        ids={{ rear: 'CAM-01', front: 'CAM-02' }}
-        direction="entry"
-        vehicle={lane === 'entry' ? entry.vehicle : replayVehicle}
-        // The replay stops at the reading line: the barrier stays down
-        open={lane === 'entry' ? entry.open : false}
-        onDone={lane === 'entry' ? entry.done : NO_OP}
-        waiting={entry.waiting + (lane !== 'entry' && entry.vehicle ? 1 : 0)}
-        replay={lane === 'exit'}
-        now={now}
-        anpr={anpr}
-      />
-      <LaneCamera
-        ids={{ rear: 'CAM-03', front: 'CAM-04' }}
-        direction="exit"
-        vehicle={exitVehicle}
-        open={exit.open}
-        onDone={lane === 'exit' ? exit.done : NO_OP}
-        waiting={exit.waiting + (lane !== 'exit' && exit.vehicle ? 1 : 0)}
-        replay={false}
-        now={now}
-        anpr={anpr}
-      />
-    </div>
+    <>
+      <div hidden={showExit} aria-label="Check-in cameras">
+        <CheckInBoard entry={entry} exit={exit} now={now} anpr={anpr} />
+      </div>
+      <div hidden={!showExit} aria-label="Check-out cameras">
+        <CheckOutBoard entry={entry} exit={exit} now={now} anpr={anpr} />
+      </div>
+    </>
   )
 }
