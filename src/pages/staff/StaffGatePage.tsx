@@ -21,7 +21,6 @@ import { Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/featu
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useDemoIncidents } from '@/hooks/useDemoIncidents'
 import { useGateHistory, useLotPayments, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
 import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
@@ -265,7 +264,6 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
 export default function StaffGatePage() {
   // /staff/gate?lane=checkout (from the POS after a payment) opens the Check-out lane
   const lane = useSearchParams()[0].get('lane')
-  const { open } = useDemoIncidents()
   const myLots = useMyStaffLots()
   const { lot } = useStaffLot()
   const [lotId, setLotId] = useState<string>()
@@ -286,8 +284,8 @@ export default function StaffGatePage() {
       count += sessions.data.filter((s) => s.isLostTicket || s.lostTicketStatus === 'Pending' || s.isOverdue || s.plateMismatch).length
     }
     count += (checkIns.data?.length ?? 0) + (checkOuts.data?.length ?? 0)
-    return sessions.isSuccess ? count : open.length
-  }, [sessions.data, sessions.isSuccess, checkIns.data, checkOuts.data, open.length])
+    return count
+  }, [sessions.data, checkIns.data, checkOuts.data])
 
   return (
     <div className="space-y-6">

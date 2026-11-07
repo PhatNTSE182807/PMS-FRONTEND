@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
-import { useDemoIncidents } from '@/hooks/useDemoIncidents'
 import { useOpenSessions } from '@/hooks/useGate'
 import { useProfile } from '@/hooks/useProfile'
 import { useStaffLot } from '@/hooks/useStaffLot'
@@ -46,11 +45,10 @@ export function StaffLayout() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const handleLogout = useSignOut()
-  const { open } = useDemoIncidents()
   const openSessions = useOpenSessions(lot?.id)
   const exceptionsCount = openSessions.isSuccess
     ? (openSessions.data?.filter((s) => s.isLostTicket || s.lostTicketStatus === 'Pending' || s.isOverdue || s.plateMismatch).length ?? 0)
-    : open.length
+    : 0
 
   // Sync profile details (FullName, EmployeeCode, Avatar) into session if received from API
   useEffect(() => {
