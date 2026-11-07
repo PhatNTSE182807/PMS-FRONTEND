@@ -243,7 +243,8 @@ function starterRule(type: VehicleTypeDTO): PricingRuleInput {
     nightPrice: null,
     maxDailyFee: bike ? 20_000 : 150_000,
     lostTicketFee: bike ? 50_000 : 100_000,
-    bookedBayCompensation: bike ? 20_000 : 50_000,
+    // Booked bay compensation: 50,000 VND for motorbikes, 100,000 VND for 4- and 7-seat cars
+    bookedBayCompensation: bike ? 50_000 : 100_000,
     status: 'Draft',
   }
 }
