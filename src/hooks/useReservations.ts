@@ -9,6 +9,7 @@ import { queryKeys } from '@/api/queryKeys'
 import { reservationService } from '@/api/reservation.service'
 import { USER_TOAST, toastBookingError, toastPaymentError } from '@/lib/userToasts'
 import type { CreateReservationRequest, PaymentProvider, ReservationDTO, UpdateReservationRequest } from '@/types/operations.dto'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /** Polling fallback: deposit deadlines are minutes long, so 15 s is enough without SignalR. */
 const RESERVATIONS_REFRESH_MS = 15_000
@@ -22,7 +23,7 @@ export function useMyReservations() {
     if (!live) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'ReservationChanged' || event.type === 'PaymentChanged')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+        invalidateFromPush(queryClient, queryKeys.reservations.all)
       // The hold passed without a check-in: the backend job cancels the booking. The id stops several mounted
       // copies of this hook from showing the same popup twice.
       if (event.type === 'ReservationChanged' && event.status === 'NoShow')
@@ -60,7 +61,7 @@ export function useLotReservations(lotId: string | undefined, from: string, to: 
     if (!live || !lotId) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'ReservationChanged' || event.type === 'SessionChanged')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+        invalidateFromPush(queryClient, queryKeys.reservations.all)
     }, lotId)
   }, [live, lotId, queryClient])
 

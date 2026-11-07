@@ -7,6 +7,7 @@ import { gateService } from '@/api/gate.service'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
 import type { CheckInRequest, CheckoutRequest, LostTicketRequest, PaymentProvider } from '@/types/operations.dto'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /** Polling fallback for the lane console when SignalR is not connected (demo, hub down). */
 const GATE_REFRESH_MS = 5_000
@@ -19,14 +20,14 @@ function useGateRealtime(lotId: string | undefined) {
     if (!live || !lotId) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'SessionChanged' || event.type === 'ZoneCounterChanged' || event.type === 'PaymentChanged')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
+        invalidateFromPush(queryClient, queryKeys.gate.all)
       // Several gate hooks of one page each subscribe, so every copy would raise the same popup: one id per
       // alert makes them share a single popup
       if (event.type === 'OpsAlert' && !isCashAlert(event.code))
         toast.warning(event.message, { id: `ops-alert-${event.lotId}-${event.code}-${event.sessionId ?? 'lot'}-${event.message}` })
       // A walk-in parked in a booked bay: the Exceptions screen lists the new case at once
       if (event.type === 'OpsAlert' && event.code === 'BOOKED_BAY_TAKEN')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
+        invalidateFromPush(queryClient, queryKeys.gate.all)
     }, lotId)
   }, [live, lotId, queryClient])
   return live

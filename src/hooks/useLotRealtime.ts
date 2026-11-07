@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/api/queryKeys'
 import { lotRealtime } from '@/api/realtime'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /**
  * Subscribes to a lot's SignalR channel: slot, lot and layout changes refresh the cached layout
@@ -17,11 +18,9 @@ export function useLotRealtime(lotId: string | undefined) {
     const stop = lotRealtime.watch(lotId, {
       onConnectionChange: setConnected,
       onEvent: (event) => {
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.layout.all,
-          predicate: (q) => q.queryKey.includes(lotId),
-        })
-        if (event.type === 'LotStatusChanged') void queryClient.invalidateQueries({ queryKey: ['lot-management'] })
+        // Coalesced: a burst of bay pushes refetches the layout about once a second, not once per push
+        invalidateFromPush(queryClient, queryKeys.layout.all, { scope: lotId, predicate: (key) => key.includes(lotId) })
+        if (event.type === 'LotStatusChanged') invalidateFromPush(queryClient, ['lot-management'])
       },
     })
     return () => {
