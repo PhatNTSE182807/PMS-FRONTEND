@@ -167,8 +167,8 @@ function OpenCase({ bayCase, lotId }: { bayCase: BookedBayCaseDTO; lotId: string
 
 /**
  * Booked bays a walk-in took (Exceptions screen): move the booking to a free bay of its type, or, when none is
- * left, cancel it with the deposit and the lot's compensation paid into the customer's XXIV wallet. Shown while the
- * lot has open or recent cases.
+ * left, cancel it with the deposit and the lot's compensation paid into the customer's XXIV wallet. Always shown,
+ * so the Staff knows where these cases appear even before the first one.
  */
 export function BookedBayCases({ lotId }: { lotId: string | undefined }) {
   const cases = useBookedBayCases(lotId)
@@ -176,26 +176,29 @@ export function BookedBayCases({ lotId }: { lotId: string | undefined }) {
   const open = all.filter((c) => c.status === 'Open')
   const recent = all.filter((c) => c.status !== 'Open').slice(0, 5)
 
-  if (!lotId || (!cases.isPending && all.length === 0)) return null
-
   return (
     <Panel id="booked-bay-cases" className={cn(open.length > 0 && 'ring-2 ring-amber-400')}>
       <SectionTitle
         icon={<ParkingSquare className="size-5 text-amber-500" aria-hidden />}
         aside={
-          <span className={cn('rounded px-2 py-0.5 text-xs font-bold', open.length ? 'bg-amber-50 text-amber-500' : 'bg-slate-100 text-slate-700')}>
+          lotId && cases.isSuccess && <span className={cn('rounded px-2 py-0.5 text-xs font-bold', open.length ? 'bg-amber-50 text-amber-500' : 'bg-slate-100 text-slate-700')}>
             {open.length ? `${open.length} to resolve` : 'All resolved'}
           </span>
         }
       >
         Booked bays taken by a walk-in
       </SectionTitle>
-      {cases.isPending && <Skeleton className="h-48 rounded-xl" />}
+      {!lotId && <p className="text-sm text-slate-700">You are not assigned to a parking lot yet.</p>}
+      {lotId && cases.isPending && <Skeleton className="h-48 rounded-xl" />}
+      {cases.isError && (
+        <p className="text-sm text-rose-700">{getErrorMessage(cases.error, 'Could not load the booked bay cases.')}</p>
+      )}
       <div className="space-y-4">
-        {open.map((c) => (
-          <OpenCase key={c.id} bayCase={c} lotId={lotId} />
-        ))}
-        {open.length === 0 && !cases.isPending && (
+        {lotId &&
+          open.map((c) => (
+            <OpenCase key={c.id} bayCase={c} lotId={lotId} />
+          ))}
+        {lotId && open.length === 0 && !cases.isPending && !cases.isError && (
           <p className="flex items-center gap-2 text-sm text-slate-700">
             <CircleCheck className="size-4 text-emerald-600" aria-hidden /> No booked bay is taken right now.
           </p>
