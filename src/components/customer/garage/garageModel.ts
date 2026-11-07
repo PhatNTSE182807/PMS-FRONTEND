@@ -23,6 +23,8 @@ export interface Bay {
    * belongs to this bay.
    */
   countedWalkIn?: boolean
+  /** The session of that counted walk-in, when the zone has one for it; null when only the counter knows it. */
+  walkInSessionId?: number | null
 }
 
 export interface GarageFloor {

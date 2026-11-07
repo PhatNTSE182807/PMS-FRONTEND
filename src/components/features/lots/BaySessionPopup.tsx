@@ -20,17 +20,18 @@ const STATUS_TEXT: Record<string, string> = {
  * guest), the plate, how long it has been there and the fee so far. The API checks the role and the lot.
  */
 export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: Bay; onClose: () => void }) {
-  // A counted walk-in is only drawn in this bay to show the zone counter: no session belongs to it
-  const query = useBaySession(lotId, bay.countedWalkIn ? null : bay.id)
+  // A counted walk-in has no bay of its own (it is only drawn here): its session is opened by id instead
+  const walkInSession = bay.countedWalkIn ? (bay.walkInSessionId ?? null) : null
+  const query = useBaySession(lotId, bay.countedWalkIn ? null : bay.id, walkInSession)
   const data = query.data
   const stay = useStayMinutes(data?.session.entryTime)
 
-  if (bay.countedWalkIn)
+  if (bay.countedWalkIn && walkInSession == null)
     return (
       <BayVehicleNotice
         bayCode={bay.code}
         title={TITLE}
-        message="A walk-in counted in this zone. Walk-ins are not given a bay, so look the vehicle up by its plate in Vehicles in the lot."
+        message="The zone counter counts one more vehicle here than the lot has open sessions for, so there are no details to show. An inventory check corrects the counter."
         onClose={onClose}
       />
     )
@@ -65,7 +66,9 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
         ...(data.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(data.alreadyPaid)}` }] : []),
         ...(data.amountDue != null ? [{ label: 'Due now', value: vndOrDash(data.amountDue) }] : []),
       ]}
-      footer={`Session ${session.code}${session.reservationCode ? ` · booking ${session.reservationCode}` : ''}. The fee refreshes every 30 seconds.`}
+      footer={`Session ${session.code}${session.reservationCode ? ` · booking ${session.reservationCode}` : ''}.${
+        walkInSession != null ? ' A walk-in without a bay of its own: the model draws it in a free bay of its zone.' : ''
+      } The fee refreshes every 30 seconds.`}
       onClose={onClose}
     />
   )

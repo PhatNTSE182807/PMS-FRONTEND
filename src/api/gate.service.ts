@@ -41,6 +41,11 @@ export const gateService = {
     return http.get<BaySessionDTO>(`${lotPath(lotId)}/slots/${slotId}/session`)
   },
 
+  /** The same details by session id: a walk-in counted in its zone has no bay to look it up by. */
+  getParkedSession(lotId: string, sessionId: number): Promise<BaySessionDTO> {
+    return http.get<BaySessionDTO>(`${lotPath(lotId)}/sessions/${sessionId}/parked`)
+  },
+
   /** Booked bays a walk-in took, open ones first; openOnly drops the resolved ones. */
   getBookedBayCases(lotId: string, openOnly = false): Promise<BookedBayCaseDTO[]> {
     return http.get<BookedBayCaseDTO[]>(`${lotPath(lotId)}/booked-bay-cases`, { params: { openOnly } })

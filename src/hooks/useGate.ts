@@ -45,12 +45,14 @@ export function useGates(lotId: string | undefined) {
  * The vehicle parked in one bay (Staff, Managers and Admins), for the 3D lot model's popup. The fee grows by
  * block, so it refreshes every 30 s; gate pushes refresh it at once.
  */
-export function useBaySession(lotId: string | undefined, slotId: string | null) {
+export function useBaySession(lotId: string | undefined, slotId: string | null, sessionId: number | null = null) {
   useGateRealtime(lotId)
+  // A counted walk-in has no bay: it is looked up by its session instead
+  const bySession = sessionId != null
   return useQuery({
-    queryKey: queryKeys.gate.baySession(lotId ?? '', slotId ?? ''),
-    queryFn: () => gateService.getBaySession(lotId!, slotId!),
-    enabled: Boolean(lotId && slotId),
+    queryKey: bySession ? queryKeys.gate.parkedSession(lotId ?? '', sessionId) : queryKeys.gate.baySession(lotId ?? '', slotId ?? ''),
+    queryFn: () => (bySession ? gateService.getParkedSession(lotId!, sessionId) : gateService.getBaySession(lotId!, slotId!)),
+    enabled: Boolean(lotId && (bySession || slotId)),
     refetchInterval: 30_000,
     // An empty bay answers 404: show it, do not retry
     retry: false,
