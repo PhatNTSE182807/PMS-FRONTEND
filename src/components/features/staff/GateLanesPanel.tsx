@@ -63,6 +63,12 @@ export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: strin
   const checkOuts = useGateRequestQueue(lotId, 'CheckOut')
   const counts = { CheckIn: checkIns.data?.length ?? 0, CheckOut: checkOuts.data?.length ?? 0 }
 
+  // The gate cameras show the lane of the open tab when vehicles wait at both barriers
+  useEffect(() => {
+    gateLaneSignals.setActive(laneOf(tab))
+    return () => gateLaneSignals.setActive(null)
+  }, [tab])
+
   return (
     <Panel className="flex flex-col">
       <div role="tablist" aria-label="Gate lanes" className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-50 p-1">
