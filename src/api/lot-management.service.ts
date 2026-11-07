@@ -149,10 +149,11 @@ export const lotManagementService = {
     requireAdmin()
     const lots = await load()
     const lot = getLot(lots, id)
-    if (lot.status === 'Active' || lot.zones.length)
-      throw new Error(
-        'Only inactive lots without zones can be deleted. Lots that have operated must keep their history in the backend.',
-      )
+    // Same rule as the API: the lot is closed first and every vehicle has left.
+    if (lot.status !== 'TemporarilyClosed')
+      throw new Error('Set the lot to Temporarily closed before deleting it.')
+    if (lot.zones.some((z) => z.slots.some((s) => s.status === 'Occupied')))
+      throw new Error('Cannot delete the parking lot while vehicles are still inside.')
     if (!isDemo()) {
       await lotManagementApi.deleteLot(id)
       return
