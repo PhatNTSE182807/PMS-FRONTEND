@@ -5,7 +5,6 @@ import { FleetCard } from '@/components/customer/dashboard/FleetCard'
 import { NotificationCard } from '@/components/customer/dashboard/NotificationCard'
 import { RecentSessions } from '@/components/customer/dashboard/RecentSessions'
 import { ActiveSessionCard, ReservationCard } from '@/components/customer/dashboard/SessionCards'
-import { TestNotificationButton } from '@/components/customer/dashboard/TestNotificationButton'
 import { UtilitiesCard } from '@/components/customer/dashboard/UtilitiesCard'
 import { ZoneMap } from '@/components/customer/dashboard/ZoneMap'
 import { useAuth } from '@/hooks/useAuth'
@@ -40,7 +39,7 @@ export default function CustomerDashboardPage() {
   return (
     <>
       <section className="cx-welcome">
-        <div>
+        <div className="cx-welcome__intro">
           <span className="cx-eyebrow">
             <span className="cx-dot cx-dot--gold" aria-hidden="true" /> Client console • Live telemetry
             {defaultVehicle && <span style={{ color: 'var(--cx-on-variant)' }}>• Plate {defaultVehicle.licensePlate} linked</span>}
@@ -55,13 +54,13 @@ export default function CustomerDashboardPage() {
                 ? 'The parking network cannot be reached right now.'
                 : `${openLots} of ${lots.length} parking lot${lots.length === 1 ? '' : 's'} open for bookings, ${freeBays.toLocaleString('en-US')} bays free right now.`}
           </p>
-          {import.meta.env.DEV && <TestNotificationButton />}
         </div>
 
         {lots.length > 0 && (
-          <div className="cx-tabs" aria-label="Parking lots">
+          // One compact row under the greeting, so the customer's name keeps the full width
+          <div className="cx-tabs cx-tabs--lots" aria-label="Parking lots">
             <span className="cx-tabs__label">
-              <Navigation aria-hidden /> Parking lots:
+              <Navigation aria-hidden /> Lots
             </span>
             {lots.map((lot) => (
               <span key={lot.id} className="cx-tab-group">
@@ -69,13 +68,15 @@ export default function CustomerDashboardPage() {
                   type="button"
                   className={`cx-tab ${String(lot.id) === selectedLotId ? 'cx-tab--active' : ''}`}
                   title={lot.isBookable ? `${lot.freeBays} of ${lot.totalBays} bays free` : (lot.maintenanceNotice ?? 'Under maintenance')}
+                  aria-label={lot.isBookable ? `${lot.name}, open` : `${lot.name}, under maintenance`}
                   onClick={() => {
                     setLotId(String(lot.id))
                     document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                   }}
                 >
+                  {/* Green: open for bookings; amber: under maintenance (the reason is in the tooltip) */}
+                  <span className={`cx-tab__dot ${lot.isBookable ? 'cx-tab__dot--open' : 'cx-tab__dot--warn'}`} aria-hidden />
                   {lot.name}
-                  {!lot.isBookable && ' (maintenance)'}
                 </button>
                 <button
                   type="button"
