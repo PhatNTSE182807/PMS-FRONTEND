@@ -316,6 +316,16 @@ export function LotForm({
     </Editor>
   )
 }
+/** Statuses offered in the operating status form, in the order shown. */
+const STATUS_CHOICES: ManagedLot['status'][] = ['Active', 'Maintenance', 'TemporarilyClosed', 'Inactive']
+
+/** The current local time in the format of a datetime-local input. */
+function nowLocal() {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  return d.toISOString().slice(0, 16)
+}
+
 export function OperationForm({
   lot,
   onClose,
@@ -335,7 +345,7 @@ export function OperationForm({
   return (
     <Editor
       title="Operating status"
-      description="Managers run their assigned lots. A lot cannot close while any of its slots is reserved or occupied."
+      description="Active: customers can book and park. Maintenance: no new bookings while the lot is repaired. Temporarily closed: the lot is shut until the reopening time. A lot cannot close while any of its slots is reserved or occupied."
       onClose={onClose}
       onSave={async () => {
         await service.setOperation(lot.id, v)
@@ -345,13 +355,17 @@ export function OperationForm({
       <Field label="Status">
         <NativeSelect
           value={v.status}
-          onChange={(e) =>
-            set({ ...v, status: e.target.value as ManagedLot['status'] })
-          }
+          onChange={(e) => {
+            const status = e.target.value as ManagedLot['status']
+            // Closing starts now unless a start time was already picked
+            const closedFrom = status === 'TemporarilyClosed' && !v.closedFrom ? nowLocal() : v.closedFrom
+            set({ ...v, status, closedFrom })
+          }}
         >
-          {Object.entries(LOT_STATES).map(([k, s]) => (
+          {/* Inactive is only the state of a lot that never opened, so it is listed only while the lot is in it. */}
+          {STATUS_CHOICES.filter((k) => k !== 'Inactive' || lot.status === 'Inactive').map((k) => (
             <option key={k} value={k}>
-              {s}
+              {LOT_STATES[k]}
             </option>
           ))}
         </NativeSelect>
