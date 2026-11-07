@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
 
-/** Real-time cash drawer alerts of a lot: the day ended, a drawer was closed, a drawer is overdue. */
+/** Real-time cash drawer alerts of a lot: a drawer was closed, cash was requested or decided. */
 export const isCashAlert = (code: string) => code.startsWith('CASH_')
 
 /**
@@ -21,8 +21,7 @@ export function useCashAlerts(lotId: string | undefined) {
       if (event.type !== 'OpsAlert' || !isCashAlert(event.code)) return
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
       // The id stops a second mounted listener from showing the same alert twice
-      const show = event.code === 'CASH_OVERDUE' || event.code === 'CASH_DAY_END' ? toast.warning : toast.info
-      show(event.message, { id: `${event.code}-${event.message}`, duration: 10_000 })
+      toast.info(event.message, { id: `${event.code}-${event.message}`, duration: 10_000 })
     }, lotId)
   }, [live, lotId, queryClient])
 }

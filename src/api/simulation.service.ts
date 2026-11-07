@@ -2,6 +2,7 @@ import { SERVICE_PATHS } from '@/config/env'
 import type {
   BookedBayTakenDTO,
   DeployWalkInsCommand,
+  DeployWalkInToBayCommand,
   DeployWalkInsResultDTO,
   ParkingSimulationDTO,
   SimulatedWalkInDTO,
@@ -9,6 +10,7 @@ import type {
   WalkInCheckOutResultDTO,
   WalkInSimulationOverviewDTO,
 } from '@/types/simulation.dto'
+import type { GateRequestDTO } from '@/types/gateRequest.dto'
 import { http } from './axiosClient'
 
 /**
@@ -28,11 +30,6 @@ export const simulationService = {
 }
 
 const walkIns = `${SERVICE_PATHS.staff}/simulation/walk-ins`
-
-/** Admin simulation: ends the business day now (one lot or all); open cash drawers must close within the grace seconds. */
-export function endBusinessDay(lotId: number | undefined, graceSeconds: number): Promise<{ drawersToClose: number; closeDueAt: string }> {
-  return http.post<{ drawersToClose: number; closeDueAt: string }>(`${SERVICE_PATHS.staff}/simulation/end-business-day`, { lotId, graceSeconds })
-}
 
 /** Admin walk-in simulation: random-plate vehicles through the real entry and exit lanes. */
 export const walkInSimulationService = {
@@ -61,8 +58,13 @@ export const walkInSimulationService = {
     return http.post<SimulatedWalkInDTO | null>(`${walkIns}/${sessionId}/lost-ticket`, { conditionsMet })
   },
 
-  /** A walk-in parks in the bay of the lot's next confirmed booking. */
-  occupyBookedBay(lotId: number): Promise<BookedBayTakenDTO> {
-    return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: { lotId } })
+  /** A walk-in parks in the bay of the lot's next confirmed booking, or of the booking in `slotId`. */
+  occupyBookedBay(lotId: number, slotId?: number): Promise<BookedBayTakenDTO> {
+    return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: slotId ? { lotId, slotId } : { lotId } })
+  },
+
+  /** One walk-in for a free bay picked on the 3D model: it waits at the entry lane until the Staff checks it in. */
+  deployToBay(command: DeployWalkInToBayCommand): Promise<GateRequestDTO> {
+    return http.post<GateRequestDTO>(`${walkIns}/bay`, command)
   },
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Box,
@@ -41,8 +41,8 @@ import {
   VEHICLE_TYPES,
   type ManagedLot,
 } from '@/types/lot-management.dto'
-import { GaragePreview } from '@/components/customer/garage/GaragePreview'
-import { findTemplate, type ZoneStats } from '@/components/customer/garage/garageModel'
+import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
+import { findTemplate } from '@/components/customer/garage/garageModel'
 import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
 import { toSearchable } from '@/lib/text'
 import { formatPhone, initials } from '@/lib/format'
@@ -61,7 +61,20 @@ const LIFECYCLE_STYLE: Record<LotState, { chip: string; icon: string }> = {
   Active: { chip: 'bg-emerald-100 text-emerald-700', icon: 'text-indigo-700' },
   Maintenance: { chip: 'bg-amber-100 text-amber-700', icon: 'text-amber-500' },
   TemporarilyClosed: { chip: 'bg-rose-100 text-rose-700', icon: 'text-rose-400' },
+  Closed: { chip: 'bg-slate-800 text-white', icon: 'text-slate-700' },
   Inactive: { chip: 'bg-slate-100 text-slate-700', icon: 'text-slate-500' },
+}
+
+/** Vehicles parked in the lot right now (occupied bays). */
+const vehiclesInside = (lot: ManagedLot) =>
+  lot.zones.reduce((n, z) => n + z.slots.filter((s) => s.status === 'Occupied').length, 0)
+
+/** Why a lot cannot be deleted yet; null when it can. It must be closed first and every vehicle must have left. */
+function deleteBlocker(lot: ManagedLot): string | null {
+  if (lot.status !== 'Closed') return 'Set the lot to Closed before deleting it.'
+  const inside = vehiclesInside(lot)
+  if (inside > 0) return `${inside} vehicle${inside === 1 ? ' is' : 's are'} still parked in this lot.`
+  return null
 }
 
 /** Bays per vehicle class, summed over the lot's zones. */
@@ -94,23 +107,8 @@ function exportLots(rows: ManagedLot[], managerName: (id: string) => string) {
   URL.revokeObjectURL(url)
 }
 
-/** Each level of the 3D model mirrors the zones on that floor: their capacity and slot states. */
-function layoutStats(lot: ManagedLot, levels: number): ZoneStats[] {
-  return Array.from({ length: levels }, (_, i) => {
-    const zones = lot.zones.filter((z) => z.floorNo === i + 1)
-    const slots = zones.flatMap((z) => z.slots)
-    return {
-      label: zones.map((z) => z.name).join(' + '),
-      total: zones.reduce((n, z) => n + z.capacity, 0),
-      occupied: slots.filter((s) => s.status === 'Occupied').length,
-      reserved: slots.filter((s) => s.status === 'Reserved').length,
-    }
-  })
-}
-
 function LotLayoutCard({ lot, onEdit }: { lot: ManagedLot; onEdit?: () => void }) {
   const template = findTemplate(lot.layoutTemplate)
-  const stats = useMemo(() => (template ? layoutStats(lot, template.floors.length) : []), [lot, template])
   return (
     <Card className="space-y-3 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -132,7 +130,15 @@ function LotLayoutCard({ lot, onEdit }: { lot: ManagedLot; onEdit?: () => void }
           </Button>
         )}
       </div>
-      {template && <GaragePreview key={`${lot.id}:${template.id}`} template={template} floorStats={stats} seed={lot.id} />}
+      {/* The lot's real bays (same model as the Staff and Manager screens), not counts spread over made-up bays */}
+      {template && (
+        <LiveLotModel
+          key={`${lot.id}:${template.id}`}
+          className="p-0 ring-0"
+          lots={[{ id: lot.id, code: lot.code, name: lot.name, layoutTemplate: lot.layoutTemplate }]}
+          lotId={lot.id}
+        />
+      )}
     </Card>
   )
 }
@@ -183,11 +189,9 @@ export default function ParkingLotsPage() {
     await lots.refetch()
     toast.success(service.isDemo() ? 'Demo data saved in this browser' : message)
   }
-  const canConfigure = Boolean(
-    selected &&
-      user?.role === 'MANAGER' &&
-      selected.managerUserId === user.userId,
-  )
+  // The Admin and the lot's own Manager can open, close or put a lot into maintenance.
+  const canSetStatus = (lot: ManagedLot) =>
+    admin || (user?.role === 'MANAGER' && lot.managerUserId === user.userId)
   const title = zone ? zone.name : selected ? selected.name : 'Parking Lots'
   return (
     <div className="space-y-6">
@@ -289,7 +293,8 @@ export default function ParkingLotsPage() {
                   <p className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-800">
                     <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-600" />Active</span>
                     <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-500" />Maintenance</span>
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />Closed</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />Temporarily closed</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-slate-800" />Closed</span>
                   </p>
                 </div>
 
@@ -399,13 +404,24 @@ export default function ParkingLotsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      aria-label={`Delete ${l.name}`}
-                                      disabled={l.status === 'Active' || l.zones.length > 0}
-                                      title="Only inactive lots without zones can be deleted"
-                                      onClick={() => setRemoving({ name: l.name, run: () => service.deleteLot(l.id) })}
+                                      aria-label={`Change status of ${l.name}`}
+                                      title="Change status: Active, Maintenance or Temporarily closed"
+                                      onClick={() => setEditing({ kind: 'operation', lot: l })}
                                     >
-                                      <Trash2 />
+                                      <Settings2 />
                                     </Button>
+                                    {/* A disabled button gets no hover, so the reason sits on the wrapper. */}
+                                    <span title={deleteBlocker(l) ?? `Delete ${l.name}`}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={`Delete ${l.name}`}
+                                        disabled={deleteBlocker(l) !== null}
+                                        onClick={() => setRemoving({ name: l.name, run: () => service.deleteLot(l.id) })}
+                                      >
+                                        <Trash2 />
+                                      </Button>
+                                    </span>
                                   </>
                                 )}
                               </div>
@@ -515,7 +531,7 @@ export default function ParkingLotsPage() {
                             Edit details
                           </Button>
                         )}
-                        {canConfigure && (
+                        {selected && canSetStatus(selected) && (
                           <Button
                             variant="outline"
                             onClick={() =>

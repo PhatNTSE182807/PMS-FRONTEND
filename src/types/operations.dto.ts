@@ -210,6 +210,9 @@ export interface CurrentSessionDTO {
   lotName: string | null
   lotAddress: string | null
   lotDistrict: string | null
+  /** Map position of the lot; null (or missing on older APIs) when the Admin has not set it. */
+  lotLatitude?: number | null
+  lotLongitude?: number | null
   entryGateName: string | null
   /** How the entry was identified. */
   entryMethod: 'Plate' | 'Reservation' | 'Manual'
@@ -440,8 +443,10 @@ export interface StaffPaymentHistoryItemDTO {
   channel: string | null
   amount: number
   status: string
-  /** The Staff who took a cash payment. */
+  /** The Staff who took the payment; null for online payments and simulated vehicles. */
   collectedByName: string | null
+  /** A walk-in sent by the Admin parking simulation (demo traffic, paid automatically at the exit lane). */
+  isSimulated: boolean
 }
 
 /** StaffPaymentHistoryPageModel */
@@ -450,4 +455,66 @@ export interface StaffPaymentHistoryPageDTO {
   page: number
   pageSize: number
   totalCount: number
+}
+
+/**
+ * GET /api/staff/lots/{lotId}/slots/{slotId}/session: BaySessionModel. The vehicle parked in one bay, for the
+ * 3D lot model's popup (Staff, Managers and Admins only: it carries the plate).
+ */
+export interface BaySessionDTO {
+  session: ParkingSessionDTO
+  /** "Member": a customer account; "Guest": a walk-in without an account. */
+  customerType: 'Member' | 'Guest'
+  customerName: string | null
+  elapsedMinutes: number
+  /** Fee so far before the deposit and payments; null while it cannot be priced (lost-ticket case, still at the barrier). */
+  feeSoFar: number | null
+  depositApplied: number
+  alreadyPaid: number
+  amountDue: number | null
+}
+
+/** BookedBayCaseStatus */
+export type BookedBayCaseStatus = 'Open' | 'Reassigned' | 'Compensated' | 'Closed'
+
+/**
+ * GET /api/staff/lots/{lotId}/booked-bay-cases: BookedBayCaseModel. A walk-in parked in a booked bay, as the lot's
+ * Staff see it on the Exceptions screen.
+ */
+export interface BookedBayCaseDTO {
+  id: number
+  status: BookedBayCaseStatus
+  parkingLotId: number
+  createdAt: string
+  resolvedAt: string | null
+  /** Who resolved it, or "System". */
+  resolvedByName: string | null
+  resolutionNote: string | null
+  reservationId: number
+  reservationCode: string | null
+  reservationStatus: ReservationStatus | null
+  arrivalTime: string
+  holdEndsAt: string
+  customerName: string | null
+  /** Plate of the booked vehicle. */
+  bookedPlate: string | null
+  vehicleTypeId: number | null
+  vehicleTypeName: string | null
+  bayId: number
+  bayCode: string | null
+  newBayId: number | null
+  newBayCode: string | null
+  walkInSessionId: number
+  walkInSessionCode: string | null
+  walkInPlate: string | null
+  walkInEntryTime: string
+  walkInInside: boolean
+  /** Deposit still held (what a cancellation refunds). */
+  depositHeld: number
+  depositRefunded: number
+  /** What a cancellation pays now, from the lot's pricing rule of the vehicle type. */
+  compensationAmount: number
+  compensationPaid: number
+  /** Free bays of the booked vehicle type (open cases). Empty: cancel and compensate. */
+  freeBays: { slotId: number; code: string; zoneName: string | null }[]
 }

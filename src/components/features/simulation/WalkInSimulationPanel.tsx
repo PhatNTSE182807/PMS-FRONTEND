@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Car, LogOut, ParkingSquare, Send, TicketX } from 'lucide-react'
+import { Car, Layers, LogOut, ParkingSquare, Send, TicketX } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,8 @@ import {
   useWalkInSimulation,
 } from '@/hooks/useParkingSimulation'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
+import { SimulationBayPopup } from './SimulationBayPopup'
+import { canSimulateInBay, simulationBayHint } from './simulationBays'
 import { formatNumber } from '@/lib/format'
 import type { ParkingLotSummaryDTO } from '@/types/parking.dto'
 import { WALK_IN_MAX_STAY_HOURS, type SimulatedWalkInDTO } from '@/types/simulation.dto'
@@ -49,27 +51,28 @@ interface Draft {
   car7Percent: string
   minStayHours: string
   maxStayHours: string
-  noPlatePercent: string
 }
 
-const DEFAULT_DRAFT: Draft = { count: '20', carPercent: '40', car7Percent: '15', minStayHours: '2', maxStayHours: '4', noPlatePercent: '5' }
+const DEFAULT_DRAFT: Draft = { count: '20', carPercent: '40', car7Percent: '15', minStayHours: '2', maxStayHours: '4' }
 
-/** The form's numbers, or an error message in plain words. `maxCount` is the lot's free bays. */
-function check(draft: Draft, maxCount: number | undefined) {
+/**
+ * The form's numbers, or an error message in plain words. `maxCount` is the bays walk-ins may take; filling the lot
+ * ignores the vehicle count (one vehicle per such bay).
+ */
+function check(draft: Draft, maxCount: number | undefined, fill = false) {
   const count = Number(draft.count)
   const car = Number(draft.carPercent)
   const car7 = Number(draft.car7Percent)
-  const noPlate = Number(draft.noPlatePercent)
   const min = Number(draft.minStayHours)
   const max = Number(draft.maxStayHours)
   if (maxCount === 0) return { error: 'No free bay is left in this lot.' }
-  if (!Number.isInteger(count) || count < 1 || (maxCount !== undefined && count > maxCount))
+  if (!fill && (!Number.isInteger(count) || count < 1 || (maxCount !== undefined && count > maxCount)))
     return { error: maxCount === undefined ? 'Send at least 1 vehicle.' : `This lot has ${formatNumber(maxCount)} free bays: send between 1 and ${formatNumber(maxCount)} vehicles.` }
-  if (![car, car7, noPlate].every((p) => Number.isInteger(p) && p >= 0 && p <= 100)) return { error: 'Percentages are whole numbers from 0 to 100.' }
+  if (![car, car7].every((p) => Number.isInteger(p) && p >= 0 && p <= 100)) return { error: 'Percentages are whole numbers from 0 to 100.' }
   if (car + car7 > 100) return { error: '4-seat and 7-seat cars together cannot be more than 100%.' }
   if (!(min > 0) || !(max >= min) || max > WALK_IN_MAX_STAY_HOURS)
     return { error: `The stay is more than 0 and at most ${WALK_IN_MAX_STAY_HOURS} hours; the shortest is not longer than the longest.` }
-  return { value: { count, carPercent: car, car7Percent: car7, noPlatePercent: noPlate, minStayHours: min, maxStayHours: max } }
+  return { value: { count: fill ? (maxCount ?? 0) : count, fillLot: fill, carPercent: car, car7Percent: car7, minStayHours: min, maxStayHours: max } }
 }
 
 function NumberField({ id, label, hint, value, onChange }: { id: string; label: string; hint: string; value: string; onChange: (v: string) => void }) {
@@ -150,6 +153,7 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
   const freeBays = overview.data?.freeBays ?? undefined
   const totalBays = overview.data?.totalBays ?? undefined
   const checked = check(draft, freeBays)
+  const fillChecked = check(draft, freeBays, true)
   const set = (key: keyof Draft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }))
   const motorbikePercent = Math.max(0, 100 - (Number(draft.carPercent) || 0) - (Number(draft.car7Percent) || 0))
 
@@ -179,14 +183,14 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
               ))}
             </NativeSelect>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <NumberField
               id="walkin-count"
               label="Vehicles"
               hint={
                 freeBays === undefined
                   ? 'Loading the free bays…'
-                  : `1 to ${formatNumber(freeBays)} (free bays${totalBays !== undefined ? ` of ${formatNumber(totalBays)}` : ''})`
+                  : `1 to ${formatNumber(freeBays)} (bays free for walk-ins${totalBays !== undefined ? ` of ${formatNumber(totalBays)}` : ''})`
               }
               value={draft.count}
               onChange={set('count')}
@@ -201,8 +205,11 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
             />
             <NumberField id="walkin-min" label="Shortest stay (h)" hint="e.g. 2" value={draft.minStayHours} onChange={set('minStayHours')} />
             <NumberField id="walkin-max" label="Longest stay (h)" hint="e.g. 4" value={draft.maxStayHours} onChange={set('maxStayHours')} />
-            <NumberField id="walkin-noplate" label="No readable plate (%)" hint="Paper ticket only" value={draft.noPlatePercent} onChange={set('noPlatePercent')} />
           </div>
+          <p className="text-sm text-slate-600">
+            Simulated vehicles only take free bays: never a bay with a vehicle in it (a customer&apos;s, a seeded or an earlier
+            simulated walk-in), a held bay (yellow on the map) or a bay booked for later.
+          </p>
           {!simulating && (
             <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
               The parking simulation is off, so a 2–4 hour stay lasts 2–4 real hours. Turn it on above to make each hour one pricing block.
@@ -225,6 +232,14 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
             </Button>
             <Button
               variant="outline"
+              disabled={!numericLot || closed || !fillChecked.value || !freeBays || deploy.isPending}
+              title="Send one vehicle into every bay a walk-in may take: car bays get 4- or 7-seat cars, motorbike bays motorbikes"
+              onClick={() => numericLot && fillChecked.value && deploy.mutate({ lotId: numericLot, ...fillChecked.value })}
+            >
+              <Layers aria-hidden /> Fill the lot{freeBays ? ` (${formatNumber(freeBays)})` : ''}
+            </Button>
+            <Button
+              variant="outline"
               disabled={!numericLot || closed || occupy.isPending}
               title="A walk-in parks in the bay of this lot's next confirmed booking; check that booking in at the entry lane to see the exception"
               onClick={() => numericLot && occupy.mutate(numericLot)}
@@ -237,7 +252,16 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
 
       {lot && (
         // Every vehicle in the chosen lot: booked bays, walk-ins (drawn from the zone counters) and simulated traffic
-        <LiveLotModel lots={[{ id: lot.id, code: lot.code, name: lot.name, layoutTemplate: lot.layoutTemplate }]} lotId={lot.id} />
+        <LiveLotModel
+          lots={[{ id: lot.id, code: lot.code, name: lot.name, layoutTemplate: lot.layoutTemplate }]}
+          lotId={lot.id}
+          // Any bay can be acted on: a parked vehicle shows its details, a free bay takes one walk-in, a booked bay a mistake
+          bayActions={{
+            canSelect: canSimulateInBay,
+            hint: simulationBayHint,
+            render: (bay, id, close) => <SimulationBayPopup key={bay.id} lotId={id} bay={bay} onClose={close} />,
+          }}
+        />
       )}
 
       <Card>

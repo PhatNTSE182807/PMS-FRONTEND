@@ -39,7 +39,10 @@ export interface PaymentMethodBreakdownDTO {
 export interface ParkingLotRevenueDTO {
   parkingLotId: number
   parkingLotName: string
+  /** Fees collected minus `compensation`. */
   totalRevenue: number
+  /** Compensations the lot paid customers whose booked bay a walk-in took. */
+  compensation?: number
   /** Settled sessions, 0 VND ones included. */
   totalSessions: number
   managerUserId: string | null
@@ -50,7 +53,10 @@ export interface AdminRevenueReportDTO {
   /** Resolved range, yyyy-MM-dd. */
   startDate: string
   endDate: string
+  /** Net of `systemTotalCompensation`. */
   systemTotalRevenue: number
+  /** Booked bay compensations paid in the period, already subtracted from the revenue. */
+  systemTotalCompensation?: number
   /** Settled sessions, 0 VND ones included. */
   systemTotalSessions: number
   /** Lots in the report: every lot that is not deleted, whatever its status. */
@@ -85,7 +91,9 @@ export interface RevenueTimeSeriesPointDTO {
   /** First and last day of the period, yyyy-MM-dd, inclusive. */
   startDate: string
   endDate: string
+  /** Net of `compensation` (car and motorbike revenue are net of their own compensations). */
   totalRevenue: number
+  compensation?: number
   totalSessions: number
   carRevenue: number
   carSessions: number
@@ -100,6 +108,7 @@ export interface RevenueTimeSeriesLotDTO {
   parkingLotId: number
   parkingLotName: string
   totalRevenue: number
+  compensation?: number
   totalSessions: number
   carSessions: number
   motorbikeSessions: number
@@ -110,7 +119,10 @@ export interface ManagerRevenueReportDTO {
   managerUserId: string
   startDate: string
   endDate: string
+  /** Net of `totalCompensation`. */
   totalRevenue: number
+  /** Booked bay compensations paid in the period, already subtracted from the revenue. */
+  totalCompensation?: number
   totalSessions: number
   byLot: ParkingLotRevenueDTO[]
   paymentMethods: PaymentMethodBreakdownDTO[]

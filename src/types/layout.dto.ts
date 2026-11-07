@@ -77,7 +77,12 @@ export interface LotPlan2DDTO {
     total: number
     free: number
     /** The vehicles counted here without a bay of their own, oldest entry first. Never a plate. */
-    walkIns?: { vehicleColor: string | null; vehicleTypeCode: string | null }[]
+    walkIns?: {
+      vehicleColor: string | null
+      vehicleTypeCode: string | null
+      /** Its open session: Staff, Managers and Admins open the vehicle's details with it (the API checks role and lot). */
+      sessionId?: number
+    }[]
   }[]
   floors: {
     floorNo: number
@@ -100,6 +105,8 @@ export interface LotPlan2DDTO {
       vehicleColor?: string | null
       /** Type of the vehicle parked here, which a car bay does not fix (CAR_4 or CAR_7). */
       parkedVehicleTypeCode?: string | null
+      /** Free now but booked for later: counted walk-ins are drawn in bays without a booking first. */
+      bookedLater?: boolean
     }[]
     zoneBlocks: {
       zoneId: number

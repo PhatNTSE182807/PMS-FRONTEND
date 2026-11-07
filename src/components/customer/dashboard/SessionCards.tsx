@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarClock, CircleCheck, Clock, CreditCard, Hourglass, LogIn, LogOut, Navigation, QrCode as QrIcon, ScanLine, ShieldAlert, ShieldCheck, Wallet, X } from 'lucide-react'
+import { CalendarClock, CircleCheck, Clock, CreditCard, Hourglass, LogIn, LogOut, QrCode as QrIcon, ScanLine, ShieldAlert, ShieldCheck, Wallet, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import { QrCode } from '@/components/ui/qr-code'
@@ -17,8 +17,6 @@ import type { CurrentSessionDTO, ExitPassDTO, PaymentProvider, ReservationDTO } 
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 const vnd = (amount: number) => `${formatNumber(amount)} VND`
 
-/** Google Maps directions to the lot (the bay is shown on the 3D model once inside). */
-const directionsUrl = (address: string) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
 
 /** "20,000 / started hour", "5,000 / 4 h block"; null when the API sends no block price (the fee still counts). */
 function tariffText(session: CurrentSessionDTO) {
@@ -29,7 +27,7 @@ function tariffText(session: CurrentSessionDTO) {
 }
 
 /** The QR the exit lane scans. Every parked vehicle has one; it also says whether anything is left to pay. */
-function ExitPassDialog({ pass, plate, onClose }: { pass: ExitPassDTO; plate: string; onClose: () => void }) {
+function ExitPassDialog({ pass, plate, leaving, onClose }: { pass: ExitPassDTO; plate: string; leaving: boolean; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
@@ -51,7 +49,9 @@ function ExitPassDialog({ pass, plate, onClose }: { pass: ExitPassDTO; plate: st
           {pass.prepaid
             ? `Paid. Show this at the exit lane before ${pass.validUntil ? timeFormat.format(Date.parse(pass.validUntil)) : 'your exit window ends'}.`
             : pass.amountDue > 0
-              ? `Show this at the exit lane. ${vnd(pass.amountDue)} so far is paid there, or prepay now to drive straight out.`
+              ? leaving
+                ? `Show this at the exit lane and pay the Staff ${vnd(pass.amountDue)} there.`
+                : `Show this at the exit lane. ${vnd(pass.amountDue)} so far is paid there, or prepay now to drive straight out.`
               : 'Nothing to pay so far. Show this at the exit lane.'}
         </p>
         <button type="button" className="cx-btn cx-btn--block" onClick={onClose}>Done</button>
@@ -83,7 +83,7 @@ function GateRequestNotice({ request }: { request: GateRequestDTO }) {
   // The API's "problem" is written for the Staff; an unpaid exit gets the customer's own wording
   const hint =
     request.kind === 'CheckOut' && request.sessionStatus && request.sessionStatus !== 'Paid'
-      ? 'Not paid yet: prepay above, or pay the Staff at the exit lane.'
+      ? 'Not paid yet: pay the Staff at the exit lane.'
       : request.problem
   if (request.status === 'Refused') {
     return (
@@ -156,6 +156,8 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
   const [choosing, setChoosing] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const exitRequest = useLatestRequest((r) => r.kind === 'CheckOut' && r.sessionId === current.session.id, now)
+  // Check-out asked for: the vehicle is on its way out, so the card offers no more payment (the Staff takes any fee at the lane)
+  const leaving = exitRequest?.status === 'Waiting'
 
   const s = current.session
   const entry = Date.parse(s.entryTime)
@@ -231,11 +233,6 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
             </span>
           </div>
         </div>
-        {address && (
-          <a className="cx-btn" href={directionsUrl(`${current.lotName ?? ''} ${address}`)} target="_blank" rel="noopener noreferrer">
-            <Navigation aria-hidden /> Directions to lot
-          </a>
-        )}
       </div>
 
       <div className="cx-exit-pass">
@@ -246,7 +243,11 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
           <span className="cx-label">Exit pass code</span>
           <span className="cx-exit-pass__code cx-mono">{pass.sessionCode}</span>
           <span className="cx-metric__sub">
-            {pass.prepaid ? 'Paid: show it at the exit lane to drive out.' : 'Show it at the exit lane; tap the QR to enlarge.'}
+            {pass.prepaid
+              ? 'Paid: show it at the exit lane to drive out.'
+              : leaving
+                ? 'Show it at the exit lane and pay the Staff there.'
+                : 'Show it at the exit lane; tap the QR to enlarge.'}
           </span>
         </div>
       </div>
@@ -255,7 +256,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         <p className="cx-prepay">
           <span><ShieldCheck size={15} aria-hidden style={{ verticalAlign: '-3px', color: '#6fdba8' }} /> Paid. Drive out before {pass.validUntil ? timeFormat.format(Date.parse(pass.validUntil)) : 'the exit window ends'}.</span>
         </p>
-      ) : choosing ? (
+      ) : choosing && !leaving ? (
         <div className="cx-prepay" aria-live="polite">
           <span>
             Pay <strong>{vnd(current.amountDue)}</strong> now
@@ -280,7 +281,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
       ) : null}
 
       <div className="cx-session__actions">
-        {!pass.prepaid && (
+        {!pass.prepaid && !leaving && (
           <button type="button" className="cx-btn cx-btn--teal" disabled={current.amountDue <= 0} onClick={() => setChoosing(true)}>
             <ScanLine aria-hidden /> {current.amountDue > 0 ? 'Prepay parking fee' : 'Nothing to pay yet'}
           </button>
@@ -291,17 +292,17 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         <button
           type="button"
           className="cx-btn cx-btn--teal"
-          disabled={checkOut.isPending || exitRequest?.status === 'Waiting'}
+          disabled={checkOut.isPending || leaving}
           title={pass.prepaid || current.amountDue <= 0 ? undefined : 'Prepay first, or pay the Staff at the exit lane'}
           onClick={askCheckOut}
         >
-          <LogOut aria-hidden /> {exitRequest?.status === 'Waiting' ? 'Check-out requested' : 'Check out'}
+          <LogOut aria-hidden /> {leaving ? 'Check-out requested' : 'Check out'}
         </button>
       </div>
 
       {exitRequest && <GateRequestNotice request={exitRequest} />}
 
-      {showPass && <ExitPassDialog pass={pass} plate={s.plateNumber} onClose={() => setShowPass(false)} />}
+      {showPass && <ExitPassDialog pass={pass} plate={s.plateNumber} leaving={leaving} onClose={() => setShowPass(false)} />}
     </article>
   )
 }

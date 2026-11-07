@@ -27,7 +27,7 @@ export default function CustomerDashboardPage() {
   const lots = [...(publicLots.data ?? [])].sort((a, b) => Number(b.isBookable) - Number(a.isBookable) || a.name.localeCompare(b.name))
   const [lotId, setLotId] = useState<string>()
   const selectedLotId = lotId ?? (lots[0] ? String(lots[0].id) : undefined)
-  // Lot whose Google map (with the customer's position and route) is open
+  // Lot whose directions map (with the customer's position and route) is open
   const [directionsLot, setDirectionsLot] = useState<PublicLotDTO | null>(null)
 
   const vehicles = vehiclesQuery.data ?? []
@@ -39,7 +39,7 @@ export default function CustomerDashboardPage() {
   return (
     <>
       <section className="cx-welcome">
-        <div>
+        <div className="cx-welcome__intro">
           <span className="cx-eyebrow">
             <span className="cx-dot cx-dot--gold" aria-hidden="true" /> Client console • Live telemetry
             {defaultVehicle && <span style={{ color: 'var(--cx-on-variant)' }}>• Plate {defaultVehicle.licensePlate} linked</span>}
@@ -57,9 +57,10 @@ export default function CustomerDashboardPage() {
         </div>
 
         {lots.length > 0 && (
-          <div className="cx-tabs" aria-label="Parking lots">
+          // One compact row under the greeting, so the customer's name keeps the full width
+          <div className="cx-tabs cx-tabs--lots" aria-label="Parking lots">
             <span className="cx-tabs__label">
-              <Navigation aria-hidden /> Parking lots:
+              <Navigation aria-hidden /> Lots
             </span>
             {lots.map((lot) => (
               <span key={lot.id} className="cx-tab-group">
@@ -67,13 +68,15 @@ export default function CustomerDashboardPage() {
                   type="button"
                   className={`cx-tab ${String(lot.id) === selectedLotId ? 'cx-tab--active' : ''}`}
                   title={lot.isBookable ? `${lot.freeBays} of ${lot.totalBays} bays free` : (lot.maintenanceNotice ?? 'Under maintenance')}
+                  aria-label={lot.isBookable ? `${lot.name}, open` : `${lot.name}, under maintenance`}
                   onClick={() => {
                     setLotId(String(lot.id))
                     document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                   }}
                 >
+                  {/* Green: open for bookings; amber: under maintenance (the reason is in the tooltip) */}
+                  <span className={`cx-tab__dot ${lot.isBookable ? 'cx-tab__dot--open' : 'cx-tab__dot--warn'}`} aria-hidden />
                   {lot.name}
-                  {!lot.isBookable && ' (maintenance)'}
                 </button>
                 <button
                   type="button"

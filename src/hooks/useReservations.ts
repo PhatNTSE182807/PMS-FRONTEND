@@ -9,6 +9,7 @@ import { queryKeys } from '@/api/queryKeys'
 import { reservationService } from '@/api/reservation.service'
 import { USER_TOAST, toastBookingError, toastPaymentError } from '@/lib/userToasts'
 import type { CreateReservationRequest, PaymentProvider, ReservationDTO, UpdateReservationRequest } from '@/types/operations.dto'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /** Polling fallback: deposit deadlines are minutes long, so 15 s is enough without SignalR. */
 const RESERVATIONS_REFRESH_MS = 15_000
@@ -22,7 +23,7 @@ export function useMyReservations() {
     if (!live) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'ReservationChanged' || event.type === 'PaymentChanged')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+        invalidateFromPush(queryClient, queryKeys.reservations.all)
       // The hold passed without a check-in: the backend job cancels the booking. The id stops several mounted
       // copies of this hook from showing the same popup twice.
       if (event.type === 'ReservationChanged' && event.status === 'NoShow')
@@ -48,6 +49,27 @@ export function useUpcomingReservation() {
     queryKey: queryKeys.reservations.upcoming(),
     queryFn: reservationService.getUpcoming,
     refetchInterval: live ? false : RESERVATIONS_REFRESH_MS,
+  })
+}
+
+/** Manager: bookings of the lot arriving in the range; refreshed by the lot's reservation and session pushes. */
+export function useLotReservations(lotId: string | undefined, from: string, to: string) {
+  const queryClient = useQueryClient()
+  const live = parkingOpsRealtime.isAvailable('booking')
+
+  useEffect(() => {
+    if (!live || !lotId) return
+    return parkingOpsRealtime.subscribe((event) => {
+      if (event.type === 'ReservationChanged' || event.type === 'SessionChanged')
+        invalidateFromPush(queryClient, queryKeys.reservations.all)
+    }, lotId)
+  }, [live, lotId, queryClient])
+
+  return useQuery({
+    queryKey: queryKeys.reservations.forLot(lotId ?? '', from, to),
+    queryFn: () => reservationService.getForLot(lotId!, from, to),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? 30_000 : RESERVATIONS_REFRESH_MS,
   })
 }
 

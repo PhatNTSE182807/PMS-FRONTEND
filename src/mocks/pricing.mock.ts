@@ -37,7 +37,7 @@ function seed(lotId: string): PricingRuleDTO[] {
       chargeModel: 'Block', entryFee: 0, firstBlockMinutes: null, firstBlockPrice: null,
       blockMinutes: block, blockPrice: price, dayStartTime: null, nightStartTime: null, dayPrice: null, nightPrice: null,
       maxDailyFee: cap, graceMinutes: 0, overnightSurcharge: 0, overstayAfterHours: null, overstaySurchargePerDay: 0,
-      lostTicketFee: lost, noShowFee: 0, currency: 'VND', priority: 0, effectiveFrom: '2026-01-01T00:00:00Z', effectiveTo: null,
+      lostTicketFee: lost, noShowFee: 0, bookedBayCompensation: type.code === 'MOTORBIKE' ? 50_000 : 100_000, currency: 'VND', priority: 0, effectiveFrom: '2026-01-01T00:00:00Z', effectiveTo: null,
       status: 'Active', versionNo: 1, createdAt: now, updatedAt: null,
     }
   }
@@ -80,6 +80,7 @@ function apply(rule: PricingRuleDTO, input: PricingRuleInput) {
     nightPrice: input.nightPrice,
     maxDailyFee: input.maxDailyFee,
     lostTicketFee: input.lostTicketFee,
+    bookedBayCompensation: input.bookedBayCompensation,
   })
 }
 

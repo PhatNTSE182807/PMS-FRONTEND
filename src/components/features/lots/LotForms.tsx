@@ -15,6 +15,8 @@ import type { UserDTO } from '@/types/identity.dto'
 import { GaragePreview } from '@/components/customer/garage/GaragePreview'
 import { findTemplate, GARAGE_TEMPLATES, templateCapacity } from '@/components/customer/garage/garageModel'
 import { cn } from '@/lib/utils'
+import { coordinateError } from '@/lib/lotCoordinates'
+import { LotLocationPicker } from './LotLocationPicker'
 
 export function Field({
   label,
@@ -105,6 +107,11 @@ const emptyLot: LotInput = {
   code: '',
   name: '',
   address: '',
+  city: '',
+  district: '',
+  phone: '',
+  latitude: null,
+  longitude: null,
   is24Hours: true,
   openTime: '07:00',
   closeTime: '22:00',
@@ -130,7 +137,20 @@ export function LotForm({
   onClose: () => void
   onSaved: () => Promise<void>
 }) {
-  const [v, set] = useState<LotInput>(lot ? { ...lot, layoutTemplate: lot.layoutTemplate ?? '' } : emptyLot)
+  // Lots saved in demo storage before positions existed have no latitude / longitude
+  const [v, set] = useState<LotInput>(
+    lot
+      ? {
+          ...lot,
+          layoutTemplate: lot.layoutTemplate ?? '',
+          city: lot.city ?? '',
+          district: lot.district ?? '',
+          phone: lot.phone ?? '',
+          latitude: lot.latitude ?? null,
+          longitude: lot.longitude ?? null,
+        }
+      : emptyLot,
+  )
   const patch = (p: Partial<LotInput>) => set({ ...v, ...p })
   const template = findTemplate(v.layoutTemplate)
   // Zones and slots are built from the model, so it is fixed once a lot has them
@@ -142,6 +162,8 @@ export function LotForm({
       wide
       onClose={onClose}
       onSave={async () => {
+        const positionError = coordinateError(v.latitude, v.longitude)
+        if (positionError) throw new Error(positionError)
         await service.saveLot(v, lot?.id)
         await onSaved()
       }}
@@ -172,6 +194,22 @@ export function LotForm({
           />
         </Field>
       </div>
+      <Field label="District">
+        <Input maxLength={100} placeholder="e.g. Tan Binh District" value={v.district} onChange={(e) => patch({ district: e.target.value })} />
+      </Field>
+      <Field label="City">
+        <Input maxLength={100} placeholder="e.g. Ho Chi Minh City" value={v.city} onChange={(e) => patch({ city: e.target.value })} />
+      </Field>
+      <Field label="Lot phone">
+        <Input type="tel" maxLength={30} placeholder="e.g. 028 3812 3456" value={v.phone} onChange={(e) => patch({ phone: e.target.value })} />
+      </Field>
+      <div className="hidden sm:block" aria-hidden />
+      <LotLocationPicker
+        latitude={v.latitude}
+        longitude={v.longitude}
+        address={v.address}
+        onChange={(latitude, longitude) => set((current) => ({ ...current, latitude, longitude }))}
+      />
       <fieldset className="grid gap-2 sm:col-span-2" disabled={modelLocked}>
         <legend className="mb-1.5 text-sm font-medium text-slate-700">Parking lot model *</legend>
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Parking lot model">
@@ -278,6 +316,16 @@ export function LotForm({
     </Editor>
   )
 }
+/** Statuses offered in the operating status form, in the order shown. */
+const STATUS_CHOICES: ManagedLot['status'][] = ['Active', 'Maintenance', 'TemporarilyClosed', 'Closed', 'Inactive']
+
+/** The current local time in the format of a datetime-local input. */
+function nowLocal() {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  return d.toISOString().slice(0, 16)
+}
+
 export function OperationForm({
   lot,
   onClose,
@@ -297,7 +345,7 @@ export function OperationForm({
   return (
     <Editor
       title="Operating status"
-      description="Managers run their assigned lots. A lot cannot close while any of its slots is reserved or occupied."
+      description="Active: customers can book and park. Maintenance: no new bookings while the lot is repaired. Temporarily closed: the lot is shut until the reopening time. Closed: shut for good with no reopening time, the step before deleting a lot. A lot cannot close while any of its slots is reserved or occupied."
       onClose={onClose}
       onSave={async () => {
         await service.setOperation(lot.id, v)
@@ -307,13 +355,17 @@ export function OperationForm({
       <Field label="Status">
         <NativeSelect
           value={v.status}
-          onChange={(e) =>
-            set({ ...v, status: e.target.value as ManagedLot['status'] })
-          }
+          onChange={(e) => {
+            const status = e.target.value as ManagedLot['status']
+            // Closing starts now unless a start time was already picked
+            const closedFrom = status === 'TemporarilyClosed' && !v.closedFrom ? nowLocal() : v.closedFrom
+            set({ ...v, status, closedFrom })
+          }}
         >
-          {Object.entries(LOT_STATES).map(([k, s]) => (
+          {/* Inactive is only the state of a lot that never opened, so it is listed only while the lot is in it. */}
+          {STATUS_CHOICES.filter((k) => k !== 'Inactive' || lot.status === 'Inactive').map((k) => (
             <option key={k} value={k}>
-              {s}
+              {LOT_STATES[k]}
             </option>
           ))}
         </NativeSelect>

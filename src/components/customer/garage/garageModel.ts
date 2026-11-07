@@ -18,6 +18,17 @@ export interface Bay {
   vehicleKind?: ParkedKind | null
   /** Body the bay is laid out for (a 7-seat bay or not), drawn when nothing better is known. */
   bayKind?: ParkedKind | null
+  /**
+   * A walk-in drawn here only to show the zone counter: the vehicle has no bay of its own, so no session
+   * belongs to this bay.
+   */
+  countedWalkIn?: boolean
+  /** The session of that counted walk-in, when the zone has one for it; null when only the counter knows it. */
+  walkInSessionId?: number | null
+  /** Vehicle type the bay is for (CAR_4, CAR_7, MOTORBIKE), from the published layout. */
+  bayTypeCode?: string | null
+  /** A free bay with a booking still to come: walk-ins are kept off it. */
+  bookedLater?: boolean
 }
 
 export interface GarageFloor {

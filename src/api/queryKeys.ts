@@ -86,6 +86,7 @@ export const queryKeys = {
     upcoming: () => [...queryKeys.reservations.all, 'upcoming'] as const,
     qr: (id: number) => [...queryKeys.reservations.all, 'qr', id] as const,
     lots: () => [...queryKeys.reservations.all, 'lots'] as const,
+    forLot: (lotId: string, from: string, to: string) => [...queryKeys.reservations.all, 'lot', lotId, from, to] as const,
   },
   /** The customer's vehicles parked right now (running fee, exit pass). */
   parkingSessions: {
@@ -115,7 +116,11 @@ export const queryKeys = {
     gates: (lotId: string) => [...queryKeys.gate.all, 'gates', lotId] as const,
     counters: (lotId: string) => [...queryKeys.gate.all, 'counters', lotId] as const,
     sessions: (lotId: string) => [...queryKeys.gate.all, 'sessions', lotId] as const,
+    baySession: (lotId: string, slotId: string) => [...queryKeys.gate.all, 'bay-session', lotId, slotId] as const,
+    parkedSession: (lotId: string, sessionId: number) => [...queryKeys.gate.all, 'parked-session', lotId, sessionId] as const,
+    bookedBayCases: (lotId: string) => [...queryKeys.gate.all, 'booked-bay-cases', lotId] as const,
     history: (lotId: string, page = 1) => [...queryKeys.gate.all, 'history', lotId, page] as const,
+    exits: (lotId: string) => [...queryKeys.gate.all, 'exits', lotId] as const,
     payments: (lotId: string, method?: string) => [...queryKeys.gate.all, 'payments', lotId, method ?? ''] as const,
     reservation: (lotId: string, entry: string) => [...queryKeys.gate.all, 'reservation', lotId, entry] as const,
     anprHealth: () => [...queryKeys.gate.all, 'anpr-health'] as const,

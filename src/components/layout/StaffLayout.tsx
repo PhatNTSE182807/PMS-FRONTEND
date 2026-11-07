@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { LogOut } from 'lucide-react'
+import { StaffNotificationBell } from '@/components/features/staff/StaffNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -9,12 +10,10 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
-import { useDemoIncidents } from '@/hooks/useDemoIncidents'
 import { useOpenSessions } from '@/hooks/useGate'
 import { useProfile } from '@/hooks/useProfile'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { useCashAlerts } from '@/hooks/useCashAlerts'
-import { CashDeadlineBanner } from '@/components/features/staff/CashDeadlineBanner'
 import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
@@ -46,11 +45,10 @@ export function StaffLayout() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const handleLogout = useSignOut()
-  const { open } = useDemoIncidents()
   const openSessions = useOpenSessions(lot?.id)
   const exceptionsCount = openSessions.isSuccess
     ? (openSessions.data?.filter((s) => s.isLostTicket || s.lostTicketStatus === 'Pending' || s.isOverdue || s.plateMismatch).length ?? 0)
-    : open.length
+    : 0
 
   // Sync profile details (FullName, EmployeeCode, Avatar) into session if received from API
   useEffect(() => {
@@ -123,6 +121,8 @@ export function StaffLayout() {
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            {/* Booked bays a walk-in took, bookings moved and compensation sent to customers */}
+            <StaffNotificationBell />
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
                 <p className="text-sm font-semibold text-slate-950">
@@ -179,7 +179,6 @@ export function StaffLayout() {
       <main className="flex-1 px-4 py-6 sm:px-6 lg:py-8">
         {/* The gate dashboard uses the whole width for its four cameras and the lane panel */}
         <div key={pathname} className={cn('admin-page-enter mx-auto', pathname.startsWith('/staff/gate') ? 'max-w-none' : 'max-w-[1400px]')}>
-          <CashDeadlineBanner lotId={lot?.id} />
           <ErrorBoundary
             fallback={(error, reset) => (
               <div className="rounded-xl bg-white ring-1 ring-slate-200">

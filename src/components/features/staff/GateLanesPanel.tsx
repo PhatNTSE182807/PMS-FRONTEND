@@ -63,6 +63,12 @@ export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: strin
   const checkOuts = useGateRequestQueue(lotId, 'CheckOut')
   const counts = { CheckIn: checkIns.data?.length ?? 0, CheckOut: checkOuts.data?.length ?? 0 }
 
+  // The gate cameras show the lane of the open tab when vehicles wait at both barriers
+  useEffect(() => {
+    gateLaneSignals.setActive(laneOf(tab))
+    return () => gateLaneSignals.setActive(null)
+  }, [tab])
+
   return (
     <Panel className="flex flex-col">
       <div role="tablist" aria-label="Gate lanes" className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-50 p-1">
@@ -287,7 +293,9 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
       <LaneHeader
         title={
           checkIn
-            ? `App check-in · Reservation ${request.reservationCode ?? ''}`
+            ? request.isSimulated
+              ? 'Walk-in check-in · Simulated vehicle'
+              : `App check-in · Reservation ${request.reservationCode ?? ''}`
             : `${request.customerName ? 'Check-out' : 'Walk-in check-out'} · Session ${request.sessionCode ?? ''}`
         }
         aside={
@@ -319,7 +327,12 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
             <dt className="text-xs text-slate-600">Bay</dt>
             <dd className="font-mono font-medium text-slate-900">{request.slotCode ?? '—'}</dd>
           </div>
-          {checkIn ? (
+          {checkIn && request.isSimulated ? (
+            <div>
+              <dt className="text-xs text-slate-600">Entry</dt>
+              <dd className="font-medium text-slate-900">Walk-in, no booking</dd>
+            </div>
+          ) : checkIn ? (
             <div>
               <dt className="text-xs text-slate-600">Check-in window</dt>
               <dd className="font-mono font-medium text-slate-900">

@@ -40,7 +40,7 @@ const styles = {
  * for browsers without WebGL 2 or slow devices. Large buildings start at one summary per level
  * (Level of Detail); picking a level shows its bays.
  */
-export function LotPlan2D({ floors, focusFloor, selectedBayId, myBayId, onSelectBay, className }: Garage3DProps) {
+export function LotPlan2D({ floors, focusFloor, selectedBayId, myBayId, onSelectBay, canSelectBay, className }: Garage3DProps) {
   const visible = focusFloor === null ? floors : floors.filter((f) => f.index === focusFloor)
   const bayCount = visible.reduce((n, f) => n + f.bays.length, 0)
   const [detail, setDetail] = useState<'bays' | 'levels' | null>(null)
@@ -66,7 +66,7 @@ export function LotPlan2D({ floors, focusFloor, selectedBayId, myBayId, onSelect
 
       {[...visible].reverse().map((floor) =>
         showBays ? (
-          <FloorBays key={floor.index} floor={floor} selectedBayId={selectedBayId} myBayId={myBayId} onSelectBay={onSelectBay} />
+          <FloorBays key={floor.index} floor={floor} selectedBayId={selectedBayId} myBayId={myBayId} onSelectBay={onSelectBay} canSelectBay={canSelectBay} />
         ) : (
           <FloorSummary key={floor.index} floor={floor} onOpen={() => setDetail('bays')} />
         ),
@@ -111,11 +111,13 @@ function FloorBays({
   selectedBayId,
   myBayId,
   onSelectBay,
+  canSelectBay,
 }: {
   floor: GarageFloor
   selectedBayId: string | null
   myBayId: string | null
   onSelectBay: (bay: Bay) => void
+  canSelectBay?: (bay: Bay) => boolean
 }) {
   // Two rows of bays face each other across one driving lane
   const rows = Array.from({ length: floor.rows }, (_, row) => floor.bays.filter((b) => b.row === row).sort((a, b) => a.col - b.col))
@@ -128,6 +130,7 @@ function FloorBays({
             {bays.map((bay) => {
               const selected = bay.id === selectedBayId
               const mine = bay.id === myBayId
+              const selectable = canSelectBay?.(bay) ?? true
               return (
                 <button
                   key={bay.id}
@@ -135,7 +138,8 @@ function FloorBays({
                   title={`${bay.code} · ${STATUS_STYLE[bay.status].label}`}
                   aria-label={`Bay ${bay.code}, ${STATUS_STYLE[bay.status].label}`}
                   aria-pressed={selected}
-                  onClick={() => onSelectBay(bay)}
+                  onClick={() => selectable && onSelectBay(bay)}
+                  aria-disabled={!selectable || undefined}
                   style={{
                     height: '1.6rem',
                     borderRadius: '0.2rem',
@@ -144,7 +148,7 @@ function FloorBays({
                     opacity: bay.status === 'AVAILABLE' || selected || mine ? 1 : 0.75,
                     outline: selected ? '2px solid #fff' : mine ? '2px solid #facc15' : 'none',
                     outlineOffset: '1px',
-                    cursor: 'pointer',
+                    cursor: selectable ? 'pointer' : 'default',
                   }}
                 />
               )

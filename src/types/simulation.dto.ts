@@ -46,8 +46,10 @@ export const SIMULATION_MAX_SECONDS = 3600
 /** DeployWalkInsModel: a batch of walk-ins with random plates sent through the lot's entry lane. */
 export interface DeployWalkInsCommand {
   lotId: number
-  /** From 1 up to the lot's free bays; the batch stops early when a zone is full. */
+  /** From 1 up to the lot's free bays; the batch stops early when a zone is full. Ignored when filling the lot. */
   count: number
+  /** Fill the lot: one vehicle for every bay a walk-in may take (car bays get cars, motorbike bays motorbikes). */
+  fillLot?: boolean
   /** Share of 4-seat cars, 0–100. */
   carPercent: number
   /** Share of 7-seat cars, 0–100; with the 4-seat share at most 100, the rest are motorbikes. */
@@ -55,8 +57,16 @@ export interface DeployWalkInsCommand {
   /** Stay bounds in hours (at most 72). While the simulation is on, one hour lasts one pricing block. */
   minStayHours: number
   maxStayHours: number
-  /** Share of vehicles whose plate cannot be read, 0–100. */
-  noPlatePercent: number
+}
+
+/** DeployWalkInToBayModel: one simulated walk-in in a free bay picked on the 3D model. */
+export interface DeployWalkInToBayCommand {
+  lotId: number
+  slotId: number
+  /** CAR_4, CAR_7 or MOTORBIKE; it must fit the bay. */
+  vehicleTypeCode: string
+  minStayHours: number
+  maxStayHours: number
 }
 
 export const WALK_IN_MAX_STAY_HOURS = 72
@@ -100,11 +110,16 @@ export interface WalkInCheckOutResultDTO {
   skipped: number
 }
 
-/** BookedBayTakenModel: a simulated walk-in now stands in a booked bay. */
+/**
+ * BookedBayTakenModel: a simulated walk-in now stands in a booked bay. A case is open for the lot's Staff and the
+ * booking's customer was told their bay is taken.
+ */
 export interface BookedBayTakenDTO {
   sessionId: number
   plate: string
   bayCode: string
   reservationId: number
   reservationCode: string
+  /** The case opened for the lot's Staff; null when one was already open for that booking. */
+  caseId: number | null
 }
