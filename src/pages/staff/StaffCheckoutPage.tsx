@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, Undo2 } from 'lucide-react'
-import { ApiError, getErrorMessage } from '@/api/apiError'
+import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, ShieldAlert, Undo2 } from 'lucide-react'
+import { getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
 import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
@@ -100,7 +100,6 @@ export default function StaffCheckoutPage() {
     refetchInterval: 10000,
   })
   const [confirmCash, setConfirmCash] = useState(false)
-  const [lookup, setLookup] = useState('')
   const [quote, setQuote] = useState<CheckoutQuoteDTO | null>(null)
   const [qr, setQr] = useState<PaymentDTO | null>(null)
   // Cash taken note by note (it feeds the Staff's drawer), or typed as an amount when the notes are not entered
@@ -117,7 +116,6 @@ export default function StaffCheckoutPage() {
     setReceivedNotes((notes) => ({ ...notes, [value]: (notes[value] ?? 0) + 1 }))
   }
   const [exitPlate, setExitPlate] = useState('')
-  const [searching, setSearching] = useState(false)
   const cashRef = useRef<HTMLInputElement>(null)
   const now = useNow(1000)
 
@@ -179,28 +177,10 @@ export default function StaffCheckoutPage() {
     loadQuote(Number(sessionParam), plateParam ?? undefined)
   }, [sessionParam, plateParam, loadQuote])
 
-  const find = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!lotKey || !lookup.trim()) return
-    setSearching(true)
-    try {
-      const value = lookup.trim()
-      const found = await gateService.lookup(lotKey, /^SS/i.test(value) ? { code: value.toUpperCase() } : { plate: value })
-      setExitPlate(found.hasPlate ? found.plateNumber : '')
-      setParams({ session: String(found.id) })
-      toast.success(STAFF_TOAST.ticketLoaded)
-    } catch (e) {
-      toast.error(e instanceof ApiError && e.status === 404 ? STAFF_TOAST.vehicleNotFound : getErrorMessage(e))
-    } finally {
-      setSearching(false)
-    }
-  }
-
   const reset = useCallback(() => {
     setQuote(null)
     setQr(null)
     setTendered(0)
-    setLookup('')
     setExitPlate('')
     setParams({})
   }, [setParams])
@@ -299,24 +279,6 @@ export default function StaffCheckoutPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wider text-slate-700 uppercase">
-        <span className="text-slate-950">Payment counter POS</span>
-        {session && <span className="font-mono text-amber-500">Session #{session.code}</span>}
-      </div>
-
-      <Panel>
-        <form className="flex flex-wrap items-center gap-3" onSubmit={find}>
-          <label className="relative min-w-0 flex-1">
-            <span className="sr-only">Plate or session code</span>
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-slate-500" aria-hidden />
-            <Input value={lookup} onChange={(e) => setLookup(e.target.value.toUpperCase())} placeholder="Plate read at the exit, or session code (SS…)" className="pl-8 font-mono uppercase" />
-          </label>
-          <Button type="submit" disabled={!lotKey || searching || !lookup.trim()}>
-            <Search /> Find vehicle
-          </Button>
-        </form>
-      </Panel>
-
       <Panel>
         <SectionTitle
           icon={<Clock />}
@@ -368,7 +330,7 @@ export default function StaffCheckoutPage() {
       {!session ? (
         <Panel>
           <p className="py-10 text-center text-slate-700">
-            {requestQuote.isPending ? 'Calculating the fee…' : 'Find a vehicle by plate or session code, or open one from the gate dashboard.'}
+            {requestQuote.isPending ? 'Calculating the fee…' : 'Pick a vehicle from the list above, or open one from the gate dashboard.'}
           </p>
         </Panel>
       ) : (
