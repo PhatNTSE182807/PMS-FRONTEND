@@ -19,6 +19,8 @@ const state: Record<LaneDirection, LaneSignal | null> = { entry: null, exit: nul
 /** The next vehicle of a lane, held while the one let through is still driving out. */
 const pending: Record<LaneDirection, LaneVehicle | null> = { entry: null, exit: null }
 const recent = new Map<string, number>()
+/** The lane whose tab the Staff has open on the lane panel. */
+let activeLane: LaneDirection | null = null
 const listeners = new Set<() => void>()
 
 const plain = (plate: string) => plate.toUpperCase().replace(/[^0-9A-Z]/g, '')
@@ -73,11 +75,23 @@ export const gateLaneSignals = {
     set(direction, next ? { vehicle: next, open: false } : null)
   },
 
+  /** The Staff switched the lane panel to this lane's tab (null: the panel is closed). */
+  setActive(direction: LaneDirection | null) {
+    if (activeLane === direction) return
+    activeLane = direction
+    listeners.forEach((listener) => listener())
+  },
+
   /** The Staff let this plate through a moment ago (its session should not be replayed). */
   isRecent(plate: string) {
     const at = recent.get(plain(plate))
     return at != null && Date.now() - at < RECENT_MS
   },
+}
+
+/** The lane whose tab the Staff has open, if any. */
+export function useActiveLane(): LaneDirection | null {
+  return useSyncExternalStore(subscribe, () => activeLane)
 }
 
 /** The lane's vehicle handled by the Staff, if any. */
