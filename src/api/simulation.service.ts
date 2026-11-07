@@ -31,11 +31,6 @@ export const simulationService = {
 
 const walkIns = `${SERVICE_PATHS.staff}/simulation/walk-ins`
 
-/** Admin simulation: ends the business day now (one lot or all); open cash drawers must close within the grace seconds. */
-export function endBusinessDay(lotId: number | undefined, graceSeconds: number): Promise<{ drawersToClose: number; closeDueAt: string }> {
-  return http.post<{ drawersToClose: number; closeDueAt: string }>(`${SERVICE_PATHS.staff}/simulation/end-business-day`, { lotId, graceSeconds })
-}
-
 /** Admin walk-in simulation: random-plate vehicles through the real entry and exit lanes. */
 export const walkInSimulationService = {
   /** GET /admin/simulation/walk-ins: simulated vehicles inside, how many left and what they paid. */

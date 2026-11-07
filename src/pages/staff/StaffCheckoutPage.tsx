@@ -549,7 +549,7 @@ export default function StaffCheckoutPage() {
                     <p className="mt-1 text-xs text-slate-600">
                       {drawer.data?.status === 'Open'
                         ? `Drawer ${drawer.data.closeNo} is open. Typing an amount instead of tapping notes keeps them out of the drawer count.`
-                        : 'No cash drawer open: one opens with this payment.'}
+                        : 'No cash drawer open: one opens with this payment, with the standard float.'}
                     </p>
                     <Button className="mt-3 w-full" disabled={tendered < due || payCash.isPending} onClick={() => setConfirmCash(true)}>
                       <Banknote /> Take cash
