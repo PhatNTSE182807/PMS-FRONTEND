@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Rotate3d, Wrench, X } from 'lucide-react'
+import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Navigation, Rotate3d, Wrench, X } from 'lucide-react'
 import { isMockService } from '@/config/env'
+import { LotDirectionsDialog } from '@/components/customer/LotDirectionsDialog'
+import { usePublicLots } from '@/hooks/usePublicLots'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
 import { usePublicPrices } from '@/hooks/usePricing'
 import { useVehicles } from '@/hooks/useProfile'
@@ -101,6 +103,10 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
     : capacityLots
   // The page owns the selection, so the lot chips in the welcome banner move the map too
   const lot = lots.find((l) => l.id === lotId) ?? lots[0]
+  // Route to the selected lot (its map position when the Admin saved one, else found by address)
+  const [showDirections, setShowDirections] = useState(false)
+  const publicLots = usePublicLots()
+  const directionsLot = publicLots.data?.find((l) => String(l.id) === lot?.id)
   const capacityLot = capacityLots.find((l) => l.id === lot?.id)
 
   // The published layout gives the real slot ids a reservation needs; the template model is the fallback
@@ -235,6 +241,11 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
 
             <div className="cx-map__footer">
               <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>
+              {lot.address && (
+                <button type="button" className="cx-btn cx-map__view-map" onClick={() => setShowDirections(true)}>
+                  <Navigation size={14} aria-hidden /> View map
+                </button>
+              )}
               <span><Rotate3d size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> Drag to rotate • scroll to zoom</span>
             </div>
           </div>
@@ -357,6 +368,19 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
             ))}
           </aside>
         </div>
+      )}
+      {showDirections && lot && (
+        <LotDirectionsDialog
+          lot={{
+            name: lot.name,
+            address: directionsLot?.address ?? lot.address ?? '',
+            district: directionsLot?.district ?? null,
+            city: directionsLot?.city ?? null,
+            latitude: directionsLot?.latitude ?? null,
+            longitude: directionsLot?.longitude ?? null,
+          }}
+          onClose={() => setShowDirections(false)}
+        />
       )}
     </section>
   )
