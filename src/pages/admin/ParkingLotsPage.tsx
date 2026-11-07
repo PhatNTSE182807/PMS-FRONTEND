@@ -64,6 +64,18 @@ const LIFECYCLE_STYLE: Record<LotState, { chip: string; icon: string }> = {
   Inactive: { chip: 'bg-slate-100 text-slate-700', icon: 'text-slate-500' },
 }
 
+/** Vehicles parked in the lot right now (occupied bays). */
+const vehiclesInside = (lot: ManagedLot) =>
+  lot.zones.reduce((n, z) => n + z.slots.filter((s) => s.status === 'Occupied').length, 0)
+
+/** Why a lot cannot be deleted yet; null when it can. It must be closed first and every vehicle must have left. */
+function deleteBlocker(lot: ManagedLot): string | null {
+  if (lot.status !== 'TemporarilyClosed') return 'Set the lot to Temporarily closed before deleting it.'
+  const inside = vehiclesInside(lot)
+  if (inside > 0) return `${inside} vehicle${inside === 1 ? ' is' : 's are'} still parked in this lot.`
+  return null
+}
+
 /** Bays per vehicle class, summed over the lot's zones. */
 function capacityMix(lot: ManagedLot) {
   const sum = (ids: string[]) =>
@@ -396,16 +408,18 @@ export default function ParkingLotsPage() {
                                     <Button variant="ghost" size="icon" aria-label={`Edit ${l.name}`} onClick={() => setEditing({ kind: 'lot', lot: l })}>
                                       <Pencil />
                                     </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      aria-label={`Delete ${l.name}`}
-                                      disabled={l.status === 'Active' || l.zones.length > 0}
-                                      title="Only inactive lots without zones can be deleted"
-                                      onClick={() => setRemoving({ name: l.name, run: () => service.deleteLot(l.id) })}
-                                    >
-                                      <Trash2 />
-                                    </Button>
+                                    {/* A disabled button gets no hover, so the reason sits on the wrapper. */}
+                                    <span title={deleteBlocker(l) ?? `Delete ${l.name}`}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={`Delete ${l.name}`}
+                                        disabled={deleteBlocker(l) !== null}
+                                        onClick={() => setRemoving({ name: l.name, run: () => service.deleteLot(l.id) })}
+                                      >
+                                        <Trash2 />
+                                      </Button>
+                                    </span>
                                   </>
                                 )}
                               </div>
