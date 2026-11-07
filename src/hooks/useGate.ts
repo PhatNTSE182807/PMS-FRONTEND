@@ -20,7 +20,10 @@ function useGateRealtime(lotId: string | undefined) {
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'SessionChanged' || event.type === 'ZoneCounterChanged' || event.type === 'PaymentChanged')
         void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
-      if (event.type === 'OpsAlert' && !isCashAlert(event.code)) toast.warning(event.message)
+      // Several gate hooks of one page each subscribe, so every copy would raise the same popup: one id per
+      // alert makes them share a single popup
+      if (event.type === 'OpsAlert' && !isCashAlert(event.code))
+        toast.warning(event.message, { id: `ops-alert-${event.lotId}-${event.code}-${event.sessionId ?? 'lot'}-${event.message}` })
       // A walk-in parked in a booked bay: the Exceptions screen lists the new case at once
       if (event.type === 'OpsAlert' && event.code === 'BOOKED_BAY_TAKEN')
         void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
