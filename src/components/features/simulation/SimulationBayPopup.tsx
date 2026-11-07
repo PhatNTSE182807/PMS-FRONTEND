@@ -111,9 +111,12 @@ export function SimulationBayPopup({ lotId, bay, onClose }: { lotId: string; bay
           </div>
           {stayError && <p style={styles.error}>{stayError}</p>}
           <button type="submit" style={styles.primary} disabled={Boolean(stayError) || deploy.isPending}>
-            {deploy.isPending ? 'Parking…' : 'Park a walk-in here'}
+            {deploy.isPending ? 'Sending…' : 'Send a walk-in to this bay'}
           </button>
-          <p style={styles.note}>A random plate enters through the lot&apos;s entry lane, then pays cash and leaves after its stay.</p>
+          <p style={styles.note}>
+            A random plate drives up to the entry lane and waits there: check it in on the Staff gate screen and it parks in
+            this bay. It pays cash and leaves by itself after its stay, unless the Staff takes its fee first.
+          </p>
         </form>
       }
       onClose={onClose}

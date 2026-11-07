@@ -21,7 +21,7 @@ import { Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/featu
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useGateHistory, useLotPayments, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
+import { useGateExits, useGateHistory, useLotPayments, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
 import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
@@ -140,10 +140,11 @@ function KpiRow({
 
 function AnprTelemetry({
   sessions,
-  history,
+  exits,
 }: {
   sessions: ParkingSessionDTO[] | undefined
-  history: { items: ParkingSessionDTO[]; totalCount: number } | undefined
+  /** The vehicles that left last, by exit time (the exit lane cameras). */
+  exits: ParkingSessionDTO[] | undefined
 }) {
   return (
     <Panel>
@@ -152,7 +153,7 @@ function AnprTelemetry({
       >
         Live optical ANPR telemetry
       </SectionTitle>
-      <GateLaneCameras sessions={sessions} history={history?.items} />
+      <GateLaneCameras sessions={sessions} history={exits} />
     </Panel>
   )
 }
@@ -273,6 +274,7 @@ export default function StaffGatePage() {
   const sessions = useOpenSessions(lotKey)
   const counters = useZoneCounters(lotKey)
   const history = useGateHistory(lotKey, 1, 50)
+  const exits = useGateExits(lotKey)
   const cashPayments = useLotPayments(lotKey, 'Cash', 50)
   const checkIns = useGateRequestQueue(lotKey, 'CheckIn')
   const checkOuts = useGateRequestQueue(lotKey, 'CheckOut')
@@ -309,7 +311,7 @@ export default function StaffGatePage() {
 
       {/* Four cameras (entry lane on top, exit lane below) with the Check-in / Check-out lanes beside them */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
-        <AnprTelemetry sessions={sessions.data} history={history.data} />
+        <AnprTelemetry sessions={sessions.data} exits={exits.data?.items} />
         {lotKey ? (
           <GateLanesPanel lotId={lotKey} initialTab={lane === 'checkout' ? 'CheckOut' : 'CheckIn'} />
         ) : (
