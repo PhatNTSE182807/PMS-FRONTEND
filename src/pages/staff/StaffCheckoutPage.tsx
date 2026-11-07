@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2 } from 'lucide-react'
+import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, Undo2 } from 'lucide-react'
 import { ApiError, getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
@@ -26,7 +26,7 @@ import { BANKNOTES, cleanNotes, describeNotes, notesTotal, smallNotesFor, sugges
 import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/operations.dto'
+import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider, StaffPaymentHistoryItemDTO } from '@/types/operations.dto'
 
 
 /**
@@ -37,6 +37,29 @@ import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/oper
  * (team decision, 2026-11-04: never from the POS). Every payment is listed in the payment history below.
  * Keyboard: F5 cash, F8 check gateway, Esc next vehicle.
  */
+type HistoryMethod = '' | 'Cash' | 'VNPay' | 'MoMo' | 'Wallet'
+
+/** Payment history filters; empty lists every method. */
+const HISTORY_METHODS: { value: HistoryMethod; label: string }[] = [
+  { value: '', label: 'All methods' },
+  { value: 'Cash', label: 'Cash' },
+  { value: 'VNPay', label: 'VNPay' },
+  { value: 'MoMo', label: 'MoMo' },
+  { value: 'Wallet', label: 'XXIV Wallet' },
+]
+
+const METHOD_LABEL: Record<string, string> = { Cash: 'Cash', VNPay: 'VNPay', MoMo: 'MoMo', Wallet: 'XXIV Wallet', Online: 'Online' }
+
+const CHANNEL_LABEL: Record<string, string> = { Lane: 'At the exit lane', Kiosk: 'At the counter', App: 'In the customer app' }
+
+/** Who took the payment: the Staff for cash, otherwise how it came in. */
+function collectorOf(p: StaffPaymentHistoryItemDTO) {
+  if (p.collectedByName) return p.collectedByName
+  if (p.isSimulated) return 'Simulation (automatic)'
+  if (p.method === 'Cash') return 'No Staff recorded'
+  return p.method === 'Wallet' ? 'Customer wallet' : 'Customer, paid online'
+}
+
 export default function StaffCheckoutPage() {
   const myLots = useMyStaffLots()
   const { lot } = useStaffLot()
@@ -69,10 +92,10 @@ export default function StaffCheckoutPage() {
   // Payments taken at the lot, cash only by default
   const [historyPlate, setHistoryPlate] = useState('')
   const [historyPage, setHistoryPage] = useState(1)
-  const [cashOnly, setCashOnly] = useState(true)
+  const [methodFilter, setMethodFilter] = useState<HistoryMethod>('')
   const history = useQuery({
-    queryKey: ['staff-payment-history', lotKey, historyPage, historyPlate, cashOnly],
-    queryFn: () => gateService.getPayments(lotKey!, { page: historyPage, plate: historyPlate, method: cashOnly ? 'Cash' : undefined }),
+    queryKey: ['staff-payment-history', lotKey, historyPage, historyPlate, methodFilter],
+    queryFn: () => gateService.getPayments(lotKey!, { page: historyPage, plate: historyPlate, method: methodFilter || undefined }),
     enabled: Boolean(lotKey),
     refetchInterval: 10000,
   })
@@ -279,12 +302,6 @@ export default function StaffCheckoutPage() {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wider text-slate-700 uppercase">
         <span className="text-slate-950">Payment counter POS</span>
         {session && <span className="font-mono text-amber-500">Session #{session.code}</span>}
-        <span className="flex items-center gap-1.5 text-indigo-700">
-          <ShieldCheck className="size-4" aria-hidden /> Entry/exit plate check active
-        </span>
-        <Link to="/staff/gate?lane=checkout" className="ml-auto flex items-center gap-1.5 text-indigo-700 hover:underline">
-          <DoorOpen className="size-4" aria-hidden /> Barrier: Check-out lane
-        </Link>
       </div>
 
       <Panel>
@@ -611,16 +628,16 @@ export default function StaffCheckoutPage() {
         <SectionTitle
           icon={<ReceiptText />}
           aside={
-            <div className="flex rounded-lg bg-slate-50 p-0.5 text-xs font-bold" role="group" aria-label="Payment method">
-              {[true, false].map((cash) => (
+            <div className="flex flex-wrap rounded-lg bg-slate-50 p-0.5 text-xs font-bold" role="group" aria-label="Payment method">
+              {HISTORY_METHODS.map(({ value, label }) => (
                 <button
-                  key={String(cash)}
+                  key={value || 'all'}
                   type="button"
-                  aria-pressed={cashOnly === cash}
-                  onClick={() => { setCashOnly(cash); setHistoryPage(1) }}
-                  className={cn('rounded-md px-3 py-1', cashOnly === cash ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-700')}
+                  aria-pressed={methodFilter === value}
+                  onClick={() => { setMethodFilter(value); setHistoryPage(1) }}
+                  className={cn('rounded-md px-3 py-1', methodFilter === value ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-700')}
                 >
-                  {cash ? 'Cash' : 'All methods'}
+                  {label}
                 </button>
               ))}
             </div>
@@ -643,11 +660,24 @@ export default function StaffCheckoutPage() {
                 {history.data.items.map((p) => (
                   <tr key={p.id}>
                     <td className="py-2 font-mono">{p.paidAt ? new Date(p.paidAt).toLocaleString() : '—'}</td>
-                    <td className="font-mono font-bold text-slate-950">{p.plateNumber || 'No plate'}</td>
+                    <td className="font-mono font-bold text-slate-950">
+                      {p.plateNumber || 'No plate'}
+                      {p.isSimulated && (
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 font-sans text-[10px] font-bold tracking-wide text-amber-700 uppercase" title="Demo vehicle sent by the Admin parking simulation">
+                          Simulated
+                        </span>
+                      )}
+                    </td>
                     <td className="font-mono text-xs">{p.sessionCode ?? '—'}</td>
-                    <td>{p.method}{p.channel === 'Kiosk' ? ' · counter' : p.channel === 'Lane' ? ' · lane' : p.channel === 'App' ? ' · app' : ''}{p.status !== 'Succeeded' ? ` · ${p.status}` : ''}</td>
+                    <td>
+                      <span className="font-semibold text-slate-950">{METHOD_LABEL[p.method] ?? p.method}</span>
+                      <span className="block text-xs text-slate-600">
+                        {CHANNEL_LABEL[p.channel ?? ''] ?? p.channel ?? ''}
+                        {p.status !== 'Succeeded' ? ` · ${p.status === 'RefundPending' ? 'refund pending' : p.status.toLowerCase()}` : ''}
+                      </span>
+                    </td>
                     <td className="text-right font-mono font-bold text-slate-950">{vnd(p.amount)}</td>
-                    <td className="pl-6">{p.collectedByName ?? '—'}</td>
+                    <td className={cn('pl-6', !p.collectedByName && 'text-slate-600')}>{collectorOf(p)}</td>
                   </tr>
                 ))}
               </tbody>

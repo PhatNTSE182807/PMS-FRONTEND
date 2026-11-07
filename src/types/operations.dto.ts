@@ -443,8 +443,10 @@ export interface StaffPaymentHistoryItemDTO {
   channel: string | null
   amount: number
   status: string
-  /** The Staff who took a cash payment. */
+  /** The Staff who took the payment; null for online payments and simulated vehicles. */
   collectedByName: string | null
+  /** A walk-in sent by the Admin parking simulation (demo traffic, paid automatically at the exit lane). */
+  isSimulated: boolean
 }
 
 /** StaffPaymentHistoryPageModel */
