@@ -18,6 +18,8 @@ import {
   useWalkInSimulation,
 } from '@/hooks/useParkingSimulation'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
+import { SimulationBayPopup } from './SimulationBayPopup'
+import { canSimulateInBay, simulationBayHint } from './simulationBays'
 import { formatNumber } from '@/lib/format'
 import type { ParkingLotSummaryDTO } from '@/types/parking.dto'
 import { WALK_IN_MAX_STAY_HOURS, type SimulatedWalkInDTO } from '@/types/simulation.dto'
@@ -250,7 +252,16 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
 
       {lot && (
         // Every vehicle in the chosen lot: booked bays, walk-ins (drawn from the zone counters) and simulated traffic
-        <LiveLotModel lots={[{ id: lot.id, code: lot.code, name: lot.name, layoutTemplate: lot.layoutTemplate }]} lotId={lot.id} />
+        <LiveLotModel
+          lots={[{ id: lot.id, code: lot.code, name: lot.name, layoutTemplate: lot.layoutTemplate }]}
+          lotId={lot.id}
+          // Any bay can be acted on: a parked vehicle shows its details, a free bay takes one walk-in, a booked bay a mistake
+          bayActions={{
+            canSelect: canSimulateInBay,
+            hint: simulationBayHint,
+            render: (bay, id, close) => <SimulationBayPopup key={bay.id} lotId={id} bay={bay} onClose={close} />,
+          }}
+        />
       )}
 
       <Card>

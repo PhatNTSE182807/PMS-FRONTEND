@@ -2,6 +2,7 @@ import { SERVICE_PATHS } from '@/config/env'
 import type {
   BookedBayTakenDTO,
   DeployWalkInsCommand,
+  DeployWalkInToBayCommand,
   DeployWalkInsResultDTO,
   ParkingSimulationDTO,
   SimulatedWalkInDTO,
@@ -61,8 +62,13 @@ export const walkInSimulationService = {
     return http.post<SimulatedWalkInDTO | null>(`${walkIns}/${sessionId}/lost-ticket`, { conditionsMet })
   },
 
-  /** A walk-in parks in the bay of the lot's next confirmed booking. */
-  occupyBookedBay(lotId: number): Promise<BookedBayTakenDTO> {
-    return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: { lotId } })
+  /** A walk-in parks in the bay of the lot's next confirmed booking, or of the booking in `slotId`. */
+  occupyBookedBay(lotId: number, slotId?: number): Promise<BookedBayTakenDTO> {
+    return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: slotId ? { lotId, slotId } : { lotId } })
+  },
+
+  /** One walk-in in a free bay picked on the 3D model. */
+  deployToBay(command: DeployWalkInToBayCommand): Promise<SimulatedWalkInDTO | null> {
+    return http.post<SimulatedWalkInDTO | null>(`${walkIns}/bay`, command)
   },
 }

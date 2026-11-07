@@ -59,6 +59,16 @@ export interface DeployWalkInsCommand {
   maxStayHours: number
 }
 
+/** DeployWalkInToBayModel: one simulated walk-in in a free bay picked on the 3D model. */
+export interface DeployWalkInToBayCommand {
+  lotId: number
+  slotId: number
+  /** CAR_4, CAR_7 or MOTORBIKE; it must fit the bay. */
+  vehicleTypeCode: string
+  minStayHours: number
+  maxStayHours: number
+}
+
 export const WALK_IN_MAX_STAY_HOURS = 72
 
 export interface DeployWalkInsResultDTO {
