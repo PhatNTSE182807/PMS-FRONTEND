@@ -179,7 +179,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
   const renderTxIcon = (tx: WalletTransaction) => {
     if (tx.type === 'refund') {
       return (
-        <div className="cx-wallet-history__icon cx-wallet-history__icon--refund" title="Refund / Hoàn tiền">
+        <div className="cx-wallet-history__icon cx-wallet-history__icon--refund" title="Refund or compensation">
           <RotateCcw size={16} strokeWidth={2.4} />
         </div>
       )
