@@ -927,6 +927,17 @@
   background: linear-gradient(110deg, rgba(212, 175, 55, 0.08) 0%, var(--cx-container) 35%, rgba(18, 78, 102, 0.35) 100%);
 }
 
+/* The greeting takes the full width; the lot tabs sit in one row underneath */
+.cx-welcome:has(.cx-tabs--lots) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+}
+
+.cx-welcome__intro {
+  min-width: 0;
+}
+
 .cx-welcome__title {
   margin-top: 0.6rem;
   font-family: var(--cx-headline-font);
@@ -992,6 +1003,39 @@
 .cx-tab--active {
   background: var(--cx-primary-container);
   color: var(--cx-primary-fixed);
+}
+
+/* Lot tabs on the dashboard greeting: one compact row, scrolls sideways when there are many lots */
+.cx-tabs--lots {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.cx-tabs--lots .cx-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.cx-tabs--lots .cx-tab--icon {
+  padding: 0.35rem 0.4rem;
+}
+
+.cx-tab__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.cx-tab__dot--open {
+  background: #34d399;
+}
+
+.cx-tab__dot--warn {
+  background: #f59e0b;
 }
 
 /* A lot tab with its directions button */
