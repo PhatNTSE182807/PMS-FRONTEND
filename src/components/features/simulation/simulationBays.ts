@@ -12,5 +12,5 @@ export function canSimulateInBay(bay: Bay) {
 export function simulationBayHint(bay: Bay) {
   if (bay.status === 'OCCUPIED') return 'Click for vehicle details'
   if (isBooked(bay)) return 'Click to park a walk-in here by mistake'
-  return 'Click to park a walk-in here'
+  return 'Click to send a walk-in to this bay'
 }

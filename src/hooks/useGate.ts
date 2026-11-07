@@ -119,6 +119,20 @@ export function useGateHistory(lotId: string | undefined, page = 1, pageSize = 5
   })
 }
 
+/**
+ * The vehicles that left the lot last, newest exit first, whenever they came in: the exit lane cameras show each
+ * one driving out (the entry-ordered history misses a vehicle that came in before the latest 50 entries).
+ */
+export function useGateExits(lotId: string | undefined) {
+  const live = useGateRealtime(lotId)
+  return useQuery({
+    queryKey: queryKeys.gate.exits(lotId ?? ''),
+    queryFn: () => gateService.getHistory(lotId!, 1, undefined, 20, 'exit'),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? 15_000 : GATE_REFRESH_MS,
+  })
+}
+
 export function useLotPayments(lotId: string | undefined, method?: string, pageSize = 50) {
   const live = useGateRealtime(lotId)
   return useQuery({

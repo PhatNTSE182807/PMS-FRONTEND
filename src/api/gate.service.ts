@@ -71,8 +71,9 @@ export const gateService = {
     page = 1,
     plate?: string,
     pageSize = 10,
+    orderBy?: 'exit',
   ): Promise<{ items: ParkingSessionDTO[]; page: number; pageSize: number; totalCount: number }> {
-    return http.get(`${lotPath(lotId)}/sessions/history`, { params: { page, pageSize, plate: plate || undefined } })
+    return http.get(`${lotPath(lotId)}/sessions/history`, { params: { page, pageSize, plate: plate || undefined, orderBy } })
   },
 
   /** Parking fees collected at this lot; method=Cash keeps cash only. */

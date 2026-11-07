@@ -120,6 +120,7 @@ export const queryKeys = {
     parkedSession: (lotId: string, sessionId: number) => [...queryKeys.gate.all, 'parked-session', lotId, sessionId] as const,
     bookedBayCases: (lotId: string) => [...queryKeys.gate.all, 'booked-bay-cases', lotId] as const,
     history: (lotId: string, page = 1) => [...queryKeys.gate.all, 'history', lotId, page] as const,
+    exits: (lotId: string) => [...queryKeys.gate.all, 'exits', lotId] as const,
     payments: (lotId: string, method?: string) => [...queryKeys.gate.all, 'payments', lotId, method ?? ''] as const,
     reservation: (lotId: string, entry: string) => [...queryKeys.gate.all, 'reservation', lotId, entry] as const,
     anprHealth: () => [...queryKeys.gate.all, 'anpr-health'] as const,

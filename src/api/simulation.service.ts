@@ -10,6 +10,7 @@ import type {
   WalkInCheckOutResultDTO,
   WalkInSimulationOverviewDTO,
 } from '@/types/simulation.dto'
+import type { GateRequestDTO } from '@/types/gateRequest.dto'
 import { http } from './axiosClient'
 
 /**
@@ -67,8 +68,8 @@ export const walkInSimulationService = {
     return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: slotId ? { lotId, slotId } : { lotId } })
   },
 
-  /** One walk-in in a free bay picked on the 3D model. */
-  deployToBay(command: DeployWalkInToBayCommand): Promise<SimulatedWalkInDTO | null> {
-    return http.post<SimulatedWalkInDTO | null>(`${walkIns}/bay`, command)
+  /** One walk-in for a free bay picked on the 3D model: it waits at the entry lane until the Staff checks it in. */
+  deployToBay(command: DeployWalkInToBayCommand): Promise<GateRequestDTO> {
+    return http.post<GateRequestDTO>(`${walkIns}/bay`, command)
   },
 }

@@ -293,7 +293,9 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
       <LaneHeader
         title={
           checkIn
-            ? `App check-in · Reservation ${request.reservationCode ?? ''}`
+            ? request.isSimulated
+              ? 'Walk-in check-in · Simulated vehicle'
+              : `App check-in · Reservation ${request.reservationCode ?? ''}`
             : `${request.customerName ? 'Check-out' : 'Walk-in check-out'} · Session ${request.sessionCode ?? ''}`
         }
         aside={
@@ -325,7 +327,12 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
             <dt className="text-xs text-slate-600">Bay</dt>
             <dd className="font-mono font-medium text-slate-900">{request.slotCode ?? '—'}</dd>
           </div>
-          {checkIn ? (
+          {checkIn && request.isSimulated ? (
+            <div>
+              <dt className="text-xs text-slate-600">Entry</dt>
+              <dd className="font-medium text-slate-900">Walk-in, no booking</dd>
+            </div>
+          ) : checkIn ? (
             <div>
               <dt className="text-xs text-slate-600">Check-in window</dt>
               <dd className="font-mono font-medium text-slate-900">

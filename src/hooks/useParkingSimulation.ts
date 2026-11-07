@@ -42,6 +42,7 @@ function useWalkInMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>
       void queryClient.invalidateQueries({ queryKey: ['parking-simulation', 'walk-ins'] })
       void queryClient.invalidateQueries({ queryKey: queryKeys.parking.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.layout.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.all })
     },
     onError: (error) => toastAdminError(error, { fallback: 'The simulation could not do that.' }),
   })
@@ -73,10 +74,12 @@ export function useSimulateLostTicket() {
   )
 }
 
-/** One walk-in in a free bay picked on the 3D model. */
+/** One walk-in for a free bay picked on the 3D model: it queues at the entry lane for the Staff to check in. */
 export function useDeployWalkInToBay() {
   return useWalkInMutation(walkInSimulationService.deployToBay, (r) =>
-    toast.success(r ? `${r.plate ?? 'A walk-in'} parked${r.zoneName ? ` in ${r.zoneName}` : ''}.` : 'The walk-in parked.'),
+    toast.success(`${r.plateNumber ?? 'A walk-in'} is waiting at the entry lane for bay ${r.slotCode ?? ''}.`, {
+      description: 'Check it in on the Staff gate screen (Check-in lane). Several walk-ins queue one after another.',
+    }),
   )
 }
 
