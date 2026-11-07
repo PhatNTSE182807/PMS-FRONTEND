@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Bike, Car, Rotate3d } from 'lucide-react'
 import { GarageFloorsView } from '@/components/customer/garage/GaragePreview'
 import { buildTemplateGarage, findTemplate, liveFloorStats, templateForLot, type Bay } from '@/components/customer/garage/garageModel'
@@ -37,11 +37,18 @@ export function LiveLotModel({
   lotId,
   onLotChange,
   className,
+  bayActions,
 }: {
   lots: AssignedParkingLotDTO[]
   lotId: string | undefined
   onLotChange?: (lotId: string) => void
   className?: string
+  /** Replaces the vehicle details popup with the caller's own (the Admin simulation acts on any bay). */
+  bayActions?: {
+    canSelect: (bay: Bay) => boolean
+    hint: (bay: Bay) => string | null
+    render: (bay: Bay, lotId: string, close: () => void) => ReactNode
+  }
 }) {
   const lot = lots.find((l) => l.id === lotId) ?? lots[0]
   const { user } = useAuth()
@@ -128,7 +135,15 @@ export function LiveLotModel({
             })}
           </ul>
           <div className="mt-3">
-            {canInspect && (view.source === 'layout' || view.source === 'pushed') ? (
+            {bayActions && (view.source === 'layout' || view.source === 'pushed') ? (
+              <GarageFloorsView
+                key={lot.id}
+                floors={view.floors}
+                canSelectBay={bayActions.canSelect}
+                bayHint={bayActions.hint}
+                renderBayPopup={(bay, close) => bayActions.render(bay, lot.id, close)}
+              />
+            ) : canInspect && (view.source === 'layout' || view.source === 'pushed') ? (
               // Real bays of the published layout: a parked vehicle opens its details (the API checks role and lot again)
               <GarageFloorsView
                 key={lot.id}

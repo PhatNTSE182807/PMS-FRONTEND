@@ -35,6 +35,8 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
         bayKind: parkedKind(cell.vehicleTypeCode),
         countedWalkIn: walkIns.has(cell.slotId) || undefined,
         walkInSessionId: walkIns.has(cell.slotId) ? (walkIns.get(cell.slotId)?.sessionId ?? null) : undefined,
+        bayTypeCode: cell.vehicleTypeCode,
+        bookedLater: (cell.status === 'Available' && !walkIns.has(cell.slotId) && cell.bookedLater) || undefined,
       }
     })
     return {

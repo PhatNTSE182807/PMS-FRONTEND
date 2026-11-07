@@ -25,6 +25,10 @@ export interface Bay {
   countedWalkIn?: boolean
   /** The session of that counted walk-in, when the zone has one for it; null when only the counter knows it. */
   walkInSessionId?: number | null
+  /** Vehicle type the bay is for (CAR_4, CAR_7, MOTORBIKE), from the published layout. */
+  bayTypeCode?: string | null
+  /** A free bay with a booking still to come: walk-ins are kept off it. */
+  bookedLater?: boolean
 }
 
 export interface GarageFloor {

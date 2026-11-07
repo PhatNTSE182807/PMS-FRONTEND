@@ -4,6 +4,7 @@ import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { parkingHistoryService } from '@/api/parkingHistory.service'
 import { queryKeys } from '@/api/queryKeys'
 import type { ParkingHistoryQuery } from '@/types/parkingHistory.dto'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /**
  * One page of the customer's parking history. A session that ends or a payment that settles
@@ -17,7 +18,7 @@ export function useParkingHistory(query: ParkingHistoryQuery) {
     if (!live) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'SessionChanged' || event.type === 'PaymentChanged')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.parkingHistory.all })
+        invalidateFromPush(queryClient, queryKeys.parkingHistory.all)
     })
   }, [live, queryClient])
 

@@ -73,8 +73,27 @@ export function useSimulateLostTicket() {
   )
 }
 
+/** One walk-in in a free bay picked on the 3D model. */
+export function useDeployWalkInToBay() {
+  return useWalkInMutation(walkInSimulationService.deployToBay, (r) =>
+    toast.success(r ? `${r.plate ?? 'A walk-in'} parked${r.zoneName ? ` in ${r.zoneName}` : ''}.` : 'The walk-in parked.'),
+  )
+}
+
+/** A walk-in parks by mistake in the booked bay picked on the 3D model. */
+export function useOccupyBookedBayAt() {
+  return useWalkInMutation(
+    ({ lotId, slotId }: { lotId: number; slotId: number }) => walkInSimulationService.occupyBookedBay(lotId, slotId),
+    (r) =>
+      toast.success(
+        `${r.plate} parked in booked bay ${r.bayCode} (booking ${r.reservationCode}).` +
+          (r.caseId ? ' The lot\'s Staff got the case in Exceptions & Alerts and the customer was told their bay is taken.' : ''),
+      ),
+  )
+}
+
 export function useOccupyBookedBay() {
-  return useWalkInMutation(walkInSimulationService.occupyBookedBay, (r) =>
+  return useWalkInMutation((lotId: number) => walkInSimulationService.occupyBookedBay(lotId), (r) =>
     toast.success(
       `${r.plate} parked in booked bay ${r.bayCode} (booking ${r.reservationCode}).` +
         (r.caseId
