@@ -195,11 +195,9 @@ export default function ParkingLotsPage() {
     await lots.refetch()
     toast.success(service.isDemo() ? 'Demo data saved in this browser' : message)
   }
-  const canConfigure = Boolean(
-    selected &&
-      user?.role === 'MANAGER' &&
-      selected.managerUserId === user.userId,
-  )
+  // The Admin and the lot's own Manager can open, close or put a lot into maintenance.
+  const canSetStatus = (lot: ManagedLot) =>
+    admin || (user?.role === 'MANAGER' && lot.managerUserId === user.userId)
   const title = zone ? zone.name : selected ? selected.name : 'Parking Lots'
   return (
     <div className="space-y-6">
@@ -408,6 +406,15 @@ export default function ParkingLotsPage() {
                                     <Button variant="ghost" size="icon" aria-label={`Edit ${l.name}`} onClick={() => setEditing({ kind: 'lot', lot: l })}>
                                       <Pencil />
                                     </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={`Change status of ${l.name}`}
+                                      title="Change status: Active, Maintenance or Temporarily closed"
+                                      onClick={() => setEditing({ kind: 'operation', lot: l })}
+                                    >
+                                      <Settings2 />
+                                    </Button>
                                     {/* A disabled button gets no hover, so the reason sits on the wrapper. */}
                                     <span title={deleteBlocker(l) ?? `Delete ${l.name}`}>
                                       <Button
@@ -529,7 +536,7 @@ export default function ParkingLotsPage() {
                             Edit details
                           </Button>
                         )}
-                        {canConfigure && (
+                        {selected && canSetStatus(selected) && (
                           <Button
                             variant="outline"
                             onClick={() =>

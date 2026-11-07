@@ -86,9 +86,10 @@ function requireAdmin() {
 }
 function requireManager(lot: ManagedLot) {
   const user = actor()
+  if (user.role === 'ADMIN') return
   if (user.role !== 'MANAGER' || user.userId !== lot.managerUserId)
     throw new Error(
-      'Only the Manager assigned to this lot can change its operating status.',
+      'Only an Admin or the Manager assigned to this lot can change its operating status.',
     )
 }
 export const lotManagementService = {
