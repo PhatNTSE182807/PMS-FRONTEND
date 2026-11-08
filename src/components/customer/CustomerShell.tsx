@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { CreditCard, LogOut, Moon, Shield, Sun } from 'lucide-react'
+import { CreditCard, LogOut, Shield } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { LOGO_SRC } from '@/components/ParkingLogo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
-import { useCustomerTheme } from '@/hooks/useCustomerTheme'
 import { useProfile } from '@/hooks/useProfile'
 import { useWallet, formatVndBalance } from '@/hooks/useWallet'
 import { initials, resolveMediaUrl } from './customerFormat'
@@ -55,10 +55,8 @@ export function CustomerShell() {
 
   const handleLogout = useSignOut()
 
-  const { theme, toggle: toggleTheme } = useCustomerTheme()
-
   return (
-    <div className="cx" data-cx-theme={theme}>
+    <div className="cx">
       <header className="cx-nav">
         <div className="cx-container cx-nav__inner">
           <Link to="/" className="cx-nav__brand" aria-label="XXIV Parking home">
@@ -82,15 +80,7 @@ export function CustomerShell() {
           </nav>
 
           <div className="cx-nav__actions">
-            <button
-              type="button"
-              className="cx-btn cx-btn--ghost cx-theme-toggle"
-              onClick={toggleTheme}
-              aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            >
-              {theme === 'light' ? <Moon aria-hidden /> : <Sun aria-hidden />}
-            </button>
+            <ThemeToggle className="cx-btn cx-btn--ghost cx-theme-toggle" />
             <NotificationBell />
             <div className="cx-nav__user-block">
               <Link to="/me/profile" className="cx-avatar" title="User Profile">

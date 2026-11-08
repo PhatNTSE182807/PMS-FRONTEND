@@ -138,7 +138,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
 
   const body = session ? (
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-3 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+          <div className="flex items-start justify-between gap-3 rounded-xl bg-well p-5 ring-1 ring-slate-200">
             <div>
               <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">{session.sessionType === 'Reservation' ? `Reservation ${session.reservationCode}` : session.sessionType ?? 'Walk-in'}</p>
               <p className="mt-1 font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{session.plateNumber || 'NO PLATE'}</p>

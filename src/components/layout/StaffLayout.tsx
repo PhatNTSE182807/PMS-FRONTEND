@@ -4,6 +4,7 @@ import { Toaster } from 'sonner'
 import { LogOut } from 'lucide-react'
 import { StaffNotificationBell } from '@/components/features/staff/StaffNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
@@ -86,8 +87,8 @@ export function StaffLayout() {
   }, [navigate])
 
   return (
-    <div className="admin-root flex min-h-dvh flex-col bg-[#0b141b]">
-      <header className="sticky top-0 z-20 bg-[#060f16]/95 shadow-[0_1px_8px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+    <div className="admin-root flex min-h-dvh flex-col bg-page">
+      <header className="sticky top-0 z-20 bg-well/95 shadow-[0_1px_8px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
           <img src={LOGO_SRC} alt="" className="h-10 w-auto shrink-0 drop-shadow" />
           <div className="leading-tight">
@@ -122,6 +123,9 @@ export function StaffLayout() {
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {/* Booked bays a walk-in took, bookings moved and compensation sent to customers */}
+            <Button asChild variant="ghost" size="icon">
+              <ThemeToggle />
+            </Button>
             <StaffNotificationBell />
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
@@ -153,7 +157,7 @@ export function StaffLayout() {
                 className={({ isActive }) =>
                   cn(
                     'flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
-                    isActive ? 'bg-[#124e66] font-bold text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                    isActive ? 'bg-selected font-bold text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
                   )
                 }
               >

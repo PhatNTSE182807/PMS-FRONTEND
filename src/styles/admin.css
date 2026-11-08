@@ -5,6 +5,16 @@
 
   --animate-pulse-soft: pulse-soft 1.6s ease-in-out infinite;
 
+  /* Surfaces the components name directly (bg-page, bg-well…); light values in the light block below */
+  --color-page: #0b141b;
+  --color-well: #060f16;
+  --color-sidebar: #101920;
+  --color-selected: #124e66;
+  --color-header-end: #1a2a2f;
+  /* Text on a filled accent (primary, destructive, success buttons) */
+  --color-on-accent: #f2f7fa;
+  --color-on-emerald: #06281c;
+
   @keyframes pulse-soft {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.55; }
@@ -224,7 +234,111 @@
   from { opacity: 0; transform: translateY(4px); }
 }
 
-/* The page behind the dark dashboard (visible on overscroll and short pages). */
+/* The page behind the dashboard (visible on overscroll and short pages). */
 body:has(.admin-root) {
-  background: #0b141b;
+  background: var(--color-page);
+}
+
+/*
+ * Light mode ("Concrete"), on when <html data-theme="light"> (see lib/theme.ts). A warm concrete grey page,
+ * off-white panels and near-black ink, with no color accent except the status colors. Unlike the dark
+ * palette the scales run the usual way: slate-50 the lightest, slate-950 the darkest; indigo (primary)
+ * becomes ink.
+ */
+html[data-theme='light'] {
+  --color-page: #d6d5d1;
+  --color-well: #e8e7e3;
+  --color-sidebar: #e9e8e4;
+  --color-selected: #cfcdc8;
+  --color-header-end: #e4e3df;
+  --color-on-accent: #f5f4f1;
+  --color-on-emerald: #f5f4f1;
+}
+
+html[data-theme='light'] .admin-root {
+  --color-white: #f5f4f1;
+  --color-black: #000000;
+  --color-slate-50: #edece8;
+  --color-slate-100: #e4e3df;
+  --color-slate-200: #d2d0cb;
+  --color-slate-300: #b8b6b1;
+  --color-slate-400: #8f8d88;
+  --color-slate-500: #6b6a66;
+  --color-slate-600: #575652;
+  --color-slate-700: #464541;
+  --color-slate-800: #302f2c;
+  --color-slate-900: #1f1f1d;
+  --color-slate-950: #121211;
+  --color-indigo-50: #e9e8e4;
+  --color-indigo-100: #dedcd7;
+  --color-indigo-200: #cbc9c4;
+  --color-indigo-300: #a9a7a2;
+  --color-indigo-400: #3a3936;
+  --color-indigo-500: #2e2d2a;
+  --color-indigo-600: #1c1c1a;
+  --color-indigo-700: #1c1c1a;
+  --color-indigo-800: #121211;
+  --color-indigo-900: #0b0b0a;
+  --color-indigo-950: #000000;
+  --color-violet-50: #f1ece3;
+  --color-violet-100: #e8dfcf;
+  --color-violet-200: #d6c6a8;
+  --color-violet-300: #b89d6e;
+  --color-violet-400: #96784a;
+  --color-violet-500: #7d6238;
+  --color-violet-600: #6a522d;
+  --color-violet-700: #574323;
+  --color-violet-800: #43331a;
+  --color-violet-900: #2e2312;
+  --color-violet-950: #1b140a;
+  --color-sky-50: #ebedee;
+  --color-sky-100: #dfe3e5;
+  --color-sky-200: #c6cdd1;
+  --color-sky-300: #a2adb3;
+  --color-sky-400: #75848c;
+  --color-sky-500: #5c6b73;
+  --color-sky-600: #4a5860;
+  --color-sky-700: #3b474e;
+  --color-sky-800: #2b353b;
+  --color-sky-900: #1d2428;
+  --color-sky-950: #111619;
+  --color-rose-50: #f6e6e3;
+  --color-rose-100: #efd5d1;
+  --color-rose-200: #e2b3ac;
+  --color-rose-300: #cf877d;
+  --color-rose-400: #b8574b;
+  --color-rose-500: #a3362d;
+  --color-rose-600: #8f2c24;
+  --color-rose-700: #7a241d;
+  --color-rose-800: #5e1b16;
+  --color-rose-900: #42130f;
+  --color-rose-950: #2a0b09;
+  --color-emerald-50: #e5efe8;
+  --color-emerald-100: #d2e5d8;
+  --color-emerald-200: #aecdb7;
+  --color-emerald-300: #7fae8b;
+  --color-emerald-400: #548c63;
+  --color-emerald-500: #3d6b4a;
+  --color-emerald-600: #345d40;
+  --color-emerald-700: #2b4e35;
+  --color-emerald-800: #213c29;
+  --color-emerald-900: #172a1d;
+  --color-emerald-950: #0d1911;
+  --color-amber-50: #f5ecdc;
+  --color-amber-100: #ecdcbf;
+  --color-amber-200: #dcc08e;
+  --color-amber-300: #c49a55;
+  --color-amber-400: #a87a2e;
+  --color-amber-500: #8a5a14;
+  --color-amber-600: #7a4f12;
+  --color-amber-700: #6b450f;
+  --color-amber-800: #52350b;
+  --color-amber-900: #3a2508;
+  --color-amber-950: #241705;
+
+  --color-gold: #1c1c1a;
+  --color-gold-hover: #3a3936;
+  --color-on-gold: #f5f4f1;
+
+  color-scheme: light;
 }
