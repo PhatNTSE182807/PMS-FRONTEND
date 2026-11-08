@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Car, Layers, LogOut, ParkingSquare, Send, TicketX } from 'lucide-react'
+import { Car, Layers, LogOut, ParkingSquare, Send } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,10 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useParkingLots } from '@/hooks/useParking'
 import {
   useCheckOutAllWalkIns,
-  useCheckOutWalkIn,
   useDeployWalkIns,
   useOccupyBookedBay,
-  useSimulateLostTicket,
   useWalkInSimulation,
 } from '@/hooks/useParkingSimulation'
 import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
@@ -85,12 +83,8 @@ function NumberField({ id, label, hint, value, onChange }: { id: string; label: 
   )
 }
 
+/** One simulated walk-in (read only: they leave by themselves, or all at once with Check out all). */
 function WalkInRow({ vehicle }: { vehicle: SimulatedWalkInDTO }) {
-  const checkOut = useCheckOutWalkIn()
-  const lostTicket = useSimulateLostTicket()
-  const busy = checkOut.isPending || lostTicket.isPending
-  const canAct = vehicle.status === 'Active' || vehicle.status === 'PendingPayment' || vehicle.status === 'Paid'
-
   return (
     <TableRow>
       <TableCell className="font-mono">{vehicle.hasPlate ? vehicle.plate : <span className="text-slate-400">No plate</span>}</TableCell>
@@ -103,27 +97,6 @@ function WalkInRow({ vehicle }: { vehicle: SimulatedWalkInDTO }) {
       <TableCell>
         <Badge tone={STATUS_TONE[vehicle.status] ?? 'neutral'}>{STATUS_LABEL[vehicle.status] ?? vehicle.status}</Badge>
         {vehicle.lostTicket && vehicle.status !== 'LostTicketPending' && <Badge tone="rose" className="ml-1">Lost ticket</Badge>}
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-1.5">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy || vehicle.status !== 'Active' || vehicle.lostTicket}
-            title="The driver says the paper ticket is lost: the Staff checks the papers and decides"
-            onClick={() => {
-              const conditionsMet = window.confirm(
-                'Do the photos and papers match (Staff approves on the spot)?\nOK = approve at the lane, Cancel = send to the lot\'s Manager.',
-              )
-              lostTicket.mutate({ sessionId: vehicle.sessionId, conditionsMet })
-            }}
-          >
-            <TicketX aria-hidden /> Lost ticket
-          </Button>
-          <Button size="sm" variant="secondary" disabled={busy || !canAct} onClick={() => checkOut.mutate(vehicle.sessionId)}>
-            <LogOut aria-hidden /> Check out now
-          </Button>
-        </div>
       </TableCell>
     </TableRow>
   )
@@ -300,7 +273,6 @@ export function WalkInSimulationPanel({ simulating }: { simulating: boolean }) {
                     <TableHead>Entered</TableHead>
                     <TableHead>Leaves at</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
