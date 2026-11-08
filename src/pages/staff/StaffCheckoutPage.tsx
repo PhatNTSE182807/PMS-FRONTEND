@@ -436,6 +436,10 @@ export default function StaffCheckoutPage() {
                         <Button size="sm" variant="secondary" className="mt-3" onClick={() => void checkGateway()}>
                           <RefreshCw /> Check gateway (F8)
                         </Button>
+                        {/* Back to the payment choices (another QR, the wallet or cash); a late QR payment is refunded */}
+                        <Button size="sm" variant="ghost" className="mt-1" onClick={() => setQr(null)}>
+                          <Undo2 /> Back to payment options
+                        </Button>
                       </>
                     ) : (
                       <div className="mt-4 grid w-full gap-2">

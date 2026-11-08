@@ -45,7 +45,12 @@ export default function PaymentReturnPage() {
   const success = result && ['Applied', 'AlreadyProcessed'].includes(result.outcome) && payment?.status === 'Succeeded'
   const refunded = result?.outcome === 'Refunded'
   const signedIn = Boolean(session.getToken())
-  const backTo = payment?.purpose === 'Deposit' || payment?.reservationId ? '/me/bookings' : '/me'
+  // Staff who opened a lane QR's payment page at the POS go back to the checkout of that vehicle
+  const atCounter = session.getUser()?.role === 'STAFF'
+  const backTo = atCounter
+    ? payment?.sessionId ? `/staff/checkout?session=${payment.sessionId}` : '/staff/checkout'
+    : payment?.purpose === 'Deposit' || payment?.reservationId ? '/me/bookings' : '/me'
+  const backLabel = atCounter ? 'Back to checkout' : backTo === '/me/bookings' ? 'Back to My Bookings' : 'Back to my dashboard'
 
   return (
     <div className="cx" style={{ minHeight: '100vh' }}>
@@ -134,7 +139,7 @@ export default function PaymentReturnPage() {
 
             {(result || error) && signedIn && (
               <Link to={backTo} className="cx-btn cx-btn--teal">
-                {backTo === '/me/bookings' ? 'Back to My Bookings' : 'Back to my dashboard'}
+                {backLabel}
               </Link>
             )}
           </section>
