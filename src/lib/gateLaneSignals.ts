@@ -15,7 +15,15 @@ export interface LaneSignal {
 /** Vehicles the Staff let through are not replayed again when their session shows up in the lists. */
 const RECENT_MS = 3 * 60_000
 
+/** What the plate reader (ANPR) made of the vehicle stopped at a lane's rear camera. */
+export type LanePlateRead =
+  | { key: string; state: 'reading' }
+  | { key: string; state: 'read'; plate: string; confidence: number }
+  | { key: string; state: 'failed'; message: string }
+
 const state: Record<LaneDirection, LaneSignal | null> = { entry: null, exit: null }
+/** The latest plate read of each lane's camera; `key` says which vehicle it belongs to. */
+const reads: Record<LaneDirection, LanePlateRead | null> = { entry: null, exit: null }
 /** The next vehicle of a lane, held while the one let through is still driving out. */
 const pending: Record<LaneDirection, LaneVehicle | null> = { entry: null, exit: null }
 const recent = new Map<string, number>()
@@ -75,6 +83,13 @@ export const gateLaneSignals = {
     set(direction, next ? { vehicle: next, open: false } : null)
   },
 
+  /** The lane camera's plate reader has a new result (published by the 3D camera, read by the lane panel). */
+  setRead(direction: LaneDirection, read: LanePlateRead) {
+    if (reads[direction] === read) return
+    reads[direction] = read
+    listeners.forEach((listener) => listener())
+  },
+
   /** The Staff switched the lane panel to this lane's tab (null: the panel is closed). */
   setActive(direction: LaneDirection | null) {
     if (activeLane === direction) return
@@ -97,4 +112,9 @@ export function useActiveLane(): LaneDirection | null {
 /** The lane's vehicle handled by the Staff, if any. */
 export function useLaneSignal(direction: LaneDirection): LaneSignal | null {
   return useSyncExternalStore(subscribe, () => state[direction])
+}
+
+/** The latest plate read of the lane's camera, for whichever vehicle it was. */
+export function useLaneRead(direction: LaneDirection): LanePlateRead | null {
+  return useSyncExternalStore(subscribe, () => reads[direction])
 }

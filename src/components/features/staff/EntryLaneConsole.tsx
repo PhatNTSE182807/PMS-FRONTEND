@@ -11,6 +11,8 @@ import { useVehicleTypes } from '@/hooks/useProfile'
 import { gateLaneSignals, laneVehicleKind } from '@/lib/gateLaneSignals'
 import { cn } from '@/lib/utils'
 import type { CheckInRequest, CheckInResultDTO, GateAlertDTO, GateReservationLookupDTO } from '@/types/operations.dto'
+import { platesMatch, type LanePlate } from '@/hooks/useLanePlate'
+import { PlateMatch } from './LanePlateArea'
 import { Panel, SectionTitle } from './StaffBits'
 import { STAFF_TOAST, toastEntryAlerts, toastReservationLookup } from './staffToasts'
 
@@ -24,19 +26,20 @@ const OVERRIDES: Partial<Record<string, { flag: keyof CheckInRequest; label: str
   RESERVATION_INVALID: { flag: 'ignoreReservation', label: 'Enter as a walk-in' },
 }
 
-const EMPTY: CheckInRequest = { plateNumber: '', anprConfidence: undefined }
+const EMPTY: CheckInRequest = {}
 
 const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 /**
- * Entry lane console (SRS FR-OPS-01, 4.2.1). The Staff scans the reservation QR or types its code first:
- * the booking and its vehicle show at once and fill the plate and vehicle type. Walk-ins leave it empty and
- * type the plate. Every gate check then runs on the server; a blocked entry lists the alerts and the Staff
+ * Entry lane console (SRS FR-OPS-01, 4.2.1). The plate comes from the lane's plate area (`lane`): the camera
+ * read fills it and the Staff corrects it. The Staff scans the reservation QR or types its code: the booking shows
+ * and fills the vehicle type, and the barrier stays closed until the plate matches the booking's registered plate.
+ * Walk-ins leave the code empty. Every gate check then runs on the server; a blocked entry lists the alerts and the Staff
  * clears the ones they may override, with a reason. The lot's entry lane is picked automatically. Opening the
  * barrier is the last step: the entry is confirmed at once (team decision 2026-11-04, no "vehicle passed" press).
  * `embedded` drops the panel frame, for use inside the lanes panel (manual / walk-in entry).
  */
-export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; embedded?: boolean }) {
+export function EntryLaneConsole({ lotId, lane, embedded = false }: { lotId: string; lane: LanePlate; embedded?: boolean }) {
   const gates = useGates(lotId)
   const vehicleTypes = useVehicleTypes()
   const checkIn = useCheckIn(lotId)
@@ -54,7 +57,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
 
   // The customer has no code: the plate finds the booking, and its RSV code fills the field above
   const findBooking = () =>
-    findByPlate.mutate(form.plateNumber?.trim() ?? '', {
+    findByPlate.mutate(lane.plate.trim(), {
       onSuccess: (r) => setEntry(r.reservation.code),
       onError: (e) => toast.error(getErrorMessage(e)),
     })
@@ -69,17 +72,15 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
     else toast.error(STAFF_TOAST.invalidTicket)
   }, [found, lookupFailed, lookupEntry])
 
-  // A newly found booking fills the plate and vehicle type (adjusting state while rendering, not in an effect)
+  // A newly found booking fills the vehicle type (adjusting state while rendering, not in an effect). The plate is
+  // not filled from it: the Staff plate must match the booking's plate on its own
   if (found && found.reservation.id !== filledFor) {
     setFilledFor(found.reservation.id)
-    setForm((f) => ({
-      ...f,
-      noPlate: false,
-      plateNumber: found.reservation.plateNumber ?? f.plateNumber,
-      anprConfidence: undefined,
-      vehicleTypeId: found.vehicleTypeId || f.vehicleTypeId,
-    }))
+    setForm((f) => ({ ...f, noPlate: false, vehicleTypeId: found.vehicleTypeId || f.vehicleTypeId }))
   }
+  const bookedPlate = found?.reservation.plateNumber ?? null
+  // A booking with a registered plate opens the barrier only once the Staff plate matches it
+  const plateMismatch = Boolean(bookedPlate && !form.noPlate && !platesMatch(lane.plate, bookedPlate))
 
   const entryGate = (gates.data ?? []).find((g) => g.direction !== 'Out')
   const types = vehicleTypes.data ?? []
@@ -96,7 +97,8 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
       ...form,
       gateId: entryGate?.id,
       vehicleTypeId: form.vehicleTypeId ?? types[0]?.id,
-      plateNumber: form.noPlate ? '' : form.plateNumber?.trim(),
+      plateNumber: form.noPlate ? '' : lane.plate.trim(),
+      anprConfidence: form.noPlate ? undefined : lane.confidence,
       noPlateReason: form.noPlate ? form.noPlateReason?.trim() : undefined,
       reservationQr: reservationEntry && !isCode ? reservationEntry : undefined,
       reservationCode: reservationEntry && isCode ? reservationEntry.toUpperCase() : undefined,
@@ -110,6 +112,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
           return
         }
         toast.success(STAFF_TOAST.checkedIn)
+        lane.clear()
         const s = r.session
         if (!s) return
         // The entry camera shows the barrier lifting and the vehicle driving in
@@ -188,24 +191,9 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
             )
           )}
 
-          <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
-            <div>
-              <Label htmlFor="lane-plate">Plate (ANPR or typed)</Label>
-              <Input id="lane-plate" value={form.plateNumber ?? ''} disabled={form.noPlate} onChange={(e) => set('plateNumber', e.target.value.toUpperCase())} placeholder="51A-123.45" className="font-mono uppercase" />
-            </div>
-            <div>
-              <Label htmlFor="lane-conf">ANPR %</Label>
-              <Input
-                id="lane-conf"
-                inputMode="numeric"
-                value={form.anprConfidence == null ? '' : Math.round(form.anprConfidence * 100)}
-                onChange={(e) => set('anprConfidence', e.target.value === '' ? undefined : Math.min(100, Number(e.target.value.replace(/\D/g, ''))) / 100)}
-                placeholder="typed"
-                className="font-mono"
-              />
-            </div>
-          </div>
-          {!entry.trim() && !form.noPlate && form.plateNumber?.trim() && (
+          {found && bookedPlate && !form.noPlate && <PlateMatch plate={lane.plate} recorded={bookedPlate} label="booking's registered plate" />}
+
+          {!entry.trim() && !form.noPlate && lane.plate.trim() && (
             <Button type="button" variant="secondary" className="w-full" disabled={findByPlate.isPending} onClick={findBooking}>
               Find the booking by this plate
             </Button>
@@ -224,7 +212,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
               onChange={(e) => setForm((f) => ({
                 ...f,
                 noPlate: e.target.checked,
-                ...(e.target.checked ? { plateNumber: '', anprConfidence: undefined } : { noPlateReason: undefined }),
+                ...(e.target.checked ? {} : { noPlateReason: undefined }),
               }))}
             /> Plate unreadable or missing: ticket and photo only
           </label>
@@ -260,7 +248,7 @@ export function EntryLaneConsole({ lotId, embedded = false }: { lotId: string; e
             </div>
           )}
 
-          <Button type="submit" variant="gold" className="h-11 w-full" disabled={checkIn.isPending || (form.noPlate ? !form.noPlateReason?.trim() : !form.plateNumber?.trim())}>
+          <Button type="submit" variant="gold" className="h-11 w-full" disabled={checkIn.isPending || plateMismatch || (form.noPlate ? !form.noPlateReason?.trim() : !lane.plate.trim())}>
             <DoorOpen /> {blocking.length ? 'Check again' : 'Check in & open barrier'}
           </Button>
         </form>
@@ -322,7 +310,7 @@ function ReservationCard({ info }: { info: GateReservationLookupDTO }) {
       </dl>
       <p className={cn('flex items-start gap-2 text-sm font-medium', info.canCheckIn ? 'text-emerald-700' : 'text-rose-800')}>
         {info.canCheckIn ? <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden /> : <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />}
-        {info.canCheckIn ? 'Ready to check in: plate and vehicle type filled from the booking.' : info.problem}
+        {info.canCheckIn ? 'Ready to check in: vehicle type filled from the booking. The Staff plate must match its plate.' : info.problem}
       </p>
     </div>
   )
