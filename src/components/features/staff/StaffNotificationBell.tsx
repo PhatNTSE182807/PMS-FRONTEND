@@ -10,11 +10,12 @@ const TONE: Record<string, string> = {
   BookedBayReassigned: 'bg-indigo-500',
   CompensationPaid: 'bg-emerald-500',
   DepositRefunded: 'bg-emerald-500',
+  DepartureOverdue: 'bg-amber-500',
 }
 
 /**
  * Notification bell of the Staff console (same API and live push as the customer bell): booked bays a walk-in took,
- * bookings moved to another bay, and the compensation sent to customers.
+ * bookings moved to another bay, the compensation sent to customers, and booked vehicles that stayed past their time.
  */
 export function StaffNotificationBell() {
   const [open, setOpen] = useState(false)

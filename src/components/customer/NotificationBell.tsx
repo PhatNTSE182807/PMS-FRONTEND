@@ -6,7 +6,9 @@ import {
   Check,
   CheckCheck,
   CircleCheck,
+  Clock,
   HandCoins,
+  TimerOff,
   Trash2,
   Car,
   ShieldCheck,
@@ -32,6 +34,9 @@ const ICON_MAP: Record<string, typeof Bell> = {
   BookingCancelledByLot: CalendarX,
   DepositRefunded: Undo2,
   CompensationPaid: HandCoins,
+  DepartureSoon: Clock,
+  DepartureOverdue: TimerOff,
+  BookingBayMoved: ArrowLeftRight,
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -46,6 +51,9 @@ const COLOR_MAP: Record<string, string> = {
   BookingCancelledByLot: 'cx-notif__icon--danger',
   DepositRefunded: 'cx-notif__icon--success',
   CompensationPaid: 'cx-notif__icon--success',
+  DepartureSoon: 'cx-notif__icon--warning',
+  DepartureOverdue: 'cx-notif__icon--danger',
+  BookingBayMoved: 'cx-notif__icon--info',
 }
 
 /** Notification bell with dropdown for the customer nav bar. */

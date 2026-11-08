@@ -19,6 +19,11 @@ export interface NotificationModel {
     | 'BookingCancelledByLot'
     | 'DepositRefunded'
     | 'CompensationPaid'
+    /** A parked vehicle's scheduled booking ends soon, or has ended (also sent to the lot's Staff). */
+    | 'DepartureSoon'
+    | 'DepartureOverdue'
+    /** The booked bay was still in use when the hold started, so the booking moved to another bay. */
+    | 'BookingBayMoved'
   title: string
   message: string
   refType: string | null
