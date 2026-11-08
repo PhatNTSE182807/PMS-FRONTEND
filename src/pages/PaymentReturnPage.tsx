@@ -3,7 +3,6 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { CircleCheck, CircleX, Loader, RotateCcw, ShieldAlert } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { paymentService } from '@/api/payment.service'
-import { useCustomerTheme } from '@/hooks/useCustomerTheme'
 import { formatNumber } from '@/lib/format'
 import { session } from '@/lib/session'
 import type { PaymentCallbackResultDTO } from '@/types/operations.dto'
@@ -28,7 +27,6 @@ export default function PaymentReturnPage() {
   const [error, setError] = useState<string | null>(null)
   const [demoChoice, setDemoChoice] = useState<'pay' | 'cancel' | null>(isDemo ? null : 'pay')
   const sent = useRef(false)
-  const { theme } = useCustomerTheme()
 
   useEffect(() => {
     if (!demoChoice || sent.current) return
@@ -50,7 +48,7 @@ export default function PaymentReturnPage() {
   const backTo = payment?.purpose === 'Deposit' || payment?.reservationId ? '/me/bookings' : '/me'
 
   return (
-    <div className="cx" data-cx-theme={theme} style={{ minHeight: '100vh' }}>
+    <div className="cx" style={{ minHeight: '100vh' }}>
       <main className="cx-main">
         <div className="cx-container" style={{ maxWidth: '36rem' }}>
           <section className="cx-card" style={{ textAlign: 'center', display: 'grid', gap: '1rem', justifyItems: 'center' }} aria-live="polite">

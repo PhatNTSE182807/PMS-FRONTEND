@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { homePathFor, useAuth } from '@/hooks/useAuth'
 
 const LINKS = [
@@ -52,6 +53,7 @@ export function HomeNav({ isOnline }: HomeNavProps) {
         </nav>
 
         <div className="home-nav__actions">
+          <ThemeToggle className="home-theme-toggle" />
           <span className="home-pill">
             <span className={`home-dot ${isOnline ? 'home-dot--live' : 'home-dot--off'}`} aria-hidden="true" />
             {isOnline ? 'System online' : 'Feed offline'}

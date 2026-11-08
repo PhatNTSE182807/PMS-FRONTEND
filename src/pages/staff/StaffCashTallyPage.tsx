@@ -104,7 +104,7 @@ function Reconciliation({ drawer, counted }: { drawer: CashDrawerDTO; counted: B
         </div>
       </dl>
       {variance === 0 ? (
-        <div className="mt-4 flex gap-3 rounded-xl bg-[#124e66] p-4">
+        <div className="mt-4 flex gap-3 rounded-xl bg-selected p-4">
           <CircleCheck className="mt-0.5 size-5 shrink-0 text-indigo-800" aria-hidden />
           <div>
             <p className="font-bold tracking-wide text-indigo-800 uppercase">Balanced</p>
@@ -161,7 +161,7 @@ function NoteSheet({ notes, onChange, disabled, expected }: { notes: BanknoteCou
                   </td>
                 )}
                 <td className="px-4 py-2.5">
-                  <div className="mx-auto flex w-36 items-center justify-between rounded-lg bg-[#060f16] ring-1 ring-slate-200">
+                  <div className="mx-auto flex w-36 items-center justify-between rounded-lg bg-well ring-1 ring-slate-200">
                     <button type="button" className="px-3 py-1.5 text-slate-700 hover:text-slate-950 disabled:opacity-40" aria-label={`One less ${formatNumber(value)} note`} disabled={disabled || count === 0} onClick={() => set(value, count - 1)}>
                       <Minus className="size-4" />
                     </button>
@@ -274,7 +274,7 @@ function CountDrawer({ lotId, drawer, onClosed }: { lotId: string; drawer: CashD
           <label className="mt-3 block text-xs font-bold tracking-wider text-slate-700 uppercase" htmlFor="cash-reason">Reason</label>
           <textarea
             id="cash-reason"
-            className="mt-1 w-full rounded-lg bg-[#060f16] p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
+            className="mt-1 w-full rounded-lg bg-well p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
             rows={2}
             maxLength={500}
             value={reason}

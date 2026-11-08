@@ -180,7 +180,7 @@ function Reservations({ lot }: { lot: ManagedLot }) {
               onClick={() => setFilter(f)}
               className={cn(
                 'rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
-                filter === f ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                filter === f ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
               )}
             >
               {f.label} <span className="font-mono text-xs text-amber-500">({count(f)})</span>
@@ -209,7 +209,7 @@ function Reservations({ lot }: { lot: ManagedLot }) {
                 <TableRow key={r.id} className={cn(cancelled && 'opacity-70')}>
                   <TableCell className="font-mono font-bold text-indigo-700">#{r.id}</TableCell>
                   <TableCell>
-                    <span className="rounded bg-[#060f16] px-1.5 py-0.5 font-mono text-sm font-bold text-amber-500">{r.plate}</span>
+                    <span className="rounded bg-well px-1.5 py-0.5 font-mono text-sm font-bold text-amber-500">{r.plate}</span>
                     <p className="mt-1 text-xs text-slate-700">{r.vehicle}</p>
                   </TableCell>
                   <TableCell>

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ChevronRight, LogOut, Menu } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTitle, NavDrawerContent } from '@/components/ui/dialog'
@@ -67,7 +68,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth()
   const navigation = user?.role === 'MANAGER' ? MANAGER_NAV : ADMIN_NAV
   return (
-    <div className="flex h-full w-full flex-col border-r border-slate-200 bg-[#101920] text-slate-700">
+    <div className="flex h-full w-full flex-col border-r border-slate-200 bg-sidebar text-slate-700">
       <div className="flex items-center gap-3 px-4 pt-4 pb-5">
         <img src={LOGO_SRC} alt="" className="h-11 w-auto shrink-0 drop-shadow" />
         <div className="leading-tight">
@@ -89,7 +90,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             className={({ isActive }) =>
               cn(
                 'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors',
-                isActive ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                isActive ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
               )
             }
           >
@@ -157,7 +158,7 @@ export function AdminLayout() {
   const handleLogout = useSignOut()
 
   return (
-    <div className="admin-root min-h-dvh bg-[#0b141b]">
+    <div className="admin-root min-h-dvh bg-page">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 lg:flex">
         <SidebarContent />
@@ -172,7 +173,7 @@ export function AdminLayout() {
       </Dialog>
 
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-[#0b141b]/90 px-4 backdrop-blur sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-page/90 px-4 backdrop-blur sm:px-6 lg:px-8">
           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu" onClick={() => setIsNavOpen(true)}>
             <Menu />
           </Button>
@@ -187,6 +188,9 @@ export function AdminLayout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <Button asChild variant="ghost" size="icon">
+              <ThemeToggle />
+            </Button>
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <img
                 src={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}

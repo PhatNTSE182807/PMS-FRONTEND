@@ -73,7 +73,7 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
       ) : (
         <>
           <div className="mt-5 flex items-center gap-4 rounded-xl bg-slate-50 p-4">
-            <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-[#124e66] font-display text-xl font-bold text-indigo-800">
+            <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-selected font-display text-xl font-bold text-indigo-800">
               {initials(displayName(customer))}
             </span>
             <div className="min-w-0">

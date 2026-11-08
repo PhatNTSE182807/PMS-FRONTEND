@@ -1343,3 +1343,123 @@
     gap: 1rem;
   }
 }
+
+/* =========================================================
+   Light mode ("Concrete"), on when <html data-theme="light"> (see lib/theme.ts): a warm concrete grey
+   page, off-white panels, near-black ink, no color accent except the status colors, square corners.
+========================================================= */
+html[data-theme='light'] .home {
+  --home-surface: #d6d5d1;
+  --home-lowest: #f5f4f1;
+  --home-low: #cfcdc8;
+  --home-container: #ecebe7;
+  --home-container-high: #e1e0dc;
+  --home-variant: #c4c2bd;
+  --home-outline: rgba(30, 30, 28, 0.18);
+  --home-on-surface: #1c1c1a;
+  --home-on-variant: #464541;
+  --home-primary: #1c1c1a;
+  --home-primary-fixed: #1c1c1a;
+  --home-primary-container: #dcdad5;
+  --home-on-primary: #f5f4f1;
+  --home-gold: #1c1c1a;
+  --home-gold-fixed: #1c1c1a;
+  --home-on-gold: #f5f4f1;
+  --home-emerald: #3d6b4a;
+  --home-amber: #8a5a14;
+  --home-crimson: #a3362d;
+}
+
+html[data-theme='light'] .home ::selection {
+  color: var(--home-on-surface);
+}
+
+html[data-theme='light'] .home-pill,
+html[data-theme='light'] .home-hud__stat,
+html[data-theme='light'] .home-hud__route {
+  background: color-mix(in srgb, var(--home-lowest) 70%, transparent);
+}
+
+html[data-theme='light'] .home-btn--teal {
+  border-color: var(--home-outline);
+}
+
+html[data-theme='light'] .home-btn--teal:hover {
+  background: #3a3936;
+}
+
+html[data-theme='light'] .home-btn--gold-outline,
+html[data-theme='light'] .home-hero__badge {
+  background: transparent;
+  border-color: var(--home-outline);
+}
+
+html[data-theme='light'] .home-nav {
+  background: color-mix(in srgb, var(--home-surface) 70%, transparent);
+}
+
+html[data-theme='light'] .home-nav--open {
+  background: color-mix(in srgb, var(--home-surface) 96%, transparent);
+}
+
+html[data-theme='light'] .home-nav__logo {
+  filter: none;
+}
+
+/* The hero photo fades into the concrete page instead of the night */
+html[data-theme='light'] .home-hero__shade {
+  background: linear-gradient(90deg, rgba(214, 213, 209, 0.95) 0%, rgba(214, 213, 209, 0.78) 45%, rgba(214, 213, 209, 0.3) 100%),
+    linear-gradient(0deg, var(--home-surface) 0%, transparent 35%);
+}
+
+html[data-theme='light'] .home-hero__glow--teal,
+html[data-theme='light'] .home-hero__glow--gold {
+  display: none;
+}
+
+html[data-theme='light'] .home-hud {
+  border-color: var(--home-outline);
+  background: color-mix(in srgb, var(--home-lowest) 85%, transparent);
+  box-shadow: 0 24px 48px rgba(28, 28, 26, 0.12);
+}
+
+html[data-theme='light'] .home-hud__live,
+html[data-theme='light'] .home-capability:hover,
+html[data-theme='light'] .home-capability--gold:hover {
+  border-color: var(--home-on-variant);
+}
+
+html[data-theme='light'] .home-showcase__tag,
+html[data-theme='light'] .home-showcase__chip,
+html[data-theme='light'] .home-cta__badge {
+  background: color-mix(in srgb, var(--home-lowest) 88%, transparent);
+}
+
+html[data-theme='light'] .home-cta {
+  border-color: var(--home-outline);
+  background: var(--home-lowest);
+}
+
+html[data-theme='light'] .home :is(.home-btn, .home-pill, .home-hud, .home-hud__stat, .home-hud__route, .home-capability,
+    .home-cta, .home-showcase__tag, .home-showcase__chip, .home-hero__badge) {
+  border-radius: 2px;
+}
+
+/* Sun/moon button of the top bar */
+.home-theme-toggle {
+  display: flex;
+  padding: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--home-on-variant);
+  cursor: pointer;
+}
+
+.home-theme-toggle:hover {
+  color: var(--home-on-surface);
+}
+
+.home-theme-toggle svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}

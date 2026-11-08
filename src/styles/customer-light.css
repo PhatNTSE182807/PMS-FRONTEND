@@ -1,11 +1,11 @@
 /* =========================================================
-   CUSTOMER AREA — light mode ("Concrete"). The customer picks it with the sun/moon button of the top bar,
-   which sets data-cx-theme="light" on the .cx root; dark stays the default. It only swaps the .cx tokens of
-   customer.css: a warm concrete grey page, off-white panels, near-black ink, no color accent except the
-   status colors, square corners and hairline borders.
+   CUSTOMER AREA — light mode ("Concrete"), on when <html data-theme="light"> (see lib/theme.ts and the
+   sun/moon button of the top bar); dark stays the default. It only swaps the .cx tokens of customer.css:
+   a warm concrete grey page, off-white panels, near-black ink, no color accent except the status colors,
+   square corners and hairline borders.
 ========================================================= */
 
-.cx[data-cx-theme='light'] {
+html[data-theme='light'] .cx {
   --cx-surface: #d6d5d1;
   --cx-lowest: #f5f4f1;
   --cx-low: #cfcdc8;
@@ -32,16 +32,16 @@
   --cx-surface-hover: rgba(28, 28, 26, 0.06);
 }
 
-.cx[data-cx-theme='light'] .cx-nav {
+html[data-theme='light'] .cx .cx-nav {
   background: color-mix(in srgb, var(--cx-surface) 94%, transparent);
   box-shadow: 0 1px 0 var(--cx-outline);
 }
 
-.cx[data-cx-theme='light'] .cx-welcome {
+html[data-theme='light'] .cx .cx-welcome {
   background: var(--cx-lowest);
 }
 
-.cx[data-cx-theme='light'] :is(.cx-card, .cx-welcome, .cx-tabs, .cx-tab, .cx-btn, .cx-chip, .cx-input, .cx-tile,
+html[data-theme='light'] .cx :is(.cx-card, .cx-welcome, .cx-tabs, .cx-tab, .cx-btn, .cx-chip, .cx-input, .cx-tile,
     .cx-utility, .cx-vehicle, .cx-mini-vehicle, .cx-metrics, .cx-stats, .cx-kv, .cx-note, .cx-exit-pass, .cx-prepay,
     .cx-summary, .cx-empty, .cx-zone, .cx-map__board, .cx-map__detail, .cx-map__floor, .cx-map__hint, .cx-map__mine,
     .cx-session__plate-row, .cx-gate-request, .cx-upcoming__icon, .cx-category, .garage3d) {
@@ -49,13 +49,13 @@
 }
 
 /* Cards read as flat panels with a hairline instead of a shadow */
-.cx[data-cx-theme='light'] .cx-card {
+html[data-theme='light'] .cx .cx-card {
   box-shadow: none;
   border: 1px solid var(--cx-outline);
 }
 
 /* The few colors customer.css writes out instead of using a token */
-.cx[data-cx-theme='light'] {
+html[data-theme='light'] .cx {
   /* Notification bell popover */
   --cx-text: var(--cx-on-surface);
   --cx-text-muted: var(--cx-on-variant);
@@ -65,66 +65,66 @@
   --cx-border: var(--cx-outline);
 }
 
-.cx[data-cx-theme='light'] ::selection {
+html[data-theme='light'] .cx ::selection {
   color: var(--cx-on-surface);
 }
 
-.cx[data-cx-theme='light'] .cx-nav {
+html[data-theme='light'] .cx .cx-nav {
   background: color-mix(in srgb, var(--cx-lowest) 92%, transparent);
   box-shadow: 0 1px 0 var(--cx-outline);
 }
 
-.cx[data-cx-theme='light'] .cx-welcome {
+html[data-theme='light'] .cx .cx-welcome {
   background: linear-gradient(110deg, color-mix(in srgb, var(--cx-gold) 8%, transparent) 0%, var(--cx-container) 40%,
       color-mix(in srgb, var(--cx-primary) 12%, var(--cx-container)) 100%);
 }
 
-.cx[data-cx-theme='light'] .cx-chip--teal,
-.cx[data-cx-theme='light'] .cx-zone--selected {
+html[data-theme='light'] .cx .cx-chip--teal,
+html[data-theme='light'] .cx .cx-zone--selected {
   background: var(--cx-primary-container);
 }
 
 /* Only the plain (green) chip: the gold and teal ones set their own color */
-.cx[data-cx-theme='light'] .cx-chip:not([class*='cx-chip--']) {
+html[data-theme='light'] .cx .cx-chip:not([class*='cx-chip--']) {
   color: var(--cx-emerald);
 }
 
-.cx[data-cx-theme='light'] .cx-btn--danger,
-.cx[data-cx-theme='light'] .cx-upcoming__due {
+html[data-theme='light'] .cx .cx-btn--danger,
+html[data-theme='light'] .cx .cx-upcoming__due {
   color: var(--cx-crimson);
 }
 
-.cx[data-cx-theme='light'] .cx-input::placeholder,
-.cx[data-cx-theme='light'] .cx-plate-input input::placeholder {
+html[data-theme='light'] .cx .cx-input::placeholder,
+html[data-theme='light'] .cx .cx-plate-input input::placeholder {
   color: var(--cx-muted);
 }
 
-.cx[data-cx-theme='light'] .cx-notif__header,
-.cx[data-cx-theme='light'] .cx-notif__icon,
-.cx[data-cx-theme='light'] .cx-notif__item:hover,
-.cx[data-cx-theme='light'] .cx-notif__action-btn:hover {
+html[data-theme='light'] .cx .cx-notif__header,
+html[data-theme='light'] .cx .cx-notif__icon,
+html[data-theme='light'] .cx .cx-notif__item:hover,
+html[data-theme='light'] .cx .cx-notif__action-btn:hover {
   background: var(--cx-surface-hover);
 }
 
-.cx[data-cx-theme='light'] .cx-notif {
+html[data-theme='light'] .cx .cx-notif {
   box-shadow: 0 20px 25px -5px rgba(20, 30, 40, 0.18), 0 10px 10px -5px rgba(20, 30, 40, 0.1);
 }
 
-.cx[data-cx-theme='light'] .garage3d {
+html[data-theme='light'] .cx .garage3d {
   background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--cx-primary) 14%, transparent) 0%, transparent 70%);
 }
 
 /* Wallet: refund and payment accents, and texts written for the dark dialog */
-.cx[data-cx-theme='light'] :is(.cx-wallet-history__amount--refund, .cx-wallet-history__icon--refund, .cx-wallet-tx-badge--refund) {
+html[data-theme='light'] .cx :is(.cx-wallet-history__amount--refund, .cx-wallet-history__icon--refund, .cx-wallet-tx-badge--refund) {
   color: #0b6185;
 }
 
-.cx[data-cx-theme='light'] :is(.cx-wallet-history__icon--payment, .cx-wallet-tx-badge--payment) {
+html[data-theme='light'] .cx :is(.cx-wallet-history__icon--payment, .cx-wallet-tx-badge--payment) {
   color: #6b2fa3;
 }
 
-.cx[data-cx-theme='light'] .cx-wallet-search-box input::placeholder,
-.cx[data-cx-theme='light'] .cx-wallet-tx-card__balance-flow {
+html[data-theme='light'] .cx .cx-wallet-search-box input::placeholder,
+html[data-theme='light'] .cx .cx-wallet-tx-card__balance-flow {
   color: var(--cx-muted);
 }
 

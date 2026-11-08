@@ -765,3 +765,131 @@
 .auth-shell__rules li[data-met='false'] svg {
   color: var(--auth-error);
 }
+
+/* =========================================================
+   Light mode ("Concrete"), on when <html data-theme="light"> (see lib/theme.ts): a warm concrete grey
+   page, off-white panels, near-black ink, no color accent except the status colors, square corners.
+========================================================= */
+html[data-theme='light'] .auth-shell {
+  --auth-surface: #d6d5d1;
+  --auth-surface-lowest: #f5f4f1;
+  --auth-container: #ecebe7;
+  --auth-container-high: #e1e0dc;
+  --auth-variant: #c4c2bd;
+  --auth-on-surface: #1c1c1a;
+  --auth-on-variant: #464541;
+  --auth-primary: #1c1c1a;
+  --auth-primary-fixed: #1c1c1a;
+  --auth-gold: #1c1c1a;
+  --auth-gold-fixed: #1c1c1a;
+  --auth-on-gold: #f5f4f1;
+  --auth-error: #a3362d;
+  --auth-success: #3d6b4a;
+}
+
+html[data-theme='light'] .auth-shell ::selection {
+  background: #c4c2bd;
+  color: #1c1c1a;
+}
+
+/* The car photo fades into the concrete page instead of the night */
+html[data-theme='light'] .auth-shell__fade {
+  background: linear-gradient(90deg, transparent 0%, rgba(214, 213, 209, 0.25) 50%, var(--auth-surface) 100%);
+}
+
+html[data-theme='light'] .auth-shell__logo-box {
+  background: rgba(245, 244, 241, 0.75);
+  box-shadow: 0 4px 6px -1px rgba(28, 28, 26, 0.12);
+}
+
+/* The tagline sits on the photo: keep it white, as in dark mode */
+html[data-theme='light'] .auth-shell__input::placeholder,
+html[data-theme='light'] .auth-shell__divider,
+html[data-theme='light'] .auth-shell__demo-label {
+  color: #6b6a66;
+}
+
+html[data-theme='light'] .auth-shell__input:focus {
+  border-color: rgba(28, 28, 26, 0.45);
+}
+
+html[data-theme='light'] .auth-shell__check input:focus-visible + .auth-shell__check-box {
+  box-shadow: 0 0 0 2px rgba(28, 28, 26, 0.35);
+}
+
+html[data-theme='light'] .auth-shell__submit {
+  box-shadow: none;
+}
+
+html[data-theme='light'] .auth-shell__divider::after,
+html[data-theme='light'] .auth-shell__divider::before {
+  background: rgba(30, 30, 28, 0.18);
+}
+
+html[data-theme='light'] .auth-shell__alert--error {
+  background: #f6e6e3;
+  border-color: #e2b3ac;
+  color: #7a241d;
+}
+
+html[data-theme='light'] .auth-shell__alert--info {
+  background: #e4e3df;
+  border-color: rgba(30, 30, 28, 0.18);
+}
+
+html[data-theme='light'] .auth-shell__alert--success {
+  background: #e5efe8;
+  border-color: #aecdb7;
+}
+
+html[data-theme='light'] .auth-shell__demo {
+  border-top-color: rgba(30, 30, 28, 0.25);
+}
+
+html[data-theme='light'] .auth-shell__demo button {
+  border-color: rgba(30, 30, 28, 0.25);
+}
+
+html[data-theme='light'] .auth-shell__backdrop {
+  background: rgba(28, 28, 26, 0.45);
+}
+
+html[data-theme='light'] .auth-shell__dialog {
+  border-color: rgba(30, 30, 28, 0.18);
+  background: #f5f4f1;
+  box-shadow: 0 24px 48px rgba(28, 28, 26, 0.2);
+}
+
+html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit, .auth-shell__alert, .auth-shell__dialog,
+    .auth-shell__demo button, .auth-shell__logo-box, .auth-shell__ghost) {
+  border-radius: 2px;
+}
+
+@media (max-width: 1023px) {
+  html[data-theme='light'] .auth-shell__fade {
+    background: linear-gradient(0deg, var(--auth-surface) 0%, transparent 55%, rgba(214, 213, 209, 0.4) 100%);
+  }
+}
+
+/* Sun/moon button at the top of the form column */
+.auth-shell__theme {
+  position: absolute;
+  top: 1rem;
+  left: 1.25rem;
+  z-index: 2;
+  display: flex;
+  padding: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--auth-on-variant);
+  cursor: pointer;
+}
+
+.auth-shell__theme:hover {
+  color: var(--auth-on-surface);
+}
+
+.auth-shell__theme svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
