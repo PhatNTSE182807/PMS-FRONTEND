@@ -767,54 +767,59 @@
 }
 
 /* =========================================================
-   Light mode ("Concrete"), on when <html data-theme="light"> (see lib/theme.ts): a warm concrete grey
-   page, off-white panels, near-black ink, no color accent except the status colors, square corners.
+   Light mode, on when <html data-theme="light"> (see lib/theme.ts). Colors of the Stitch "Architectural
+   Warm" designs: a cream page, ivory panels, beige hairlines, near-black ink and a bronze accent.
 ========================================================= */
 html[data-theme='light'] .auth-shell {
-  --auth-surface: #d6d5d1;
-  --auth-surface-lowest: #f5f4f1;
-  --auth-container: #ecebe7;
-  --auth-container-high: #e1e0dc;
-  --auth-variant: #c4c2bd;
-  --auth-on-surface: #1c1c1a;
-  --auth-on-variant: #464541;
-  --auth-primary: #1c1c1a;
-  --auth-primary-fixed: #1c1c1a;
-  --auth-gold: #1c1c1a;
-  --auth-gold-fixed: #1c1c1a;
-  --auth-on-gold: #f5f4f1;
+  --auth-surface: #e3d9ca;
+  --auth-surface-lowest: #f3eee5;
+  --auth-container: #efe8dc;
+  --auth-container-high: #e6ddcf;
+  --auth-variant: #ddd2c1;
+  --auth-on-surface: #231f1a;
+  --auth-on-variant: #4d453c;
+  --auth-primary: #76593b;
+  --auth-primary-fixed: #5e462e;
+  --auth-gold: #231f1a;
+  --auth-gold-fixed: #3a332b;
+  --auth-on-gold: #f8f3ea;
   --auth-error: #a3362d;
   --auth-success: #3d6b4a;
 }
 
 html[data-theme='light'] .auth-shell ::selection {
-  background: #c4c2bd;
-  color: #1c1c1a;
+  background: #cfc2ad;
+  color: #231f1a;
 }
 
-/* The car photo fades into the concrete page instead of the night */
+/* The car photo keeps a dark shade, as in the Stitch sign-in screens: only the form column is light, so the
+   screen is not one large bright area */
 html[data-theme='light'] .auth-shell__fade {
-  background: linear-gradient(90deg, transparent 0%, rgba(214, 213, 209, 0.25) 50%, var(--auth-surface) 100%);
+  background: linear-gradient(90deg, rgba(20, 20, 18, 0.04) 0%, rgba(20, 20, 18, 0.12) 60%, rgba(20, 20, 18, 0.22) 100%);
+}
+
+html[data-theme='light'] .auth-shell__hero .auth-shell__brand {
+  color: #f8f3ea;
 }
 
 html[data-theme='light'] .auth-shell__logo-box {
-  background: rgba(245, 244, 241, 0.75);
-  box-shadow: 0 4px 6px -1px rgba(28, 28, 26, 0.12);
+  background: rgba(243, 238, 229, 0.9);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
 }
 
 /* The tagline sits on the photo: keep it white, as in dark mode */
 html[data-theme='light'] .auth-shell__input::placeholder,
 html[data-theme='light'] .auth-shell__divider,
 html[data-theme='light'] .auth-shell__demo-label {
-  color: #6b6a66;
+  color: #6f665b;
 }
 
 html[data-theme='light'] .auth-shell__input:focus {
-  border-color: rgba(28, 28, 26, 0.45);
+  border-color: rgba(35, 31, 26, 0.45);
 }
 
 html[data-theme='light'] .auth-shell__check input:focus-visible + .auth-shell__check-box {
-  box-shadow: 0 0 0 2px rgba(28, 28, 26, 0.35);
+  box-shadow: 0 0 0 2px rgba(35, 31, 26, 0.35);
 }
 
 html[data-theme='light'] .auth-shell__submit {
@@ -823,7 +828,7 @@ html[data-theme='light'] .auth-shell__submit {
 
 html[data-theme='light'] .auth-shell__divider::after,
 html[data-theme='light'] .auth-shell__divider::before {
-  background: rgba(30, 30, 28, 0.18);
+  background: #cfc2ad;
 }
 
 html[data-theme='light'] .auth-shell__alert--error {
@@ -833,8 +838,8 @@ html[data-theme='light'] .auth-shell__alert--error {
 }
 
 html[data-theme='light'] .auth-shell__alert--info {
-  background: #e4e3df;
-  border-color: rgba(30, 30, 28, 0.18);
+  background: #e6ddcf;
+  border-color: #cfc2ad;
 }
 
 html[data-theme='light'] .auth-shell__alert--success {
@@ -843,21 +848,21 @@ html[data-theme='light'] .auth-shell__alert--success {
 }
 
 html[data-theme='light'] .auth-shell__demo {
-  border-top-color: rgba(30, 30, 28, 0.25);
+  border-top-color: #bcae97;
 }
 
 html[data-theme='light'] .auth-shell__demo button {
-  border-color: rgba(30, 30, 28, 0.25);
+  border-color: #bcae97;
 }
 
 html[data-theme='light'] .auth-shell__backdrop {
-  background: rgba(28, 28, 26, 0.45);
+  background: rgba(35, 31, 26, 0.45);
 }
 
 html[data-theme='light'] .auth-shell__dialog {
-  border-color: rgba(30, 30, 28, 0.18);
-  background: #f5f4f1;
-  box-shadow: 0 24px 48px rgba(28, 28, 26, 0.2);
+  border-color: #cfc2ad;
+  background: #f3eee5;
+  box-shadow: 0 24px 48px rgba(35, 31, 26, 0.2);
 }
 
 html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit, .auth-shell__alert, .auth-shell__dialog,
@@ -867,7 +872,7 @@ html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit
 
 @media (max-width: 1023px) {
   html[data-theme='light'] .auth-shell__fade {
-    background: linear-gradient(0deg, var(--auth-surface) 0%, transparent 55%, rgba(214, 213, 209, 0.4) 100%);
+    background: linear-gradient(0deg, rgba(20, 20, 18, 0.3) 0%, rgba(20, 20, 18, 0.06) 100%);
   }
 }
 
@@ -892,4 +897,18 @@ html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit
 .auth-shell__theme svg {
   width: 1.1rem;
   height: 1.1rem;
+}
+
+/* The legacy layout around the sign-in screens (App.css: warm sand background and glows) shows for a moment
+   while the screen fades in: give it the sign-in page color in both modes so nothing flashes */
+.pms-app:has(.auth-shell) {
+  background: #0b141b;
+}
+
+html[data-theme='light'] .pms-app:has(.auth-shell) {
+  background: #e3d9ca;
+}
+
+.pms-app:has(.auth-shell) .cyber-glow {
+  display: none;
 }

@@ -1,35 +1,35 @@
 /* =========================================================
-   CUSTOMER AREA — light mode ("Concrete"), on when <html data-theme="light"> (see lib/theme.ts and the
-   sun/moon button of the top bar); dark stays the default. It only swaps the .cx tokens of customer.css:
-   a warm concrete grey page, off-white panels, near-black ink, no color accent except the status colors,
-   square corners and hairline borders.
+   CUSTOMER AREA — light mode, on when <html data-theme="light"> (see lib/theme.ts and the sun/moon button
+   of the top bar); dark stays the default. It only swaps the .cx tokens of customer.css, with the colors
+   of the Stitch "Architectural Warm" designs: a cream page, ivory panels, beige hairlines, near-black ink
+   and a bronze accent; square corners.
 ========================================================= */
 
 html[data-theme='light'] .cx {
-  --cx-surface: #d6d5d1;
-  --cx-lowest: #f5f4f1;
-  --cx-low: #cfcdc8;
-  --cx-container: #ecebe7;
-  --cx-container-high: #e1e0dc;
-  --cx-variant: #c4c2bd;
-  --cx-outline: rgba(30, 30, 28, 0.18);
-  --cx-on-surface: #1c1c1a;
-  --cx-on-variant: #464541;
-  --cx-muted: #6b6a66;
-  --cx-primary: #1c1c1a;
-  --cx-primary-fixed: #1c1c1a;
-  --cx-primary-container: #dcdad5;
-  --cx-on-primary: #f5f4f1;
-  --cx-gold: #1c1c1a;
-  --cx-gold-fixed: #1c1c1a;
-  --cx-on-gold: #f5f4f1;
+  --cx-surface: #ebe4d8;
+  --cx-lowest: #f3eee5;
+  --cx-low: #e6ddcf;
+  --cx-container: #f3eee5;
+  --cx-container-high: #e6ddcf;
+  --cx-variant: #ddd2c1;
+  --cx-outline: #cfc2ad;
+  --cx-on-surface: #231f1a;
+  --cx-on-variant: #4d453c;
+  --cx-muted: #6f665b;
+  --cx-primary: #231f1a;
+  --cx-primary-fixed: #231f1a;
+  --cx-primary-container: #ddd2c1;
+  --cx-on-primary: #f8f3ea;
+  --cx-gold: #76593b;
+  --cx-gold-fixed: #5e462e;
+  --cx-on-gold: #f8f3ea;
   --cx-emerald: #3d6b4a;
   --cx-amber: #8a5a14;
   --cx-crimson: #a3362d;
   --cx-error: #a3362d;
   --cx-success: #3d6b4a;
   --cx-refund: #0b6185;
-  --cx-surface-hover: rgba(28, 28, 26, 0.06);
+  --cx-surface-hover: rgba(35, 31, 26, 0.05);
 }
 
 html[data-theme='light'] .cx .cx-nav {
