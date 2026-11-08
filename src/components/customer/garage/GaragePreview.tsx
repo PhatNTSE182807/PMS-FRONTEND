@@ -55,7 +55,7 @@ export function GarageFloorsView({
   const tab = (active: boolean) =>
     cn(
       'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors',
-      active ? 'bg-[#124e66] text-indigo-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+      active ? 'bg-selected text-indigo-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
     )
 
   return (

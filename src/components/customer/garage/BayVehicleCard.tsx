@@ -27,7 +27,7 @@ export function BayVehicleCard({
   footer?: ReactNode
   onClose: () => void
 }) {
-  const badgeColor = { member: '#38bdf8', guest: '#e9c349', mine: '#ffd166' }[badge?.tone ?? 'member']
+  const badgeColor = { member: 'var(--map-badge-member)', guest: 'var(--map-badge-guest)', mine: 'var(--map-badge-mine)' }[badge?.tone ?? 'member']
   return (
     <div role="dialog" aria-label={`${title}, bay ${bayCode}`} style={styles.card}>
       <div style={styles.head}>
@@ -88,16 +88,16 @@ const styles = {
     overflowY: 'auto',
     padding: '0.85rem 0.95rem',
     borderRadius: '0.7rem',
-    background: 'rgba(6, 15, 22, 0.94)',
-    border: '1px solid rgba(148, 163, 184, 0.35)',
-    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
-    color: '#e2e8f0',
+    background: 'var(--map-card-bg)',
+    border: '1px solid var(--map-card-border)',
+    boxShadow: 'var(--map-card-shadow)',
+    color: 'var(--map-text)',
     fontSize: '0.8rem',
     backdropFilter: 'blur(6px)',
   },
   head: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' },
-  eyebrow: { display: 'block', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8' },
-  code: { display: 'block', marginTop: '0.1rem', fontSize: '1.05rem', fontWeight: 700, color: '#e9c349', fontFamily: '"Plus Jakarta Sans", Inter, sans-serif' },
+  eyebrow: { display: 'block', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--map-muted)' },
+  code: { display: 'block', marginTop: '0.1rem', fontSize: '1.05rem', fontWeight: 700, color: 'var(--map-accent)', fontFamily: '"Plus Jakarta Sans", Inter, sans-serif' },
   close: {
     display: 'inline-grid',
     placeItems: 'center',
@@ -105,17 +105,17 @@ const styles = {
     height: '1.7rem',
     flexShrink: 0,
     borderRadius: '0.4rem',
-    border: '1px solid rgba(148, 163, 184, 0.35)',
+    border: '1px solid var(--map-card-border)',
     background: 'transparent',
-    color: '#e2e8f0',
+    color: 'var(--map-text)',
     cursor: 'pointer',
   },
   badge: { display: 'inline-block', marginTop: '0.55rem', padding: '0.1rem 0.5rem', borderRadius: '999px', border: '1px solid', fontSize: '0.7rem', fontWeight: 700 },
   list: { margin: '0.65rem 0 0', display: 'grid', gap: '0.4rem' },
   row: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.75rem' },
-  label: { color: '#94a3b8', flexShrink: 0 },
+  label: { color: 'var(--map-muted)', flexShrink: 0 },
   value: { margin: 0, fontWeight: 600, textAlign: 'right', overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' },
-  emphasis: { fontSize: '1rem', color: '#6ee7b7' },
-  footer: { marginTop: '0.7rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(148, 163, 184, 0.2)', color: '#94a3b8', fontSize: '0.72rem' },
-  notice: { margin: '0.6rem 0 0', color: '#cbd5e1', lineHeight: 1.45 },
+  emphasis: { fontSize: '1rem', color: 'var(--map-good)' },
+  footer: { marginTop: '0.7rem', paddingTop: '0.6rem', borderTop: '1px solid var(--map-card-border)', color: 'var(--map-muted)', fontSize: '0.72rem' },
+  notice: { margin: '0.6rem 0 0', color: 'var(--map-text-soft)', lineHeight: 1.45 },
 } satisfies Record<string, CSSProperties>
