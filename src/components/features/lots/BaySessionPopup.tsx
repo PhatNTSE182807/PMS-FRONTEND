@@ -57,10 +57,10 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
 
   const { session } = data
   const member = data.customerType === 'Member'
-  // Staff and Managers can send a walk-in still parked out from here (a lost ticket must be decided first); Admins
-  // only look (user request, 2026-11-09)
+  // Only Staff can send a walk-in still parked out from here (a lost ticket must be decided first); Managers and
+  // Admins only look (user request, 2026-11-09)
   const canForceCheckOut =
-    user?.role !== 'ADMIN' && session.sessionType === 'WalkIn' && !session.reservationCode && ['Active', 'PendingPayment', 'Paid'].includes(session.status)
+    user?.role === 'STAFF' && session.sessionType === 'WalkIn' && !session.reservationCode && ['Active', 'PendingPayment', 'Paid'].includes(session.status)
   const owed = session.status === 'Paid' ? 0 : (data.amountDue ?? data.feeSoFar ?? 0)
   const sendOut = () =>
     forceCheckOut.mutate(session.id, {
