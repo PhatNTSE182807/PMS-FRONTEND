@@ -114,6 +114,11 @@
   --color-gold-hover: #ffe088;
   --color-on-gold: #3c2f00;
 
+  /* The three chart series (see components/charts/chartTheme.ts) */
+  --color-chart-1: #9acdea;
+  --color-chart-2: #e9c349;
+  --color-chart-3: #748d92;
+
   color-scheme: dark;
 }
 
@@ -240,57 +245,57 @@ body:has(.admin-root) {
 }
 
 /*
- * Light mode, on when <html data-theme="light"> (see lib/theme.ts). Colors of the Stitch "Architectural
- * Warm" designs: a cream page, ivory panels, beige hairlines, near-black ink and a bronze accent (amber,
- * violet and gold). Unlike the dark palette the scales run the usual way: slate-50 the lightest, slate-950
- * the darkest; indigo (primary) becomes ink.
+ * Light mode, on when <html data-theme="light"> (see lib/theme.ts): off-white and black. An off-white page,
+ * white panels, light grey hairlines and near-black ink; the accent scales (indigo, amber, violet, gold)
+ * turn to greys and black, so only the status colors add a hue. Unlike the dark palette the scales run the
+ * usual way: slate-50 the lightest, slate-950 the darkest.
  */
 html[data-theme='light'] {
-  --color-page: #ebe4d8;
-  --color-well: #e6ddcf;
-  --color-sidebar: #e3d9ca;
-  --color-selected: #ddd2c1;
-  --color-header-end: #e6ddcf;
-  --color-on-accent: #f8f3ea;
-  --color-on-emerald: #f8f3ea;
+  --color-page: #f6f6f3;
+  --color-well: #f0f0ed;
+  --color-sidebar: #f0f0ed;
+  --color-selected: #e7e7e3;
+  --color-header-end: #f0f0ed;
+  --color-on-accent: #ffffff;
+  --color-on-emerald: #ffffff;
 }
 
 html[data-theme='light'] .admin-root {
-  --color-white: #f3eee5;
+  --color-white: #ffffff;
   --color-black: #000000;
-  --color-slate-50: #efe9df;
-  --color-slate-100: #e3d9ca;
-  --color-slate-200: #cfc2ad;
-  --color-slate-300: #bcae97;
-  --color-slate-400: #968b7c;
-  --color-slate-500: #786e62;
-  --color-slate-600: #5f574d;
-  --color-slate-700: #4d453c;
-  --color-slate-800: #3a332b;
-  --color-slate-900: #231f1a;
-  --color-slate-950: #1a1713;
-  --color-indigo-50: #e6ddcf;
-  --color-indigo-100: #ddd2c1;
-  --color-indigo-200: #cfc2ad;
-  --color-indigo-300: #b3a58f;
-  --color-indigo-400: #3a332b;
-  --color-indigo-500: #3a332b;
-  --color-indigo-600: #231f1a;
-  --color-indigo-700: #231f1a;
-  --color-indigo-800: #1a1713;
-  --color-indigo-900: #100e0b;
+  --color-slate-50: #fafaf8;
+  --color-slate-100: #f0f0ed;
+  --color-slate-200: #e2e2de;
+  --color-slate-300: #cbcbc6;
+  --color-slate-400: #9a9a96;
+  --color-slate-500: #76766f;
+  --color-slate-600: #5c5c57;
+  --color-slate-700: #444441;
+  --color-slate-800: #222222;
+  --color-slate-900: #111111;
+  --color-slate-950: #0d0d0d;
+  --color-indigo-50: #f0f0ed;
+  --color-indigo-100: #e7e7e3;
+  --color-indigo-200: #e2e2de;
+  --color-indigo-300: #b5b5b0;
+  --color-indigo-400: #222222;
+  --color-indigo-500: #222222;
+  --color-indigo-600: #111111;
+  --color-indigo-700: #111111;
+  --color-indigo-800: #0d0d0d;
+  --color-indigo-900: #0d0d0d;
   --color-indigo-950: #000000;
-  --color-violet-50: #f6efe6;
-  --color-violet-100: #efe2d2;
-  --color-violet-200: #dfc1a5;
-  --color-violet-300: #c4a283;
-  --color-violet-400: #aa8f76;
-  --color-violet-500: #826e58;
-  --color-violet-600: #76593b;
-  --color-violet-700: #5e462e;
-  --color-violet-800: #4a3724;
-  --color-violet-900: #34261a;
-  --color-violet-950: #241504;
+  --color-violet-50: #f5f5f3;
+  --color-violet-100: #ececea;
+  --color-violet-200: #c4c4bf;
+  --color-violet-300: #c4c4bf;
+  --color-violet-400: #444441;
+  --color-violet-500: #333331;
+  --color-violet-600: #111111;
+  --color-violet-700: #333333;
+  --color-violet-800: #1a1a1a;
+  --color-violet-900: #111111;
+  --color-violet-950: #0d0d0d;
   --color-sky-50: #ebedee;
   --color-sky-100: #dfe3e5;
   --color-sky-200: #c6cdd1;
@@ -324,21 +329,26 @@ html[data-theme='light'] .admin-root {
   --color-emerald-800: #213c29;
   --color-emerald-900: #172a1d;
   --color-emerald-950: #0d1911;
-  --color-amber-50: #faf1e6;
-  --color-amber-100: #f3e3cf;
-  --color-amber-200: #e8cba8;
-  --color-amber-300: #dfc1a5;
-  --color-amber-400: #8f6e4c;
-  --color-amber-500: #76593b;
-  --color-amber-600: #6a4f34;
-  --color-amber-700: #5e462e;
-  --color-amber-800: #4a3724;
-  --color-amber-900: #34261a;
-  --color-amber-950: #241504;
+  --color-amber-50: #f5f5f3;
+  --color-amber-100: #ececea;
+  --color-amber-200: #dcdcd8;
+  --color-amber-300: #c4c4bf;
+  --color-amber-400: #2a2a28;
+  --color-amber-500: #111111;
+  --color-amber-600: #1a1a1a;
+  --color-amber-700: #333333;
+  --color-amber-800: #1a1a1a;
+  --color-amber-900: #111111;
+  --color-amber-950: #0d0d0d;
 
-  --color-gold: #76593b;
-  --color-gold-hover: #5e462e;
-  --color-on-gold: #f8f3ea;
+  --color-gold: #111111;
+  --color-gold-hover: #333333;
+  --color-on-gold: #ffffff;
+
+  /* Black, mid grey and light grey stay apart without a hue */
+  --color-chart-1: #111111;
+  --color-chart-2: #8a8a85;
+  --color-chart-3: #cbcbc6;
 
   color-scheme: light;
 }

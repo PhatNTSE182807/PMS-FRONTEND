@@ -201,38 +201,38 @@
   .ast-launcher, .ast-typing i { transition: none; animation: none; }
 }
 
-/* Light mode, on when <html data-theme="light"> (see lib/theme.ts): the warm palette of the rest of the app */
+/* Light mode, on when <html data-theme="light"> (see lib/theme.ts): off-white and black, as the rest of the app */
 html[data-theme='light'] .ast {
-  --ast-surface: #f3eee5;
-  --ast-lowest: #ebe4d8;
-  --ast-low: #ebe4d8;
-  --ast-container: #e6ddcf;
-  --ast-container-high: #ddd2c1;
-  --ast-outline: #cfc2ad;
-  --ast-on-surface: #231f1a;
-  --ast-muted: #6f665b;
-  --ast-primary: #231f1a;
-  --ast-primary-container: #ddd2c1;
-  --ast-on-primary: #f8f3ea;
+  --ast-surface: #ffffff;
+  --ast-lowest: #f6f6f3;
+  --ast-low: #f6f6f3;
+  --ast-container: #f0f0ed;
+  --ast-container-high: #e7e7e3;
+  --ast-outline: #e2e2de;
+  --ast-on-surface: #111111;
+  --ast-muted: #6b6b67;
+  --ast-primary: #111111;
+  --ast-primary-container: #e7e7e3;
+  --ast-on-primary: #ffffff;
   --ast-error: #a3362d;
 }
 
 html[data-theme='light'] .ast-launcher {
-  box-shadow: 0 10px 24px rgba(35, 31, 26, 0.22);
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.22);
 }
 
 html[data-theme='light'] .ast-launcher:hover {
-  box-shadow: 0 14px 30px rgba(35, 31, 26, 0.28);
+  box-shadow: 0 14px 30px rgba(17, 17, 17, 0.28);
 }
 
 html[data-theme='light'] .ast-launcher:focus-visible {
-  outline-color: #231f1a;
+  outline-color: #111111;
 }
 
 html[data-theme='light'] .ast-launcher__avatar {
-  border-color: rgba(248, 243, 234, 0.35);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 html[data-theme='light'] .ast-panel {
-  box-shadow: 0 20px 50px rgba(35, 31, 26, 0.22);
+  box-shadow: 0 20px 50px rgba(17, 17, 17, 0.22);
 }
