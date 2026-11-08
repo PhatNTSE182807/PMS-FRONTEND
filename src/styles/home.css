@@ -268,26 +268,13 @@
   color: var(--home-primary);
 }
 
-.home-nav__brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
+/* "XXIV PARKING" on one line, both words the same size */
 .home-nav__brand-name {
+  margin-left: 0.3rem;
   font-family: var(--home-headline-font);
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: 0.08em;
-}
-
-.home-nav__brand-sub {
-  margin-top: 0.2rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--home-primary);
 }
 
 .home-nav__links {
