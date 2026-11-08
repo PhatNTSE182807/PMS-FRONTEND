@@ -921,3 +921,12 @@ html[data-theme='light'] .auth-shell__dialog .auth-shell__input {
   border-color: #e2e2de;
   background: var(--auth-container-high);
 }
+
+/* Phones and tablets: the form column sits under the photo, so its top-right corner is free (the API badge
+   floats over the photo): the toggle moves there */
+@media (max-width: 1023px) {
+  .auth-shell__theme {
+    right: 1.25rem;
+    left: auto;
+  }
+}
