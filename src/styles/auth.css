@@ -79,13 +79,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  padding: 0.35rem;
-  border-radius: 0.625rem;
-  background: rgba(24, 33, 39, 0.6);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  width: 4.75rem;
+  height: 4.75rem;
+  /* The shield logo has a transparent background: no box behind it, only a soft shadow to lift it off the photo */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
 .auth-shell__logo-box img {
@@ -802,11 +799,6 @@ html[data-theme='light'] .auth-shell__hero .auth-shell__brand {
   color: #f8f3ea;
 }
 
-html[data-theme='light'] .auth-shell__logo-box {
-  background: rgba(243, 238, 229, 0.9);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
-}
-
 /* The tagline sits on the photo: keep it white, as in dark mode */
 html[data-theme='light'] .auth-shell__input::placeholder,
 html[data-theme='light'] .auth-shell__divider,
@@ -866,7 +858,7 @@ html[data-theme='light'] .auth-shell__dialog {
 }
 
 html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit, .auth-shell__alert, .auth-shell__dialog,
-    .auth-shell__demo button, .auth-shell__logo-box, .auth-shell__ghost) {
+    .auth-shell__demo button, .auth-shell__ghost) {
   border-radius: 2px;
 }
 
