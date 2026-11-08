@@ -56,21 +56,9 @@ export function useDeployWalkIns() {
   )
 }
 
-export function useCheckOutWalkIn() {
-  return useWalkInMutation(walkInSimulationService.checkOut, () => toast.success('The vehicle paid and left.'))
-}
-
 export function useCheckOutAllWalkIns() {
   return useWalkInMutation(walkInSimulationService.checkOutAll, (r) =>
     toast.success(`${r.checkedOut} vehicles paid and left${r.skipped ? `; ${r.skipped} could not leave yet` : ''}.`),
-  )
-}
-
-export function useSimulateLostTicket() {
-  return useWalkInMutation(
-    ({ sessionId, conditionsMet }: { sessionId: number; conditionsMet: boolean }) =>
-      walkInSimulationService.reportLostTicket(sessionId, conditionsMet),
-    (_r) => toast.success('Lost ticket reported. The Staff decides it in Exceptions & Alerts.'),
   )
 }
 

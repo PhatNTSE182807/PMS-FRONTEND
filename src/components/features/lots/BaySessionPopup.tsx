@@ -4,6 +4,7 @@ import type { Bay } from '@/components/customer/garage/garageModel'
 import { getErrorMessage } from '@/api/apiError'
 import { useState, type CSSProperties } from 'react'
 import { toast } from 'sonner'
+import { useAuth } from '@/hooks/useAuth'
 import { useBaySession } from '@/hooks/useGate'
 import { useForceCheckOut } from '@/hooks/useGateRequests'
 import { formatDate, formatTime } from '@/lib/format'
@@ -30,6 +31,7 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
   const stay = useStayMinutes(data?.session.entryTime)
   const forceCheckOut = useForceCheckOut()
   const [confirming, setConfirming] = useState(false)
+  const { user } = useAuth()
 
   if (bay.countedWalkIn && walkInSession == null)
     return (
@@ -55,9 +57,10 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
 
   const { session } = data
   const member = data.customerType === 'Member'
-  // A walk-in still parked can be sent out from here; a lost ticket must be decided first
+  // Staff and Managers can send a walk-in still parked out from here (a lost ticket must be decided first); Admins
+  // only look (user request, 2026-11-09)
   const canForceCheckOut =
-    session.sessionType === 'WalkIn' && !session.reservationCode && ['Active', 'PendingPayment', 'Paid'].includes(session.status)
+    user?.role !== 'ADMIN' && session.sessionType === 'WalkIn' && !session.reservationCode && ['Active', 'PendingPayment', 'Paid'].includes(session.status)
   const owed = session.status === 'Paid' ? 0 : (data.amountDue ?? data.feeSoFar ?? 0)
   const sendOut = () =>
     forceCheckOut.mutate(session.id, {

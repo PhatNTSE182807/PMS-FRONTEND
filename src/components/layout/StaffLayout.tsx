@@ -1,11 +1,10 @@
 import { Suspense, useEffect } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { LogOut } from 'lucide-react'
 import { ConsoleNotificationBell } from '@/components/features/notifications/ConsoleNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { isTypingTarget } from '@/components/features/staff/staffKeys'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,10 +18,6 @@ import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { STAFF_NAV } from './adminNav'
-
-function Kbd({ children }: { children: string }) {
-  return <kbd className="rounded bg-white px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-950 ring-1 ring-slate-200">{children}</kbd>
-}
 
 function PageSkeleton() {
   return (
@@ -49,7 +44,6 @@ export function StaffLayout() {
   useEffect(() => {
     document.querySelector('[aria-label="Staff navigation"] a[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [pathname])
-  const navigate = useNavigate()
   const handleLogout = useSignOut()
   const openSessions = useOpenSessions(lot?.id)
   const exceptionsCount = openSessions.isSuccess
@@ -74,22 +68,6 @@ export function StaffLayout() {
       }
     }
   }, [profile, user?.fullName, user?.employeeCode, user?.avatarUrl])
-
-  // F1 Quick Pay and F2 Plate Scan work from every Staff screen.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return
-      if (e.key === 'F1') {
-        e.preventDefault()
-        void navigate('/staff/checkout')
-      } else if (e.key === 'F2') {
-        e.preventDefault()
-        void navigate('/staff/gate')
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [navigate])
 
   return (
     <div className="admin-root flex min-h-dvh flex-col bg-page">
@@ -174,14 +152,6 @@ export function StaffLayout() {
               </NavLink>
             ))}
           </nav>
-          <div className="hidden shrink-0 items-center gap-4 text-xs text-slate-700 lg:flex">
-            <span className="flex items-center gap-1.5">
-              <Kbd>F1</Kbd> Quick Pay
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Kbd>F2</Kbd> Plate Scan
-            </span>
-          </div>
         </div>
       </header>
 
