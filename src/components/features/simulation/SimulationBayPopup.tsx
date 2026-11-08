@@ -135,21 +135,21 @@ const button: CSSProperties = {
 }
 
 const styles = {
-  form: { display: 'grid', gap: '0.55rem', color: '#e2e8f0' },
+  form: { display: 'grid', gap: '0.55rem', color: 'var(--map-text)' },
   pair: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' },
   field: { display: 'grid', gap: '0.2rem' },
-  label: { fontSize: '0.7rem', color: '#94a3b8' },
+  label: { fontSize: '0.7rem', color: 'var(--map-muted)' },
   input: {
     width: '100%',
     padding: '0.35rem 0.45rem',
     borderRadius: '0.4rem',
-    border: '1px solid rgba(148, 163, 184, 0.35)',
-    background: 'rgba(15, 23, 42, 0.9)',
-    color: '#e2e8f0',
+    border: '1px solid var(--map-card-border)',
+    background: 'var(--map-input-bg)',
+    color: 'var(--map-text)',
     fontSize: '0.78rem',
   },
-  primary: { ...button, background: '#e9c349', color: '#1f1600' },
+  primary: { ...button, background: 'var(--map-button-bg)', color: 'var(--map-button-text)' },
   danger: { ...button, background: '#f59e0b', color: '#1f1600' },
-  note: { margin: 0, color: '#94a3b8', lineHeight: 1.4 },
-  error: { margin: 0, color: '#fda4af' },
+  note: { margin: 0, color: 'var(--map-muted)', lineHeight: 1.4 },
+  error: { margin: 0, color: 'var(--map-error)' },
 } satisfies Record<string, CSSProperties>

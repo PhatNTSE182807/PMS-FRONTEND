@@ -130,7 +130,7 @@ const button: CSSProperties = {
 const styles = {
   actions: { marginTop: '0.6rem', display: 'grid', gap: '0.45rem' },
   row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem' },
-  confirm: { margin: 0, color: '#e2e8f0', fontSize: '0.78rem', lineHeight: 1.4 },
-  primary: { ...button, width: '100%', border: 'none', background: '#e9c349', color: '#1f1600' },
-  secondary: { ...button, border: '1px solid rgba(148, 163, 184, 0.35)', background: 'transparent', color: '#e2e8f0' },
+  confirm: { margin: 0, color: 'var(--map-text)', fontSize: '0.78rem', lineHeight: 1.4 },
+  primary: { ...button, width: '100%', border: 'none', background: 'var(--map-button-bg)', color: 'var(--map-button-text)' },
+  secondary: { ...button, border: '1px solid var(--map-card-border)', background: 'transparent', color: 'var(--map-text)' },
 } satisfies Record<string, CSSProperties>

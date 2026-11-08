@@ -21,3 +21,4 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @import "./admin.css";
+@import "./map-theme.css";

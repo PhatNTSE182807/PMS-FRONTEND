@@ -79,6 +79,10 @@ html[data-theme='light'] .cx .cx-welcome {
       color-mix(in srgb, var(--cx-primary) 12%, var(--cx-container)) 100%);
 }
 
+html[data-theme='light'] .cx .cx-btn--teal:hover:not(:disabled) {
+  background: var(--cx-variant);
+}
+
 html[data-theme='light'] .cx .cx-chip--teal,
 html[data-theme='light'] .cx .cx-zone--selected {
   background: var(--cx-primary-container);
@@ -111,7 +115,7 @@ html[data-theme='light'] .cx .cx-notif__dropdown {
 }
 
 html[data-theme='light'] .cx .garage3d {
-  background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--cx-primary) 14%, transparent) 0%, transparent 70%);
+  background: var(--cx-surface);
 }
 
 /* Wallet: refund and payment accents, and texts written for the dark dialog */

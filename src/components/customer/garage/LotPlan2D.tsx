@@ -14,22 +14,22 @@ const STATUS_STYLE: Record<Bay['status'], { fill: string; label: string }> = {
 
 const styles = {
   root: { display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.75rem', overflow: 'auto', cursor: 'default' },
-  bar: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#cbd5e1' },
+  bar: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--map-text-soft)' },
   toggle: (active: boolean): CSSProperties => ({
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.3rem',
     padding: '0.25rem 0.6rem',
     borderRadius: '0.4rem',
-    border: '1px solid rgba(148,163,184,0.35)',
-    background: active ? 'rgba(18,78,102,0.9)' : 'transparent',
-    color: active ? '#fff' : '#cbd5e1',
+    border: '1px solid var(--map-card-border)',
+    background: active ? 'var(--map-active-bg)' : 'transparent',
+    color: active ? 'var(--map-active-text)' : 'var(--map-text-soft)',
     fontSize: '0.75rem',
     fontWeight: 600,
     cursor: 'pointer',
   }),
-  floor: { display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem', borderRadius: '0.5rem', background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(148,163,184,0.18)' },
-  floorHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0' },
+  floor: { display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--map-panel-bg)', border: '1px solid var(--map-card-border)' },
+  floorHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--map-text)' },
   lane: { height: '0.6rem', borderTop: '1px dashed rgba(148,163,184,0.35)', borderBottom: '1px dashed rgba(148,163,184,0.35)', margin: '0.15rem 0' },
   legend: { display: 'inline-flex', alignItems: 'center', gap: '0.3rem' },
   swatch: (fill: string): CSSProperties => ({ width: '0.6rem', height: '0.6rem', borderRadius: '0.15rem', background: fill }),
@@ -82,9 +82,9 @@ function FloorTitle({ floor }: { floor: GarageFloor }) {
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
         {floor.kind === 'car' ? <Car size={14} aria-hidden /> : <Bike size={14} aria-hidden />}
         {floor.level}
-        {floor.zoneLabel && <span style={{ fontWeight: 400, color: '#94a3b8' }}>· {floor.zoneLabel}</span>}
+        {floor.zoneLabel && <span style={{ fontWeight: 400, color: 'var(--map-muted)' }}>· {floor.zoneLabel}</span>}
       </span>
-      <span style={{ color: free ? '#6ee7b7' : '#fca5a5' }}>
+      <span style={{ color: free ? 'var(--map-good)' : 'var(--map-bad)' }}>
         {free}/{floor.bays.length} free
       </span>
     </div>
@@ -146,7 +146,7 @@ function FloorBays({
                     border: 'none',
                     background: STATUS_STYLE[bay.status].fill,
                     opacity: bay.status === 'AVAILABLE' || selected || mine ? 1 : 0.75,
-                    outline: selected ? '2px solid #fff' : mine ? '2px solid #facc15' : 'none',
+                    outline: selected ? '2px solid var(--map-selected)' : mine ? '2px solid var(--map-mine)' : 'none',
                     outlineOffset: '1px',
                     cursor: selectable ? 'pointer' : 'default',
                   }}

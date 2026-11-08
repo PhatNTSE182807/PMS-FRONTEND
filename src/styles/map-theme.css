@@ -1,0 +1,59 @@
+/*
+ * Popups and controls drawn over the lot maps (3D model, 2D plan, bay popups, the Admin simulation popup).
+ * The components write these colors inline, so they read CSS variables: dark values here, off-white and
+ * black ones in light mode (see lib/theme.ts). The 3D scene itself keeps its own lighting.
+ */
+:root {
+  --map-card-bg: rgba(6, 15, 22, 0.94);
+  --map-card-border: rgba(148, 163, 184, 0.35);
+  --map-card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --map-chip-bg: rgba(15, 23, 42, 0.85);
+  --map-panel-bg: rgba(15, 23, 42, 0.55);
+  --map-input-bg: rgba(15, 23, 42, 0.9);
+  --map-text: #e2e8f0;
+  --map-text-soft: #cbd5e1;
+  --map-muted: #94a3b8;
+  --map-accent: #e9c349;
+  --map-good: #6ee7b7;
+  --map-bad: #fca5a5;
+  --map-error: #fda4af;
+  --map-active-bg: rgba(18, 78, 102, 0.9);
+  --map-active-text: #ffffff;
+  --map-selected: #ffffff;
+  --map-mine: #facc15;
+  --map-button-bg: #e9c349;
+  --map-button-text: #1f1600;
+  --map-badge-member: #38bdf8;
+  --map-badge-guest: #e9c349;
+  --map-badge-mine: #ffd166;
+}
+
+html[data-theme='light'] {
+  --map-card-bg: rgba(255, 255, 255, 0.97);
+  --map-card-border: #e2e2de;
+  --map-card-shadow: 0 12px 32px rgba(17, 17, 17, 0.16);
+  --map-chip-bg: rgba(255, 255, 255, 0.94);
+  --map-panel-bg: #f0f0ed;
+  --map-input-bg: #ffffff;
+  --map-text: #111111;
+  --map-text-soft: #444441;
+  --map-muted: #6b6b67;
+  --map-accent: #111111;
+  --map-good: #2f7a45;
+  --map-bad: #a3362d;
+  --map-error: #a3362d;
+  --map-active-bg: #111111;
+  --map-active-text: #ffffff;
+  --map-selected: #111111;
+  --map-mine: #8a5a14;
+  --map-button-bg: #111111;
+  --map-button-text: #ffffff;
+  --map-badge-member: #0b6185;
+  --map-badge-guest: #8a5a14;
+  --map-badge-mine: #8a5a14;
+}
+
+/* The lot model frame: in light mode a plain off-white board instead of the teal glow of the dark theme */
+html[data-theme='light'] .garage3d {
+  background: #f6f6f3;
+}
