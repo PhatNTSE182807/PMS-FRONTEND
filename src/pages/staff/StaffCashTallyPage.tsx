@@ -247,8 +247,9 @@ function CountDrawer({ lotId, drawer, onClosed }: { lotId: string; drawer: CashD
       },
     )
 
+  // minmax(0,1fr): on a phone the note tables scroll inside their card instead of widening the page
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
     <Panel>
       <SectionTitle icon={<Banknote />} aside={<span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">Drawer {drawer.closeNo} open</span>}>
         Count your drawer
