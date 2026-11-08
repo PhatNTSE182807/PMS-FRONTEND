@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   BadgeCheck,
-  Car,
-  CircleCheck,
   DoorOpen,
   LogIn,
   LogOut,
@@ -21,7 +19,7 @@ import { Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/featu
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useGateExits, useGateHistory, useLotPayments, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
+import { useGateExits, useLotPayments, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
 import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
@@ -50,12 +48,10 @@ function CapacityRing({ percent }: { percent: number }) {
 function KpiRow({
   counters,
   sessions,
-  history,
   payments,
 }: {
   counters: ZoneCounterDTO[] | undefined
   sessions: ParkingSessionDTO[] | undefined
-  history: { items: ParkingSessionDTO[]; totalCount: number } | undefined
   payments: StaffPaymentHistoryPageDTO | undefined
 }) {
   const s = demoGateStats
@@ -65,19 +61,6 @@ function KpiRow({
   const active = total - free
   const reserved = sessions ? sessions.filter((x) => x.sessionType === 'Reservation').length : s.reservedVip
   const occupancy = total ? Math.round((active / total) * 100) : 0
-
-  // Calculate Throughput today from real history and open sessions (with fallback to demo stats)
-  const throughputToday = useMemo(() => {
-    if (!history && !sessions) return s.throughputToday
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0)
-    const startMs = startOfToday.getTime()
-
-    const openToday = sessions?.filter((e) => new Date(e.entryTime).getTime() >= startMs).length ?? 0
-    const closedToday = history?.items?.filter((e) => new Date(e.entryTime).getTime() >= startMs).length ?? 0
-    const todayTotal = openToday + closedToday
-    return todayTotal > 0 ? todayTotal : (history?.totalCount ?? s.throughputToday)
-  }, [history, sessions, s.throughputToday])
 
   // Calculate Cash in drawer from real payments (with fallback to demo stats)
   const cashInDrawer = useMemo(() => {
@@ -103,14 +86,7 @@ function KpiRow({
   }, [payments, s.cashInDrawer])
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <StatTile label="Throughput today" icon={<Car />}>
-        <Metric value={formatNumber(throughputToday)} />
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-700">
-          <CircleCheck className="size-4 text-emerald-600" aria-hidden /> Zero toll violations
-          <span className="ml-auto font-mono text-xs font-bold text-emerald-700">+{s.throughputTrend}%</span>
-        </p>
-      </StatTile>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatTile label="Facility capacity" className="ring-amber-300/40">
         <div className="mt-2 flex items-center justify-between gap-3">
           <div>
@@ -273,7 +249,6 @@ export default function StaffGatePage() {
   const lotKey = lotId ?? lot?.id ?? myLots.data?.[0]?.id
   const sessions = useOpenSessions(lotKey)
   const counters = useZoneCounters(lotKey)
-  const history = useGateHistory(lotKey, 1, 50)
   const exits = useGateExits(lotKey)
   const cashPayments = useLotPayments(lotKey, 'Cash', 50)
   const checkIns = useGateRequestQueue(lotKey, 'CheckIn')
@@ -307,7 +282,7 @@ export default function StaffGatePage() {
         )}
       </div>
 
-      <KpiRow counters={counters.data} sessions={sessions.data} history={history.data} payments={cashPayments.data} />
+      <KpiRow counters={counters.data} sessions={sessions.data} payments={cashPayments.data} />
 
       {/* Four cameras (entry lane on top, exit lane below) with the Check-in / Check-out lanes beside them */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
