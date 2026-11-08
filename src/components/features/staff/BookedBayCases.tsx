@@ -135,7 +135,7 @@ function OpenCase({ bayCase, lotId }: { bayCase: BookedBayCaseDTO; lotId: string
               id={`bay-case-note-${bayCase.id}`}
               rows={2}
               maxLength={500}
-              className="w-full rounded-lg bg-[#060f16] p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
+              className="w-full rounded-lg bg-well p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="e.g. every car bay is full until the evening"

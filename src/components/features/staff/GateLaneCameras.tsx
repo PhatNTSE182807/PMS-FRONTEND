@@ -176,7 +176,7 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
 
   /** One camera of the lane; both show the same pass, the rear one reads the plate. */
   const tile = (view: LaneView) => (
-    <figure className="relative aspect-video overflow-hidden rounded-lg bg-[#060f16] ring-1 ring-slate-200">
+    <figure className="relative aspect-video overflow-hidden rounded-lg bg-well ring-1 ring-slate-200">
       {view === 'rear' ? (
         <GateLaneScene ref={scene} direction={direction} view="rear" vehicle={vehicle} open={open} onPhase={setPhase} onDone={next} className="absolute inset-0" />
       ) : (

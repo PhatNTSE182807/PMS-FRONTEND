@@ -458,7 +458,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       <input
                         type="text"
                         className="cx-wallet-input-container"
-                        style={{ flex: 1, padding: '0.55rem 0.8rem', color: '#fff', fontSize: '0.85rem' }}
+                        style={{ flex: 1, minWidth: 0, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
                         placeholder="Bank Name (e.g. Techcombank)"
@@ -466,7 +466,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       <input
                         type="text"
                         className="cx-wallet-input-container"
-                        style={{ flex: 1.5, padding: '0.55rem 0.8rem', color: '#fff', fontSize: '0.85rem' }}
+                        style={{ flex: 1.5, minWidth: 0, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
                         value={bankAccount}
                         onChange={(e) => setBankAccount(e.target.value)}
                         placeholder="Account Number"
@@ -503,7 +503,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
 
               <div className="cx-wallet-history__list">
                 {transactions.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '1.25rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
+                  <div style={{ textAlign: 'center', padding: '1.25rem', color: 'var(--cx-muted)', fontSize: '0.85rem' }}>
                     No recent transactions yet. Top up your wallet to get started.
                   </div>
                 ) : (
@@ -598,7 +598,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
               </div>
               <div className="cx-wallet-stat-card">
                 <span className="cx-wallet-stat-card__label">Total Refunded</span>
-                <span className="cx-wallet-stat-card__val" style={{ color: '#38bdf8' }}>
+                <span className="cx-wallet-stat-card__val" style={{ color: 'var(--cx-refund, #38bdf8)' }}>
                   +{formatVndBalance(totalRefunded)}
                 </span>
               </div>
@@ -654,7 +654,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                   <Loader2 size={20} className="animate-spin" /> Loading transactions from server...
                 </div>
               ) : filteredTransactions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>
+                <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--cx-muted)', fontSize: '0.875rem' }}>
                   No transactions found matching your filter criteria.
                 </div>
               ) : (

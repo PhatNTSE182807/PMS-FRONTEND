@@ -79,13 +79,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  padding: 0.35rem;
-  border-radius: 0.625rem;
-  background: rgba(24, 33, 39, 0.6);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  width: 4.75rem;
+  height: 4.75rem;
+  /* The shield logo has a transparent background: no box behind it, only a soft shadow to lift it off the photo */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
 .auth-shell__logo-box img {
@@ -764,4 +761,172 @@
 
 .auth-shell__rules li[data-met='false'] svg {
   color: var(--auth-error);
+}
+
+/* =========================================================
+   Light mode, on when <html data-theme="light"> (see lib/theme.ts): off-white and black. An off-white page,
+   white panels, light grey hairlines and near-black ink and buttons; only the status colors add a hue.
+========================================================= */
+html[data-theme='light'] .auth-shell {
+  --auth-surface: #f6f6f3;
+  --auth-surface-lowest: #ffffff;
+  --auth-container: #ffffff;
+  --auth-container-high: #f0f0ed;
+  --auth-variant: #e7e7e3;
+  --auth-on-surface: #111111;
+  --auth-on-variant: #444441;
+  --auth-primary: #111111;
+  --auth-primary-fixed: #333333;
+  --auth-gold: #111111;
+  --auth-gold-fixed: #222222;
+  --auth-on-gold: #ffffff;
+  --auth-error: #a3362d;
+  --auth-success: #3d6b4a;
+}
+
+html[data-theme='light'] .auth-shell ::selection {
+  background: #e2e2de;
+  color: #111111;
+}
+
+/* The car photo shows as it is: no fade, full opacity. The texts on it are white with a soft shadow */
+html[data-theme='light'] .auth-shell__fade {
+  background: none;
+}
+
+html[data-theme='light'] .auth-shell__photo {
+  opacity: 1;
+}
+
+html[data-theme='light'] .auth-shell__tagline-text {
+  color: #f2f2f0;
+}
+
+html[data-theme='light'] :is(.auth-shell__tagline-title, .auth-shell__tagline-text, .auth-shell__hero .auth-shell__brand-name) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme='light'] .auth-shell__hero .auth-shell__brand {
+  color: #ffffff;
+}
+
+/* The tagline sits on the photo: keep it white, as in dark mode */
+html[data-theme='light'] .auth-shell__input::placeholder,
+html[data-theme='light'] .auth-shell__divider,
+html[data-theme='light'] .auth-shell__demo-label {
+  color: #6b6b67;
+}
+
+html[data-theme='light'] .auth-shell__input:focus {
+  border-color: rgba(17, 17, 17, 0.45);
+}
+
+html[data-theme='light'] .auth-shell__check input:focus-visible + .auth-shell__check-box {
+  box-shadow: 0 0 0 2px rgba(17, 17, 17, 0.35);
+}
+
+html[data-theme='light'] .auth-shell__submit {
+  box-shadow: none;
+}
+
+html[data-theme='light'] .auth-shell__divider::after,
+html[data-theme='light'] .auth-shell__divider::before {
+  background: #e2e2de;
+}
+
+html[data-theme='light'] .auth-shell__alert--error {
+  background: #f6e6e3;
+  border-color: #e2b3ac;
+  color: #7a241d;
+}
+
+html[data-theme='light'] .auth-shell__alert--info {
+  background: #f0f0ed;
+  border-color: #e2e2de;
+}
+
+html[data-theme='light'] .auth-shell__alert--success {
+  background: #e5efe8;
+  border-color: #aecdb7;
+}
+
+html[data-theme='light'] .auth-shell__demo {
+  border-top-color: #cbcbc6;
+}
+
+html[data-theme='light'] .auth-shell__demo button {
+  border-color: #cbcbc6;
+}
+
+html[data-theme='light'] .auth-shell__backdrop {
+  background: rgba(17, 17, 17, 0.45);
+}
+
+html[data-theme='light'] .auth-shell__dialog {
+  border-color: #e2e2de;
+  background: #ffffff;
+  box-shadow: 0 24px 48px rgba(17, 17, 17, 0.2);
+}
+
+html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit, .auth-shell__alert, .auth-shell__dialog,
+    .auth-shell__demo button, .auth-shell__ghost) {
+  border-radius: 2px;
+}
+
+@media (max-width: 1023px) {
+  html[data-theme='light'] .auth-shell__fade {
+    background: none;
+  }
+}
+
+/* Sun/moon button at the top of the form column */
+.auth-shell__theme {
+  position: absolute;
+  top: 1rem;
+  left: 1.25rem;
+  z-index: 2;
+  display: flex;
+  padding: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--auth-on-variant);
+  cursor: pointer;
+}
+
+.auth-shell__theme:hover {
+  color: var(--auth-on-surface);
+}
+
+.auth-shell__theme svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* The legacy layout around the sign-in screens (App.css: warm sand background and glows) shows for a moment
+   while the screen fades in: give it the sign-in page color in both modes so nothing flashes */
+.pms-app:has(.auth-shell) {
+  background: #0b141b;
+}
+
+html[data-theme='light'] .pms-app:has(.auth-shell) {
+  background: #f6f6f3;
+}
+
+.pms-app:has(.auth-shell) .cyber-glow {
+  display: none;
+}
+
+/* Light mode: the reset-password dialog is white like its inputs, so the inputs get a hairline */
+html[data-theme='light'] .auth-shell__dialog .auth-shell__input {
+  border-color: #e2e2de;
+  background: var(--auth-container-high);
+}
+
+/* Phones and tablets: the form column sits under the photo, so its top-right corner is free (the API badge
+   floats over the photo): the toggle moves there */
+@media (max-width: 1023px) {
+  .auth-shell__theme {
+    right: 1.25rem;
+    left: auto;
+  }
 }

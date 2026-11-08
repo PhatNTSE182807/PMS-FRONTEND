@@ -83,7 +83,7 @@ export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: strin
               onClick={() => setTab(kind)}
               className={cn(
                 'flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold tracking-wide uppercase transition-colors',
-                tab === kind ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                tab === kind ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
               )}
             >
               <Icon className="size-4" aria-hidden /> {kind === 'CheckIn' ? 'Check-in' : 'Check-out'}
@@ -305,7 +305,7 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
         }
       />
 
-      <div className="rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+      <div className="rounded-xl bg-well p-5 ring-1 ring-slate-200">
         <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{request.plateNumber ?? 'NO PLATE'}</p>
         <p className="mt-1 text-sm text-slate-700">
           {[request.vehicleLabel, request.vehicleColor, request.vehicleTypeName].filter(Boolean).join(' • ') || 'Vehicle details unavailable'}
@@ -406,7 +406,7 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
           <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Reason for the customer</p>
           <div className="flex flex-wrap gap-1.5">
             {REFUSE_REASONS[request.kind].map((r) => (
-              <button key={r} type="button" onClick={() => setReason(r)} className={cn('rounded-full px-2.5 py-1 text-xs ring-1', reason === r ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'text-slate-800 ring-slate-200 hover:bg-slate-100')}>
+              <button key={r} type="button" onClick={() => setReason(r)} className={cn('rounded-full px-2.5 py-1 text-xs ring-1', reason === r ? 'bg-selected text-indigo-800 ring-indigo-300' : 'text-slate-800 ring-slate-200 hover:bg-slate-100')}>
                 {r}
               </button>
             ))}

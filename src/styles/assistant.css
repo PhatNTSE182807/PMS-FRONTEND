@@ -1,0 +1,244 @@
+/* Floating chat with the XXIV Parking assistant (homepage and customer area); same palette as customer.css. */
+.ast {
+  --ast-surface: #0b141b;
+  --ast-lowest: #060f16;
+  --ast-low: #141d23;
+  --ast-container: #182127;
+  --ast-container-high: #222b32;
+  --ast-outline: rgba(116, 141, 146, 0.25);
+  --ast-on-surface: #dae4ed;
+  --ast-muted: #8a9297;
+  --ast-primary: #9acdea;
+  --ast-primary-container: #124e66;
+  --ast-on-primary: #003548;
+  --ast-error: #ffb4ab;
+  --ast-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 60;
+  font-family: var(--ast-font);
+  color: var(--ast-on-surface);
+}
+
+.ast-launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 18px 0 9px;
+  border: 0;
+  border-radius: 26px;
+  background: var(--ast-primary);
+  color: var(--ast-on-primary);
+  font: 600 14px/1 var(--ast-font);
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.ast-launcher:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5); }
+.ast-launcher:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.ast-panel {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  height: min(600px, calc(100vh - 40px));
+  border: 1px solid var(--ast-outline);
+  border-radius: 16px;
+  background: var(--ast-surface);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.ast-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  background: var(--ast-low);
+  border-bottom: 1px solid var(--ast-outline);
+}
+/* Virgo's avatar: the app logo in a round badge */
+.ast-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ast-lowest);
+  border: 1px solid var(--ast-outline);
+  overflow: hidden;
+}
+.ast-avatar img { width: 82%; height: 82%; object-fit: contain; }
+.ast-panel__avatar { width: 36px; height: 36px; }
+.ast-launcher__avatar { width: 34px; height: 34px; border-color: rgba(0, 53, 72, 0.35); }
+.ast-msg__avatar { width: 26px; height: 26px; grid-row: 1 / span 2; align-self: start; }
+.ast-panel__title { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ast-panel__title strong { font-size: 14px; }
+.ast-panel__title span { font-size: 12px; color: var(--ast-muted); }
+
+.ast-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ast-muted);
+  cursor: pointer;
+}
+.ast-icon:hover:not(:disabled) { background: var(--ast-container-high); color: var(--ast-on-surface); }
+.ast-icon:disabled { opacity: 0.4; cursor: default; }
+
+.ast-panel__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ast-welcome p { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--ast-on-surface); }
+.ast-suggestions { display: flex; flex-direction: column; gap: 8px; }
+.ast-chip {
+  text-align: left;
+  padding: 9px 12px;
+  border: 1px solid var(--ast-outline);
+  border-radius: 10px;
+  background: var(--ast-container);
+  color: var(--ast-on-surface);
+  font: 13px/1.4 var(--ast-font);
+  cursor: pointer;
+}
+.ast-chip:hover { border-color: var(--ast-primary); }
+
+.ast-msg { display: flex; flex-direction: column; max-width: 88%; }
+.ast-msg--user { align-self: flex-end; align-items: flex-end; }
+/* Bot messages: avatar on the left, bubble and sources beside it */
+.ast-msg--bot {
+  align-self: flex-start;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  column-gap: 8px;
+  max-width: 94%;
+}
+.ast-msg--bot .ast-msg__bubble,
+.ast-msg--bot .ast-msg__sources { grid-column: 2; }
+.ast-msg__bubble {
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ast-msg--user .ast-msg__bubble { background: var(--ast-primary-container); border-bottom-right-radius: 4px; }
+.ast-msg--bot .ast-msg__bubble { background: var(--ast-container); border-bottom-left-radius: 4px; white-space: normal; }
+.ast-msg__bubble p { margin: 0 0 6px; }
+.ast-msg__bubble p:last-child { margin-bottom: 0; }
+.ast-msg__bubble ul { margin: 4px 0 6px; padding-left: 18px; }
+.ast-msg__error { margin: 6px 0 0; color: var(--ast-error); font-size: 13px; }
+.ast-msg__sources { margin: 4px 2px 0; font-size: 11px; color: var(--ast-muted); }
+
+.ast-typing { display: inline-flex; gap: 4px; padding: 4px 0; }
+.ast-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ast-muted);
+  animation: ast-bounce 1s infinite ease-in-out;
+}
+.ast-typing i:nth-child(2) { animation-delay: 0.15s; }
+.ast-typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ast-bounce { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+.ast-panel__form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px 6px;
+  border-top: 1px solid var(--ast-outline);
+  background: var(--ast-low);
+}
+.ast-input {
+  flex: 1;
+  resize: none;
+  max-height: 120px;
+  padding: 9px 11px;
+  border: 1px solid var(--ast-outline);
+  border-radius: 10px;
+  background: var(--ast-surface);
+  color: var(--ast-on-surface);
+  font: 14px/1.4 var(--ast-font);
+}
+.ast-input:focus { outline: none; border-color: var(--ast-primary); }
+.ast-send {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ast-primary);
+  color: var(--ast-on-primary);
+  cursor: pointer;
+}
+.ast-send:disabled { opacity: 0.4; cursor: default; }
+.ast-panel__note { margin: 0; padding: 0 12px 10px; background: var(--ast-low); font-size: 11px; color: var(--ast-muted); }
+
+@media (max-width: 480px) {
+  .ast { right: 12px; bottom: 12px; }
+  .ast-launcher__label { display: none; }
+  .ast-launcher { width: 52px; padding: 0; justify-content: center; }
+  .ast-launcher__avatar { width: 40px; height: 40px; }
+  .ast-panel { position: fixed; inset: 0; width: 100%; height: 100%; border-radius: 0; border: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ast-launcher, .ast-typing i { transition: none; animation: none; }
+}
+
+/* Light mode, on when <html data-theme="light"> (see lib/theme.ts): off-white and black, as the rest of the app */
+html[data-theme='light'] .ast {
+  --ast-surface: #ffffff;
+  --ast-lowest: #f6f6f3;
+  --ast-low: #f6f6f3;
+  --ast-container: #f0f0ed;
+  --ast-container-high: #e7e7e3;
+  --ast-outline: #e2e2de;
+  --ast-on-surface: #111111;
+  --ast-muted: #6b6b67;
+  --ast-primary: #111111;
+  --ast-primary-container: #e7e7e3;
+  --ast-on-primary: #ffffff;
+  --ast-error: #a3362d;
+}
+
+html[data-theme='light'] .ast-launcher {
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.22);
+}
+
+html[data-theme='light'] .ast-launcher:hover {
+  box-shadow: 0 14px 30px rgba(17, 17, 17, 0.28);
+}
+
+html[data-theme='light'] .ast-launcher:focus-visible {
+  outline-color: #111111;
+}
+
+html[data-theme='light'] .ast-launcher__avatar {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+html[data-theme='light'] .ast-panel {
+  box-shadow: 0 20px 50px rgba(17, 17, 17, 0.22);
+}
+
+/* While a dialog is open (wallet, exit pass, directions, any modal), the chat button steps aside instead of
+   covering the dialog's buttons */
+body:has([aria-modal='true']:not(.ast-panel)) .ast-launcher {
+  display: none;
+}

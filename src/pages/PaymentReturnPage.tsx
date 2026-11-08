@@ -7,6 +7,7 @@ import { formatNumber } from '@/lib/format'
 import { session } from '@/lib/session'
 import type { PaymentCallbackResultDTO } from '@/types/operations.dto'
 import '@/styles/customer.css'
+import '@/styles/customer-light.css'
 
 const PROVIDER_NAME = { vnpay: 'VNPay', momo: 'MoMo' } as const
 

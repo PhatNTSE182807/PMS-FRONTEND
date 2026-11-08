@@ -1343,3 +1343,159 @@
     gap: 1rem;
   }
 }
+
+/* =========================================================
+   Light mode, on when <html data-theme="light"> (see lib/theme.ts): off-white and black. An off-white page,
+   white panels, light grey hairlines and near-black ink and buttons; only the status colors add a hue.
+========================================================= */
+html[data-theme='light'] .home {
+  --home-surface: #f6f6f3;
+  --home-lowest: #ffffff;
+  --home-low: #f0f0ed;
+  --home-container: #ffffff;
+  --home-container-high: #f0f0ed;
+  --home-variant: #e7e7e3;
+  --home-outline: #e2e2de;
+  --home-on-surface: #111111;
+  --home-on-variant: #444441;
+  --home-primary: #111111;
+  --home-primary-fixed: #111111;
+  --home-primary-container: #e7e7e3;
+  --home-on-primary: #ffffff;
+  --home-gold: #111111;
+  --home-gold-fixed: #333333;
+  --home-on-gold: #ffffff;
+  --home-emerald: #3d6b4a;
+  --home-amber: #8a5a14;
+  --home-crimson: #a3362d;
+}
+
+html[data-theme='light'] .home ::selection {
+  color: var(--home-on-surface);
+}
+
+html[data-theme='light'] .home-pill,
+html[data-theme='light'] .home-hud__stat,
+html[data-theme='light'] .home-hud__route {
+  background: color-mix(in srgb, var(--home-lowest) 55%, transparent);
+}
+
+html[data-theme='light'] .home-btn--teal {
+  border-color: var(--home-outline);
+}
+
+html[data-theme='light'] .home-btn--teal:hover {
+  background: #222222;
+}
+
+html[data-theme='light'] .home-btn--gold-outline,
+html[data-theme='light'] .home-hero__badge {
+  background: transparent;
+  border-color: var(--home-outline);
+}
+
+html[data-theme='light'] .home-nav {
+  background: color-mix(in srgb, var(--home-surface) 70%, transparent);
+}
+
+html[data-theme='light'] .home-nav--open {
+  background: color-mix(in srgb, var(--home-surface) 96%, transparent);
+}
+
+html[data-theme='light'] .home-nav__logo {
+  filter: none;
+}
+
+/* The hero photo keeps its colors (no light veil): only a dark shade behind the text column on the left and a
+   short fade into the page at the bottom; the text on it turns white, as on the sign-in photo */
+html[data-theme='light'] .home-hero__shade {
+  background: linear-gradient(90deg, rgba(16, 14, 11, 0.62) 0%, rgba(16, 14, 11, 0.38) 38%, transparent 62%),
+    linear-gradient(0deg, var(--home-surface) 0%, transparent 25%);
+}
+
+html[data-theme='light'] .home-hero {
+  --home-on-surface: #ffffff;
+  --home-on-variant: #f2f2f0;
+  --home-primary: #ffffff;
+  --home-gold: #f2f2f0;
+}
+
+html[data-theme='light'] :is(.home-hero__badge, .home-hero__title, .home-hero__lead, .home-hero__features) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme='light'] .home-hero .home-btn--gold-outline {
+  border-color: rgba(232, 203, 168, 0.7);
+  background: rgba(20, 18, 15, 0.35);
+}
+
+html[data-theme='light'] .home-hero__glow--teal,
+html[data-theme='light'] .home-hero__glow--gold {
+  display: none;
+}
+
+html[data-theme='light'] .home-hud {
+  border-color: var(--home-outline);
+  background: color-mix(in srgb, var(--home-lowest) 70%, transparent);
+  box-shadow: 0 24px 48px rgba(17, 17, 17, 0.12);
+}
+
+html[data-theme='light'] .home-hud__live,
+html[data-theme='light'] .home-capability:hover,
+html[data-theme='light'] .home-capability--gold:hover {
+  border-color: var(--home-on-variant);
+}
+
+html[data-theme='light'] .home-showcase__tag,
+html[data-theme='light'] .home-showcase__chip,
+html[data-theme='light'] .home-cta__badge {
+  background: color-mix(in srgb, var(--home-lowest) 72%, transparent);
+}
+
+html[data-theme='light'] .home-cta {
+  border-color: var(--home-outline);
+  background: var(--home-lowest);
+}
+
+html[data-theme='light'] .home :is(.home-btn, .home-pill, .home-hud, .home-hud__stat, .home-hud__route, .home-capability,
+    .home-cta, .home-showcase__tag, .home-showcase__chip, .home-hero__badge) {
+  border-radius: 2px;
+}
+
+/* Sun/moon button of the top bar */
+.home-theme-toggle {
+  display: flex;
+  padding: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--home-on-variant);
+  cursor: pointer;
+}
+
+.home-theme-toggle:hover {
+  color: var(--home-on-surface);
+}
+
+.home-theme-toggle svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* The facility photos show as they are (no fade into the card); the texts on them turn light */
+html[data-theme='light'] .home-showcase__media::after {
+  display: none;
+}
+
+html[data-theme='light'] .home-showcase__media {
+  --home-gold: #f2f2f0;
+  --home-primary: #ffffff;
+}
+
+html[data-theme='light'] .home-showcase__where {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme='light'] .home-showcase__media :is(.home-showcase__tag, .home-showcase__chip) {
+  background: rgba(20, 18, 15, 0.62);
+  color: #ffffff;
+}

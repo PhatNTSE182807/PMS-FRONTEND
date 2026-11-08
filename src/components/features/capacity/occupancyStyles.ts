@@ -11,7 +11,7 @@ interface LevelStyle {
   fill: string
   /** Unfilled track: a lighter step of the same hue. */
   track: string
-  /** SVG stroke colours (Tailwind emerald/amber/rose 500 and 100). */
+  /** SVG stroke colours (the palette's emerald/amber/rose and their tracks, so they follow the light/dark mode). */
   stroke: string
   trackStroke: string
 }
@@ -24,8 +24,8 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     tone: 'emerald',
     fill: 'bg-emerald-500',
     track: 'bg-emerald-100',
-    stroke: '#10B981',
-    trackStroke: '#10372A',
+    stroke: 'var(--color-emerald-600)',
+    trackStroke: 'var(--color-emerald-100)',
   },
   HIGH: {
     label: 'Filling up',
@@ -33,8 +33,8 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     tone: 'amber',
     fill: 'bg-amber-500',
     track: 'bg-amber-100',
-    stroke: '#E9C349',
-    trackStroke: '#3A3013',
+    stroke: 'var(--color-amber-400)',
+    trackStroke: 'var(--color-amber-100)',
   },
   CRITICAL: {
     label: 'Overloaded',
@@ -42,8 +42,8 @@ export const LEVEL_STYLES: Record<OccupancyLevel, LevelStyle> = {
     tone: 'rose',
     fill: 'bg-rose-500',
     track: 'bg-rose-100',
-    stroke: '#EF4444',
-    trackStroke: '#3D1A1C',
+    stroke: 'var(--color-rose-500)',
+    trackStroke: 'var(--color-rose-100)',
   },
 }
 

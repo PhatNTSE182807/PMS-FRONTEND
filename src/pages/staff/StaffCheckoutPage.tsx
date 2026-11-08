@@ -341,7 +341,7 @@ export default function StaffCheckoutPage() {
               <SectionTitle icon={<Car />} aside={<span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">{session.status}</span>}>
                 Vehicle
               </SectionTitle>
-              <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+              <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-well p-5 ring-1 ring-slate-200">
                 <div>
                   <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Entry plate</p>
                   <p className="mt-1 font-mono text-4xl font-bold tracking-[0.12em] text-slate-950">{session.plateNumber || 'NO PLATE'}</p>
@@ -402,7 +402,7 @@ export default function StaffCheckoutPage() {
                 {quote.depositApplied > 0 && <FeeLine label="Reservation deposit" value={-quote.depositApplied} tone="text-indigo-700" />}
                 {quote.alreadyPaid > 0 && <FeeLine label="Already paid" value={-quote.alreadyPaid} tone="text-indigo-700" />}
               </ul>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-well p-5 ring-1 ring-slate-200">
                 <div>
                   <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Amount due</p>
                   <p className="text-sm text-slate-700">
@@ -468,10 +468,10 @@ export default function StaffCheckoutPage() {
                           key={note}
                           type="button"
                           onClick={() => addNote(note)}
-                          className={cn('relative rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors', receivedNotes[note] ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100')}
+                          className={cn('relative rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors', receivedNotes[note] ? 'bg-selected text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100')}
                         >
                           {formatNumber(note / 1000)}k
-                          {receivedNotes[note] ? <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-amber-500 text-[11px] text-slate-950">{receivedNotes[note]}</span> : null}
+                          {receivedNotes[note] ? <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-amber-500 text-[11px] text-(--color-on-gold)">{receivedNotes[note]}</span> : null}
                         </button>
                       ))}
                     </div>
@@ -491,7 +491,7 @@ export default function StaffCheckoutPage() {
                       value={tendered ? formatNumber(tendered) : ''}
                       placeholder="0"
                       onChange={(e) => setTendered(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                      className="mt-2 w-full rounded-lg bg-[#060f16] px-3 py-2 font-mono text-xl font-bold text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
+                      className="mt-2 w-full rounded-lg bg-well px-3 py-2 font-mono text-xl font-bold text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
                     />
                     <p className="mt-2 flex justify-between text-sm">
                       <span className="text-slate-700">{change >= 0 ? 'Change' : 'Still due'}</span>
@@ -614,7 +614,8 @@ export default function StaffCheckoutPage() {
         {history.data && history.data.items.length === 0 && <p className="mt-3 text-sm text-slate-700">No payments yet.</p>}
         {history.data && history.data.items.length > 0 && (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            {/* min-w: on a phone the table scrolls sideways instead of squeezing the columns into each other */}
+            <table className="w-full min-w-[52rem] text-left text-sm [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-xs font-bold tracking-wider text-slate-700 uppercase">
                 <tr><th className="py-2">Paid at</th><th>Plate</th><th>Session</th><th>Method</th><th className="text-right">Amount</th><th className="pl-6">Collected by</th></tr>
               </thead>

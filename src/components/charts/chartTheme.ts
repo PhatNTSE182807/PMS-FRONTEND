@@ -1,26 +1,27 @@
 /**
  * Chart styling shared by every admin chart.
  *
- * Series colours come from the dark telemetry palette (sky teal, gold, steel); they differ in
- * lightness as well as hue so the three stay apart for colour-vision deficiencies.
+ * Series colours come from the admin palette (sky teal, gold, steel in dark mode; ink, bronze, steel in
+ * light mode); they differ in lightness as well as hue so the three stay apart for colour-vision
+ * deficiencies. They are CSS variables of admin.css, so the charts follow the light/dark mode.
  * The keys keep their original names so call sites did not change.
  * They are assigned per entity, never by rank, so a filter never repaints a series.
  * Status colours (emerald/amber/rose) are reserved for occupancy states.
  */
 export const SERIES_COLORS = {
-  blue: '#9ACDEA',
-  orange: '#E9C349',
-  aqua: '#748D92',
+  blue: 'var(--color-chart-1)',
+  orange: 'var(--color-chart-2)',
+  aqua: 'var(--color-chart-3)',
 } as const
 
 export const CHART_TEXT = {
-  primary: '#DAE4ED',
-  secondary: '#C0C7CD',
-  muted: '#8A9297',
+  primary: 'var(--color-slate-900)',
+  secondary: 'var(--color-slate-700)',
+  muted: 'var(--color-slate-500)',
 }
 
 /** Hairline, solid, one step off the surface. */
-export const GRID_COLOR = '#2D363D'
+export const GRID_COLOR = 'var(--color-slate-200)'
 
 export const axisProps = {
   stroke: GRID_COLOR,

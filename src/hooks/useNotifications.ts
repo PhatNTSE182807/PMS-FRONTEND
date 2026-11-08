@@ -58,6 +58,9 @@ export function useNotifications(take = 30) {
           window.dispatchEvent(new Event('xxiv-wallet-updated'))
       }
 
+      // A closed cash drawer waits in the Manager's Approval Queue
+      if (notification.type === 'CashDrawerClosed') void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
+
       const id = `notification-${notification.id}`
       if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
       else if (notification.type === 'CheckOut' && !notification.data?.note) toast.success(USER_TOAST.checkedOut, { id })

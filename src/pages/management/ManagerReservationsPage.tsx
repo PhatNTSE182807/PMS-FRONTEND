@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
-import { ArrowLeftRight, CalendarDays, CarFront, Clock, Download, Search, ShieldCheck, TimerOff } from 'lucide-react'
+import { useState } from 'react'
+import { CalendarDays, CarFront, Clock, Download, Search, TimerOff } from 'lucide-react'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatClock, formatMinutes, vnd } from '@/components/features/manager/managerFormat'
 import { arrivesWithinHour, dayRange, isAwaitingArrival, VOID_RESERVATION } from '@/components/features/manager/managerReservations'
@@ -13,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useNow } from '@/hooks/useNow'
 import { useLotReservations } from '@/hooks/useReservations'
 import { cn } from '@/lib/utils'
-import type { ManagedLot, SlotState } from '@/types/lot-management.dto'
+import type { ManagedLot } from '@/types/lot-management.dto'
 import type { ReservationDTO, ReservationStatus } from '@/types/operations.dto'
 
 interface Filter {
@@ -34,16 +33,6 @@ const FILTERS: Filter[] = [
 
 const matchesFilter = (filter: Filter, status: ReservationStatus) => !filter.statuses || filter.statuses.includes(status)
 
-/** Bays offered for reassignment: the lot's real slots when it has zones configured, else a sample floor. */
-function useBays(lot: ManagedLot) {
-  return useMemo(() => {
-    const real = lot.zones.flatMap((z) => z.slots.map((s) => ({ code: s.code, zone: z.name, status: s.status })))
-    if (real.length) return real.slice(0, 24)
-    const states: SlotState[] = ['Occupied', 'Occupied', 'Reserved', 'Maintenance', 'Occupied', 'Occupied', 'Occupied', 'Reserved', 'Available', 'Occupied', 'Occupied', 'Reserved']
-    return states.map((status, i) => ({ code: `B2-${String(i + 1).padStart(2, '0')}`, zone: 'Floor B2', status }))
-  }, [lot])
-}
-
 function depositNote(r: ReservationDTO): string {
   if (!r.hasDeposit) return 'No deposit'
   if (r.refundAmount > 0) return `Refunded ${vnd(r.refundAmount)}`
@@ -61,13 +50,13 @@ function depositNote(r: ReservationDTO): string {
   }
 }
 
-/** One table row; `movedBays` holds the bays changed on this page, which are not saved yet. */
-function toRow(r: ReservationDTO, movedBays: Record<string, string>) {
+/** One table row. */
+function toRow(r: ReservationDTO) {
   return {
     id: r.code,
     plate: r.plateNumber ?? 'No plate',
     vehicle: r.vehicleLabel ?? '',
-    bay: movedBays[r.code] ?? r.slotCode ?? '-',
+    bay: r.slotCode ?? '-',
     floor: r.zoneName ?? '',
     from: Date.parse(r.checkInFrom),
     start: Date.parse(r.arrivalTime),
@@ -107,30 +96,17 @@ function Reservations({ lot }: { lot: ManagedLot }) {
   const { from, to } = dayRange(now)
   const reservationsQuery = useLotReservations(lot.id, from, to)
   const reservations = reservationsQuery.data ?? []
-  const [movedBays, setMovedBays] = useState<Record<string, string>>({})
-  const rows = reservations.map((r) => toRow(r, movedBays))
+  const rows = reservations.map(toRow)
   const [filter, setFilter] = useState(FILTERS[0])
   const [query, setQuery] = useState('')
-  const [selectedId, setSelectedId] = useState<string>()
-  const bays = useBays(lot)
-  const vacant = bays.filter((b) => b.status === 'Available')
-  const [target, setTarget] = useState<string>()
 
   const count = (f: Filter) => rows.filter((r) => matchesFilter(f, r.status)).length
   const q = query.trim().toLowerCase()
   const visible = rows.filter((r) => matchesFilter(filter, r.status) && (!q || [r.id, r.plate].some((v) => v.toLowerCase().includes(q))))
-  const selected = rows.find((r) => r.id === selectedId) ?? rows[0]
   const preBookings = reservations.filter((r) => !VOID_RESERVATION.includes(r.status)).length
   const checkedIn = reservations.filter((r) => r.status === 'CheckedIn').length
   const pendingArrival = reservations.filter((r) => isAwaitingArrival(r, now) && arrivesWithinHour(r, now)).length
   const released = reservations.filter((r) => r.status === 'NoShow' || r.status === 'Expired').length
-
-  const reassign = () => {
-    if (!selected || !target) return
-    setMovedBays((moved) => ({ ...moved, [selected.id]: target }))
-    toast.success(`#${selected.id} moved to bay ${target}`, { description: 'Demo only: the gate cameras are updated once the booking API exists.' })
-    setTarget(undefined)
-  }
 
   const exportCsv = () => {
     const quote = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
@@ -204,7 +180,7 @@ function Reservations({ lot }: { lot: ManagedLot }) {
               onClick={() => setFilter(f)}
               className={cn(
                 'rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
-                filter === f ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                filter === f ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
               )}
             >
               {f.label} <span className="font-mono text-xs text-amber-500">({count(f)})</span>
@@ -217,129 +193,66 @@ function Reservations({ lot }: { lot: ManagedLot }) {
         </div>
       </Card>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-        <Card className="overflow-hidden">
-          <Table>
-            <TableHeader>
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              {['Booking ID', 'Vehicle', 'Assigned bay', 'Arrival window', 'Deposit'].map((h) => (
+                <TableHead key={h}>{h}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.map((r) => {
+              const cancelled = VOID_RESERVATION.includes(r.status) || r.status === 'NoShow'
+              return (
+                <TableRow key={r.id} className={cn(cancelled && 'opacity-70')}>
+                  <TableCell className="font-mono font-bold text-indigo-700">#{r.id}</TableCell>
+                  <TableCell>
+                    <span className="rounded bg-well px-1.5 py-0.5 font-mono text-sm font-bold text-amber-500">{r.plate}</span>
+                    <p className="mt-1 text-xs text-slate-700">{r.vehicle}</p>
+                  </TableCell>
+                  <TableCell>
+                    <span className="rounded bg-slate-100 px-2 py-1 font-mono text-sm font-bold text-indigo-700">Bay {r.bay}</span>
+                    <p className="mt-1 text-xs text-slate-700">{r.floor}</p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="font-mono text-sm text-slate-950">{formatClock(r.from)} – {formatClock(r.end)}</p>
+                    <p className="text-xs">{statusCell(r, now)}</p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="font-mono text-sm font-bold text-slate-950">{vnd(r.deposit)}</p>
+                    <p className="text-xs text-slate-600">{r.depositNote}</p>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+            {reservationsQuery.isPending && (
               <TableRow className="hover:bg-transparent">
-                {['Booking ID', 'Vehicle', 'Assigned bay', 'Arrival window', 'Deposit'].map((h) => (
-                  <TableHead key={h}>{h}</TableHead>
-                ))}
+                <TableCell colSpan={5}><Skeleton className="h-24 rounded-xl" /></TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visible.map((r) => {
-                const isSelected = r.id === selected?.id
-                const cancelled = VOID_RESERVATION.includes(r.status) || r.status === 'NoShow'
-                return (
-                  <TableRow
-                    key={r.id}
-                    tabIndex={0}
-                    aria-selected={isSelected}
-                    onClick={() => setSelectedId(r.id)}
-                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setSelectedId(r.id))}
-                    className={cn('cursor-pointer', isSelected && 'bg-slate-100 hover:bg-slate-100', cancelled && 'opacity-70')}
-                  >
-                    <TableCell className="font-mono font-bold text-indigo-700">#{r.id}</TableCell>
-                    <TableCell>
-                      <span className="rounded bg-[#060f16] px-1.5 py-0.5 font-mono text-sm font-bold text-amber-500">{r.plate}</span>
-                      <p className="mt-1 text-xs text-slate-700">{r.vehicle}</p>
-                    </TableCell>
-                    <TableCell>
-                      <span className="rounded bg-slate-100 px-2 py-1 font-mono text-sm font-bold text-indigo-700">Bay {r.bay}</span>
-                      <p className="mt-1 text-xs text-slate-700">{r.floor}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-mono text-sm text-slate-950">{formatClock(r.from)} – {formatClock(r.end)}</p>
-                      <p className="text-xs">{statusCell(r, now)}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-mono text-sm font-bold text-slate-950">{vnd(r.deposit)}</p>
-                      <p className="text-xs text-slate-600">{r.depositNote}</p>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-              {reservationsQuery.isPending && (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={5}><Skeleton className="h-24 rounded-xl" /></TableCell>
-                </TableRow>
-              )}
-              {reservationsQuery.isError && (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={5} className="py-10 text-center text-rose-700">Reservations could not be loaded.</TableCell>
-                </TableRow>
-              )}
-              {reservationsQuery.isSuccess && visible.length === 0 && (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={5} className="py-10 text-center text-slate-600">No bookings match this filter.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          <p className="border-t border-slate-200 px-4 py-3 text-sm text-slate-700">
-            Showing <strong className="text-slate-950">{visible.length}</strong> of <strong className="text-slate-950">{rows.length}</strong> bookings
-          </p>
-        </Card>
-
-        <div className="space-y-6">
-          <Card className="p-5">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-                <ArrowLeftRight className="size-5 text-amber-500" aria-hidden /> Bay Reassignment
-              </h2>
-              <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-wider text-amber-700 uppercase">Node ops</span>
-            </div>
-            <p className="mt-2 text-sm text-slate-700">
-              If a reserved bay is blocked or taken by another vehicle, move the booking to a vacant bay in one click.
-            </p>
-
-            {selected ? (
-              <>
-                <dl className="mt-4 space-y-2 rounded-xl bg-slate-50 p-4 text-sm">
-                  <div className="flex justify-between gap-3"><dt className="text-slate-700">Active selection</dt><dd className="font-mono font-bold text-indigo-700">#{selected.id}</dd></div>
-                  <div className="flex justify-between gap-3"><dt className="text-slate-700">Vehicle plate</dt><dd className="font-mono font-bold text-amber-500">{selected.plate}</dd></div>
-                  <div className="flex justify-between gap-3"><dt className="text-slate-700">Current bay</dt><dd className="font-mono font-bold text-slate-950">Bay {selected.bay}</dd></div>
-                </dl>
-                <p className="mt-4 text-xs font-bold tracking-wider text-slate-800 uppercase">Select an alternative bay</p>
-                <div className="mt-2 space-y-2" role="radiogroup" aria-label="Alternative bay">
-                  {vacant.slice(0, 4).map((b) => (
-                    <label key={b.code} className={cn('flex cursor-pointer items-center gap-3 rounded-lg p-3 ring-1', target === b.code ? 'bg-indigo-50 ring-indigo-300' : 'bg-slate-50 ring-slate-200 hover:bg-slate-100')}>
-                      <input type="radio" name="bay" value={b.code} checked={target === b.code} onChange={() => setTarget(b.code)} className="accent-indigo-600" />
-                      <span className="flex-1">
-                        <span className="font-mono font-bold text-slate-950">Bay {b.code}</span>
-                        <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">Vacant</span>
-                        <span className="block text-xs text-slate-600">{b.zone}</span>
-                      </span>
-                    </label>
-                  ))}
-                  {vacant.length === 0 && <p className="text-sm text-slate-600">No vacant bay right now.</p>}
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Button variant="gold" className="flex-1" disabled={!target || selected.status !== 'Confirmed'} onClick={reassign}>
-                    Confirm reassignment
-                  </Button>
-                  <Button variant="outline" onClick={() => setTarget(undefined)} disabled={!target}>
-                    Clear
-                  </Button>
-                </div>
-                {selected.status !== 'Confirmed' && <p className="mt-2 text-xs text-slate-600">Only upcoming bookings can be moved.</p>}
-                <p className="mt-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
-                  <ShieldCheck className="size-4 shrink-0" aria-hidden />
-                  A goodwill discount is applied automatically when a booking is moved because its bay was obstructed.
-                </p>
-              </>
-            ) : (
-              <p className="mt-4 text-sm text-slate-600">Select a booking to reassign its bay.</p>
             )}
-          </Card>
-        </div>
-      </div>
+            {reservationsQuery.isError && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={5} className="py-10 text-center text-rose-700">Reservations could not be loaded.</TableCell>
+              </TableRow>
+            )}
+            {reservationsQuery.isSuccess && visible.length === 0 && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={5} className="py-10 text-center text-slate-600">No bookings match this filter.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <p className="border-t border-slate-200 px-4 py-3 text-sm text-slate-700">
+          Showing <strong className="text-slate-950">{visible.length}</strong> of <strong className="text-slate-950">{rows.length}</strong> bookings
+        </p>
+      </Card>
     </div>
   )
 }
 
-/** /management/reservations. Today's bookings of the lot; a bay reassignment is not saved until its API exists. */
+/** /management/reservations. Today's bookings of the lot. A taken booked bay is handled by Staff in Exceptions & Alerts. */
 export default function ManagerReservationsPage() {
   return <WithManagerLot>{(lot) => <Reservations lot={lot} />}</WithManagerLot>
 }
