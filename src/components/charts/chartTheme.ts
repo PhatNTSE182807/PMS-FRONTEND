@@ -9,9 +9,9 @@
  * Status colours (emerald/amber/rose) are reserved for occupancy states.
  */
 export const SERIES_COLORS = {
-  blue: 'var(--color-indigo-400)',
-  orange: 'var(--color-amber-400)',
-  aqua: 'var(--color-sky-400)',
+  blue: 'var(--color-chart-1)',
+  orange: 'var(--color-chart-2)',
+  aqua: 'var(--color-chart-3)',
 } as const
 
 export const CHART_TEXT = {

@@ -764,29 +764,29 @@
 }
 
 /* =========================================================
-   Light mode, on when <html data-theme="light"> (see lib/theme.ts). Colors of the Stitch "Architectural
-   Warm" designs: a cream page, ivory panels, beige hairlines, near-black ink and a bronze accent.
+   Light mode, on when <html data-theme="light"> (see lib/theme.ts): off-white and black. An off-white page,
+   white panels, light grey hairlines and near-black ink and buttons; only the status colors add a hue.
 ========================================================= */
 html[data-theme='light'] .auth-shell {
-  --auth-surface: #e3d9ca;
-  --auth-surface-lowest: #f3eee5;
-  --auth-container: #efe8dc;
-  --auth-container-high: #e6ddcf;
-  --auth-variant: #ddd2c1;
-  --auth-on-surface: #231f1a;
-  --auth-on-variant: #4d453c;
-  --auth-primary: #76593b;
-  --auth-primary-fixed: #5e462e;
-  --auth-gold: #231f1a;
-  --auth-gold-fixed: #3a332b;
-  --auth-on-gold: #f8f3ea;
+  --auth-surface: #f6f6f3;
+  --auth-surface-lowest: #ffffff;
+  --auth-container: #ffffff;
+  --auth-container-high: #f0f0ed;
+  --auth-variant: #e7e7e3;
+  --auth-on-surface: #111111;
+  --auth-on-variant: #444441;
+  --auth-primary: #111111;
+  --auth-primary-fixed: #333333;
+  --auth-gold: #111111;
+  --auth-gold-fixed: #222222;
+  --auth-on-gold: #ffffff;
   --auth-error: #a3362d;
   --auth-success: #3d6b4a;
 }
 
 html[data-theme='light'] .auth-shell ::selection {
-  background: #cfc2ad;
-  color: #231f1a;
+  background: #e2e2de;
+  color: #111111;
 }
 
 /* The car photo shows as it is: no fade, full opacity. The texts on it are white with a soft shadow */
@@ -799,7 +799,7 @@ html[data-theme='light'] .auth-shell__photo {
 }
 
 html[data-theme='light'] .auth-shell__tagline-text {
-  color: #f5efe6;
+  color: #f2f2f0;
 }
 
 html[data-theme='light'] :is(.auth-shell__tagline-title, .auth-shell__tagline-text, .auth-shell__hero .auth-shell__brand-name) {
@@ -807,22 +807,22 @@ html[data-theme='light'] :is(.auth-shell__tagline-title, .auth-shell__tagline-te
 }
 
 html[data-theme='light'] .auth-shell__hero .auth-shell__brand {
-  color: #f8f3ea;
+  color: #ffffff;
 }
 
 /* The tagline sits on the photo: keep it white, as in dark mode */
 html[data-theme='light'] .auth-shell__input::placeholder,
 html[data-theme='light'] .auth-shell__divider,
 html[data-theme='light'] .auth-shell__demo-label {
-  color: #6f665b;
+  color: #6b6b67;
 }
 
 html[data-theme='light'] .auth-shell__input:focus {
-  border-color: rgba(35, 31, 26, 0.45);
+  border-color: rgba(17, 17, 17, 0.45);
 }
 
 html[data-theme='light'] .auth-shell__check input:focus-visible + .auth-shell__check-box {
-  box-shadow: 0 0 0 2px rgba(35, 31, 26, 0.35);
+  box-shadow: 0 0 0 2px rgba(17, 17, 17, 0.35);
 }
 
 html[data-theme='light'] .auth-shell__submit {
@@ -831,7 +831,7 @@ html[data-theme='light'] .auth-shell__submit {
 
 html[data-theme='light'] .auth-shell__divider::after,
 html[data-theme='light'] .auth-shell__divider::before {
-  background: #cfc2ad;
+  background: #e2e2de;
 }
 
 html[data-theme='light'] .auth-shell__alert--error {
@@ -841,8 +841,8 @@ html[data-theme='light'] .auth-shell__alert--error {
 }
 
 html[data-theme='light'] .auth-shell__alert--info {
-  background: #e6ddcf;
-  border-color: #cfc2ad;
+  background: #f0f0ed;
+  border-color: #e2e2de;
 }
 
 html[data-theme='light'] .auth-shell__alert--success {
@@ -851,21 +851,21 @@ html[data-theme='light'] .auth-shell__alert--success {
 }
 
 html[data-theme='light'] .auth-shell__demo {
-  border-top-color: #bcae97;
+  border-top-color: #cbcbc6;
 }
 
 html[data-theme='light'] .auth-shell__demo button {
-  border-color: #bcae97;
+  border-color: #cbcbc6;
 }
 
 html[data-theme='light'] .auth-shell__backdrop {
-  background: rgba(35, 31, 26, 0.45);
+  background: rgba(17, 17, 17, 0.45);
 }
 
 html[data-theme='light'] .auth-shell__dialog {
-  border-color: #cfc2ad;
-  background: #f3eee5;
-  box-shadow: 0 24px 48px rgba(35, 31, 26, 0.2);
+  border-color: #e2e2de;
+  background: #ffffff;
+  box-shadow: 0 24px 48px rgba(17, 17, 17, 0.2);
 }
 
 html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit, .auth-shell__alert, .auth-shell__dialog,
@@ -909,7 +909,7 @@ html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit
 }
 
 html[data-theme='light'] .pms-app:has(.auth-shell) {
-  background: #e3d9ca;
+  background: #f6f6f3;
 }
 
 .pms-app:has(.auth-shell) .cyber-glow {

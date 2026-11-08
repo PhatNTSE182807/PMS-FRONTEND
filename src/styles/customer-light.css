@@ -1,35 +1,35 @@
 /* =========================================================
    CUSTOMER AREA — light mode, on when <html data-theme="light"> (see lib/theme.ts and the sun/moon button
-   of the top bar); dark stays the default. It only swaps the .cx tokens of customer.css, with the colors
-   of the Stitch "Architectural Warm" designs: a cream page, ivory panels, beige hairlines, near-black ink
-   and a bronze accent; square corners.
+   of the top bar); dark stays the default. It only swaps the .cx tokens of customer.css: off-white and
+   black (an off-white page, white panels, light grey hairlines, near-black ink and buttons; only the
+   status colors add a hue); square corners.
 ========================================================= */
 
 html[data-theme='light'] .cx {
-  --cx-surface: #ebe4d8;
-  --cx-lowest: #f3eee5;
-  --cx-low: #e6ddcf;
-  --cx-container: #f3eee5;
-  --cx-container-high: #e6ddcf;
-  --cx-variant: #ddd2c1;
-  --cx-outline: #cfc2ad;
-  --cx-on-surface: #231f1a;
-  --cx-on-variant: #4d453c;
-  --cx-muted: #6f665b;
-  --cx-primary: #231f1a;
-  --cx-primary-fixed: #231f1a;
-  --cx-primary-container: #ddd2c1;
-  --cx-on-primary: #f8f3ea;
-  --cx-gold: #76593b;
-  --cx-gold-fixed: #5e462e;
-  --cx-on-gold: #f8f3ea;
+  --cx-surface: #f6f6f3;
+  --cx-lowest: #ffffff;
+  --cx-low: #f0f0ed;
+  --cx-container: #ffffff;
+  --cx-container-high: #f0f0ed;
+  --cx-variant: #e7e7e3;
+  --cx-outline: #e2e2de;
+  --cx-on-surface: #111111;
+  --cx-on-variant: #444441;
+  --cx-muted: #6b6b67;
+  --cx-primary: #111111;
+  --cx-primary-fixed: #111111;
+  --cx-primary-container: #e7e7e3;
+  --cx-on-primary: #ffffff;
+  --cx-gold: #111111;
+  --cx-gold-fixed: #333333;
+  --cx-on-gold: #ffffff;
   --cx-emerald: #3d6b4a;
   --cx-amber: #8a5a14;
   --cx-crimson: #a3362d;
   --cx-error: #a3362d;
   --cx-success: #3d6b4a;
   --cx-refund: #0b6185;
-  --cx-surface-hover: rgba(35, 31, 26, 0.05);
+  --cx-surface-hover: rgba(17, 17, 17, 0.05);
 }
 
 html[data-theme='light'] .cx .cx-nav {
