@@ -19,6 +19,8 @@ export interface NotificationModel {
     | 'BookingCancelledByLot'
     | 'DepositRefunded'
     | 'CompensationPaid'
+    /** Manager bell: a Staff closed their cash drawer (data: closedAt, countedTotal, expectedTotal, difference, reason). */
+    | 'CashDrawerClosed'
   title: string
   message: string
   refType: string | null

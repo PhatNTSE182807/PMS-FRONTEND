@@ -3,6 +3,7 @@ import { Bell, CheckCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDeleteNotification, useMarkAllRead, useMarkRead, useNotifications, useTimeAgo } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils'
+import type { NotificationModel } from '@/api/notification.service'
 
 /** Dot colour per notification type: a taken bay needs action, the rest are done. */
 const TONE: Record<string, string> = {
@@ -10,13 +11,19 @@ const TONE: Record<string, string> = {
   BookedBayReassigned: 'bg-indigo-500',
   CompensationPaid: 'bg-emerald-500',
   DepositRefunded: 'bg-emerald-500',
+  CashDrawerClosed: 'bg-amber-500',
 }
 
+/** A cash drawer closed off the expected cash stands out from one that balances. */
+const toneOf = (n: NotificationModel) =>
+  n.type === 'CashDrawerClosed' && Number(n.data?.difference ?? 0) !== 0 ? 'bg-rose-500' : TONE[n.type] ?? 'bg-slate-400'
+
 /**
- * Notification bell of the Staff console (same API and live push as the customer bell): booked bays a walk-in took,
- * bookings moved to another bay, and the compensation sent to customers.
+ * Notification bell of the Staff and Manager consoles (same API and live push as the customer bell).
+ * Staff: booked bays a walk-in took, bookings moved to another bay, and the compensation sent to customers.
+ * Manager: cash drawers their Staff closed, and how each taken booked bay was handled (moved, or compensated).
  */
-export function StaffNotificationBell() {
+export function ConsoleNotificationBell() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { data, isLoading } = useNotifications()
@@ -63,7 +70,7 @@ export function StaffNotificationBell() {
         <div
           role="region"
           aria-label="Notifications"
-          className="absolute right-0 z-30 mt-2 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
+          className="absolute right-0 z-30 mt-2 w-[min(24rem,calc(100vw-2rem))] overflow-hidden max-sm:fixed max-sm:inset-x-4 max-sm:top-16 max-sm:w-auto rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
         >
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <p className="font-semibold text-slate-950">Notifications</p>
@@ -85,7 +92,7 @@ export function StaffNotificationBell() {
             )}
             {items.map((n) => (
               <li key={n.id} className={cn('group flex gap-3 px-4 py-3', !n.isRead && 'bg-slate-50')}>
-                <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', TONE[n.type] ?? 'bg-slate-400', n.isRead && 'opacity-40')} aria-hidden />
+                <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', toneOf(n), n.isRead && 'opacity-40')} aria-hidden />
                 <button type="button" className="min-w-0 flex-1 text-left" onClick={() => !n.isRead && markRead.mutate(n.id)}>
                   <p className={cn('text-sm text-slate-950', !n.isRead && 'font-semibold')}>{n.title}</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{n.message}</p>

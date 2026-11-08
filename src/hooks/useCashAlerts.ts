@@ -7,11 +7,13 @@ import { queryKeys } from '@/api/queryKeys'
 /** Real-time cash drawer alerts of a lot: a drawer was closed, cash was requested or decided. */
 export const isCashAlert = (code: string) => code.startsWith('CASH_')
 
+const NO_CODES: readonly string[] = []
+
 /**
  * Shows the lot's cash drawer alerts on every page of the Staff and Manager consoles (not only the gate
  * screens) and refreshes the drawers they are about.
  */
-export function useCashAlerts(lotId: string | undefined) {
+export function useCashAlerts(lotId: string | undefined, quietCodes: readonly string[] = NO_CODES) {
   const queryClient = useQueryClient()
   const live = parkingOpsRealtime.isAvailable('gate')
 
@@ -20,8 +22,10 @@ export function useCashAlerts(lotId: string | undefined) {
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type !== 'OpsAlert' || !isCashAlert(event.code)) return
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
+      // Alerts the caller already shows another way (the Manager's bell) only refresh the drawers
+      if (quietCodes.includes(event.code)) return
       // The id stops a second mounted listener from showing the same alert twice
       toast.info(event.message, { id: `${event.code}-${event.message}`, duration: 10_000 })
     }, lotId)
-  }, [live, lotId, queryClient])
+  }, [live, lotId, queryClient, quietCodes])
 }

@@ -2,7 +2,7 @@ import { Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { LogOut } from 'lucide-react'
-import { StaffNotificationBell } from '@/components/features/staff/StaffNotificationBell'
+import { ConsoleNotificationBell } from '@/components/features/notifications/ConsoleNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { isTypingTarget } from '@/components/features/staff/staffKeys'
@@ -131,7 +131,7 @@ export function StaffLayout() {
             <Button asChild variant="ghost" size="icon">
               <ThemeToggle />
             </Button>
-            <StaffNotificationBell />
+            <ConsoleNotificationBell />
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
                 <p className="text-sm font-semibold text-slate-950">
