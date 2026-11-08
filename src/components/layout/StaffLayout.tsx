@@ -44,6 +44,11 @@ export function StaffLayout() {
   const { lots, lot, setLotId } = useStaffLot()
   useCashAlerts(lot?.id)
   const { pathname } = useLocation()
+
+  // On a phone the tabs scroll sideways: bring the open one into view
+  useEffect(() => {
+    document.querySelector('[aria-label="Staff navigation"] a[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [pathname])
   const navigate = useNavigate()
   const handleLogout = useSignOut()
   const openSessions = useOpenSessions(lot?.id)

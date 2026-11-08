@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { CreditCard, LogOut, Shield } from 'lucide-react'
+import { CreditCard, LogOut, Menu, Shield, X } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { LOGO_SRC } from '@/components/ParkingLogo'
@@ -34,6 +34,13 @@ export function CustomerShell() {
   const wallet = useWallet()
   const { balance } = wallet
   const [isWalletOpen, setIsWalletOpen] = useState(false)
+  // Phones and tablets: the links fold into a menu opened from the top bar
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [menuPath, setMenuPath] = useState(pathname + hash)
+  if (menuPath !== pathname + hash) {
+    setMenuPath(pathname + hash)
+    setIsMenuOpen(false)
+  }
 
   // React Router does not follow #anchors: scroll to the section, or to the top on a new page.
   useEffect(() => {
@@ -67,7 +74,7 @@ export function CustomerShell() {
             </span>
           </Link>
 
-          <nav className="cx-nav__links" aria-label="Customer area">
+          <nav id="cx-nav-links" className={`cx-nav__links ${isMenuOpen ? 'cx-nav__links--open' : ''}`} aria-label="Customer area">
             {LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -77,6 +84,20 @@ export function CustomerShell() {
                 {link.label}
               </NavLink>
             ))}
+            {/* The wallet balance and Logout of the bar are hidden on small screens: the menu carries them */}
+            <button
+              type="button"
+              className="cx-nav__link cx-nav__mobile-only"
+              onClick={() => {
+                setIsMenuOpen(false)
+                setIsWalletOpen(true)
+              }}
+            >
+              <CreditCard aria-hidden /> Wallet · {formatVndBalance(balance)}
+            </button>
+            <button type="button" className="cx-nav__link cx-nav__mobile-only" onClick={handleLogout}>
+              <LogOut aria-hidden /> Logout
+            </button>
           </nav>
 
           <div className="cx-nav__actions">
@@ -101,8 +122,18 @@ export function CustomerShell() {
                 </button>
               </div>
             </div>
-            <button type="button" className="cx-btn cx-btn--ghost" onClick={handleLogout}>
+            <button type="button" className="cx-btn cx-btn--ghost cx-nav__logout" onClick={handleLogout}>
               <LogOut aria-hidden /> Logout
+            </button>
+            <button
+              type="button"
+              className="cx-btn cx-btn--ghost cx-nav__menu-btn"
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMenuOpen}
+              aria-controls="cx-nav-links"
+              onClick={() => setIsMenuOpen((open) => !open)}
+            >
+              {isMenuOpen ? <X aria-hidden /> : <Menu aria-hidden />}
             </button>
           </div>
         </div>

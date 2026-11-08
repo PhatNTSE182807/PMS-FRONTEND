@@ -614,7 +614,8 @@ export default function StaffCheckoutPage() {
         {history.data && history.data.items.length === 0 && <p className="mt-3 text-sm text-slate-700">No payments yet.</p>}
         {history.data && history.data.items.length > 0 && (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            {/* min-w: on a phone the table scrolls sideways instead of squeezing the columns into each other */}
+            <table className="w-full min-w-[52rem] text-left text-sm [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-xs font-bold tracking-wider text-slate-700 uppercase">
                 <tr><th className="py-2">Paid at</th><th>Plate</th><th>Session</th><th>Method</th><th className="text-right">Amount</th><th className="pl-6">Collected by</th></tr>
               </thead>

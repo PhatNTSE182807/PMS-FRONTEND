@@ -30,22 +30,23 @@ function ManagerLotSelect() {
   const { lots, lot, setLotId } = useManagerLot()
   if (!lots.data?.length) {
     return (
-      <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
-        <span className="text-xs font-semibold text-slate-700 uppercase">Facility</span>
-        <span className="text-sm font-semibold text-slate-500 italic">No facility assigned</span>
+      <div className="flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
+        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">Facility</span>
+        <span className="truncate text-sm font-semibold text-slate-500 italic">No facility assigned</span>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
-        <span className="text-xs font-semibold text-slate-700 uppercase">Facility</span>
+    // On a phone the chip shrinks to the lot name (truncated) so the sign-out button stays on screen
+    <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
+        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">Facility</span>
         {lots.data.length > 1 ? (
           <select
             value={lot?.id}
             onChange={(e) => setLotId(e.target.value)}
-            className="max-w-56 cursor-pointer truncate bg-transparent text-sm font-semibold text-slate-950 focus-visible:outline-none sm:max-w-64"
+            className="w-full min-w-0 max-w-56 cursor-pointer truncate bg-transparent text-sm font-semibold text-slate-950 focus-visible:outline-none sm:max-w-64"
           >
             {lots.data.map((l) => (
               <option key={l.id} value={l.id} className="bg-white">
@@ -54,7 +55,7 @@ function ManagerLotSelect() {
             ))}
           </select>
         ) : (
-          <span className="text-sm font-semibold text-slate-950">
+          <span className="truncate text-sm font-semibold text-slate-950">
             {lot ? `${lot.name} (#${lot.code})` : '—'}
           </span>
         )}
@@ -181,7 +182,11 @@ export function AdminLayout() {
           {user?.role === 'MANAGER' && <ManagerLotSelect />}
           {user?.role === 'MANAGER' && <ManagerCashAlerts />}
 
-          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
+          {/* A Manager's phone header has room for the lot chip only; the page title is on the page */}
+          <nav
+            aria-label="Breadcrumb"
+            className={cn('min-w-0 items-center gap-1.5 text-sm', user?.role === 'MANAGER' ? 'hidden md:flex' : 'flex')}
+          >
             <span className="hidden text-slate-500 sm:inline">Administration</span>
             <ChevronRight className="hidden size-4 text-slate-400 sm:inline" aria-hidden />
             <span className="truncate font-medium text-slate-900">{current?.label ?? 'Overview'}</span>
@@ -191,11 +196,11 @@ export function AdminLayout() {
             <Button asChild variant="ghost" size="icon">
               <ThemeToggle />
             </Button>
-            <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
+            <div className="flex items-center gap-2.5 sm:border-l sm:border-slate-200 sm:pl-3">
               <img
                 src={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
                 alt=""
-                className="size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300"
+                className="hidden size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300 sm:block"
               />
               <div className="hidden leading-tight md:block">
                 <p className="text-sm font-semibold text-slate-950">
