@@ -27,8 +27,10 @@
  * re-themes all of them. The scales are inverted for the dark surface: `white` is the card
  * surface, slate-50 the faintest tint and slate-950 the brightest text.
  * indigo -> teal (primary), amber/violet -> gold, sky -> steel, emerald/rose -> status.
+ * `.admin-dark-scope` keeps this palette in light mode too, for overlays drawn on a dark picture (gate cameras).
  */
-.admin-root {
+.admin-root,
+html[data-theme='light'] .admin-root .admin-dark-scope {
   --color-white: #182127;
   --color-black: #000000;
   --color-slate-50: #141d23;

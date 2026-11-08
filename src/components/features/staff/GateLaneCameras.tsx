@@ -174,9 +174,12 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
     downloadFrame(frame.image, `${ids[view].toLowerCase()}-${vehicle?.plate.replace(/[^A-Z0-9]/gi, '') ?? 'empty'}-${stamp}.png`)
   }
 
-  /** One camera of the lane; both show the same pass, the rear one reads the plate. */
+  /**
+   * One camera of the lane; both show the same pass, the rear one reads the plate. The picture is always dark,
+   * so its labels keep the dark palette in light mode too (admin-dark-scope).
+   */
   const tile = (view: LaneView) => (
-    <figure className="relative aspect-video overflow-hidden rounded-lg bg-well ring-1 ring-slate-200">
+    <figure className="admin-dark-scope relative aspect-video overflow-hidden rounded-lg bg-well ring-1 ring-slate-200">
       {view === 'rear' ? (
         <GateLaneScene ref={scene} direction={direction} view="rear" vehicle={vehicle} open={open} onPhase={setPhase} onDone={next} className="absolute inset-0" />
       ) : (
