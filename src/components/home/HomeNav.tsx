@@ -38,10 +38,7 @@ export function HomeNav({ isOnline }: HomeNavProps) {
         <a href="#top" className="home-nav__brand" onClick={closeMenu}>
           <img src={LOGO_SRC} alt="" className="home-nav__logo" />
           <span className="home-nav__brand-mark">XXIV</span>
-          <span className="home-nav__brand-text">
-            <span className="home-nav__brand-name">PARKING</span>
-            <span className="home-nav__brand-sub">Sovereign Telemetry</span>
-          </span>
+          <span className="home-nav__brand-name">PARKING</span>
         </a>
 
         <nav className="home-nav__links" aria-label="Homepage sections">
