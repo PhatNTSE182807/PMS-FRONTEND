@@ -10,7 +10,7 @@ import {
   type LaneVehicle,
   type LaneView,
 } from '@/components/features/staff/GateLaneScene'
-import { useAnprStatus, type AnprStatus } from '@/hooks/useAnpr'
+import { ANPR_CONFIDENCE_THRESHOLD, useAnprStatus, type AnprStatus } from '@/hooks/useAnpr'
 import { useGateLaneQueue } from '@/hooks/useGateLaneQueue'
 import { gateLaneSignals, useActiveLane, useLaneSignal } from '@/lib/gateLaneSignals'
 import { useNow } from '@/hooks/useNow'
@@ -19,8 +19,6 @@ import type { ParkingSessionDTO } from '@/types/operations.dto'
 
 const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
-/** Below this the gate asks the Staff to confirm the plate (backend Parking:Gate:AnprConfidenceThreshold). */
-const ANPR_CONFIDENCE_THRESHOLD = 0.85
 /** Frames go to the plate reader at the camera's resolution, the size it was trained on. */
 const CAMERA_FRAME = { width: 1280, height: 720 }
 /** Let the vehicle settle at the reading line before the frame is taken. */
@@ -163,6 +161,11 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
     // Runs when the vehicle reaches the camera; `read` is only checked to read each vehicle once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, anpr, vehicle])
+
+  // The lane panel shows what this camera read and fills the Staff's plate field with it (a replay is not a live read)
+  useEffect(() => {
+    if (read && !replay) gateLaneSignals.setRead(direction, read)
+  }, [read, replay, direction])
 
   const snapshot = async (view: LaneView) => {
     const frame = await (view === 'rear' ? scene : frontScene).current?.captureFrame()
