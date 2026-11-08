@@ -106,7 +106,7 @@ html[data-theme='light'] .cx .cx-notif__action-btn:hover {
   background: var(--cx-surface-hover);
 }
 
-html[data-theme='light'] .cx .cx-notif {
+html[data-theme='light'] .cx .cx-notif__dropdown {
   box-shadow: 0 20px 25px -5px rgba(20, 30, 40, 0.18), 0 10px 10px -5px rgba(20, 30, 40, 0.1);
 }
 
@@ -128,7 +128,19 @@ html[data-theme='light'] .cx .cx-wallet-tx-card__balance-flow {
   color: var(--cx-muted);
 }
 
-/* Sun/moon button of the top bar, same size as the notification bell */
+/* Sun/moon button and notification bell of the top bar: plain icons, no box around them */
+.cx .cx-theme-toggle,
+.cx .cx-notif__trigger {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cx .cx-theme-toggle:hover,
+.cx .cx-notif__trigger:hover {
+  background: var(--cx-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
 .cx-theme-toggle {
   width: 2.5rem;
   height: 2.5rem;
