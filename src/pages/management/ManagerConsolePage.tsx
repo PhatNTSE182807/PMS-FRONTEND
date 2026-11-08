@@ -188,7 +188,7 @@ function Console({ lot }: { lot: ManagedLot }) {
 
       <LiveLotModel lots={assigned.data ?? [lot]} lotId={lot.id} onLotChange={setLotId} />
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

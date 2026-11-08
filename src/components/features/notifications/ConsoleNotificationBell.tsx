@@ -11,6 +11,7 @@ const TONE: Record<string, string> = {
   BookedBayReassigned: 'bg-indigo-500',
   CompensationPaid: 'bg-emerald-500',
   DepositRefunded: 'bg-emerald-500',
+  DepartureOverdue: 'bg-amber-500',
   CashDrawerClosed: 'bg-amber-500',
 }
 
@@ -20,7 +21,8 @@ const toneOf = (n: NotificationModel) =>
 
 /**
  * Notification bell of the Staff and Manager consoles (same API and live push as the customer bell).
- * Staff: booked bays a walk-in took, bookings moved to another bay, and the compensation sent to customers.
+ * Staff: booked bays a walk-in took, bookings moved to another bay, the compensation sent to customers, and booked
+ * vehicles that stayed past their time.
  * Manager: cash drawers their Staff closed, and how each taken booked bay was handled (moved, or compensated).
  */
 export function ConsoleNotificationBell() {

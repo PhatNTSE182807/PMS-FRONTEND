@@ -172,7 +172,7 @@ export function LostTicketPapersDialog({ vehicle, onClose }: { vehicle: LostTick
               <Input id="lost-papers-reason" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
             </div>
             {error && <FieldError message={error} />}
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <Button variant="ghost" onClick={onClose} disabled={upload.isPending}>
                 Cancel
               </Button>

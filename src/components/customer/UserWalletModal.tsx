@@ -458,7 +458,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       <input
                         type="text"
                         className="cx-wallet-input-container"
-                        style={{ flex: 1, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
+                        style={{ flex: 1, minWidth: 0, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
                         placeholder="Bank Name (e.g. Techcombank)"
@@ -466,7 +466,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       <input
                         type="text"
                         className="cx-wallet-input-container"
-                        style={{ flex: 1.5, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
+                        style={{ flex: 1.5, minWidth: 0, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
                         value={bankAccount}
                         onChange={(e) => setBankAccount(e.target.value)}
                         placeholder="Account Number"
