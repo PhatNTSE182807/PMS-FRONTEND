@@ -1345,26 +1345,26 @@
 }
 
 /* =========================================================
-   Light mode ("Concrete"), on when <html data-theme="light"> (see lib/theme.ts): a warm concrete grey
-   page, off-white panels, near-black ink, no color accent except the status colors, square corners.
+   Light mode, on when <html data-theme="light"> (see lib/theme.ts). Colors of the Stitch "Architectural
+   Warm" designs: a cream page, ivory panels, beige hairlines, near-black ink and a bronze accent.
 ========================================================= */
 html[data-theme='light'] .home {
-  --home-surface: #d6d5d1;
-  --home-lowest: #f5f4f1;
-  --home-low: #cfcdc8;
-  --home-container: #ecebe7;
-  --home-container-high: #e1e0dc;
-  --home-variant: #c4c2bd;
-  --home-outline: rgba(30, 30, 28, 0.18);
-  --home-on-surface: #1c1c1a;
-  --home-on-variant: #464541;
-  --home-primary: #1c1c1a;
-  --home-primary-fixed: #1c1c1a;
-  --home-primary-container: #dcdad5;
-  --home-on-primary: #f5f4f1;
-  --home-gold: #1c1c1a;
-  --home-gold-fixed: #1c1c1a;
-  --home-on-gold: #f5f4f1;
+  --home-surface: #ebe4d8;
+  --home-lowest: #f3eee5;
+  --home-low: #e6ddcf;
+  --home-container: #f3eee5;
+  --home-container-high: #e6ddcf;
+  --home-variant: #ddd2c1;
+  --home-outline: #cfc2ad;
+  --home-on-surface: #231f1a;
+  --home-on-variant: #4d453c;
+  --home-primary: #231f1a;
+  --home-primary-fixed: #231f1a;
+  --home-primary-container: #ddd2c1;
+  --home-on-primary: #f8f3ea;
+  --home-gold: #76593b;
+  --home-gold-fixed: #5e462e;
+  --home-on-gold: #f8f3ea;
   --home-emerald: #3d6b4a;
   --home-amber: #8a5a14;
   --home-crimson: #a3362d;
@@ -1377,7 +1377,7 @@ html[data-theme='light'] .home ::selection {
 html[data-theme='light'] .home-pill,
 html[data-theme='light'] .home-hud__stat,
 html[data-theme='light'] .home-hud__route {
-  background: color-mix(in srgb, var(--home-lowest) 70%, transparent);
+  background: color-mix(in srgb, var(--home-lowest) 55%, transparent);
 }
 
 html[data-theme='light'] .home-btn--teal {
@@ -1385,7 +1385,7 @@ html[data-theme='light'] .home-btn--teal {
 }
 
 html[data-theme='light'] .home-btn--teal:hover {
-  background: #3a3936;
+  background: #3a332b;
 }
 
 html[data-theme='light'] .home-btn--gold-outline,
@@ -1406,10 +1406,27 @@ html[data-theme='light'] .home-nav__logo {
   filter: none;
 }
 
-/* The hero photo fades into the concrete page instead of the night */
+/* The hero photo keeps its colors (no cream veil): only a dark shade behind the text column on the left and a
+   short fade into the page at the bottom; the text on it turns white, as on the sign-in photo */
 html[data-theme='light'] .home-hero__shade {
-  background: linear-gradient(90deg, rgba(214, 213, 209, 0.95) 0%, rgba(214, 213, 209, 0.78) 45%, rgba(214, 213, 209, 0.3) 100%),
-    linear-gradient(0deg, var(--home-surface) 0%, transparent 35%);
+  background: linear-gradient(90deg, rgba(16, 14, 11, 0.62) 0%, rgba(16, 14, 11, 0.38) 38%, transparent 62%),
+    linear-gradient(0deg, var(--home-surface) 0%, transparent 25%);
+}
+
+html[data-theme='light'] .home-hero {
+  --home-on-surface: #ffffff;
+  --home-on-variant: #f5efe6;
+  --home-primary: #ffffff;
+  --home-gold: #f0d6b4;
+}
+
+html[data-theme='light'] :is(.home-hero__badge, .home-hero__title, .home-hero__lead, .home-hero__features) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme='light'] .home-hero .home-btn--gold-outline {
+  border-color: rgba(232, 203, 168, 0.7);
+  background: rgba(20, 18, 15, 0.35);
 }
 
 html[data-theme='light'] .home-hero__glow--teal,
@@ -1419,8 +1436,8 @@ html[data-theme='light'] .home-hero__glow--gold {
 
 html[data-theme='light'] .home-hud {
   border-color: var(--home-outline);
-  background: color-mix(in srgb, var(--home-lowest) 85%, transparent);
-  box-shadow: 0 24px 48px rgba(28, 28, 26, 0.12);
+  background: color-mix(in srgb, var(--home-lowest) 70%, transparent);
+  box-shadow: 0 24px 48px rgba(35, 31, 26, 0.12);
 }
 
 html[data-theme='light'] .home-hud__live,
@@ -1432,7 +1449,7 @@ html[data-theme='light'] .home-capability--gold:hover {
 html[data-theme='light'] .home-showcase__tag,
 html[data-theme='light'] .home-showcase__chip,
 html[data-theme='light'] .home-cta__badge {
-  background: color-mix(in srgb, var(--home-lowest) 88%, transparent);
+  background: color-mix(in srgb, var(--home-lowest) 72%, transparent);
 }
 
 html[data-theme='light'] .home-cta {
