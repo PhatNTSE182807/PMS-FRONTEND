@@ -184,7 +184,7 @@ export default function CustomerAccountsPage() {
         </Button>
       </Card>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Card className="overflow-hidden">
           {customers.isError ? (
             <ErrorState message={getErrorMessage(customers.error)} onRetry={() => customers.refetch()} />

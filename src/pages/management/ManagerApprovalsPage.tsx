@@ -126,7 +126,7 @@ function CashTopUpCard({ request }: { request: CashTopUpDTO }) {
       {rejecting ? (
         <div className="mt-3 space-y-2">
           <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Reason for the Staff (required)" aria-label="Rejection reason" />
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Button size="sm" variant="outline" onClick={() => setRejecting(false)}>Back</Button>
             <Button size="sm" variant="destructive" disabled={!note.trim() || decide.isPending} onClick={() => decide.mutate({ id: request.id, approve: false, note: note.trim() })}>
               <Ban /> Reject request

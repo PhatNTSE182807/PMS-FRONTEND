@@ -915,3 +915,9 @@ html[data-theme='light'] .pms-app:has(.auth-shell) {
 .pms-app:has(.auth-shell) .cyber-glow {
   display: none;
 }
+
+/* Light mode: the reset-password dialog is white like its inputs, so the inputs get a hairline */
+html[data-theme='light'] .auth-shell__dialog .auth-shell__input {
+  border-color: #e2e2de;
+  background: var(--auth-container-high);
+}

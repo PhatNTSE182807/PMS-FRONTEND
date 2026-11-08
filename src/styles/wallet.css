@@ -954,3 +954,13 @@
   padding-top: 0.35rem;
 }
 
+/* Phone: amounts on two rows, payment methods one per row, so nothing runs past the dialog */
+@media (max-width: 520px) {
+  .cx-wallet-presets {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cx-wallet-methods {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

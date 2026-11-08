@@ -3438,3 +3438,16 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
   gap: 1.5rem;
 }
+
+/* Phone: the notification list drops below the top bar across the screen instead of hanging off the bell */
+@media (max-width: 640px) {
+  .cx-notif__dropdown {
+    position: fixed;
+    top: 4rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 5rem);
+  }
+}
