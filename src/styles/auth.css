@@ -789,10 +789,21 @@ html[data-theme='light'] .auth-shell ::selection {
   color: #231f1a;
 }
 
-/* The car photo keeps a dark shade, as in the Stitch sign-in screens: only the form column is light, so the
-   screen is not one large bright area */
+/* The car photo shows as it is: no fade, full opacity. The texts on it are white with a soft shadow */
 html[data-theme='light'] .auth-shell__fade {
-  background: linear-gradient(90deg, rgba(20, 20, 18, 0.04) 0%, rgba(20, 20, 18, 0.12) 60%, rgba(20, 20, 18, 0.22) 100%);
+  background: none;
+}
+
+html[data-theme='light'] .auth-shell__photo {
+  opacity: 1;
+}
+
+html[data-theme='light'] .auth-shell__tagline-text {
+  color: #f5efe6;
+}
+
+html[data-theme='light'] :is(.auth-shell__tagline-title, .auth-shell__tagline-text, .auth-shell__hero .auth-shell__brand-name) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 12px rgba(0, 0, 0, 0.55);
 }
 
 html[data-theme='light'] .auth-shell__hero .auth-shell__brand {
@@ -864,7 +875,7 @@ html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit
 
 @media (max-width: 1023px) {
   html[data-theme='light'] .auth-shell__fade {
-    background: linear-gradient(0deg, rgba(20, 20, 18, 0.3) 0%, rgba(20, 20, 18, 0.06) 100%);
+    background: none;
   }
 }
 
