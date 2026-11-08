@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { CreditCard, LogOut, Shield } from 'lucide-react'
+import { CreditCard, LogOut, Moon, Shield, Sun } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { LOGO_SRC } from '@/components/ParkingLogo'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
+import { useCustomerTheme } from '@/hooks/useCustomerTheme'
 import { useProfile } from '@/hooks/useProfile'
 import { useWallet, formatVndBalance } from '@/hooks/useWallet'
 import { initials, resolveMediaUrl } from './customerFormat'
 import { NotificationBell } from './NotificationBell'
 import { UserWalletModal } from './UserWalletModal'
 import '@/styles/customer.css'
+import '@/styles/customer-light.css'
 import '@/styles/wallet.css'
 
 /** Hash links scroll to a dashboard section; the others are pages of their own. */
@@ -53,8 +55,10 @@ export function CustomerShell() {
 
   const handleLogout = useSignOut()
 
+  const { theme, toggle: toggleTheme } = useCustomerTheme()
+
   return (
-    <div className="cx">
+    <div className="cx" data-cx-theme={theme}>
       <header className="cx-nav">
         <div className="cx-container cx-nav__inner">
           <Link to="/" className="cx-nav__brand" aria-label="XXIV Parking home">
@@ -78,6 +82,15 @@ export function CustomerShell() {
           </nav>
 
           <div className="cx-nav__actions">
+            <button
+              type="button"
+              className="cx-btn cx-btn--ghost cx-theme-toggle"
+              onClick={toggleTheme}
+              aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {theme === 'light' ? <Moon aria-hidden /> : <Sun aria-hidden />}
+            </button>
             <NotificationBell />
             <div className="cx-nav__user-block">
               <Link to="/me/profile" className="cx-avatar" title="User Profile">

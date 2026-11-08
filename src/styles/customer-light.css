@@ -1,0 +1,142 @@
+/* =========================================================
+   CUSTOMER AREA — light mode ("Concrete"). The customer picks it with the sun/moon button of the top bar,
+   which sets data-cx-theme="light" on the .cx root; dark stays the default. It only swaps the .cx tokens of
+   customer.css: a warm concrete grey page, off-white panels, near-black ink, no color accent except the
+   status colors, square corners and hairline borders.
+========================================================= */
+
+.cx[data-cx-theme='light'] {
+  --cx-surface: #d6d5d1;
+  --cx-lowest: #f5f4f1;
+  --cx-low: #cfcdc8;
+  --cx-container: #ecebe7;
+  --cx-container-high: #e1e0dc;
+  --cx-variant: #c4c2bd;
+  --cx-outline: rgba(30, 30, 28, 0.18);
+  --cx-on-surface: #1c1c1a;
+  --cx-on-variant: #464541;
+  --cx-muted: #6b6a66;
+  --cx-primary: #1c1c1a;
+  --cx-primary-fixed: #1c1c1a;
+  --cx-primary-container: #dcdad5;
+  --cx-on-primary: #f5f4f1;
+  --cx-gold: #1c1c1a;
+  --cx-gold-fixed: #1c1c1a;
+  --cx-on-gold: #f5f4f1;
+  --cx-emerald: #3d6b4a;
+  --cx-amber: #8a5a14;
+  --cx-crimson: #a3362d;
+  --cx-error: #a3362d;
+  --cx-success: #3d6b4a;
+  --cx-refund: #0b6185;
+  --cx-surface-hover: rgba(28, 28, 26, 0.06);
+}
+
+.cx[data-cx-theme='light'] .cx-nav {
+  background: color-mix(in srgb, var(--cx-surface) 94%, transparent);
+  box-shadow: 0 1px 0 var(--cx-outline);
+}
+
+.cx[data-cx-theme='light'] .cx-welcome {
+  background: var(--cx-lowest);
+}
+
+.cx[data-cx-theme='light'] :is(.cx-card, .cx-welcome, .cx-tabs, .cx-tab, .cx-btn, .cx-chip, .cx-input, .cx-tile,
+    .cx-utility, .cx-vehicle, .cx-mini-vehicle, .cx-metrics, .cx-stats, .cx-kv, .cx-note, .cx-exit-pass, .cx-prepay,
+    .cx-summary, .cx-empty, .cx-zone, .cx-map__board, .cx-map__detail, .cx-map__floor, .cx-map__hint, .cx-map__mine,
+    .cx-session__plate-row, .cx-gate-request, .cx-upcoming__icon, .cx-category, .garage3d) {
+  border-radius: 2px;
+}
+
+/* Cards read as flat panels with a hairline instead of a shadow */
+.cx[data-cx-theme='light'] .cx-card {
+  box-shadow: none;
+  border: 1px solid var(--cx-outline);
+}
+
+/* The few colors customer.css writes out instead of using a token */
+.cx[data-cx-theme='light'] {
+  /* Notification bell popover */
+  --cx-text: var(--cx-on-surface);
+  --cx-text-muted: var(--cx-on-variant);
+  --cx-text-subtle: var(--cx-muted);
+  --cx-panel: var(--cx-container);
+  --cx-bg: var(--cx-surface);
+  --cx-border: var(--cx-outline);
+}
+
+.cx[data-cx-theme='light'] ::selection {
+  color: var(--cx-on-surface);
+}
+
+.cx[data-cx-theme='light'] .cx-nav {
+  background: color-mix(in srgb, var(--cx-lowest) 92%, transparent);
+  box-shadow: 0 1px 0 var(--cx-outline);
+}
+
+.cx[data-cx-theme='light'] .cx-welcome {
+  background: linear-gradient(110deg, color-mix(in srgb, var(--cx-gold) 8%, transparent) 0%, var(--cx-container) 40%,
+      color-mix(in srgb, var(--cx-primary) 12%, var(--cx-container)) 100%);
+}
+
+.cx[data-cx-theme='light'] .cx-chip--teal,
+.cx[data-cx-theme='light'] .cx-zone--selected {
+  background: var(--cx-primary-container);
+}
+
+/* Only the plain (green) chip: the gold and teal ones set their own color */
+.cx[data-cx-theme='light'] .cx-chip:not([class*='cx-chip--']) {
+  color: var(--cx-emerald);
+}
+
+.cx[data-cx-theme='light'] .cx-btn--danger,
+.cx[data-cx-theme='light'] .cx-upcoming__due {
+  color: var(--cx-crimson);
+}
+
+.cx[data-cx-theme='light'] .cx-input::placeholder,
+.cx[data-cx-theme='light'] .cx-plate-input input::placeholder {
+  color: var(--cx-muted);
+}
+
+.cx[data-cx-theme='light'] .cx-notif__header,
+.cx[data-cx-theme='light'] .cx-notif__icon,
+.cx[data-cx-theme='light'] .cx-notif__item:hover,
+.cx[data-cx-theme='light'] .cx-notif__action-btn:hover {
+  background: var(--cx-surface-hover);
+}
+
+.cx[data-cx-theme='light'] .cx-notif {
+  box-shadow: 0 20px 25px -5px rgba(20, 30, 40, 0.18), 0 10px 10px -5px rgba(20, 30, 40, 0.1);
+}
+
+.cx[data-cx-theme='light'] .garage3d {
+  background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--cx-primary) 14%, transparent) 0%, transparent 70%);
+}
+
+/* Wallet: refund and payment accents, and texts written for the dark dialog */
+.cx[data-cx-theme='light'] :is(.cx-wallet-history__amount--refund, .cx-wallet-history__icon--refund, .cx-wallet-tx-badge--refund) {
+  color: #0b6185;
+}
+
+.cx[data-cx-theme='light'] :is(.cx-wallet-history__icon--payment, .cx-wallet-tx-badge--payment) {
+  color: #6b2fa3;
+}
+
+.cx[data-cx-theme='light'] .cx-wallet-search-box input::placeholder,
+.cx[data-cx-theme='light'] .cx-wallet-tx-card__balance-flow {
+  color: var(--cx-muted);
+}
+
+/* Sun/moon button of the top bar, same size as the notification bell */
+.cx-theme-toggle {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  justify-content: center;
+}
+
+.cx-theme-toggle svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
