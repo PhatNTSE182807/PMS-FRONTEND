@@ -228,7 +228,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
             <strong style={{ fontSize: '0.875rem' }}>
               {current.entryMethod === 'Reservation' ? 'Checked in with your booking' : current.entryMethod === 'Manual' ? 'Entry recorded by Staff' : 'Automatic license plate capture'}
             </strong>
-            <span className="cx-metric__sub" style={{ color: '#6fdba8' }}>
+            <span className="cx-metric__sub" style={{ color: 'var(--cx-success)' }}>
               <CircleCheck size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> Verified at {current.entryGateName ?? 'the entry lane'}
             </span>
           </div>
@@ -254,7 +254,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
 
       {pass.prepaid ? (
         <p className="cx-prepay">
-          <span><ShieldCheck size={15} aria-hidden style={{ verticalAlign: '-3px', color: '#6fdba8' }} /> Paid. Drive out before {pass.validUntil ? timeFormat.format(Date.parse(pass.validUntil)) : 'the exit window ends'}.</span>
+          <span><ShieldCheck size={15} aria-hidden style={{ verticalAlign: '-3px', color: 'var(--cx-success)' }} /> Paid. Drive out before {pass.validUntil ? timeFormat.format(Date.parse(pass.validUntil)) : 'the exit window ends'}.</span>
         </p>
       ) : choosing && !leaving ? (
         <div className="cx-prepay" aria-live="polite">
