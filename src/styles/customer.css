@@ -44,7 +44,8 @@
   color: #8bbeda;
 }
 
-.cx a {
+/* :where keeps this at one class, so a link styled as a button (.cx-btn--light, --gold...) keeps its own text color */
+.cx :where(a) {
   color: inherit;
   text-decoration: none;
 }
@@ -818,6 +819,24 @@
   font-size: 0.8125rem;
   line-height: 1.35rem;
   color: var(--cx-on-variant);
+}
+
+/* A warning that blocks the form (e.g. no Citizen ID in the profile), readable in both themes */
+.cx-note--warn {
+  align-items: center;
+  flex-wrap: wrap;
+  border-color: color-mix(in srgb, var(--cx-amber) 45%, transparent);
+  background: color-mix(in srgb, var(--cx-amber) 10%, var(--cx-container));
+  color: var(--cx-on-surface);
+}
+
+.cx-note.cx-note--warn > svg {
+  margin-top: 0;
+  color: var(--cx-amber);
+}
+
+.cx-note__text {
+  flex: 1 1 14rem;
 }
 
 .cx-note svg {
