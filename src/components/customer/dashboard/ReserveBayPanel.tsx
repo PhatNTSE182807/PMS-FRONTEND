@@ -16,7 +16,7 @@ import { holdDuration } from '../customerFormat'
 
 /** Deposit choices: the hold after arrival is longer when a deposit is paid. */
 const DEPOSIT_OPTIONS = [
-  { value: true, icon: ShieldCheck, title: 'With deposit', text: '30,000 VND, deducted at exit • bay held 30 min after arrival' },
+  { value: true, icon: ShieldCheck, title: 'With deposit', text: '30,000 VND, deducted at exit (kept by the lot if you leave after your departure time) • bay held 30 min after arrival' },
   { value: false, icon: Zap, title: 'No deposit', text: 'Confirmed at once • bay held only 15 min after arrival' },
 ] as const
 
