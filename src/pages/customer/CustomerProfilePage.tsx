@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react'
 import { toast } from 'sonner'
+import { shrinkAvatarImage } from '@/lib/avatarImage'
 import {
   AlertCircle,
   Camera,
@@ -158,7 +159,7 @@ export default function CustomerProfilePage() {
     }
 
     try {
-      await uploadAvatar.mutateAsync(file)
+      await uploadAvatar.mutateAsync(await shrinkAvatarImage(file))
       toast.success('Avatar updated successfully!')
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to upload avatar.'))
