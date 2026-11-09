@@ -31,6 +31,12 @@ export const simulationService = {
 
 const walkIns = `${SERVICE_PATHS.staff}/simulation/walk-ins`
 
+/**
+ * Batches run one vehicle after another through the real lanes. Filling a big lot on a hosted server
+ * (database in another region) takes minutes, far past the usual 15-second limit.
+ */
+const BATCH_TIMEOUT_MS = 5 * 60_000
+
 /** Admin walk-in simulation: random-plate vehicles through the real entry and exit lanes. */
 export const walkInSimulationService = {
   /** GET /admin/simulation/walk-ins: simulated vehicles inside, how many left and what they paid. */
@@ -40,7 +46,7 @@ export const walkInSimulationService = {
 
   /** POST /admin/simulation/walk-ins: send a batch in. */
   deploy(command: DeployWalkInsCommand): Promise<DeployWalkInsResultDTO> {
-    return http.post<DeployWalkInsResultDTO>(walkIns, command)
+    return http.post<DeployWalkInsResultDTO>(walkIns, command, { timeout: BATCH_TIMEOUT_MS })
   },
 
   /** One vehicle pays cash at the exit lane and leaves now. */
@@ -50,7 +56,10 @@ export const walkInSimulationService = {
 
   /** Every simulated vehicle (of one lot, or all) pays and leaves now. */
   checkOutAll(lotId?: number): Promise<WalkInCheckOutResultDTO> {
-    return http.post<WalkInCheckOutResultDTO>(`${walkIns}/check-out-all`, undefined, { params: lotId ? { lotId } : undefined })
+    return http.post<WalkInCheckOutResultDTO>(`${walkIns}/check-out-all`, undefined, {
+      params: lotId ? { lotId } : undefined,
+      timeout: BATCH_TIMEOUT_MS,
+    })
   },
 
   /** The driver reports a lost ticket: approved on the spot (conditions met) or sent to the lot's Manager. */
