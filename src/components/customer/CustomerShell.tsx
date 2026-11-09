@@ -104,7 +104,7 @@ export function CustomerShell() {
             <ThemeToggle className="cx-btn cx-btn--ghost cx-theme-toggle" />
             <NotificationBell />
             <div className="cx-nav__user-block">
-              <Link to="/me/profile" className="cx-avatar" title="User Profile">
+              <Link to="/me/profile" className="cx-avatar cx-avatar--nav" title="User Profile">
                 {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
               </Link>
               <div className="cx-nav__user-text">
