@@ -146,8 +146,8 @@ export default function CustomerProfilePage() {
     if (!file) return
     e.target.value = ''
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Avatar image must be smaller than 2 MB.')
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Avatar image must be smaller than 10 MB.')
       return
     }
 
@@ -288,7 +288,7 @@ export default function CustomerProfilePage() {
                   className={`cx-avatar cx-avatar--lg cx-avatar--clickable ${uploadAvatar.isPending ? 'cx-avatar--loading' : ''}`}
                   onClick={handleAvatarClick}
                   disabled={uploadAvatar.isPending}
-                  title="Click to upload profile picture (Max 2 MB)"
+                  title="Click to upload profile picture (Max 10 MB)"
                   aria-label="Upload profile picture"
                 >
                   {resolveMediaUrl(profile?.avatarUrl) ? (
