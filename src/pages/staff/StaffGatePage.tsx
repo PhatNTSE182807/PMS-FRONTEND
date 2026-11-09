@@ -19,7 +19,8 @@ import { Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/featu
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useGateExits, useLotPayments, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
+import { useGateExits, useOpenSessions, useZoneCounters } from '@/hooks/useGate'
+import { useCashDrawer } from '@/hooks/useCashDrawer'
 import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useCapacitySimulation, useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
@@ -27,7 +28,8 @@ import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/features/staff/LostTicketPapersDialog'
 import { demoGateStats, demoStation } from '@/mocks/staffOps.mock'
-import type { ParkingSessionDTO, StaffPaymentHistoryPageDTO, ZoneCounterDTO } from '@/types/operations.dto'
+import type { CashDrawerDTO } from '@/types/cashDrawer.dto'
+import type { ParkingSessionDTO, ZoneCounterDTO } from '@/types/operations.dto'
 
 const clockWithSeconds = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
@@ -48,11 +50,13 @@ function CapacityRing({ percent }: { percent: number }) {
 function KpiRow({
   counters,
   sessions,
-  payments,
+  drawer,
+  drawerError,
 }: {
   counters: ZoneCounterDTO[] | undefined
   sessions: ParkingSessionDTO[] | undefined
-  payments: StaffPaymentHistoryPageDTO | undefined
+  drawer: CashDrawerDTO | undefined
+  drawerError: boolean
 }) {
   const s = demoGateStats
   // Live Zone Counters when the lot has them; the demo figures otherwise
@@ -62,29 +66,18 @@ function KpiRow({
   const reserved = sessions ? sessions.filter((x) => x.sessionType === 'Reservation').length : s.reservedVip
   const occupancy = total ? Math.round((active / total) * 100) : 0
 
-  // Calculate Cash in drawer from real payments (with fallback to demo stats)
-  const cashInDrawer = useMemo(() => {
-    if (!payments) return s.cashInDrawer
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0)
-    const startMs = startOfToday.getTime()
-
-    const todayCash = payments.items
-      .filter((p) => p.status === 'Succeeded' && p.method === 'Cash' && (!p.paidAt || new Date(p.paidAt).getTime() >= startMs))
-      .reduce((sum, p) => sum + p.amount, 0)
-
-    if (todayCash > 0) return todayCash
-    if (payments.items.length > 0) {
-      // Sum recent cash drawer payments if none recorded today yet
-      const recentDrawer = payments.items
-        .filter((p) => p.status === 'Succeeded' && p.method === 'Cash')
-        .slice(0, 20)
-        .reduce((sum, p) => sum + p.amount, 0)
-      if (recentDrawer > 0) return recentDrawer
-    }
-    return 0
-  }, [payments, s.cashInDrawer])
-
+  // What should be in the Staff's own drawer now, as on Cash tally: float + cash taken + Manager top-ups.
+  // Not the lot's payments: those include every Staff's cash and say nothing about the float.
+  const drawerOpen = drawer?.status === 'Open'
+  const drawerNote = !drawer
+    ? drawerError ? 'Could not load your drawer' : 'Loading your drawer…'
+    : drawerOpen
+      ? `Drawer ${drawer.closeNo}: float ${formatNumber(drawer.floatTotal)} + cash taken ${formatNumber(drawer.cashCollected)}${
+          drawer.topUpTotal > 0 ? ` + top-ups ${formatNumber(drawer.topUpTotal)}` : ''
+        }`
+      : drawer.status === 'NotOpened'
+        ? 'No drawer open yet'
+        : 'Drawer handed in for the tally'
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatTile label="Facility capacity" className="ring-amber-300/40">
@@ -107,8 +100,11 @@ function KpiRow({
         <p className="mt-1 text-sm text-slate-700">Checked in on a reservation</p>
       </StatTile>
       <StatTile label="Cash in drawer" icon={<Wallet />}>
-        <Metric value={formatNumber(cashInDrawer)} unit="VND" />
-        <p className="mt-1 text-sm text-slate-700">Synced with cash vault module</p>
+        <Metric value={drawerOpen ? formatNumber(drawer.expectedTotal) : '—'} unit={drawerOpen ? 'VND' : undefined} />
+        <p className="mt-1 text-sm text-slate-700">
+          {drawerNote} ·{' '}
+          <Link to="/staff/cash-tally" className="font-semibold underline">Cash tally</Link>
+        </p>
       </StatTile>
     </div>
   )
@@ -250,7 +246,7 @@ export default function StaffGatePage() {
   const sessions = useOpenSessions(lotKey)
   const counters = useZoneCounters(lotKey)
   const exits = useGateExits(lotKey)
-  const cashPayments = useLotPayments(lotKey, 'Cash', 50)
+  const drawer = useCashDrawer(lotKey)
   const checkIns = useGateRequestQueue(lotKey, 'CheckIn')
   const checkOuts = useGateRequestQueue(lotKey, 'CheckOut')
 
@@ -282,7 +278,7 @@ export default function StaffGatePage() {
         )}
       </div>
 
-      <KpiRow counters={counters.data} sessions={sessions.data} payments={cashPayments.data} />
+      <KpiRow counters={counters.data} sessions={sessions.data} drawer={drawer.data} drawerError={drawer.isError} />
 
       {/* Four cameras (entry lane on top, exit lane below) with the Check-in / Check-out lanes beside them */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
