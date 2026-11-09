@@ -97,8 +97,5 @@ export const useApproveGateRequest = () =>
     gateRequestService.approve(requestId, request),
   )
 
-/** Force check-out of a walk-in from the 3D lot model's popup. */
-export const useForceCheckOut = () => useStaffGateMutation((sessionId: number) => gateRequestService.forceCheckOut(sessionId))
-
 export const useRefuseGateRequest = () =>
   useStaffGateMutation(({ requestId, reason }: { requestId: number; reason: string }) => gateRequestService.refuse(requestId, reason))

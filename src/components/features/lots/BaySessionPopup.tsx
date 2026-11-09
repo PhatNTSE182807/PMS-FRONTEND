@@ -2,11 +2,10 @@ import { BayVehicleCard, BayVehicleNotice } from '@/components/customer/garage/B
 import { formatStay, useStayMinutes, vndOrDash } from '@/components/customer/garage/bayVehicleFormat'
 import type { Bay } from '@/components/customer/garage/garageModel'
 import { getErrorMessage } from '@/api/apiError'
-import { useState, type CSSProperties } from 'react'
-import { toast } from 'sonner'
+import { type CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useBaySession } from '@/hooks/useGate'
-import { useForceCheckOut } from '@/hooks/useGateRequests'
 import { formatDate, formatTime } from '@/lib/format'
 
 const TITLE = 'Vehicle in bay'
@@ -29,8 +28,7 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
   const query = useBaySession(lotId, bay.countedWalkIn ? null : bay.id, walkInSession)
   const data = query.data
   const stay = useStayMinutes(data?.session.entryTime)
-  const forceCheckOut = useForceCheckOut()
-  const [confirming, setConfirming] = useState(false)
+  const navigate = useNavigate()
   const { user } = useAuth()
 
   if (bay.countedWalkIn && walkInSession == null)
@@ -57,21 +55,15 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
 
   const { session } = data
   const member = data.customerType === 'Member'
-  // Only Staff can send a walk-in still parked out from here (a lost ticket must be decided first); Managers and
-  // Admins only look (user request, 2026-11-09)
-  const canForceCheckOut =
-    user?.role === 'STAFF' && session.sessionType === 'WalkIn' && !session.reservationCode && ['Active', 'PendingPayment', 'Paid'].includes(session.status)
-  const owed = session.status === 'Paid' ? 0 : (data.amountDue ?? data.feeSoFar ?? 0)
-  const sendOut = () =>
-    forceCheckOut.mutate(session.id, {
-      onSuccess: () => {
-        toast.success(`${session.hasPlate ? session.plateNumber : 'The vehicle'} is waiting at the exit lane.`, {
-          description: 'Open the barrier in the Check-out tab of the gate dashboard: the exit cameras show it leave.',
-        })
-        onClose()
-      },
-      onError: (e) => toast.error(getErrorMessage(e, 'Could not check this vehicle out.')),
-    })
+  // Only Staff can force a check-out from here, for a vehicle that still has to pay (a lost ticket must be decided
+  // first, a paid one already waits at the exit lane); Managers and Admins only look (user request, 2026-11-09)
+  const canForceCheckOut = user?.role === 'STAFF' && ['Active', 'PendingPayment'].includes(session.status)
+  // Nothing is charged here: the POS opens with this session loaded and takes the fee the normal way
+  // (fee quote, deposit, payment method), then the vehicle leaves through the Check-out lane like any other
+  const openPos = () => {
+    onClose()
+    navigate(`/staff/checkout?session=${session.id}`, { state: { plate: session.hasPlate ? session.plateNumber : '' } })
+  }
   return (
     <BayVehicleCard
       bayCode={bay.code}
@@ -93,28 +85,13 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
           {`Session ${session.code}${session.reservationCode ? ` · booking ${session.reservationCode}` : ''}.${
             walkInSession != null ? ' A walk-in without a bay of its own: the model draws it in a free bay of its zone.' : ''
           } The fee refreshes every 30 seconds.`}
-          {canForceCheckOut &&
-            (confirming ? (
-              <div style={styles.actions}>
-                <p style={styles.confirm}>
-                  {owed > 0 ? `Take ${vndOrDash(owed)} in cash` : 'Nothing is owed'} and send the vehicle to the exit lane?
-                </p>
-                <div style={styles.row}>
-                  <button type="button" style={styles.secondary} disabled={forceCheckOut.isPending} onClick={() => setConfirming(false)}>
-                    Back
-                  </button>
-                  <button type="button" style={styles.primary} disabled={forceCheckOut.isPending} onClick={sendOut}>
-                    {forceCheckOut.isPending ? 'Checking out…' : 'Confirm'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div style={styles.actions}>
-                <button type="button" style={styles.primary} onClick={() => setConfirming(true)}>
-                  Force check-out
-                </button>
-              </div>
-            ))}
+          {canForceCheckOut && (
+            <div style={styles.actions}>
+              <button type="button" style={styles.primary} onClick={openPos}>
+                Force check-out
+              </button>
+            </div>
+          )}
         </>
       }
       onClose={onClose}
@@ -132,8 +109,5 @@ const button: CSSProperties = {
 
 const styles = {
   actions: { marginTop: '0.6rem', display: 'grid', gap: '0.45rem' },
-  row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem' },
-  confirm: { margin: 0, color: 'var(--map-text)', fontSize: '0.78rem', lineHeight: 1.4 },
   primary: { ...button, width: '100%', border: 'none', background: 'var(--map-button-bg)', color: 'var(--map-button-text)' },
-  secondary: { ...button, border: '1px solid var(--map-card-border)', background: 'transparent', color: 'var(--map-text)' },
 } satisfies Record<string, CSSProperties>
