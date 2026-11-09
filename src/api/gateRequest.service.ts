@@ -48,11 +48,6 @@ export const gateRequestService = {
     return http.post<GateRequestDecisionDTO>(`${staffBase}/gate-requests/${requestId}/approve`, request)
   },
 
-  /** Force check-out of a walk-in: its fee is taken in cash now and it waits at the exit lane. */
-  forceCheckOut(sessionId: number): Promise<GateRequestDTO> {
-    return http.post<GateRequestDTO>(`${staffBase}/sessions/${sessionId}/force-check-out`)
-  },
-
   /** Refuses with a reason the customer sees. */
   refuse(requestId: number, reason: string): Promise<GateRequestDTO> {
     return http.post<GateRequestDTO>(`${staffBase}/gate-requests/${requestId}/refuse`, { reason })
