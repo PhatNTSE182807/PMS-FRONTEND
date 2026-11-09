@@ -36,7 +36,9 @@ export function DialogContent({ className, children, ...props }: ComponentProps<
       <Overlay />
       <DialogPrimitive.Content
         className={cn(
-          'admin-root admin-dialog fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-white p-6 shadow-xl ring-1 ring-slate-200',
+          // grid-cols-[minmax(0,1fr)]: the column keeps the dialog's width, so a long code or plate wraps instead of
+          // pushing the content past the edge on a phone
+          'admin-root admin-dialog fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto rounded-xl bg-white p-4 shadow-xl ring-1 ring-slate-200 sm:p-6',
           className,
         )}
         {...props}
@@ -95,7 +97,8 @@ export function DialogTitle({ className, ...props }: ComponentProps<typeof Dialo
 }
 
 export function DialogDescription({ className, ...props }: ComponentProps<typeof DialogPrimitive.Description>) {
-  return <DialogPrimitive.Description className={cn('text-sm text-slate-500', className)} {...props} />
+  // Long codes (session, booking) may break anywhere rather than run past a phone's edge
+  return <DialogPrimitive.Description className={cn('text-sm text-slate-500 [overflow-wrap:anywhere]', className)} {...props} />
 }
 
 interface ConfirmDialogProps {
@@ -138,11 +141,11 @@ export function ConfirmDialog({
             disabled={pending}
             onClick={onConfirm}
             className={cn(
-              'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium text-slate-950 shadow-sm disabled:opacity-60',
+              'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium text-on-accent shadow-sm disabled:opacity-60',
               tone === 'destructive' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500',
             )}
           >
-            {pending && <span className="size-3.5 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950" />}
+            {pending && <span className="size-3.5 animate-spin rounded-full border-2 border-on-accent/40 border-t-on-accent" />}
             {confirmLabel}
           </button>
         </DialogFooter>

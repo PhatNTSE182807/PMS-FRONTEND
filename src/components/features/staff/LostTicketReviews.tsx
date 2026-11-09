@@ -45,7 +45,7 @@ function PaperImage({ sessionId, kind, label }: { sessionId: number; kind: 'citi
   return (
     <figure className="space-y-1.5">
       <figcaption className="text-xs font-bold tracking-wider text-slate-700 uppercase">{label}</figcaption>
-      <div className="grid h-64 place-items-center overflow-hidden rounded-xl bg-[#060f16] ring-1 ring-slate-200">
+      <div className="grid h-64 place-items-center overflow-hidden rounded-xl bg-well ring-1 ring-slate-200">
         {paper.isPending && <Skeleton className="size-full" />}
         {paper.isError && (
           <span className="flex flex-col items-center gap-1 text-sm text-slate-600">
@@ -132,7 +132,7 @@ function Review({ session }: { session: ParkingSessionDTO }) {
           id="lost-review-note"
           rows={2}
           maxLength={500}
-          className="w-full rounded-lg bg-[#060f16] p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
+          className="w-full rounded-lg bg-well p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. the name on the Citizen ID differs from the registration owner"
@@ -196,7 +196,7 @@ export function LostTicketReviews({ lotId, selectedSessionId }: { lotId: string 
               onClick={() => setPickedId(s.id)}
               className={cn(
                 'rounded-lg px-3 py-1.5 font-mono text-sm font-bold ring-1',
-                s.id === selected?.id ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200',
+                s.id === selected?.id ? 'bg-selected text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200',
               )}
             >
               {s.plateNumber || 'NO PLATE'}

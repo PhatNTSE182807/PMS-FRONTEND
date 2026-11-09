@@ -55,7 +55,7 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
                   outerRadius="100%"
                   startAngle={90}
                   endAngle={-270}
-                  stroke="#182127"
+                  stroke="var(--color-white)"
                   strokeWidth={2}
                   isAnimationActive={false}
                 >

@@ -32,8 +32,6 @@ export const demoStation = {
 /* ------------------------------------------------------------------ */
 
 export const demoGateStats = {
-  throughputToday: 1248,
-  throughputTrend: 18.4,
   activeBays: 421,
   totalBays: 500,
   generalOpen: 59,

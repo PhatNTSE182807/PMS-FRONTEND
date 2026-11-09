@@ -7,6 +7,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { buildCoupeModel, buildSuvModel } from './carModels'
 import { buildBikeModel, type PartSlot } from './vehicleModels'
 import { scenePaint } from '@/lib/vehicleColor'
+import { readTheme, subscribeTheme } from '@/lib/theme'
 
 export interface Garage3DProps {
   floors: GarageFloor[]
@@ -64,6 +65,8 @@ const COLOR = {
   asphalt: 0x3a3f44,
   paint: 0xe3e83a,
   backdrop: 0x1b252d,
+  /** Backdrop in light mode: a soft grey, so the white page around the model does not glare */
+  backdropLight: 0xd9d9d5,
   base: 0x39434b,
   glass: 0x1d2a33,
   available: 0x22c55e,
@@ -306,7 +309,8 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
 
     const scene = new THREE.Scene()
     // Plain backdrop: only the car park is drawn, so bays and vehicles stand out
-    scene.background = new THREE.Color(COLOR.backdrop)
+    const backdropOf = () => (readTheme() === 'light' ? COLOR.backdropLight : COLOR.backdrop)
+    scene.background = new THREE.Color(backdropOf())
     // Soft studio reflections so paint, glass and chrome read as such.
     const pmrem = new THREE.PMREMGenerator(renderer)
     const room = new RoomEnvironment()
@@ -554,6 +558,11 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
       if (shadows) renderer.shadowMap.needsUpdate = true
     }
     controls.addEventListener('change', () => invalidate())
+    // The backdrop follows the light/dark mode while the model is open
+    const unsubscribeTheme = subscribeTheme(() => {
+      ;(scene.background as THREE.Color).setHex(backdropOf())
+      invalidate()
+    })
 
     /* Bay colours, parked vehicles and the marker, from the latest props */
     const m = new THREE.Matrix4()
@@ -759,6 +768,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
     tick()
 
     return () => {
+      unsubscribeTheme()
       cancelAnimationFrame(frame)
       observer.disconnect()
       visibility.disconnect()

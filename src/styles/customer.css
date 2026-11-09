@@ -24,6 +24,7 @@
   --cx-amber: #f59e0b;
   --cx-crimson: #ef4444;
   --cx-error: #ffb4ab;
+  --cx-success: #6fdba8;
   --cx-body-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --cx-headline-font: 'Plus Jakarta Sans', var(--cx-body-font);
   --cx-mono-font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -43,7 +44,8 @@
   color: #8bbeda;
 }
 
-.cx a {
+/* :where keeps this at one class, so a link styled as a button (.cx-btn--light, --gold...) keeps its own text color */
+.cx :where(a) {
   color: inherit;
   text-decoration: none;
 }
@@ -156,6 +158,12 @@
   background: var(--cx-primary-container);
   color: var(--cx-primary-fixed) !important;
   font-weight: 600;
+}
+
+/* Shown only on small screens (see the 1100px rules); .cx-nav raises them above .cx-btn */
+.cx-nav .cx-nav__menu-btn,
+.cx-nav .cx-nav__mobile-only {
+  display: none;
 }
 
 .cx-nav__actions {
@@ -811,6 +819,24 @@
   font-size: 0.8125rem;
   line-height: 1.35rem;
   color: var(--cx-on-variant);
+}
+
+/* A warning that blocks the form (e.g. no Citizen ID in the profile), readable in both themes */
+.cx-note--warn {
+  align-items: center;
+  flex-wrap: wrap;
+  border-color: color-mix(in srgb, var(--cx-amber) 45%, transparent);
+  background: color-mix(in srgb, var(--cx-amber) 10%, var(--cx-container));
+  color: var(--cx-on-surface);
+}
+
+.cx-note.cx-note--warn > svg {
+  margin-top: 0;
+  color: var(--cx-amber);
+}
+
+.cx-note__text {
+  flex: 1 1 14rem;
 }
 
 .cx-note svg {
@@ -2283,22 +2309,79 @@
   }
 }
 
-@media (max-width: 900px) {
-  .cx-container {
-    padding: 0 1.1rem;
-  }
-
+@media (max-width: 1100px) {
+  /* One bar (logo, icons, menu button); the links open below it as a list */
   .cx-nav__inner {
     flex-wrap: wrap;
     height: auto;
-    padding-top: 0.75rem;
+    min-height: 3.75rem;
+    padding-top: 0.5rem;
     padding-bottom: 0.5rem;
-    row-gap: 0.5rem;
+    row-gap: 0.25rem;
+  }
+
+  .cx-nav__logo {
+    height: 2.4rem;
+  }
+
+  .cx-nav__actions {
+    gap: 0.4rem;
+  }
+
+  .cx-nav .cx-nav__menu-btn {
+    display: inline-flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-color: transparent;
+  }
+
+  .cx-nav__menu-btn svg {
+    width: 1.3rem;
+    height: 1.3rem;
   }
 
   .cx-nav__links {
+    display: none;
     order: 3;
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.15rem;
+    padding: 0.25rem 0 0.5rem;
+    border-top: 1px solid var(--cx-outline);
+  }
+
+  .cx-nav__links--open {
+    display: flex;
+  }
+
+  .cx-nav__link {
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .cx-nav .cx-nav__mobile-only {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .cx-nav__mobile-only svg {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .cx-container {
+    padding: 0 1.1rem;
   }
 
   .cx-welcome,
@@ -2329,7 +2412,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .cx-nav__brand-text {
+  .cx-nav__brand-text,
+  .cx-nav__logout {
     display: none;
   }
 }
@@ -3372,4 +3456,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
   gap: 1.5rem;
+}
+
+/* Phone: the notification list drops below the top bar across the screen instead of hanging off the bell */
+@media (max-width: 640px) {
+  .cx-notif__dropdown {
+    position: fixed;
+    top: 4rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 5rem);
+  }
 }

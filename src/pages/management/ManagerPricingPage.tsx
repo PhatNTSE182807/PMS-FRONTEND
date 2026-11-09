@@ -139,7 +139,7 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
             </p>
           </div>
         </div>
-        <div className="rounded-lg bg-[#060f16] px-3 py-2 text-right">
+        <div className="rounded-lg bg-well px-3 py-2 text-right">
           <p className="text-[10px] font-bold tracking-wider text-slate-700 uppercase">Max per day</p>
           <p className="font-mono font-bold text-amber-500">{capText(rule.maxDailyFee)}</p>
         </div>
@@ -294,7 +294,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
         </Kpi>
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <div role="tablist" aria-label="Vehicle type" className="flex flex-wrap gap-1 rounded-xl bg-white p-1.5 ring-1 ring-slate-200">
             {[{ id: 'ALL' as const, name: `All (${list.length})` }, ...types].map((t) => (
@@ -304,7 +304,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
                 role="tab"
                 aria-selected={typeFilter === t.id}
                 onClick={() => setTypeFilter(t.id)}
-                className={cn('rounded-lg px-3.5 py-2 text-sm font-medium transition-colors', typeFilter === t.id ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100')}
+                className={cn('rounded-lg px-3.5 py-2 text-sm font-medium transition-colors', typeFilter === t.id ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100')}
               >
                 {t.name}
               </button>

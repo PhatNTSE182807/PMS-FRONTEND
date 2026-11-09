@@ -1,0 +1,158 @@
+/* =========================================================
+   CUSTOMER AREA — light mode, on when <html data-theme="light"> (see lib/theme.ts and the sun/moon button
+   of the top bar); dark stays the default. It only swaps the .cx tokens of customer.css: off-white and
+   black (an off-white page, white panels, light grey hairlines, near-black ink and buttons; only the
+   status colors add a hue); square corners.
+========================================================= */
+
+html[data-theme='light'] .cx {
+  --cx-surface: #f6f6f3;
+  --cx-lowest: #ffffff;
+  --cx-low: #f0f0ed;
+  --cx-container: #ffffff;
+  --cx-container-high: #f0f0ed;
+  --cx-variant: #e7e7e3;
+  --cx-outline: #e2e2de;
+  --cx-on-surface: #111111;
+  --cx-on-variant: #444441;
+  --cx-muted: #6b6b67;
+  --cx-primary: #111111;
+  --cx-primary-fixed: #111111;
+  --cx-primary-container: #e7e7e3;
+  --cx-on-primary: #ffffff;
+  --cx-gold: #111111;
+  --cx-gold-fixed: #333333;
+  --cx-on-gold: #ffffff;
+  --cx-emerald: #3d6b4a;
+  --cx-amber: #8a5a14;
+  --cx-crimson: #a3362d;
+  --cx-error: #a3362d;
+  --cx-success: #3d6b4a;
+  --cx-refund: #0b6185;
+  --cx-surface-hover: rgba(17, 17, 17, 0.05);
+}
+
+html[data-theme='light'] .cx .cx-nav {
+  background: color-mix(in srgb, var(--cx-surface) 94%, transparent);
+  box-shadow: 0 1px 0 var(--cx-outline);
+}
+
+html[data-theme='light'] .cx .cx-welcome {
+  background: var(--cx-lowest);
+}
+
+html[data-theme='light'] .cx :is(.cx-card, .cx-welcome, .cx-tabs, .cx-tab, .cx-btn, .cx-chip, .cx-input, .cx-tile,
+    .cx-utility, .cx-vehicle, .cx-mini-vehicle, .cx-metrics, .cx-stats, .cx-kv, .cx-note, .cx-exit-pass, .cx-prepay,
+    .cx-summary, .cx-empty, .cx-zone, .cx-map__board, .cx-map__detail, .cx-map__floor, .cx-map__hint, .cx-map__mine,
+    .cx-session__plate-row, .cx-gate-request, .cx-upcoming__icon, .cx-category, .garage3d) {
+  border-radius: 2px;
+}
+
+/* Cards read as flat panels with a hairline instead of a shadow */
+html[data-theme='light'] .cx .cx-card {
+  box-shadow: none;
+  border: 1px solid var(--cx-outline);
+}
+
+/* The few colors customer.css writes out instead of using a token */
+html[data-theme='light'] .cx {
+  /* Notification bell popover */
+  --cx-text: var(--cx-on-surface);
+  --cx-text-muted: var(--cx-on-variant);
+  --cx-text-subtle: var(--cx-muted);
+  --cx-panel: var(--cx-container);
+  --cx-bg: var(--cx-surface);
+  --cx-border: var(--cx-outline);
+}
+
+html[data-theme='light'] .cx ::selection {
+  color: var(--cx-on-surface);
+}
+
+html[data-theme='light'] .cx .cx-nav {
+  background: color-mix(in srgb, var(--cx-lowest) 92%, transparent);
+  box-shadow: 0 1px 0 var(--cx-outline);
+}
+
+html[data-theme='light'] .cx .cx-welcome {
+  background: linear-gradient(110deg, color-mix(in srgb, var(--cx-gold) 8%, transparent) 0%, var(--cx-container) 40%,
+      color-mix(in srgb, var(--cx-primary) 12%, var(--cx-container)) 100%);
+}
+
+html[data-theme='light'] .cx .cx-btn--teal:hover:not(:disabled) {
+  background: var(--cx-variant);
+}
+
+html[data-theme='light'] .cx .cx-chip--teal,
+html[data-theme='light'] .cx .cx-zone--selected {
+  background: var(--cx-primary-container);
+}
+
+/* Only the plain (green) chip: the gold and teal ones set their own color */
+html[data-theme='light'] .cx .cx-chip:not([class*='cx-chip--']) {
+  color: var(--cx-emerald);
+}
+
+html[data-theme='light'] .cx .cx-btn--danger,
+html[data-theme='light'] .cx .cx-upcoming__due {
+  color: var(--cx-crimson);
+}
+
+html[data-theme='light'] .cx .cx-input::placeholder,
+html[data-theme='light'] .cx .cx-plate-input input::placeholder {
+  color: var(--cx-muted);
+}
+
+html[data-theme='light'] .cx .cx-notif__header,
+html[data-theme='light'] .cx .cx-notif__icon,
+html[data-theme='light'] .cx .cx-notif__item:hover,
+html[data-theme='light'] .cx .cx-notif__action-btn:hover {
+  background: var(--cx-surface-hover);
+}
+
+html[data-theme='light'] .cx .cx-notif__dropdown {
+  box-shadow: 0 20px 25px -5px rgba(20, 30, 40, 0.18), 0 10px 10px -5px rgba(20, 30, 40, 0.1);
+}
+
+html[data-theme='light'] .cx .garage3d {
+  background: var(--cx-surface);
+}
+
+/* Wallet: refund and payment accents, and texts written for the dark dialog */
+html[data-theme='light'] .cx :is(.cx-wallet-history__amount--refund, .cx-wallet-history__icon--refund, .cx-wallet-tx-badge--refund) {
+  color: #0b6185;
+}
+
+html[data-theme='light'] .cx :is(.cx-wallet-history__icon--payment, .cx-wallet-tx-badge--payment) {
+  color: #6b2fa3;
+}
+
+html[data-theme='light'] .cx .cx-wallet-search-box input::placeholder,
+html[data-theme='light'] .cx .cx-wallet-tx-card__balance-flow {
+  color: var(--cx-muted);
+}
+
+/* Sun/moon button and notification bell of the top bar: plain icons, no box around them */
+.cx .cx-theme-toggle,
+.cx .cx-notif__trigger {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cx .cx-theme-toggle:hover,
+.cx .cx-notif__trigger:hover {
+  background: var(--cx-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+.cx-theme-toggle {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  justify-content: center;
+}
+
+.cx-theme-toggle svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}

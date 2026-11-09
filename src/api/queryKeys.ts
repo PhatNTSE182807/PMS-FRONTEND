@@ -13,6 +13,11 @@ export const queryKeys = {
     checkUnique: (phone?: string, citizenId?: string) =>
       [...queryKeys.profile.all, 'check-unique', phone ?? '', citizenId ?? ''] as const,
   },
+  /** Customer chat assistant. */
+  assistant: {
+    all: ['assistant'] as const,
+    status: () => [...queryKeys.assistant.all, 'status'] as const,
+  },
   /** Paper checks (registration certificate + Citizen ID) of the signed-in user's vehicles. */
   vehicleDocuments: {
     all: ['vehicle-documents'] as const,

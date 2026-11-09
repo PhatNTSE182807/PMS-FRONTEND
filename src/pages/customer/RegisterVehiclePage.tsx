@@ -277,31 +277,12 @@ export default function RegisterVehiclePage() {
 
             <div className="cx-form">
               {!hasProfileCitizenId && (
-                <div
-                  role="alert"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '1rem',
-                    padding: '0.875rem 1rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(234, 179, 8, 0.12)',
-                    border: '1px solid rgba(234, 179, 8, 0.35)',
-                    color: '#eab308',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <AlertTriangle style={{ flexShrink: 0, width: '1.25rem', height: '1.25rem' }} aria-hidden />
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-main, #f1f5f9)' }}>
-                      <strong>Citizen ID required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
-                    </span>
-                  </div>
-                  <Link
-                    to="/profile"
-                    className="cx-btn cx-btn--sm"
-                    style={{ whiteSpace: 'nowrap', textDecoration: 'none' }}
-                  >
+                <div role="alert" className="cx-note cx-note--warn">
+                  <AlertTriangle aria-hidden />
+                  <span className="cx-note__text">
+                    <strong>Citizen ID required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
+                  </span>
+                  <Link to="/me/profile" className="cx-btn cx-btn--sm">
                     Update Profile
                   </Link>
                 </div>

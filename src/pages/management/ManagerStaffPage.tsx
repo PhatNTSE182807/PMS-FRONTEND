@@ -129,7 +129,7 @@ function Staff({ lot }: { lot: ManagedLot }) {
                   role="tab"
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
-                  className={cn('rounded-md px-3 py-1.5 text-sm font-medium', tab === t.value ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100')}
+                  className={cn('rounded-md px-3 py-1.5 text-sm font-medium', tab === t.value ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100')}
                 >
                   {t.label} ({count(t.value)})
                 </button>

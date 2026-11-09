@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { LOGO_SRC } from './ParkingLogo';
+import { ThemeToggle } from './ThemeToggle';
 import '../styles/auth.css';
 
 function Brand({ className = '' }) {
@@ -14,7 +15,7 @@ function Brand({ className = '' }) {
 }
 
 /**
- * Dark full-window shell of the Login and Register screens (Stitch "Universal Login/Register"):
+ * Full-window shell of the Login and Register screens (Stitch "Universal Login/Register"):
  * left = car photo with the brand and tagline, right = the form column.
  *
  * @param {{
@@ -42,6 +43,7 @@ export default function AuthShowcaseLayout({ title, subtitle, photo, tagline, wi
       </aside>
 
       <section className="auth-shell__panel">
+        <ThemeToggle className="auth-shell__theme" />
         <div className="auth-shell__panel-inner">
           <Brand className="auth-shell__mobile-brand" />
 

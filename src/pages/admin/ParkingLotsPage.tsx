@@ -271,7 +271,7 @@ export default function ParkingLotsPage() {
                         }}
                         className={cn(
                           'rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
-                          active ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                          active ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
                         )}
                       >
                         {label} ({count})
