@@ -106,15 +106,7 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
 
         {GOOGLE_CLIENT_ID && <div className="auth-shell__divider">Or continue with</div>}
 
-        <GoogleSignInButton
-          variant="dark"
-          rememberMe={rememberMe}
-          onLoginSuccess={onLoginSuccess}
-          onError={(message) => {
-            setInfoMsg('');
-            setErrorMsg(message);
-          }}
-        />
+        <GoogleSignInButton rememberMe={rememberMe} />
       </form>
 
       <p className="auth-shell__footer">
