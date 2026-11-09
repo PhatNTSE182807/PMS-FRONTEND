@@ -452,12 +452,21 @@
   margin: 1.25rem 0;
 }
 
-/* Google button: our dark face, with Google's own iframe button invisible on top taking the click */
+/* Google button: our own button; the click takes the page to Google */
 .google-signin__dark {
-  position: relative;
+  display: block;
+  width: 100%;
   height: 2.875rem;
+  padding: 0;
+  border: none;
   border-radius: 0.5rem;
   overflow: hidden;
+  font: inherit;
+  cursor: pointer;
+}
+
+.google-signin__dark:disabled {
+  cursor: progress;
 }
 
 .google-signin__face {
@@ -479,25 +488,9 @@
   background: var(--auth-container-high);
 }
 
-.google-signin__dark:focus-within {
+.google-signin__dark:focus-visible {
   outline: 2px solid var(--auth-primary);
   outline-offset: 2px;
-}
-
-.google-signin__overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  opacity: 0.0001;
-  transform-origin: top left;
-}
-
-.auth-shell .google-signin__status {
-  color: var(--auth-on-variant);
-}
-
-.auth-shell .google-signin__status--error {
-  color: var(--auth-error);
 }
 
 .auth-shell__link {
