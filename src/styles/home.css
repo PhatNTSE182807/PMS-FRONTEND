@@ -1257,6 +1257,28 @@
     gap: 1rem;
   }
 
+  /* Open mobile menu: links in one column, the light/dark switch on the right of the Home row */
+  .home-nav--open .home-nav__links {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-items: start;
+  }
+
+  .home-nav__links a {
+    grid-column: 1;
+  }
+
+  .home-nav--open .home-theme-toggle--menu {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .home-nav__actions .home-theme-toggle {
+    display: none;
+  }
+
   .home-section {
     padding: 4.5rem 0;
   }
@@ -1430,6 +1452,11 @@ html[data-theme='light'] .home :is(.home-btn, .home-pill, .home-hud, .home-hud__
   background: transparent;
   color: var(--home-on-variant);
   cursor: pointer;
+}
+
+/* The copy inside the phone menu shows only while that menu is open */
+.home-theme-toggle--menu {
+  display: none;
 }
 
 .home-theme-toggle:hover {
