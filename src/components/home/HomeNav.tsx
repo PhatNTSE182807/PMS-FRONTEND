@@ -47,6 +47,8 @@ export function HomeNav({ isOnline }: HomeNavProps) {
               {link.label}
             </a>
           ))}
+          {/* Phone menu only: the light/dark switch sits at the right of the Home row */}
+          <ThemeToggle className="home-theme-toggle home-theme-toggle--menu" />
         </nav>
 
         <div className="home-nav__actions">
