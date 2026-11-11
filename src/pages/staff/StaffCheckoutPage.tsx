@@ -431,7 +431,7 @@ export default function StaffCheckoutPage() {
                     </div>
                     {qr?.payUrl ? (
                       <>
-                        <QrCode value={qr.payUrl} label={`${qr.provider} payment QR`} className="mt-4 w-44 ring-1 ring-slate-200" />
+                        <QrCode value={qr.qrCode || qr.payUrl} label={`${qr.provider} payment QR`} className="mt-4 w-44 ring-1 ring-slate-200" />
                         <a href={qr.payUrl} target="_blank" rel="noreferrer" className="mt-2 text-xs font-semibold text-indigo-700 underline">Open payment page</a>
                         <Button size="sm" variant="secondary" className="mt-3" onClick={() => void checkGateway()}>
                           <RefreshCw /> Check gateway (F8)
