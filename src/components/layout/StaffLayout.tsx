@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
-import { useOpenSessions } from '@/hooks/useGate'
 import { useProfile } from '@/hooks/useProfile'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { useCashAlerts } from '@/hooks/useCashAlerts'
@@ -45,10 +44,6 @@ export function StaffLayout() {
     document.querySelector('[aria-label="Staff navigation"] a[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [pathname])
   const handleLogout = useSignOut()
-  const openSessions = useOpenSessions(lot?.id)
-  const exceptionsCount = openSessions.isSuccess
-    ? (openSessions.data?.filter((s) => s.isLostTicket || s.lostTicketStatus === 'Pending' || s.isOverdue || s.plateMismatch).length ?? 0)
-    : 0
 
   // Sync profile details (FullName, EmployeeCode, Avatar) into session if received from API
   useEffect(() => {
@@ -146,9 +141,6 @@ export function StaffLayout() {
               >
                 <Icon className="size-4" aria-hidden />
                 {label}
-                {to === '/staff/exceptions' && exceptionsCount > 0 && (
-                  <span className="rounded-full bg-rose-600 px-1.5 text-[11px] font-bold text-white tabular-nums">{exceptionsCount}</span>
-                )}
               </NavLink>
             ))}
           </nav>
