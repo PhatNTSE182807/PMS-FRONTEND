@@ -228,12 +228,12 @@
   object-fit: cover;
 }
 
-/* Header avatar: large enough to recognise the photo, still fits the 4.5rem nav bar */
+/* Header avatar: large enough to recognise the photo without crowding the 4.5rem nav bar */
 .cx-avatar--nav {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-width: 2px;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
 .cx-avatar--lg {
