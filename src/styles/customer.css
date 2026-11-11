@@ -2292,6 +2292,53 @@
   color: var(--cx-primary);
 }
 
+/* Social media icon buttons (YouTube, Facebook, TikTok) */
+.cx-footer__social {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.cx-footer__social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--cx-outline);
+  border-radius: 999px;
+  color: var(--cx-on-variant);
+  transition: color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.cx-footer__social-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.cx-footer__social-link:hover,
+.cx-footer__social-link:focus-visible {
+  transform: translateY(-2px);
+}
+
+/* Each icon takes its brand colour on hover */
+.cx-footer__social-link--youtube:hover,
+.cx-footer__social-link--youtube:focus-visible {
+  color: #ff0000;
+  border-color: #ff0000;
+}
+
+.cx-footer__social-link--facebook:hover,
+.cx-footer__social-link--facebook:focus-visible {
+  color: #1877f2;
+  border-color: #1877f2;
+}
+
+.cx-footer__social-link--tiktok:hover,
+.cx-footer__social-link--tiktok:focus-visible {
+  color: var(--cx-on-surface);
+  border-color: var(--cx-on-surface);
+}
+
 .cx-footer__status {
   display: flex;
   align-items: center;

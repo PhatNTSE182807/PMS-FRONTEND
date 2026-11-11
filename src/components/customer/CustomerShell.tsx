@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { useWallet, formatVndBalance } from '@/hooks/useWallet'
 import { initials, resolveMediaUrl } from './customerFormat'
 import { NotificationBell } from './NotificationBell'
+import { SocialLinks } from './SocialLinks'
 import { UserWalletModal } from './UserWalletModal'
 import '@/styles/customer.css'
 import '@/styles/customer-light.css'
@@ -158,6 +159,7 @@ export function CustomerShell() {
               <Link to="/">Home</Link>
               <a href="mailto:support@xxivparking.vn">Support</a>
             </nav>
+            <SocialLinks />
           </div>
           <div className="cx-footer__bottom">
             <span>© {new Date().getFullYear()} XXIV PARKING. Saigon Metropolitan Network. All rights reserved.</span>
