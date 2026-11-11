@@ -1,5 +1,5 @@
 /**
- * XXIV Parking social media links shown in the customer footer.
+ * XXIV Parking social media links shown in the customer footer and the homepage footer.
  * lucide-react no longer ships brand logos, so the icons are inline SVG paths (Simple Icons, CC0).
  */
 const SOCIAL_LINKS = [
@@ -20,10 +20,14 @@ const SOCIAL_LINKS = [
   },
 ]
 
-/** Row of round icon buttons; each opens the network in a new tab. */
-export function SocialLinks() {
+/**
+ * Row of round icon buttons; each opens the network in a new tab.
+ * `blockClass` is the footer's CSS block, so each footer styles the row with its own theme
+ * (`cx-footer` for the customer area, `home-footer` for the homepage).
+ */
+export function SocialLinks({ blockClass = 'cx-footer' }: { blockClass?: string }) {
   return (
-    <nav className="cx-footer__social" aria-label="XXIV Parking on social media">
+    <nav className={`${blockClass}__social`} aria-label="XXIV Parking on social media">
       {SOCIAL_LINKS.map((link) => (
         <a
           key={link.label}
@@ -32,7 +36,7 @@ export function SocialLinks() {
           rel="noopener noreferrer"
           aria-label={`XXIV Parking on ${link.label}`}
           title={link.label}
-          className={`cx-footer__social-link cx-footer__social-link--${link.label.toLowerCase()}`}
+          className={`${blockClass}__social-link ${blockClass}__social-link--${link.label.toLowerCase()}`}
         >
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d={link.path} />

@@ -1,3 +1,5 @@
+import { SocialLinks } from '@/components/customer/SocialLinks'
+
 const ARCHITECTURE = ['LiDAR space mesh', 'Sub-second ANPR array', 'Ultra-fast DC charging', 'Sovereign vault docks']
 const OPERATIONS = ['Autonomous valet transit', 'Terminal gate dispatch', '24/7 operations desk', 'Fleet telematics API']
 
@@ -49,6 +51,7 @@ export function HomeFooter() {
               <span className="home-footer__hubs">
                 Metropolitan hubs: District 1 • Thu Thiem • Binh Thanh • District 7 (Ho Chi Minh City)
               </span>
+              <SocialLinks blockClass="home-footer" />
             </div>
           </div>
         </div>
