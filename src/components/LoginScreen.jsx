@@ -62,7 +62,7 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
     <AuthShowcaseLayout
       title="Welcome back"
       subtitle="Enter your credentials to access your account."
-      photo="/lamborghini.jpg"
+      photo="/login-car.jpg"
       tagline="Experience effortless, intelligent parking management crafted for luxury vehicles."
     >
       {errorMsg && <AuthAlert tone="error">{errorMsg}</AuthAlert>}

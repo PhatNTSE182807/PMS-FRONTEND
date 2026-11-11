@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { RotateCcw, Send, Square, X } from 'lucide-react'
-import { LOGO_SRC } from '@/components/ParkingLogo'
 import {
   ASSISTANT_MAX_QUESTION,
   ASSISTANT_NAME,
@@ -165,11 +164,13 @@ function MessageBubble({ message, isStreaming }: { message: AssistantMessage; is
   )
 }
 
-/** Virgo's avatar: the XXIV Parking logo in a round badge (decorative; the name is announced elsewhere). */
+const AVATAR_SRC = '/virgo-avatar.jpg'
+
+/** Virgo's avatar: a round robot portrait (decorative; the name is announced elsewhere). */
 function Avatar({ className }: { className: string }) {
   return (
     <span className={`ast-avatar ${className}`} aria-hidden="true">
-      <img src={LOGO_SRC} alt="" />
+      <img src={AVATAR_SRC} alt="" />
     </span>
   )
 }

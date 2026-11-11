@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
       <AuthShowcaseLayout
         title="Choose a new password"
         subtitle={linkIsComplete ? `For the account ${email}.` : 'This link is incomplete.'}
-        photo="/lamborghini.jpg"
+        photo="/login-car.jpg"
         tagline="Experience effortless, intelligent parking management crafted for luxury vehicles."
       >
         {!linkIsComplete ? (

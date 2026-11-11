@@ -398,20 +398,6 @@
   gap: 3rem;
 }
 
-.home-hero__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem 0.9rem;
-  border: 1px solid rgba(233, 195, 73, 0.35);
-  border-radius: 9999px;
-  background: rgba(212, 175, 55, 0.08);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--home-gold);
-}
 
 .home-hero__title {
   margin-top: 1.5rem;
@@ -693,63 +679,12 @@
   background: linear-gradient(0deg, var(--home-container) 0%, transparent 45%);
 }
 
-.home-showcase__tag {
-  position: absolute;
-  top: 1.25rem;
-  left: 1.25rem;
-  z-index: 1;
-  padding: 0.3rem 0.6rem;
-  border-radius: 0.25rem;
-  background: rgba(6, 15, 22, 0.8);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--home-primary);
-}
 
-.home-showcase__tag--gold {
-  color: var(--home-gold);
-}
 
-.home-showcase__meta {
-  position: absolute;
-  inset: auto 1.25rem 1rem;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 
-.home-showcase__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  background: rgba(24, 33, 39, 0.85);
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--home-on-surface);
-}
 
-.home-showcase__chip svg {
-  width: 0.9rem;
-  height: 0.9rem;
-  color: var(--home-primary);
-}
 
-.home-showcase__where {
-  color: var(--home-gold);
-}
 
-.home-showcase__where--teal {
-  color: var(--home-primary);
-}
 
 .home-showcase__body {
   padding: 1.5rem 1.875rem 1.875rem;
@@ -1173,12 +1108,6 @@
   color: var(--home-gold);
 }
 
-.home-footer__hubs {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 
 /* Social media icon buttons (YouTube, Facebook, TikTok) */
 .home-footer__social {
@@ -1423,8 +1352,7 @@ html[data-theme='light'] .home-btn--teal:hover {
   background: #222222;
 }
 
-html[data-theme='light'] .home-btn--gold-outline,
-html[data-theme='light'] .home-hero__badge {
+html[data-theme='light'] .home-btn--gold-outline {
   background: transparent;
   border-color: var(--home-outline);
 }
@@ -1441,11 +1369,10 @@ html[data-theme='light'] .home-nav__logo {
   filter: none;
 }
 
-/* The hero photo keeps its colors (no light veil): only a dark shade behind the text column on the left and a
-   short fade into the page at the bottom; the text on it turns white, as on the sign-in photo */
+/* The hero photo shows as it is, with no shade or fade on top; the text on it turns white and keeps a
+   text shadow so it stays readable, as on the sign-in photo */
 html[data-theme='light'] .home-hero__shade {
-  background: linear-gradient(90deg, rgba(16, 14, 11, 0.62) 0%, rgba(16, 14, 11, 0.38) 38%, transparent 62%),
-    linear-gradient(0deg, var(--home-surface) 0%, transparent 25%);
+  display: none;
 }
 
 html[data-theme='light'] .home-hero {
@@ -1455,7 +1382,7 @@ html[data-theme='light'] .home-hero {
   --home-gold: #f2f2f0;
 }
 
-html[data-theme='light'] :is(.home-hero__badge, .home-hero__title, .home-hero__lead, .home-hero__features) {
+html[data-theme='light'] :is(.home-hero__title, .home-hero__lead, .home-hero__features) {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 12px rgba(0, 0, 0, 0.55);
 }
 
@@ -1481,8 +1408,6 @@ html[data-theme='light'] .home-capability--gold:hover {
   border-color: var(--home-on-variant);
 }
 
-html[data-theme='light'] .home-showcase__tag,
-html[data-theme='light'] .home-showcase__chip,
 html[data-theme='light'] .home-cta__badge {
   background: color-mix(in srgb, var(--home-lowest) 72%, transparent);
 }
@@ -1493,7 +1418,7 @@ html[data-theme='light'] .home-cta {
 }
 
 html[data-theme='light'] .home :is(.home-btn, .home-pill, .home-hud, .home-hud__stat, .home-hud__route, .home-capability,
-    .home-cta, .home-showcase__tag, .home-showcase__chip, .home-hero__badge) {
+    .home-cta) {
   border-radius: 2px;
 }
 
@@ -1521,16 +1446,3 @@ html[data-theme='light'] .home-showcase__media::after {
   display: none;
 }
 
-html[data-theme='light'] .home-showcase__media {
-  --home-gold: #f2f2f0;
-  --home-primary: #ffffff;
-}
-
-html[data-theme='light'] .home-showcase__where {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-html[data-theme='light'] .home-showcase__media :is(.home-showcase__tag, .home-showcase__chip) {
-  background: rgba(20, 18, 15, 0.62);
-  color: #ffffff;
-}
