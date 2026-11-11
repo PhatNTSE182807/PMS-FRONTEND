@@ -83,6 +83,8 @@ export interface PaymentDTO {
   status: PaymentStatus
   /** Hosted gateway page: redirect the browser there, or show it as a QR at the lane. */
   payUrl: string | null
+  /** What to put in a QR for the customer: MoMo's own app QR when there is one, else `payUrl`. */
+  qrCode?: string | null
   expiresAt: string | null
   createdAt: string
   paidAt: string | null
