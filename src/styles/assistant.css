@@ -70,7 +70,8 @@
   border: 1px solid var(--ast-outline);
   overflow: hidden;
 }
-.ast-avatar img { width: 82%; height: 82%; object-fit: contain; }
+/* The portrait fills the whole circle */
+.ast-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ast-panel__avatar { width: 36px; height: 36px; }
 .ast-launcher__avatar { width: 34px; height: 34px; border-color: rgba(0, 53, 72, 0.35); }
 .ast-msg__avatar { width: 26px; height: 26px; grid-row: 1 / span 2; align-self: start; }
