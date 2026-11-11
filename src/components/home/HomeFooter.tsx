@@ -48,9 +48,6 @@ export function HomeFooter() {
                 support@xxivparking.vn
               </a>
               <span className="home-footer__phone">Direct line: +84 (28) 7300-2424</span>
-              <span className="home-footer__hubs">
-                Metropolitan hubs: District 1 • Thu Thiem • Binh Thanh • District 7 (Ho Chi Minh City)
-              </span>
               <SocialLinks blockClass="home-footer" />
             </div>
           </div>
