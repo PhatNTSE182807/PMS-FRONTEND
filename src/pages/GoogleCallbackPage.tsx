@@ -52,7 +52,7 @@ export default function GoogleCallbackPage() {
       <AuthShowcaseLayout
         title="Signing in with Google"
         subtitle={error ? 'Google sign-in did not finish.' : 'One moment while we sign you in...'}
-        photo="/lamborghini.jpg"
+        photo="/login-car.jpg"
         tagline="Experience effortless, intelligent parking management crafted for luxury vehicles."
       >
         {error && (
