@@ -6,7 +6,7 @@ import { queryKeys } from '@/api/queryKeys'
 import type { AssistantMode, AssistantSourceDTO } from '@/types/assistant.dto'
 
 /** Name of the XXIV Parking chat assistant; its avatar is the app logo. */
-export const ASSISTANT_NAME = 'Virgo'
+export const ASSISTANT_NAME = 'Optimus Prime'
 
 /** Longest question the backend accepts. */
 export const ASSISTANT_MAX_QUESTION = 500
