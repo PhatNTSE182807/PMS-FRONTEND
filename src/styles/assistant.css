@@ -60,7 +60,7 @@
   background: var(--ast-low);
   border-bottom: 1px solid var(--ast-outline);
 }
-/* Virgo's avatar: the app logo in a round badge */
+/* Optimus Prime's avatar: the app logo in a round badge */
 .ast-avatar {
   display: grid;
   place-items: center;
@@ -72,7 +72,7 @@
 }
 /* The portrait fills the whole circle */
 .ast-avatar img { width: 100%; height: 100%; object-fit: cover; }
-/* Virgo's portrait is shown large so the face reads at a glance */
+/* Optimus Prime's portrait is shown large so the face reads at a glance */
 .ast-panel__avatar { width: 56px; height: 56px; }
 .ast-launcher__avatar { width: 54px; height: 54px; border-color: rgba(0, 53, 72, 0.35); }
 .ast-msg__avatar { width: 40px; height: 40px; grid-row: 1 / span 2; align-self: start; }
