@@ -2,6 +2,7 @@ import { SERVICE_PATHS } from '@/config/env'
 import type {
   BookedBayTakenDTO,
   DeployWalkInsCommand,
+  DeployWalkInToBayCommand,
   DeployWalkInsResultDTO,
   ParkingSimulationDTO,
   SimulatedWalkInDTO,
@@ -9,6 +10,7 @@ import type {
   WalkInCheckOutResultDTO,
   WalkInSimulationOverviewDTO,
 } from '@/types/simulation.dto'
+import type { GateRequestDTO } from '@/types/gateRequest.dto'
 import { http } from './axiosClient'
 
 /**
@@ -29,10 +31,11 @@ export const simulationService = {
 
 const walkIns = `${SERVICE_PATHS.staff}/simulation/walk-ins`
 
-/** Admin simulation: ends the business day now (one lot or all); open cash drawers must close within the grace seconds. */
-export function endBusinessDay(lotId: number | undefined, graceSeconds: number): Promise<{ drawersToClose: number; closeDueAt: string }> {
-  return http.post<{ drawersToClose: number; closeDueAt: string }>(`${SERVICE_PATHS.staff}/simulation/end-business-day`, { lotId, graceSeconds })
-}
+/**
+ * Batches run one vehicle after another through the real lanes. Filling a big lot on a hosted server
+ * (database in another region) takes minutes, far past the usual 15-second limit.
+ */
+const BATCH_TIMEOUT_MS = 5 * 60_000
 
 /** Admin walk-in simulation: random-plate vehicles through the real entry and exit lanes. */
 export const walkInSimulationService = {
@@ -43,7 +46,7 @@ export const walkInSimulationService = {
 
   /** POST /admin/simulation/walk-ins: send a batch in. */
   deploy(command: DeployWalkInsCommand): Promise<DeployWalkInsResultDTO> {
-    return http.post<DeployWalkInsResultDTO>(walkIns, command)
+    return http.post<DeployWalkInsResultDTO>(walkIns, command, { timeout: BATCH_TIMEOUT_MS })
   },
 
   /** One vehicle pays cash at the exit lane and leaves now. */
@@ -53,7 +56,10 @@ export const walkInSimulationService = {
 
   /** Every simulated vehicle (of one lot, or all) pays and leaves now. */
   checkOutAll(lotId?: number): Promise<WalkInCheckOutResultDTO> {
-    return http.post<WalkInCheckOutResultDTO>(`${walkIns}/check-out-all`, undefined, { params: lotId ? { lotId } : undefined })
+    return http.post<WalkInCheckOutResultDTO>(`${walkIns}/check-out-all`, undefined, {
+      params: lotId ? { lotId } : undefined,
+      timeout: BATCH_TIMEOUT_MS,
+    })
   },
 
   /** The driver reports a lost ticket: approved on the spot (conditions met) or sent to the lot's Manager. */
@@ -61,8 +67,13 @@ export const walkInSimulationService = {
     return http.post<SimulatedWalkInDTO | null>(`${walkIns}/${sessionId}/lost-ticket`, { conditionsMet })
   },
 
-  /** A walk-in parks in the bay of the lot's next confirmed booking. */
-  occupyBookedBay(lotId: number): Promise<BookedBayTakenDTO> {
-    return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: { lotId } })
+  /** A walk-in parks in the bay of the lot's next confirmed booking, or of the booking in `slotId`. */
+  occupyBookedBay(lotId: number, slotId?: number): Promise<BookedBayTakenDTO> {
+    return http.post<BookedBayTakenDTO>(`${walkIns}/occupy-booked-bay`, undefined, { params: slotId ? { lotId, slotId } : { lotId } })
+  },
+
+  /** One walk-in for a free bay picked on the 3D model: it waits at the entry lane until the Staff checks it in. */
+  deployToBay(command: DeployWalkInToBayCommand): Promise<GateRequestDTO> {
+    return http.post<GateRequestDTO>(`${walkIns}/bay`, command)
   },
 }

@@ -268,26 +268,13 @@
   color: var(--home-primary);
 }
 
-.home-nav__brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
+/* "XXIV PARKING" on one line, both words the same size */
 .home-nav__brand-name {
+  margin-left: 0.3rem;
   font-family: var(--home-headline-font);
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: 0.08em;
-}
-
-.home-nav__brand-sub {
-  margin-top: 0.2rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--home-primary);
 }
 
 .home-nav__links {
@@ -411,20 +398,6 @@
   gap: 3rem;
 }
 
-.home-hero__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem 0.9rem;
-  border: 1px solid rgba(233, 195, 73, 0.35);
-  border-radius: 9999px;
-  background: rgba(212, 175, 55, 0.08);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--home-gold);
-}
 
 .home-hero__title {
   margin-top: 1.5rem;
@@ -706,63 +679,12 @@
   background: linear-gradient(0deg, var(--home-container) 0%, transparent 45%);
 }
 
-.home-showcase__tag {
-  position: absolute;
-  top: 1.25rem;
-  left: 1.25rem;
-  z-index: 1;
-  padding: 0.3rem 0.6rem;
-  border-radius: 0.25rem;
-  background: rgba(6, 15, 22, 0.8);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--home-primary);
-}
 
-.home-showcase__tag--gold {
-  color: var(--home-gold);
-}
 
-.home-showcase__meta {
-  position: absolute;
-  inset: auto 1.25rem 1rem;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 
-.home-showcase__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  background: rgba(24, 33, 39, 0.85);
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--home-on-surface);
-}
 
-.home-showcase__chip svg {
-  width: 0.9rem;
-  height: 0.9rem;
-  color: var(--home-primary);
-}
 
-.home-showcase__where {
-  color: var(--home-gold);
-}
 
-.home-showcase__where--teal {
-  color: var(--home-primary);
-}
 
 .home-showcase__body {
   padding: 1.5rem 1.875rem 1.875rem;
@@ -1186,11 +1108,53 @@
   color: var(--home-gold);
 }
 
-.home-footer__hubs {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+
+/* Social media icon buttons (YouTube, Facebook, TikTok) */
+.home-footer__social {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.home-footer__social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--home-outline);
+  border-radius: 999px;
+  color: var(--home-on-variant);
+  transition: color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.home-footer__social-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.home-footer__social-link:hover,
+.home-footer__social-link:focus-visible {
+  transform: translateY(-2px);
+}
+
+/* Each icon takes its brand colour on hover */
+.home-footer__social-link--youtube:hover,
+.home-footer__social-link--youtube:focus-visible {
+  color: #ff0000;
+  border-color: #ff0000;
+}
+
+.home-footer__social-link--facebook:hover,
+.home-footer__social-link--facebook:focus-visible {
+  color: #1877f2;
+  border-color: #1877f2;
+}
+
+.home-footer__social-link--tiktok:hover,
+.home-footer__social-link--tiktok:focus-visible {
+  color: var(--home-on-surface);
+  border-color: var(--home-on-surface);
 }
 
 .home-footer__bottom {
@@ -1293,6 +1257,28 @@
     gap: 1rem;
   }
 
+  /* Open mobile menu: links in one column, the light/dark switch on the right of the Home row */
+  .home-nav--open .home-nav__links {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-items: start;
+  }
+
+  .home-nav__links a {
+    grid-column: 1;
+  }
+
+  .home-nav--open .home-theme-toggle--menu {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .home-nav__actions .home-theme-toggle {
+    display: none;
+  }
+
   .home-section {
     padding: 4.5rem 0;
   }
@@ -1343,3 +1329,147 @@
     gap: 1rem;
   }
 }
+
+/* =========================================================
+   Light mode, on when <html data-theme="light"> (see lib/theme.ts): off-white and black. An off-white page,
+   white panels, light grey hairlines and near-black ink and buttons; only the status colors add a hue.
+========================================================= */
+html[data-theme='light'] .home {
+  --home-surface: #f6f6f3;
+  --home-lowest: #ffffff;
+  --home-low: #f0f0ed;
+  --home-container: #ffffff;
+  --home-container-high: #f0f0ed;
+  --home-variant: #e7e7e3;
+  --home-outline: #e2e2de;
+  --home-on-surface: #111111;
+  --home-on-variant: #444441;
+  --home-primary: #111111;
+  --home-primary-fixed: #111111;
+  --home-primary-container: #e7e7e3;
+  --home-on-primary: #ffffff;
+  --home-gold: #111111;
+  --home-gold-fixed: #333333;
+  --home-on-gold: #ffffff;
+  --home-emerald: #3d6b4a;
+  --home-amber: #8a5a14;
+  --home-crimson: #a3362d;
+}
+
+html[data-theme='light'] .home ::selection {
+  color: var(--home-on-surface);
+}
+
+html[data-theme='light'] .home-pill,
+html[data-theme='light'] .home-hud__stat,
+html[data-theme='light'] .home-hud__route {
+  background: color-mix(in srgb, var(--home-lowest) 55%, transparent);
+}
+
+html[data-theme='light'] .home-btn--teal {
+  border-color: var(--home-outline);
+}
+
+html[data-theme='light'] .home-btn--teal:hover {
+  background: #222222;
+}
+
+html[data-theme='light'] .home-btn--gold-outline {
+  background: transparent;
+  border-color: var(--home-outline);
+}
+
+html[data-theme='light'] .home-nav {
+  background: color-mix(in srgb, var(--home-surface) 70%, transparent);
+}
+
+html[data-theme='light'] .home-nav--open {
+  background: color-mix(in srgb, var(--home-surface) 96%, transparent);
+}
+
+html[data-theme='light'] .home-nav__logo {
+  filter: none;
+}
+
+/* The hero photo shows as it is, with no shade or fade on top; the text on it turns white and keeps a
+   text shadow so it stays readable, as on the sign-in photo */
+html[data-theme='light'] .home-hero__shade {
+  display: none;
+}
+
+html[data-theme='light'] .home-hero {
+  --home-on-surface: #ffffff;
+  --home-on-variant: #f2f2f0;
+  --home-primary: #ffffff;
+  --home-gold: #f2f2f0;
+}
+
+html[data-theme='light'] :is(.home-hero__title, .home-hero__lead, .home-hero__features) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme='light'] .home-hero .home-btn--gold-outline {
+  border-color: rgba(232, 203, 168, 0.7);
+  background: rgba(20, 18, 15, 0.35);
+}
+
+html[data-theme='light'] .home-hero__glow--teal,
+html[data-theme='light'] .home-hero__glow--gold {
+  display: none;
+}
+
+html[data-theme='light'] .home-hud {
+  border-color: var(--home-outline);
+  background: color-mix(in srgb, var(--home-lowest) 70%, transparent);
+  box-shadow: 0 24px 48px rgba(17, 17, 17, 0.12);
+}
+
+html[data-theme='light'] .home-hud__live,
+html[data-theme='light'] .home-capability:hover,
+html[data-theme='light'] .home-capability--gold:hover {
+  border-color: var(--home-on-variant);
+}
+
+html[data-theme='light'] .home-cta__badge {
+  background: color-mix(in srgb, var(--home-lowest) 72%, transparent);
+}
+
+html[data-theme='light'] .home-cta {
+  border-color: var(--home-outline);
+  background: var(--home-lowest);
+}
+
+html[data-theme='light'] .home :is(.home-btn, .home-pill, .home-hud, .home-hud__stat, .home-hud__route, .home-capability,
+    .home-cta) {
+  border-radius: 2px;
+}
+
+/* Sun/moon button of the top bar */
+.home-theme-toggle {
+  display: flex;
+  padding: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--home-on-variant);
+  cursor: pointer;
+}
+
+/* The copy inside the phone menu shows only while that menu is open */
+.home-theme-toggle--menu {
+  display: none;
+}
+
+.home-theme-toggle:hover {
+  color: var(--home-on-surface);
+}
+
+.home-theme-toggle svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* The facility photos show as they are (no fade into the card); the texts on them turn light */
+html[data-theme='light'] .home-showcase__media::after {
+  display: none;
+}
+

@@ -1,18 +1,21 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowRight, CircleCheck, CircleX, Clock, DoorOpen, Hourglass, Keyboard, LogIn, LogOut, Phone, ShieldAlert, SkipForward, Undo2, UserRound } from 'lucide-react'
+import { ArrowRight, CircleCheck, CircleX, Clock, DoorOpen, Hourglass, Keyboard, LogIn, LogOut, Phone, ShieldAlert, SkipForward, UserRound } from 'lucide-react'
 import { ApiError, getErrorMessage } from '@/api/apiError'
 import { Button } from '@/components/ui/button'
 import { Checkbox, Input } from '@/components/ui/form-controls'
 import { useApproveGateRequest, useGateRequestQueue, useRefuseGateRequest } from '@/hooks/useGateRequests'
-import { useCancelEntry, useConfirmEntry } from '@/hooks/useGate'
+import { useConfirmEntry } from '@/hooks/useGate'
+import { platesMatch, useLanePlate } from '@/hooks/useLanePlate'
 import { useNow } from '@/hooks/useNow'
 import { formatNumber } from '@/lib/format'
+import { gateLaneSignals, laneVehicleKind } from '@/lib/gateLaneSignals'
 import { cn } from '@/lib/utils'
 import type { ApproveGateRequestRequest, GateRequestDTO, GateRequestKind } from '@/types/gateRequest.dto'
 import type { GateAlertDTO } from '@/types/operations.dto'
 import { AlertRow, EntryLaneConsole } from './EntryLaneConsole'
+import { LanePlateArea } from './LanePlateArea'
 import { Panel, Plate } from './StaffBits'
 import { STAFF_TOAST, toastEntryAlerts, toastUnsettled } from './staffToasts'
 
@@ -38,24 +41,37 @@ const OVERRIDES: Partial<Record<string, { flag: keyof ApproveGateRequestRequest;
 }
 
 /**
- * What the lane is doing with the request it handles: deciding, barrier open (check-in waits for the
- * vehicle to pass the sensor), or done (the next vehicle can be called).
+ * The request the lane has just handled: barrier opened (the entry is confirmed at once, team decision
+ * 2026-11-04: no "vehicle passed the sensor" step) or refused. The next vehicle can then be called.
  */
-type Handled = { request: GateRequestDTO; phase: 'entering' | 'done'; sessionId: number | null; message: string }
+type Handled = { request: GateRequestDTO; phase: 'done'; sessionId: number | null; message: string }
+
+/** The 3D camera of each lane: Check-in requests use the entry lane, Check-out requests the exit lane. */
+const laneOf = (kind: GateRequestKind) => (kind === 'CheckIn' ? 'entry' : 'exit')
+
+const laneVehicleOf = (r: GateRequestDTO) => ({ key: `request-${r.id}`, plate: r.plateNumber ?? '', kind: laneVehicleKind(r.vehicleTypeName), paint: r.paintColor })
 
 /**
  * Staff lanes for the check-in / check-out requests. Check-in requests come from the customer app; the
  * Check-out lane also gets every paid vehicle (paid at the POS or in the app, walk-ins included), since the
  * exit barrier is only opened here (team decision, 2026-11-04). Each tab works through
  * its queue oldest first: the vehicle's details show, the Staff opens the barrier (the normal gate checks
- * run) or refuses with a reason, and "Next vehicle" moves to the next request. Walk-ins and scanned QR
- * codes still go through the manual entry form under the Check-in tab.
+ * run) or refuses with a reason, and "Next vehicle" moves to the next request. Each lane has a plate area: what the
+ * lane camera read and the Staff plate filled from it; the barrier opens only once the Staff plate matches the
+ * plate on record (the booking's plate at check-in, the parked vehicle's plate at check-out). Walk-ins and scanned
+ * QR codes go through the walk-in form, always shown under the Check-in tab.
  */
 export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: string; initialTab?: GateRequestKind }) {
   const [tab, setTab] = useState<GateRequestKind>(initialTab)
   const checkIns = useGateRequestQueue(lotId, 'CheckIn')
   const checkOuts = useGateRequestQueue(lotId, 'CheckOut')
   const counts = { CheckIn: checkIns.data?.length ?? 0, CheckOut: checkOuts.data?.length ?? 0 }
+
+  // The gate cameras show the lane of the open tab when vehicles wait at both barriers
+  useEffect(() => {
+    gateLaneSignals.setActive(laneOf(tab))
+    return () => gateLaneSignals.setActive(null)
+  }, [tab])
 
   return (
     <Panel className="flex flex-col">
@@ -71,7 +87,7 @@ export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: strin
               onClick={() => setTab(kind)}
               className={cn(
                 'flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold tracking-wide uppercase transition-colors',
-                tab === kind ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                tab === kind ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
               )}
             >
               <Icon className="size-4" aria-hidden /> {kind === 'CheckIn' ? 'Check-in' : 'Check-out'}
@@ -96,11 +112,20 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
   const now = useNow(15_000)
   const [currentId, setCurrentId] = useState<number | null>(null)
   const [handled, setHandled] = useState<Handled | null>(null)
-  const [manual, setManual] = useState(false)
 
   // The vehicle being handled: the picked one while it waits, else the oldest in the queue
   const current = handled ? null : (queue.find((r) => r.id === currentId) ?? queue[0] ?? null)
   const others = queue.filter((r) => r.id !== (handled?.request.id ?? current?.id))
+
+  // The 3D camera of this lane shows the vehicle waiting at its closed barrier, whichever tab is open: a vehicle
+  // waiting to check in stands at the entry camera while another waits at the exit camera. Once one is let
+  // through, the next one comes up after it has driven out (gateLaneSignals keeps it until then).
+  const currentKey = current ? laneVehicleOf(current).key : null
+  useEffect(() => {
+    gateLaneSignals.wait(laneOf(kind), current ? laneVehicleOf(current) : null)
+    // Only when the handled vehicle changes, not on every queue refresh
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentKey, kind])
 
   /** Moves to the next request (after the current one was handled, or to skip it for now). */
   const next = () => {
@@ -111,39 +136,34 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
   }
 
   const lane = kind === 'CheckIn' ? 'entry' : 'exit'
-
-  if (manual && kind === 'CheckIn') {
-    return (
-      <div className="space-y-3">
-        <LaneHeader title="Manual entry" detail="Walk-in, or scan the reservation QR at the lane" />
-        <EntryLaneConsole lotId={lotId} embedded />
-        <Button variant="outline" className="w-full" onClick={() => setManual(false)}>
-          <Undo2 /> Back to app requests{queue.length ? ` (${queue.length} waiting)` : ''}
-        </Button>
-      </div>
-    )
-  }
+  // The Staff plate starts empty for each vehicle the lane handles, then each camera read fills it
+  const plate = useLanePlate(lane, handled ? `handled-${handled.request.id}` : (currentKey ?? 'none'))
+  const recorded = current?.plateNumber ?? null
+  const recordedLabel = kind === 'CheckOut' ? 'plate of the parked vehicle' : current?.isSimulated ? 'plate on the request' : "booking's registered plate"
+  const plateArea = <LanePlateArea lane={plate} recorded={recorded} recordedLabel={recordedLabel} />
 
   return (
     <div className="space-y-4">
       {handled ? (
-        <HandledView handled={handled} kind={kind} onDone={(message) => setHandled({ ...handled, phase: 'done', message })} />
+        <HandledView handled={handled} kind={kind} />
       ) : current ? (
         <RequestView
           key={current.id}
           request={current}
           now={now}
+          plateArea={plateArea}
+          plateMatches={!recorded || platesMatch(plate.plate, recorded)}
           onHandled={(h) => setHandled(h)}
         />
+      ) : kind === 'CheckIn' ? (
+        <p className="flex items-center gap-2 text-sm text-slate-700">
+          <Hourglass className="size-4 shrink-0 text-slate-600" aria-hidden /> {loading ? 'Loading app check-in requests…' : 'No app check-in requests waiting.'}
+        </p>
       ) : (
         <div className="rounded-xl bg-slate-50 p-6 text-center ring-1 ring-slate-200">
           <Hourglass className="mx-auto size-6 text-slate-600" aria-hidden />
-          <p className="mt-2 font-semibold text-slate-950">{loading ? 'Loading requests…' : `No ${kind === 'CheckIn' ? 'check-in' : 'check-out'} requests`}</p>
-          <p className="mt-1 text-sm text-slate-700">
-            {kind === 'CheckIn'
-              ? 'Customers who press "Check in" on their booking appear here, oldest first.'
-              : 'Paid vehicles (at the POS or in the app, walk-ins too) and customers who press "Check out" appear here, oldest first.'}
-          </p>
+          <p className="mt-2 font-semibold text-slate-950">{loading ? 'Loading requests…' : 'No check-out requests'}</p>
+          <p className="mt-1 text-sm text-slate-700">Paid vehicles (at the POS or in the app, walk-ins too) and customers who press "Check out" appear here, oldest first.</p>
         </div>
       )}
 
@@ -172,9 +192,12 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
       )}
 
       {kind === 'CheckIn' ? (
-        <Button variant="secondary" className="w-full" onClick={() => setManual(true)}>
-          <Keyboard /> Manual entry (walk-in or scan QR)
-        </Button>
+        // Always shown: walk-ins and bookings scanned at the lane use the same plate area
+        <div className="space-y-4 border-t border-slate-200 pt-4">
+          <LaneHeader title={current && !handled ? 'Other vehicle: walk-in or booking code' : 'Walk-in or booking code'} detail="Walk-in, or scan the reservation QR at the lane" />
+          {(handled || !current) && plateArea}
+          <EntryLaneConsole lotId={lotId} lane={plate} embedded />
+        </div>
       ) : (
         <Button variant="secondary" className="w-full" asChild>
           <Link to="/staff/checkout">
@@ -199,8 +222,23 @@ function LaneHeader({ title, detail, aside }: { title: string; detail?: string; 
 }
 
 /** One waiting request: the vehicle and customer, what may block it, and the Open barrier / Refuse decision. */
-function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now: number; onHandled: (h: Handled) => void }) {
+function RequestView({
+  request,
+  now,
+  plateArea,
+  plateMatches,
+  onHandled,
+}: {
+  request: GateRequestDTO
+  now: number
+  /** The lane's camera read and Staff plate, shown under the vehicle card. */
+  plateArea: ReactNode
+  /** The Staff plate matches the request's plate on record (or it has none): the barrier may open. */
+  plateMatches: boolean
+  onHandled: (h: Handled) => void
+}) {
   const approve = useApproveGateRequest()
+  const confirmEntry = useConfirmEntry()
   const refuse = useRefuseGateRequest()
   const [alerts, setAlerts] = useState<GateAlertDTO[]>([])
   const [options, setOptions] = useState<ApproveGateRequestRequest>({})
@@ -213,7 +251,11 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
 
   const open = () =>
     approve.mutate(
-      { requestId: request.id, request: { ...options, overrideReason: options.overrideReason?.trim() || undefined } },
+      {
+        requestId: request.id,
+        // A matching Staff plate means the Staff checked the plate on the vehicle
+        request: { ...options, plateConfirmed: options.plateConfirmed || (Boolean(request.plateNumber) && plateMatches) || undefined, overrideReason: options.overrideReason?.trim() || undefined },
+      },
       {
         onSuccess: (decision) => {
           if (!decision.barrierOpen) {
@@ -222,10 +264,20 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
             if (checkIn) toastEntryAlerts(decision.alerts, { status: request.reservationStatus, checkInUntil: request.checkInUntil })
             return
           }
+          // The barrier lifts in the lane's 3D camera and the vehicle drives through
+          gateLaneSignals.open(laneOf(request.kind), laneVehicleOf(request))
           if (checkIn) {
             const session = decision.checkIn?.session ?? null
             toast.success(STAFF_TOAST.checkedIn)
-            onHandled({ request: decision.request, phase: 'entering', sessionId: session?.id ?? null, message: '' })
+            // Opening the barrier is the last step: the entry is confirmed at once, no "vehicle passed" press
+            if (session?.status === 'PendingEntry') {
+              confirmEntry.mutate(session.id, {
+                onSuccess: (s) => onHandled({ request: decision.request, phase: 'done', sessionId: s.id, message: `Checked in to ${s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot')}.` }),
+                onError: (e) => onHandled({ request: decision.request, phase: 'done', sessionId: session.id, message: `Barrier opened, but the entry was not recorded: ${getErrorMessage(e)}` }),
+              })
+            } else {
+              onHandled({ request: decision.request, phase: 'done', sessionId: session?.id ?? null, message: session?.slotCode ? `Checked in to bay ${session.slotCode}.` : 'Checked in.' })
+            }
           } else {
             const refund = decision.checkOut?.depositRefund ?? 0
             const message = refund > 0 ? `Exit barrier opened. ${formatNumber(refund)} VND of the deposit goes back to the customer.` : 'Exit barrier opened. Session completed.'
@@ -260,7 +312,9 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
       <LaneHeader
         title={
           checkIn
-            ? `App check-in · Reservation ${request.reservationCode ?? ''}`
+            ? request.isSimulated
+              ? 'Walk-in check-in · Simulated vehicle'
+              : `App check-in · Reservation ${request.reservationCode ?? ''}`
             : `${request.customerName ? 'Check-out' : 'Walk-in check-out'} · Session ${request.sessionCode ?? ''}`
         }
         aside={
@@ -270,7 +324,7 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
         }
       />
 
-      <div className="rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+      <div className="rounded-xl bg-well p-5 ring-1 ring-slate-200">
         <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{request.plateNumber ?? 'NO PLATE'}</p>
         <p className="mt-1 text-sm text-slate-700">
           {[request.vehicleLabel, request.vehicleColor, request.vehicleTypeName].filter(Boolean).join(' • ') || 'Vehicle details unavailable'}
@@ -292,7 +346,12 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
             <dt className="text-xs text-slate-600">Bay</dt>
             <dd className="font-mono font-medium text-slate-900">{request.slotCode ?? '—'}</dd>
           </div>
-          {checkIn ? (
+          {checkIn && request.isSimulated ? (
+            <div>
+              <dt className="text-xs text-slate-600">Entry</dt>
+              <dd className="font-medium text-slate-900">Walk-in, no booking</dd>
+            </div>
+          ) : checkIn ? (
             <div>
               <dt className="text-xs text-slate-600">Check-in window</dt>
               <dd className="font-mono font-medium text-slate-900">
@@ -325,6 +384,8 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
         </dl>
       </div>
 
+      {plateArea}
+
       {request.problem ? (
         <p className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
           <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -338,11 +399,11 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
             )}
           </span>
         </p>
-      ) : (
+      ) : plateMatches ? (
         <p className="flex items-center gap-2 text-sm font-medium text-emerald-700">
           <CircleCheck className="size-4 shrink-0" aria-hidden /> Check the vehicle at the {checkIn ? 'entry' : 'exit'} lane matches, then open the barrier.
         </p>
-      )}
+      ) : null}
 
       {alerts.length > 0 && (
         <div className="space-y-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">
@@ -366,7 +427,7 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
           <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Reason for the customer</p>
           <div className="flex flex-wrap gap-1.5">
             {REFUSE_REASONS[request.kind].map((r) => (
-              <button key={r} type="button" onClick={() => setReason(r)} className={cn('rounded-full px-2.5 py-1 text-xs ring-1', reason === r ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'text-slate-800 ring-slate-200 hover:bg-slate-100')}>
+              <button key={r} type="button" onClick={() => setReason(r)} className={cn('rounded-full px-2.5 py-1 text-xs ring-1', reason === r ? 'bg-selected text-indigo-800 ring-indigo-300' : 'text-slate-800 ring-slate-200 hover:bg-slate-100')}>
                 {r}
               </button>
             ))}
@@ -381,7 +442,10 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
         </div>
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-          <Button variant="gold" className="h-11" disabled={approve.isPending || (usesOverride && !options.overrideReason?.trim())} onClick={open}>
+          <Button variant="gold" className="h-11" disabled={!plateMatches || approve.isPending || confirmEntry.isPending || (usesOverride && !options.overrideReason?.trim())}
+            title={plateMatches ? undefined : 'The Staff plate must match the plate on record'}
+            onClick={open}
+          >
             <DoorOpen /> {alerts.length ? 'Check again & open barrier' : 'Open barrier'}
           </Button>
           <Button variant="outline" className="h-11 text-rose-700" onClick={() => setRefusing(true)}>
@@ -393,58 +457,20 @@ function RequestView({ request, now, onHandled }: { request: GateRequestDTO; now
   )
 }
 
-/** After the barrier opened (check-in waits for the sensor) or the request was refused. */
-function HandledView({ handled, kind, onDone }: { handled: Handled; kind: GateRequestKind; onDone: (message: string) => void }) {
-  const confirm = useConfirmEntry()
-  const cancel = useCancelEntry()
+/** After the barrier opened (the vehicle is in or out) or the request was refused. */
+function HandledView({ handled, kind }: { handled: Handled; kind: GateRequestKind }) {
   const r = handled.request
-
   return (
     <div className="space-y-4">
       <LaneHeader title={kind === 'CheckIn' ? 'Entry barrier' : 'Exit barrier'} />
-      <div className={cn('rounded-xl p-5 ring-1', handled.phase === 'entering' ? 'bg-emerald-50 ring-emerald-200' : r.status === 'Refused' ? 'bg-rose-50 ring-rose-200' : 'bg-slate-50 ring-slate-200')}>
+      <div className={cn('rounded-xl p-5 ring-1', r.status === 'Refused' ? 'bg-rose-50 ring-rose-200' : 'bg-emerald-50 ring-emerald-200')}>
         <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{r.plateNumber ?? 'NO PLATE'}</p>
         <p className="mt-1 text-sm text-slate-700">{[r.vehicleLabel, r.customerName].filter(Boolean).join(' • ')}</p>
         <p className={cn('mt-3 flex items-start gap-2 text-sm font-medium', r.status === 'Refused' ? 'text-rose-800' : 'text-emerald-700')}>
           {r.status === 'Refused' ? <CircleX className="mt-0.5 size-4 shrink-0" aria-hidden /> : <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden />}
-          {handled.phase === 'entering' ? 'Barrier open: confirm when the vehicle has passed the sensor.' : handled.message}
+          {handled.message}
         </p>
       </div>
-
-      {handled.phase === 'entering' && handled.sessionId != null && (
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="success"
-            disabled={confirm.isPending}
-            onClick={() =>
-              confirm.mutate(handled.sessionId!, {
-                onSuccess: (s) => {
-                  toast.success(`${s.plateNumber || s.code} is in`, { description: 'Session valid; bay and zone counter updated.' })
-                  onDone(`Checked in to ${s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot')}.`)
-                },
-                onError: (e) => toast.error(getErrorMessage(e)),
-              })
-            }
-          >
-            <DoorOpen /> Vehicle passed (sensor)
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={cancel.isPending}
-            onClick={() =>
-              cancel.mutate(handled.sessionId!, {
-                onSuccess: () => {
-                  toast.info('Entry cancelled: the vehicle turned around.')
-                  onDone('Entry cancelled: the vehicle turned around.')
-                },
-                onError: (e) => toast.error(getErrorMessage(e)),
-              })
-            }
-          >
-            <Undo2 /> Turned around
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

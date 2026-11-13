@@ -42,6 +42,7 @@ function useWalkInMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>
       void queryClient.invalidateQueries({ queryKey: ['parking-simulation', 'walk-ins'] })
       void queryClient.invalidateQueries({ queryKey: queryKeys.parking.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.layout.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.all })
     },
     onError: (error) => toastAdminError(error, { fallback: 'The simulation could not do that.' }),
   })
@@ -55,26 +56,40 @@ export function useDeployWalkIns() {
   )
 }
 
-export function useCheckOutWalkIn() {
-  return useWalkInMutation(walkInSimulationService.checkOut, () => toast.success('The vehicle paid and left.'))
-}
-
 export function useCheckOutAllWalkIns() {
   return useWalkInMutation(walkInSimulationService.checkOutAll, (r) =>
     toast.success(`${r.checkedOut} vehicles paid and left${r.skipped ? `; ${r.skipped} could not leave yet` : ''}.`),
   )
 }
 
-export function useSimulateLostTicket() {
+/** One walk-in for a free bay picked on the 3D model: it queues at the entry lane for the Staff to check in. */
+export function useDeployWalkInToBay() {
+  return useWalkInMutation(walkInSimulationService.deployToBay, (r) =>
+    toast.success(`${r.plateNumber ?? 'A walk-in'} is waiting at the entry lane for bay ${r.slotCode ?? ''}.`, {
+      description: 'Check it in on the Staff gate screen (Check-in lane). Several walk-ins queue one after another.',
+    }),
+  )
+}
+
+/** A walk-in parks by mistake in the booked bay picked on the 3D model. */
+export function useOccupyBookedBayAt() {
   return useWalkInMutation(
-    ({ sessionId, conditionsMet }: { sessionId: number; conditionsMet: boolean }) =>
-      walkInSimulationService.reportLostTicket(sessionId, conditionsMet),
-    (_r) => toast.success('Lost ticket reported. Open the Staff or Manager screens to handle it.'),
+    ({ lotId, slotId }: { lotId: number; slotId: number }) => walkInSimulationService.occupyBookedBay(lotId, slotId),
+    (r) =>
+      toast.success(
+        `${r.plate} parked in booked bay ${r.bayCode} (booking ${r.reservationCode}).` +
+          (r.caseId ? ' The lot\'s Staff got the case in Exceptions & Alerts and the customer was told their bay is taken.' : ''),
+      ),
   )
 }
 
 export function useOccupyBookedBay() {
-  return useWalkInMutation(walkInSimulationService.occupyBookedBay, (r) =>
-    toast.success(`${r.plate} parked in booked bay ${r.bayCode} (booking ${r.reservationCode}). Check that booking in at the entry lane.`),
+  return useWalkInMutation((lotId: number) => walkInSimulationService.occupyBookedBay(lotId), (r) =>
+    toast.success(
+      `${r.plate} parked in booked bay ${r.bayCode} (booking ${r.reservationCode}).` +
+        (r.caseId
+          ? ' The lot\'s Staff got the case in Exceptions & Alerts and the customer was told their bay is taken.'
+          : ' A case for that booking was already open.'),
+    ),
   )
 }

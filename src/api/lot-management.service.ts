@@ -29,6 +29,11 @@ function read(): ManagedLot[] {
       code: l.code,
       name: l.name,
       address: l.address,
+      city: 'Ho Chi Minh City',
+      district: '',
+      phone: '',
+      latitude: null,
+      longitude: null,
       is24Hours: true,
       openTime: '',
       closeTime: '',
@@ -81,9 +86,10 @@ function requireAdmin() {
 }
 function requireManager(lot: ManagedLot) {
   const user = actor()
+  if (user.role === 'ADMIN') return
   if (user.role !== 'MANAGER' || user.userId !== lot.managerUserId)
     throw new Error(
-      'Only the Manager assigned to this lot can change its operating status.',
+      'Only an Admin or the Manager assigned to this lot can change its operating status.',
     )
 }
 export const lotManagementService = {
@@ -144,10 +150,11 @@ export const lotManagementService = {
     requireAdmin()
     const lots = await load()
     const lot = getLot(lots, id)
-    if (lot.status === 'Active' || lot.zones.length)
-      throw new Error(
-        'Only inactive lots without zones can be deleted. Lots that have operated must keep their history in the backend.',
-      )
+    // Same rule as the API: the lot is closed first and every vehicle has left.
+    if (lot.status !== 'Closed')
+      throw new Error('Set the lot to Closed before deleting it.')
+    if (lot.zones.some((z) => z.slots.some((s) => s.status === 'Occupied')))
+      throw new Error('Cannot delete the parking lot while vehicles are still inside.')
     if (!isDemo()) {
       await lotManagementApi.deleteLot(id)
       return

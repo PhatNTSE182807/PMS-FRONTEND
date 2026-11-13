@@ -10,6 +10,8 @@ import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import ResetPasswordPage from '@/pages/ResetPasswordPage'
+import GoogleCallbackPage from '@/pages/GoogleCallbackPage'
+import { GOOGLE_CALLBACK_PATH } from '@/lib/google-identity'
 import CustomerDashboardPage from '@/pages/customer/CustomerDashboardPage'
 import CustomerProfilePage from '@/pages/customer/CustomerProfilePage'
 import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
@@ -47,6 +49,8 @@ export const router = createBrowserRouter([
       { path: '/register', element: <RegisterPage /> },
       // Opened from the password reset email
       { path: '/reset-password', element: <ResetPasswordPage /> },
+      // Google sends the browser back here after "Sign in with Google"
+      { path: GOOGLE_CALLBACK_PATH, element: <GoogleCallbackPage /> },
     ],
   },
   // VNPay / MoMo send the browser back here (public: Guests pay lane QRs on their phones too).

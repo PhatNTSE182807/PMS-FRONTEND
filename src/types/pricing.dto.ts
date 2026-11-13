@@ -46,6 +46,8 @@ export interface PricingRuleDTO {
   overstaySurchargePerDay: number
   lostTicketFee: number
   noShowFee: number
+  /** Paid into the customer's XXIV wallet when a walk-in took their booked bay and no other bay was free. */
+  bookedBayCompensation: number
   currency: string
   priority: number
   effectiveFrom: string
@@ -82,6 +84,8 @@ export interface PricingRuleInput {
   nightPrice: number | null
   maxDailyFee: number | null
   lostTicketFee: number
+  /** Not a price: changing it never tells customers the price changed. */
+  bookedBayCompensation: number
   status?: PricingRuleStatus
   /** Kept from the rule on update (the API requires it). */
   effectiveFrom?: string

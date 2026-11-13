@@ -15,12 +15,6 @@ export interface CashDrawerDTO {
   closeNo: number
   status: CashDrawerStatus
   openedAt: string | null
-  /** Deadline to close: 23:00 of the business day, or sooner in a simulated day end. */
-  closeDueAt: string | null
-  /** Still open after its deadline; the Manager was told. */
-  isOverdue: boolean
-  /** Closed after its deadline. */
-  closedLate: boolean
   float: BanknoteCounts
   floatTotal: number
   /** Cash fees this Staff recorded while the drawer was open. */
@@ -46,6 +40,8 @@ export interface CashDrawerDTO {
   differenceThreshold: number
   /** Banknote values, largest first. */
   denominations: number[]
+  /** The standard float a drawer opened by the system starts with. */
+  defaultFloat: BanknoteCounts
   /** Cash the Manager approved into this drawer (already in expectedTotal and expectedNotes). */
   topUpTotal: number
   /** Requests for more banknotes made for this drawer, newest first. */

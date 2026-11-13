@@ -1,126 +1,155 @@
-/// <reference types="google.maps" />
-import { useEffect, useState } from 'react'
-import { APIProvider, Map, Marker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
+import { useEffect, useRef, useState } from 'react'
+import type { Map as MapboxMap, Marker } from 'mapbox-gl'
+import type { Feature, LineString } from 'geojson'
 import { ExternalLink, LocateFixed, MapPin, X } from 'lucide-react'
 import type { PublicLotDTO } from '@/types/publicLot.dto'
+import { formatDistance, formatDuration, geocodeAddress, getDrivingRoute, mapboxToken, type DrivingRoute, type LngLat } from '@/api/mapbox.service'
 
-type LatLng = google.maps.LatLngLiteral
 type DirectionsLot = Pick<PublicLotDTO, 'name' | 'address' | 'district' | 'city' | 'latitude' | 'longitude'>
 
-const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
 /** Map centre before the lot is found (Ho Chi Minh City). */
-const DEFAULT_CENTER: LatLng = { lat: 10.7769, lng: 106.7009 }
+const DEFAULT_CENTER: LngLat = { lng: 106.7009, lat: 10.7769 }
+const ROUTE_SOURCE = 'lot-route'
 
 type LocateState = 'locating' | 'found' | 'denied' | 'unsupported'
 
 /** Full address used to find the lot when it has no saved coordinates. */
 const lotAddress = (lot: DirectionsLot) => [lot.name, lot.address, lot.district, lot.city].filter(Boolean).join(', ')
 
-const lotCoords = (lot: DirectionsLot): LatLng | null =>
+const lotCoords = (lot: DirectionsLot): LngLat | null =>
   lot.latitude != null && lot.longitude != null ? { lat: Number(lot.latitude), lng: Number(lot.longitude) } : null
 
-/** Google Maps directions in a new tab; works without an API key. */
-function googleMapsUrl(lot: DirectionsLot, origin: LatLng | null) {
+/** Google Maps directions in a new tab; works without any API key. */
+function googleMapsUrl(lot: DirectionsLot, origin: LngLat | null) {
   const coords = lotCoords(lot)
   const params = new URLSearchParams({ api: '1', destination: coords ? `${coords.lat},${coords.lng}` : lotAddress(lot), travelmode: 'driving' })
   if (origin) params.set('origin', `${origin.lat},${origin.lng}`)
   return `https://www.google.com/maps/dir/?${params.toString()}`
 }
 
-interface RouteInfo {
-  distance: string
-  duration: string
-}
-
 /**
- * Draws the driving route from the customer to the lot. When there is no route (location refused,
- * or the Directions service is unavailable) it still shows the lot and, if known, the customer.
+ * Mapbox map with the lot, the customer's position and the driving route between them. When there is
+ * no route (location refused, or Directions unavailable) it still shows the lot and, if known, the customer.
  */
-function RouteLayer({ lot, origin, onRoute }: { lot: DirectionsLot; origin: LatLng | null; onRoute: (route: RouteInfo | null) => void }) {
-  const map = useMap()
-  const routes = useMapsLibrary('routes')
-  const geocoding = useMapsLibrary('geocoding')
-  const [lotPosition, setLotPosition] = useState<LatLng | null>(() => lotCoords(lot))
-  const [routeFailed, setRouteFailed] = useState(false)
+function DirectionsMap({ lot, origin, onRoute }: { lot: DirectionsLot; origin: LngLat | null; onRoute: (route: DrivingRoute | null) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [map, setMap] = useState<MapboxMap | null>(null)
+  const [lotPosition, setLotPosition] = useState<LngLat | null>(() => lotCoords(lot))
+  const [route, setRoute] = useState<DrivingRoute | null>(null)
+  // Set when the dialog closes: the map is gone, so later cleanups must not touch it
+  const removedRef = useRef(false)
 
-  // Route from the customer's position to the lot
+  // Create the map once; mapbox-gl is loaded only when the dialog opens
   useEffect(() => {
-    if (!map || !routes || !origin) return
-    const renderer = new routes.DirectionsRenderer({ map, suppressMarkers: true, polylineOptions: { strokeColor: '#1a73e8', strokeWeight: 6 } })
+    let created: MapboxMap | null = null
     let cancelled = false
-    new routes.DirectionsService()
-      .route({ origin, destination: lotCoords(lot) ?? lotAddress(lot), travelMode: google.maps.TravelMode.DRIVING })
-      .then((result) => {
-        if (cancelled) return
-        renderer.setDirections(result)
-        const leg = result.routes[0]?.legs[0]
-        if (leg) setLotPosition((current) => current ?? leg.end_location.toJSON())
-        onRoute(leg ? { distance: leg.distance?.text ?? '', duration: leg.duration?.text ?? '' } : null)
+    removedRef.current = false
+    void Promise.all([import('mapbox-gl'), import('mapbox-gl/dist/mapbox-gl.css')]).then(([{ default: mapboxgl }]) => {
+      if (cancelled || !containerRef.current) return
+      const center = lotCoords(lot) ?? DEFAULT_CENTER
+      created = new mapboxgl.Map({
+        container: containerRef.current,
+        accessToken: mapboxToken,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [center.lng, center.lat],
+        zoom: 14,
+        language: 'en',
+      })
+      created.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
+      // Markers and the route only need the style, not every tile: "load" never fires while the tab is
+      // in the background, so waiting for it would leave the map empty
+      created.once('style.load', () => {
+        if (cancelled || !created) return
+        // The full-screen dialog may still be growing when the map is built: measure it again before
+        // the camera is fitted to the route
+        created.resize()
+        setMap(created)
+      })
+    })
+    return () => {
+      cancelled = true
+      removedRef.current = true
+      created?.remove()
+    }
+  }, [lot])
+
+  // Find the lot by address when it has no saved coordinates
+  useEffect(() => {
+    if (lotPosition) return
+    const abort = new AbortController()
+    geocodeAddress(lotAddress(lot), abort.signal)
+      .then((found) => found && setLotPosition(found))
+      .catch(() => undefined)
+    return () => abort.abort()
+  }, [lot, lotPosition])
+
+  // Driving route from the customer's position to the lot
+  useEffect(() => {
+    if (!origin || !lotPosition) return
+    const abort = new AbortController()
+    getDrivingRoute(origin, lotPosition, abort.signal)
+      .then((found) => {
+        setRoute(found)
+        onRoute(found)
       })
       .catch(() => {
-        if (cancelled) return
-        setRouteFailed(true)
-        onRoute(null)
+        if (!abort.signal.aborted) onRoute(null)
       })
-    return () => {
-      cancelled = true
-      renderer.setMap(null)
-    }
-  }, [map, routes, origin, lot, onRoute])
+    return () => abort.abort()
+  }, [origin, lotPosition, onRoute])
 
-  // No route to read the lot's position from: find it by address
-  const needsGeocode = !lotPosition && (!origin || routeFailed)
+  // Markers, route line and camera
   useEffect(() => {
-    if (!geocoding || !needsGeocode) return
+    if (!map) return
+    let markers: Marker[] = []
     let cancelled = false
-    new geocoding.Geocoder()
-      .geocode({ address: lotAddress(lot), region: 'vn' })
-      .then(({ results }) => {
-        const location = results[0]?.geometry.location
-        if (!cancelled && location) setLotPosition(location.toJSON())
-      })
-      .catch(() => undefined)
+    void import('mapbox-gl').then(({ default: mapboxgl }) => {
+      if (cancelled) return
+      if (lotPosition) {
+        markers.push(new mapboxgl.Marker({ color: '#0f766e' }).setLngLat([lotPosition.lng, lotPosition.lat]).setPopup(new mapboxgl.Popup().setText(lot.name)).addTo(map))
+      }
+      if (origin) {
+        const dot = document.createElement('div')
+        dot.className = 'cx-map-dialog__me'
+        dot.title = 'You are here'
+        markers.push(new mapboxgl.Marker({ element: dot }).setLngLat([origin.lng, origin.lat]).addTo(map))
+      }
+
+      if (route) {
+        const data: Feature<LineString> = { type: 'Feature', properties: {}, geometry: route.geometry }
+        map.addSource(ROUTE_SOURCE, { type: 'geojson', data })
+        map.addLayer({ id: ROUTE_SOURCE, type: 'line', source: ROUTE_SOURCE, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 6 } })
+      }
+
+      const points = route ? route.geometry.coordinates : [lotPosition, origin].filter((p): p is LngLat => p != null).map((p) => [p.lng, p.lat])
+      if (points.length > 1) {
+        const bounds = new mapboxgl.LngLatBounds()
+        points.forEach((p: number[]) => bounds.extend(p as [number, number]))
+        map.fitBounds(bounds, { padding: 64, duration: 0 })
+      } else if (lotPosition) {
+        map.jumpTo({ center: [lotPosition.lng, lotPosition.lat], zoom: 16 })
+      }
+    })
     return () => {
       cancelled = true
+      markers.forEach((m) => m.remove())
+      markers = []
+      if (removedRef.current) return
+      if (map.getLayer(ROUTE_SOURCE)) map.removeLayer(ROUTE_SOURCE)
+      if (map.getSource(ROUTE_SOURCE)) map.removeSource(ROUTE_SOURCE)
     }
-  }, [geocoding, needsGeocode, lot])
+  }, [map, lot, lotPosition, origin, route])
 
-  // Keep both points in view when the route does not do it
-  const showMarkersOnly = !origin || routeFailed
-  useEffect(() => {
-    if (!map || !showMarkersOnly) return
-    if (lotPosition && origin) {
-      const bounds = new google.maps.LatLngBounds()
-      bounds.extend(lotPosition)
-      bounds.extend(origin)
-      map.fitBounds(bounds, 64)
-    } else if (lotPosition) {
-      map.panTo(lotPosition)
-      map.setZoom(16)
-    }
-  }, [map, showMarkersOnly, lotPosition, origin])
-
-  return (
-    <>
-      {lotPosition && <Marker position={lotPosition} title={lot.name} />}
-      {origin && (
-        <Marker
-          position={origin}
-          title="You are here"
-          icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#1a73e8', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 }}
-        />
-      )}
-    </>
-  )
+  return <div ref={containerRef} className="cx-map-dialog__canvas" />
 }
 
-/** Popup with a Google map: the parking lot, the customer's current position and the driving route between them. */
+/** Popup with a map: the parking lot, the customer's current position and the driving route between them. */
 export function LotDirectionsDialog({ lot: openedLot, onClose }: { lot: DirectionsLot; onClose: () => void }) {
   // The lot list refreshes every few seconds; keep the lot as opened so the route is not asked for again
   const [lot] = useState(openedLot)
-  const [origin, setOrigin] = useState<LatLng | null>(null)
+  const [origin, setOrigin] = useState<LngLat | null>(null)
   const [locate, setLocate] = useState<LocateState>(() => ('geolocation' in navigator ? 'locating' : 'unsupported'))
-  const [route, setRoute] = useState<RouteInfo | null>(null)
+  const [route, setRoute] = useState<DrivingRoute | null>(null)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -146,14 +175,14 @@ export function LotDirectionsDialog({ lot: openedLot, onClose }: { lot: Directio
       ? 'Finding your location…'
       : locate === 'found'
         ? route
-          ? `${route.distance} • about ${route.duration} by car`
+          ? `${formatDistance(route.distanceMeters)} • about ${formatDuration(route.durationSeconds)} by car`
           : 'Showing your location and the parking lot.'
         : locate === 'denied'
           ? 'Location access is off: allow it in your browser to see the route from where you are.'
           : 'This browser cannot share your location.'
 
   return (
-    <div className="cx-pass-backdrop" role="presentation" onClick={onClose}>
+    <div className="cx-pass-backdrop cx-pass-backdrop--map" role="presentation" onClick={onClose}>
       <div className="cx-map-dialog" role="dialog" aria-modal="true" aria-labelledby="lot-directions-title" onClick={(e) => e.stopPropagation()}>
         <div className="cx-map-dialog__head">
           <div>
@@ -168,12 +197,8 @@ export function LotDirectionsDialog({ lot: openedLot, onClose }: { lot: Directio
         </div>
 
         <div className="cx-map-dialog__map">
-          {apiKey ? (
-            <APIProvider apiKey={apiKey} language="en" region="VN">
-              <Map defaultCenter={lotCoords(lot) ?? DEFAULT_CENTER} defaultZoom={14} gestureHandling="greedy" disableDefaultUI={false} clickableIcons={false}>
-                {locate !== 'locating' && <RouteLayer lot={lot} origin={origin} onRoute={setRoute} />}
-              </Map>
-            </APIProvider>
+          {mapboxToken ? (
+            <DirectionsMap lot={lot} origin={locate === 'locating' ? null : origin} onRoute={setRoute} />
           ) : (
             <p className="cx-map-dialog__empty">The map is not set up yet. Open the directions in Google Maps instead.</p>
           )}

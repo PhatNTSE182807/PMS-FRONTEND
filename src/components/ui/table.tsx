@@ -4,7 +4,9 @@ import { cn } from '@/lib/utils'
 /** Scroll container + table; wide tables scroll horizontally inside the card on phones. */
 export function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
-    <div className="w-full overflow-x-auto">
+    // relative: absolutely placed bits inside cells (screen-reader labels) stay in the scroll box instead of
+    // widening the page on a phone
+    <div className="relative w-full overflow-x-auto">
       <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   )

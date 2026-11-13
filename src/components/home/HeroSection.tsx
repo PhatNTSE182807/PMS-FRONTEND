@@ -17,11 +17,6 @@ export function HeroSection({ reserveTo }: HeroSectionProps) {
 
       <div className="home-container home-hero__grid">
         <div>
-          <p className="home-hero__badge">
-            <span className="home-dot home-dot--gold" aria-hidden="true" />
-            Ho Chi Minh City metropolitan network • 99.998% uptime
-          </p>
-
           <h1 className="home-hero__title">
             Next-generation
             <span className="home-hero__title-accent">Parking System</span>

@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Sun,
   TicketX,
+  HandCoins,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { PricingRuleEditor } from '@/components/features/manager/PricingRuleEditor'
@@ -138,7 +139,7 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
             </p>
           </div>
         </div>
-        <div className="rounded-lg bg-[#060f16] px-3 py-2 text-right">
+        <div className="rounded-lg bg-well px-3 py-2 text-right">
           <p className="text-[10px] font-bold tracking-wider text-slate-700 uppercase">Max per day</p>
           <p className="font-mono font-bold text-amber-500">{capText(rule.maxDailyFee)}</p>
         </div>
@@ -186,6 +187,13 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
         )}
         <Rule icon={LogOut} label="Exit window" value={String(EXIT_WINDOW_MINUTES)} unit="min" note="Time to leave after paying at the counter or in the app." />
         <Rule icon={TicketX} label="Lost ticket fee" value={money(rule.lostTicketFee)} unit="VND + stay" tone="red" note="Added to the parking fee, after identity checks." />
+        <Rule
+          icon={HandCoins}
+          label="Booked bay compensation"
+          value={money(rule.bookedBayCompensation ?? 0)}
+          unit="VND"
+          note="Paid to the wallet when a walk-in took the booked bay and no other bay was free. Off this lot's revenue."
+        />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -235,6 +243,8 @@ function starterRule(type: VehicleTypeDTO): PricingRuleInput {
     nightPrice: null,
     maxDailyFee: bike ? 20_000 : 150_000,
     lostTicketFee: bike ? 50_000 : 100_000,
+    // Booked bay compensation: 50,000 VND for motorbikes, 100,000 VND for 4- and 7-seat cars
+    bookedBayCompensation: bike ? 50_000 : 100_000,
     status: 'Draft',
   }
 }
@@ -284,7 +294,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
         </Kpi>
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <div role="tablist" aria-label="Vehicle type" className="flex flex-wrap gap-1 rounded-xl bg-white p-1.5 ring-1 ring-slate-200">
             {[{ id: 'ALL' as const, name: `All (${list.length})` }, ...types].map((t) => (
@@ -294,7 +304,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
                 role="tab"
                 aria-selected={typeFilter === t.id}
                 onClick={() => setTypeFilter(t.id)}
-                className={cn('rounded-lg px-3.5 py-2 text-sm font-medium transition-colors', typeFilter === t.id ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100')}
+                className={cn('rounded-lg px-3.5 py-2 text-sm font-medium transition-colors', typeFilter === t.id ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100')}
               >
                 {t.name}
               </button>

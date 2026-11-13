@@ -120,6 +120,8 @@ export const layoutMock = {
                     col: b.col,
                     rotation: b.row % 2 === 0 ? 0 : 180,
                     status: SLOT_STATUS[b.status],
+                    // Demo data: every third car parked is a 7-seat SUV
+                    parkedVehicleTypeCode: f.kind === 'car' && b.status === 'OCCUPIED' && i % 3 === 0 ? 'CAR_7' : null,
                   }))
                 : [],
             zoneBlocks:

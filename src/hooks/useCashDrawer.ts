@@ -5,7 +5,7 @@ import { cashDrawerService } from '@/api/cashDrawer.service'
 import { queryKeys } from '@/api/queryKeys'
 import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 
-/** The signed-in Staff's drawer of today at the lot; refreshed every 10 s and after every cash payment. */
+/** The signed-in Staff's open drawer at the lot (else their latest of today); refreshed every 10 s and after every cash payment. */
 export function useCashDrawer(lotId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.cashDrawer.current(lotId ?? ''),
@@ -34,7 +34,7 @@ export function useCloseCashDrawer() {
     mutationFn: ({ lotId, counted, reason }: { lotId: string; counted: BanknoteCounts; reason?: string }) =>
       cashDrawerService.close(lotId, counted, reason),
     onSuccess: () => {
-      toast.success('Cash drawer closed and sent to your Manager.')
+      toast.success('Cash drawer handed in to your Manager. A new drawer is open with the standard float.')
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
     },
   })

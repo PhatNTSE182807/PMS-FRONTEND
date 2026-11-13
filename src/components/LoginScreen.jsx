@@ -62,7 +62,7 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
     <AuthShowcaseLayout
       title="Welcome back"
       subtitle="Enter your credentials to access your account."
-      photo="/lamborghini.jpg"
+      photo="/login-car.jpg"
       tagline="Experience effortless, intelligent parking management crafted for luxury vehicles."
     >
       {errorMsg && <AuthAlert tone="error">{errorMsg}</AuthAlert>}
@@ -106,15 +106,7 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
 
         {GOOGLE_CLIENT_ID && <div className="auth-shell__divider">Or continue with</div>}
 
-        <GoogleSignInButton
-          variant="dark"
-          rememberMe={rememberMe}
-          onLoginSuccess={onLoginSuccess}
-          onError={(message) => {
-            setInfoMsg('');
-            setErrorMsg(message);
-          }}
-        />
+        <GoogleSignInButton rememberMe={rememberMe} />
       </form>
 
       <p className="auth-shell__footer">

@@ -20,7 +20,7 @@ export const STAFF_NAV: AdminNavItem[] = [
   { to: '/staff/gate', label: 'Gate Dashboard', icon: LayoutDashboard },
   { to: '/staff/checkout', label: 'Payment & Checkout POS', icon: CreditCard },
   { to: '/staff/exceptions', label: 'Exceptions & Alerts', icon: TriangleAlert },
-  { to: '/staff/cash-tally', label: 'End-of-Day Cash Tally', icon: Vault },
+  { to: '/staff/cash-tally', label: 'Cash Tally', icon: Vault },
   { to: '/staff/verifications', label: 'Vehicle Registrations', icon: ScanText },
 ]
 

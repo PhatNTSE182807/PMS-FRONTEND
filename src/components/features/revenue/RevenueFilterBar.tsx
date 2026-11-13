@@ -58,15 +58,16 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <CalendarRange className="size-4 text-slate-400" aria-hidden />
+        {/* On a phone the two dates share the row and shrink instead of running past the card */}
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+          <CalendarRange className="size-4 shrink-0 text-slate-400" aria-hidden />
           <Input
             type="date"
             aria-label="From date"
             value={value.startDate}
             max={today}
             onChange={(e) => setCustomDate('startDate', e.target.value)}
-            className="w-38"
+            className="min-w-0 flex-1 sm:w-38 sm:flex-none"
           />
           <span className="text-slate-400">–</span>
           <Input
@@ -75,7 +76,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
             value={value.endDate}
             max={today}
             onChange={(e) => setCustomDate('endDate', e.target.value)}
-            className="w-38"
+            className="min-w-0 flex-1 sm:w-38 sm:flex-none"
           />
         </div>
       </div>

@@ -8,7 +8,7 @@ export default function AuthSplitLayout({ title, subtitle, children }) {
   return (
     <div className="auth-split">
       <aside className="auth-split__brand" aria-label="XXIV Parking">
-        <div className="auth-split__photo" style={{ backgroundImage: `url('/lamborghini.jpg')` }} aria-hidden="true" />
+        <div className="auth-split__photo" style={{ backgroundImage: `url('/login-car.jpg')` }} aria-hidden="true" />
         <div className="auth-split__tint" aria-hidden="true" />
 
         <div className="auth-split__brand-content">

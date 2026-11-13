@@ -1,28 +1,22 @@
 import { Suspense, useEffect } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { LogOut } from 'lucide-react'
+import { ConsoleNotificationBell } from '@/components/features/notifications/ConsoleNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
-import { isTypingTarget } from '@/components/features/staff/staffKeys'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
-import { useDemoIncidents } from '@/hooks/useDemoIncidents'
-import { useOpenSessions } from '@/hooks/useGate'
 import { useProfile } from '@/hooks/useProfile'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { useCashAlerts } from '@/hooks/useCashAlerts'
-import { CashDeadlineBanner } from '@/components/features/staff/CashDeadlineBanner'
 import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { STAFF_NAV } from './adminNav'
-
-function Kbd({ children }: { children: string }) {
-  return <kbd className="rounded bg-white px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-950 ring-1 ring-slate-200">{children}</kbd>
-}
 
 function PageSkeleton() {
   return (
@@ -44,13 +38,12 @@ export function StaffLayout() {
   const { lots, lot, setLotId } = useStaffLot()
   useCashAlerts(lot?.id)
   const { pathname } = useLocation()
-  const navigate = useNavigate()
+
+  // On a phone the tabs scroll sideways: bring the open one into view
+  useEffect(() => {
+    document.querySelector('[aria-label="Staff navigation"] a[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [pathname])
   const handleLogout = useSignOut()
-  const { open } = useDemoIncidents()
-  const openSessions = useOpenSessions(lot?.id)
-  const exceptionsCount = openSessions.isSuccess
-    ? (openSessions.data?.filter((s) => s.isLostTicket || s.lostTicketStatus === 'Pending' || s.isOverdue || s.plateMismatch).length ?? 0)
-    : open.length
 
   // Sync profile details (FullName, EmployeeCode, Avatar) into session if received from API
   useEffect(() => {
@@ -71,25 +64,9 @@ export function StaffLayout() {
     }
   }, [profile, user?.fullName, user?.employeeCode, user?.avatarUrl])
 
-  // F1 Quick Pay and F2 Plate Scan work from every Staff screen.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return
-      if (e.key === 'F1') {
-        e.preventDefault()
-        void navigate('/staff/checkout')
-      } else if (e.key === 'F2') {
-        e.preventDefault()
-        void navigate('/staff/gate')
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [navigate])
-
   return (
-    <div className="admin-root flex min-h-dvh flex-col bg-[#0b141b]">
-      <header className="sticky top-0 z-20 bg-[#060f16]/95 shadow-[0_1px_8px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+    <div className="admin-root flex min-h-dvh flex-col bg-page">
+      <header className="sticky top-0 z-20 bg-well/95 shadow-[0_1px_8px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
           <img src={LOGO_SRC} alt="" className="h-10 w-auto shrink-0 drop-shadow" />
           <div className="leading-tight">
@@ -123,6 +100,11 @@ export function StaffLayout() {
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            {/* Booked bays a walk-in took, bookings moved and compensation sent to customers */}
+            <Button asChild variant="ghost" size="icon">
+              <ThemeToggle />
+            </Button>
+            <ConsoleNotificationBell />
             <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
               <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
                 <p className="text-sm font-semibold text-slate-950">
@@ -153,32 +135,21 @@ export function StaffLayout() {
                 className={({ isActive }) =>
                   cn(
                     'flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
-                    isActive ? 'bg-[#124e66] font-bold text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                    isActive ? 'bg-selected font-bold text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
                   )
                 }
               >
                 <Icon className="size-4" aria-hidden />
                 {label}
-                {to === '/staff/exceptions' && exceptionsCount > 0 && (
-                  <span className="rounded-full bg-rose-600 px-1.5 text-[11px] font-bold text-white tabular-nums">{exceptionsCount}</span>
-                )}
               </NavLink>
             ))}
           </nav>
-          <div className="hidden shrink-0 items-center gap-4 text-xs text-slate-700 lg:flex">
-            <span className="flex items-center gap-1.5">
-              <Kbd>F1</Kbd> Quick Pay
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Kbd>F2</Kbd> Plate Scan
-            </span>
-          </div>
         </div>
       </header>
 
       <main className="flex-1 px-4 py-6 sm:px-6 lg:py-8">
-        <div key={pathname} className="admin-page-enter mx-auto max-w-[1400px]">
-          <CashDeadlineBanner lotId={lot?.id} />
+        {/* The gate dashboard uses the whole width for its four cameras and the lane panel */}
+        <div key={pathname} className={cn('admin-page-enter mx-auto', pathname.startsWith('/staff/gate') ? 'max-w-none' : 'max-w-[1400px]')}>
           <ErrorBoundary
             fallback={(error, reset) => (
               <div className="rounded-xl bg-white ring-1 ring-slate-200">

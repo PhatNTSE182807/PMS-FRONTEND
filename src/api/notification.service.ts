@@ -6,7 +6,26 @@ import { http } from './axiosClient'
 
 export interface NotificationModel {
   id: number
-  type: 'VehicleApproved' | 'VehicleRejected' | 'CheckIn' | 'CheckOut' | 'PriceChanged'
+  type:
+    | 'VehicleApproved'
+    | 'VehicleRejected'
+    | 'CheckIn'
+    | 'CheckOut'
+    | 'PriceChanged'
+    /** A walk-in parked in the customer's booked bay, and what the lot did about it. */
+    | 'BookedBayTaken'
+    | 'BookedBayReassigned'
+    | 'BookedBayFreed'
+    | 'BookingCancelledByLot'
+    | 'DepositRefunded'
+    | 'CompensationPaid'
+    /** A parked vehicle's scheduled booking ends soon, or has ended (also sent to the lot's Staff). */
+    | 'DepartureSoon'
+    | 'DepartureOverdue'
+    /** The booked bay was still in use when the hold started, so the booking moved to another bay. */
+    | 'BookingBayMoved'
+    /** Manager bell: a Staff closed their cash drawer (data: closedAt, countedTotal, expectedTotal, difference, reason). */
+    | 'CashDrawerClosed'
   title: string
   message: string
   refType: string | null

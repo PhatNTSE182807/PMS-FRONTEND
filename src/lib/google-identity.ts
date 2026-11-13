@@ -1,73 +1,108 @@
 /**
- * Google Identity Services ("Sign in with Google"). The button hands back an ID token
- * (a JWT signed by Google) that the backend verifies before signing the user in.
- * https://developers.google.com/identity/gsi/web
+ * "Sign in with Google" by full-page redirect (OpenID Connect, response_type=id_token).
+ *
+ * The browser goes to Google and comes back to /auth/google/callback with an ID token (a JWT signed by
+ * Google) in the URL fragment; the backend verifies that token as before. A redirect needs no popup and
+ * no third-party cookies, so it also works in Safari on iPhone and iPad, where Google's popup button
+ * fails. Every origin's callback URL must be listed under "Authorized redirect URIs" of the OAuth
+ * client in Google Cloud Console, e.g. https://<site>/auth/google/callback.
  */
-
-interface CredentialResponse {
-  credential: string
-}
-
-interface GoogleAccountsId {
-  initialize(config: {
-    client_id: string
-    callback: (response: CredentialResponse) => void
-    ux_mode?: 'popup' | 'redirect'
-    auto_select?: boolean
-    cancel_on_tap_outside?: boolean
-  }): void
-  renderButton(
-    parent: HTMLElement,
-    options: {
-      type?: 'standard' | 'icon'
-      theme?: 'outline' | 'filled_blue' | 'filled_black'
-      size?: 'large' | 'medium' | 'small'
-      text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin'
-      shape?: 'rectangular' | 'pill' | 'circle' | 'square'
-      logo_alignment?: 'left' | 'center'
-      width?: number
-      locale?: string
-    },
-  ): void
-}
-
-declare global {
-  interface Window {
-    google?: { accounts: { id: GoogleAccountsId } }
-  }
-}
-
-const SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
 
 /**
  * The project's OAuth 2.0 Web client ID (Google Cloud Console). It is public by design: Google
- * only accepts it from the origins listed there. VITE_GOOGLE_CLIENT_ID overrides it, and must
+ * only accepts it from the URLs listed there. VITE_GOOGLE_CLIENT_ID overrides it, and must
  * match GoogleAuth:ClientId on the backend.
  */
 const PROJECT_GOOGLE_CLIENT_ID = '338219481698-9e5noh3cim8dpiedco5r9lqb6dv90k53.apps.googleusercontent.com'
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || PROJECT_GOOGLE_CLIENT_ID
 
-let loading: Promise<GoogleAccountsId> | undefined
+export const GOOGLE_CALLBACK_PATH = '/auth/google/callback'
 
-export function loadGoogleIdentity(): Promise<GoogleAccountsId> {
-  loading ??= new Promise<GoogleAccountsId>((resolve, reject) => {
-    if (window.google?.accounts?.id) {
-      resolve(window.google.accounts.id)
-      return
-    }
-    const script = document.createElement('script')
-    script.src = SCRIPT_SRC
-    script.async = true
-    script.defer = true
-    script.onload = () =>
-      window.google?.accounts?.id ? resolve(window.google.accounts.id) : reject(new Error('Google sign-in did not load.'))
-    script.onerror = () => reject(new Error('Could not load Google sign-in. Check your internet connection.'))
-    document.head.appendChild(script)
-  }).catch((error: unknown) => {
-    // Allow a retry on the next mount (e.g. after the connection comes back).
-    loading = undefined
-    throw error
+const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+const STORAGE_KEY = 'pms.googleSignIn'
+// A sign-in left at Google longer than this is started again
+const MAX_AGE_MS = 15 * 60_000
+
+interface PendingSignIn {
+  state: string
+  nonce: string
+  rememberMe: boolean
+  returnTo?: string
+  startedAt: number
+}
+
+export interface GoogleRedirectResult {
+  idToken: string
+  rememberMe: boolean
+  returnTo?: string
+}
+
+function randomToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(24))
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/** Sends the browser to Google's sign-in page; it comes back to GOOGLE_CALLBACK_PATH. */
+export function startGoogleSignIn(options: { rememberMe?: boolean; returnTo?: string } = {}): void {
+  const pending: PendingSignIn = {
+    state: randomToken(),
+    nonce: randomToken(),
+    rememberMe: options.rememberMe ?? false,
+    returnTo: options.returnTo,
+    startedAt: Date.now(),
+  }
+  // sessionStorage stays with this tab, which is the one Google sends back
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pending))
+
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: `${window.location.origin}${GOOGLE_CALLBACK_PATH}`,
+    response_type: 'id_token',
+    scope: 'openid email profile',
+    state: pending.state,
+    nonce: pending.nonce,
+    prompt: 'select_account',
   })
-  return loading
+  window.location.assign(`${AUTHORIZE_URL}?${params}`)
+}
+
+/** The claims of a JWT, without checking its signature (the backend does that). */
+function jwtClaims(token: string): Record<string, unknown> {
+  const payload = token.split('.')[1] ?? ''
+  const base64 = payload.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(payload.length / 4) * 4, '=')
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+  return JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>
+}
+
+/**
+ * Reads what Google sent back in the URL fragment of the callback page. The state must be the one this
+ * tab sent and the token must carry its nonce, so a token from another sign-in is never accepted.
+ * Throws an Error with a message for the user otherwise.
+ */
+export function finishGoogleSignIn(fragment: string): GoogleRedirectResult {
+  const stored = sessionStorage.getItem(STORAGE_KEY)
+  sessionStorage.removeItem(STORAGE_KEY)
+  const pending = stored ? (JSON.parse(stored) as PendingSignIn) : null
+
+  const params = new URLSearchParams(fragment.replace(/^#/, ''))
+  const error = params.get('error')
+  if (error === 'access_denied') throw new Error('Google sign-in was cancelled.')
+  if (error) throw new Error(`Google sign-in failed (${error}). Please try again.`)
+
+  const idToken = params.get('id_token')
+  if (!pending || Date.now() - pending.startedAt > MAX_AGE_MS)
+    throw new Error('This Google sign-in has expired. Please try again.')
+  if (!idToken || params.get('state') !== pending.state)
+    throw new Error('Google sign-in could not be verified. Please try again.')
+
+  let nonce: unknown
+  try {
+    nonce = jwtClaims(idToken).nonce
+  } catch {
+    nonce = undefined
+  }
+  if (nonce !== pending.nonce) throw new Error('Google sign-in could not be verified. Please try again.')
+
+  return { idToken, rememberMe: pending.rememberMe, returnTo: pending.returnTo }
 }

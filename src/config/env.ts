@@ -1,7 +1,17 @@
 import { session } from '@/lib/session'
 
 /** Bounded contexts the frontend talks to. Each maps to one backend (micro)service. */
-export type ServiceKey = 'auth' | 'profile' | 'staff' | 'team' | 'parking' | 'capacity' | 'reports' | 'booking' | 'gate'
+export type ServiceKey =
+  | 'auth'
+  | 'profile'
+  | 'staff'
+  | 'team'
+  | 'parking'
+  | 'capacity'
+  | 'reports'
+  | 'booking'
+  | 'gate'
+  | 'assistant'
 
 const DEFAULT_API_BASE_URL = 'https://localhost:44391/api'
 const API_URL_OVERRIDE_KEY = 'pms_custom_api_url'
@@ -26,6 +36,8 @@ export const SERVICE_PATHS: Record<ServiceKey, string> = {
   booking: '',
   // Entry/exit lanes of the Staff's lot (StaffGateController, /staff/...).
   gate: '/staff',
+  // Customer chat assistant (AssistantController), open to Guests and Users.
+  assistant: '/public/assistant',
 }
 
 /** Normalizes a user-entered URL (e.g. a pasted Swagger URL) to the API root ending in `/api`. */

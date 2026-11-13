@@ -104,7 +104,7 @@ function Reconciliation({ drawer, counted }: { drawer: CashDrawerDTO; counted: B
         </div>
       </dl>
       {variance === 0 ? (
-        <div className="mt-4 flex gap-3 rounded-xl bg-[#124e66] p-4">
+        <div className="mt-4 flex gap-3 rounded-xl bg-selected p-4">
           <CircleCheck className="mt-0.5 size-5 shrink-0 text-indigo-800" aria-hidden />
           <div>
             <p className="font-bold tracking-wide text-indigo-800 uppercase">Balanced</p>
@@ -128,7 +128,7 @@ function Reconciliation({ drawer, counted }: { drawer: CashDrawerDTO; counted: B
       )}
       {drawer.untrackedCash > 0 && (
         <p className="mt-3 text-xs text-slate-600">
-          {vnd(drawer.untrackedCash)} was taken as an amount, not note by note: it is in the expected total but not in the notes per value.
+          {vnd(drawer.untrackedCash)} was taken as an amount, not note by note: the In drawer column counts it as the fewest notes that make it. Count the notes that are really there.
         </p>
       )}
     </Panel>
@@ -161,7 +161,7 @@ function NoteSheet({ notes, onChange, disabled, expected }: { notes: BanknoteCou
                   </td>
                 )}
                 <td className="px-4 py-2.5">
-                  <div className="mx-auto flex w-36 items-center justify-between rounded-lg bg-[#060f16] ring-1 ring-slate-200">
+                  <div className="mx-auto flex w-36 items-center justify-between rounded-lg bg-well ring-1 ring-slate-200">
                     <button type="button" className="px-3 py-1.5 text-slate-700 hover:text-slate-950 disabled:opacity-40" aria-label={`One less ${formatNumber(value)} note`} disabled={disabled || count === 0} onClick={() => set(value, count - 1)}>
                       <Minus className="size-4" />
                     </button>
@@ -195,19 +195,20 @@ function NoteSheet({ notes, onChange, disabled, expected }: { notes: BanknoteCou
 }
 
 /** No drawer yet today: count the float into it. */
-function OpenDrawer({ lotId }: { lotId: string }) {
-  const [float, setFloat] = useState<BanknoteCounts>({})
+function OpenDrawer({ lotId, defaultFloat }: { lotId: string; defaultFloat: BanknoteCounts }) {
+  // Starts as the standard float: the Staff only fixes the notes they actually have
+  const [float, setFloat] = useState<BanknoteCounts>(() => cleanNotes(defaultFloat))
   const open = useOpenCashDrawer()
   return (
     <Panel>
       <SectionTitle icon={<PiggyBank />}>Open your cash drawer</SectionTitle>
       <p className="-mt-2 mb-4 text-sm text-slate-700">
-        Count the float you start the day with. Every cash payment you take is then added to the drawer, and the change you give is taken out.
-        If you take cash without opening the drawer, one opens on its own with no float.
+        Count the float you start with ({vnd(notesTotal(defaultFloat))} as standard). Every cash payment you take is then added to the drawer, and the
+        change you give is taken out. If you take cash without opening the drawer, one opens on its own with the standard float.
       </p>
       <NoteSheet notes={float} onChange={setFloat} disabled={open.isPending} />
       <div className="mt-4 flex justify-end gap-2">
-        <Button variant="ghost" onClick={() => setFloat({})} disabled={open.isPending}>
+        <Button variant="ghost" onClick={() => setFloat(cleanNotes(defaultFloat))} disabled={open.isPending}>
           <RotateCcw /> Reset
         </Button>
         <Button onClick={() => open.mutate({ lotId, float: cleanNotes(float) })} disabled={open.isPending}>
@@ -219,7 +220,7 @@ function OpenDrawer({ lotId }: { lotId: string }) {
 }
 
 /** The drawer is open: count it against the notes the system expects, with the live match beside it. */
-function CountDrawer({ lotId, drawer }: { lotId: string; drawer: CashDrawerDTO }) {
+function CountDrawer({ lotId, drawer, onClosed }: { lotId: string; drawer: CashDrawerDTO; onClosed: (closed: CashDrawerDTO) => void }) {
   // Starts as what the system expects in the drawer: the Staff only fixes the notes that differ
   const fromDrawer = () => cleanNotes(drawer.expectedNotes)
   const [counted, setCounted] = useState<BanknoteCounts>(fromDrawer)
@@ -232,7 +233,10 @@ function CountDrawer({ lotId, drawer }: { lotId: string; drawer: CashDrawerDTO }
     close.mutate(
       { lotId, counted: cleanNotes(counted), reason: reason.trim() || undefined },
       {
-        onSuccess: () => setConfirming(false),
+        onSuccess: (closed) => {
+          setConfirming(false)
+          onClosed(closed)
+        },
         onError: (error) => {
           setConfirming(false)
           const message = getErrorMessage(error)
@@ -243,8 +247,9 @@ function CountDrawer({ lotId, drawer }: { lotId: string; drawer: CashDrawerDTO }
       },
     )
 
+  // minmax(0,1fr): on a phone the note tables scroll inside their card instead of widening the page
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
     <Panel>
       <SectionTitle icon={<Banknote />} aside={<span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">Drawer {drawer.closeNo} open</span>}>
         Count your drawer
@@ -270,7 +275,7 @@ function CountDrawer({ lotId, drawer }: { lotId: string; drawer: CashDrawerDTO }
           <label className="mt-3 block text-xs font-bold tracking-wider text-slate-700 uppercase" htmlFor="cash-reason">Reason</label>
           <textarea
             id="cash-reason"
-            className="mt-1 w-full rounded-lg bg-[#060f16] p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
+            className="mt-1 w-full rounded-lg bg-well p-3 text-sm text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
             rows={2}
             maxLength={500}
             value={reason}
@@ -292,7 +297,7 @@ function CountDrawer({ lotId, drawer }: { lotId: string; drawer: CashDrawerDTO }
         confirmLabel="Close drawer"
         pending={close.isPending}
         onConfirm={submit}
-        description={`You counted ${vnd(notesTotal(counted))}. Once closed, the count cannot be changed; cash you take later goes into a new drawer of today.`}
+        description={`You counted ${vnd(notesTotal(counted))}. Once closed, the count cannot be changed, and drawer ${drawer.closeNo + 1} opens at once with the standard float.`}
       />
     </Panel>
     <Reconciliation drawer={drawer} counted={counted} />
@@ -348,14 +353,14 @@ function ClosedDrawer({ drawer }: { drawer: CashDrawerDTO }) {
         </table>
       </div>
       {drawer.untrackedCash > 0 && (
-        <p className="mt-2 text-xs text-slate-600">{vnd(drawer.untrackedCash)} was entered as an amount, not note by note, so it is in the totals but not in the notes.</p>
+        <p className="mt-2 text-xs text-slate-600">{vnd(drawer.untrackedCash)} was entered as an amount, not note by note; the notes count it as the fewest notes that make it.</p>
       )}
-      <p className="mt-4 text-sm text-slate-700">Cash you take after this close opens a new drawer of today on its own.</p>
+      <p className="mt-4 text-sm text-slate-700">Drawer {drawer.closeNo + 1} opened right after this one, with the standard float.</p>
     </Panel>
   )
 }
 
-/** End-of-day cash close of the signed-in Staff (BR-12): open with a float, count blind, close, Manager confirms. */
+/** Cash close of the signed-in Staff (BR-12): count blind and hand the drawer in whenever they want; the next one opens with the standard float. */
 export default function StaffCashTallyPage() {
   const { user } = useAuth()
   const myLots = useMyStaffLots()
@@ -363,11 +368,13 @@ export default function StaffCashTallyPage() {
   const lotKey = lot?.id ?? myLots.data?.[0]?.id
   const drawer = useCashDrawer(lotKey)
   const d = drawer.data
+  // The drawer just handed in: the page moves on to the next drawer, so its result is kept on screen here
+  const [handedIn, setHandedIn] = useState<CashDrawerDTO | null>(null)
 
   return (
     <div className="space-y-6">
       <Panel>
-        <h1 className="font-display text-3xl font-bold text-slate-950">End-of-Day Cash Tally</h1>
+        <h1 className="font-display text-3xl font-bold text-slate-950">Cash Tally</h1>
         <p className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-700">
           <span className="flex items-center gap-1.5"><CalendarDays className="size-4" aria-hidden /> Today, {longDate.format(new Date())}</span>
           <span className="flex items-center gap-1.5"><Store className="size-4" aria-hidden /> {lot?.name ?? myLots.data?.[0]?.name ?? 'No lot assigned'}</span>
@@ -399,9 +406,10 @@ export default function StaffCashTallyPage() {
             </StatTile>
           </div>
 
-          {d.status === 'NotOpened' && lotKey && <OpenDrawer lotId={lotKey} />}
+          {d.status === 'NotOpened' && lotKey && <OpenDrawer lotId={lotKey} defaultFloat={d.defaultFloat} />}
+          {d.status === 'Open' && handedIn && handedIn.id !== d.id && <ClosedDrawer drawer={handedIn} />}
           {d.status === 'Open' && lotKey && <CashTopUpPanel lotId={lotKey} drawer={d} />}
-          {d.status === 'Open' && lotKey && <CountDrawer key={d.id ?? 0} lotId={lotKey} drawer={d} />}
+          {d.status === 'Open' && lotKey && <CountDrawer key={d.id ?? 0} lotId={lotKey} drawer={d} onClosed={setHandedIn} />}
           {(d.status === 'Closed' || d.status === 'HasDifference' || d.status === 'Confirmed') && <ClosedDrawer drawer={d} />}
         </>
       )}

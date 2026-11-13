@@ -1,7 +1,9 @@
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { buildBikeModel, buildCarModel, type PartSlot, type VehicleModel } from '@/components/customer/garage/vehicleModels'
+import { buildCoupeModel, buildSuvModel } from '@/components/customer/garage/carModels'
+import { scenePaint } from '@/lib/vehicleColor'
+import { buildBikeModel, type PartSlot, type VehicleModel } from '@/components/customer/garage/vehicleModels'
 import { drawPlate, PLATE_SIZE, type PlateShape } from '@/lib/vnPlate'
 import { cn } from '@/lib/utils'
 
@@ -13,7 +15,8 @@ import { cn } from '@/lib/utils'
  */
 
 export type LaneDirection = 'entry' | 'exit'
-export type LaneVehicleKind = 'car' | 'motorbike'
+/** car: 4-seat car; suv: 7-seat car. */
+export type LaneVehicleKind = 'car' | 'suv' | 'motorbike'
 /** idle: lane empty; arriving: driving up; reading: stopped at the camera; passing: barrier open, driving through. */
 export type LanePhase = 'idle' | 'arriving' | 'reading' | 'passing'
 
@@ -22,6 +25,8 @@ export interface LaneVehicle {
   key: string
   plate: string
   kind: LaneVehicleKind
+  /** Colour name the API gives the vehicle (`paintColor`), so it looks the same at both lanes and on the lot map. */
+  paint?: string | null
 }
 
 /** A box in the frame, 0..1 from the top-left corner. */
@@ -69,9 +74,19 @@ export interface GateLaneSceneHandle {
   renderSample: (sample: LaneSample, size: { width: number; height: number }) => Promise<LaneFrame | null>
 }
 
+/** rear: the ANPR camera behind the reading line, on the rear plate; front: past the barrier, facing the front plate. */
+export type LaneView = 'rear' | 'front'
+
 interface GateLaneSceneProps {
   direction: LaneDirection
+  /** Which of the lane's two cameras this is (default rear). */
+  view?: LaneView
   vehicle: LaneVehicle | null
+  /**
+   * The barrier may open for the vehicle. False: it drives up and waits at the closed barrier until this
+   * turns true (the Staff opened it). True from the start: it drives up, stops briefly and drives through.
+   */
+  open?: boolean
   onPhase?: (phase: LanePhase) => void
   /** The vehicle has left the picture: the next one can come. */
   onDone?: () => void
@@ -84,22 +99,43 @@ const T_ARRIVE = 3
 const T_READ = 1.8
 const T_BARRIER = 0.8
 const T_PASS = 2.6
-const T_TOTAL = T_ARRIVE + T_READ + T_PASS + 0.6
 
-/** Rear plate of every vehicle stops here, about 3.7 m in front of the camera. */
+/** Rear plate of every vehicle stops here, about 3.7 m in front of the rear camera. */
 const READ_Z = -5
 const CAMERA_POS = new THREE.Vector3(0.9, 2.2, -8.4)
 const CAMERA_TARGET = new THREE.Vector3(0, 0.5, -2.2)
 const BARRIER_Z = 0.7
+/**
+ * Where each camera hangs and what it looks at. The front camera is past the barrier, facing the vehicle
+ * stopped at the reading line, so a car's front plate (just before the barrier) sits about 3.5 m from it.
+ */
+const VIEWS: Record<LaneView, { position: THREE.Vector3; target: THREE.Vector3 }> = {
+  rear: { position: CAMERA_POS, target: CAMERA_TARGET },
+  // Centred over the lane and high enough that the barrier arm passes above the front plate
+  front: { position: new THREE.Vector3(0.2, 3.0, 4.4), target: new THREE.Vector3(0, 0.55, -1.8) },
+}
 export const CAMERA_FOV = 34
+/**
+ * A motorbike stops with its rear plate at the reading line, far from the front camera, and has no front plate:
+ * the front camera narrows onto it, as a real camera zooms, so its face and rider area fill the picture.
+ */
+const FRONT_BIKE = { target: new THREE.Vector3(0.4, 0.75, -4.0), fov: 15 }
 
-/** Where the rear plate sits on each model (models face +z, rear at -z). */
-const REAR_PLATE: Record<LaneVehicleKind, { shape: PlateShape; y: number; z: number; tilt: number }> = {
-  car: { shape: 'long', y: 0.57, z: -2.47, tilt: 0 },
-  motorbike: { shape: 'square', y: 0.79, z: -0.86, tilt: 0.2 },
+/**
+ * Where the plates sit on each model (models face +z, rear at -z). Plates are drawn larger than real life
+ * (`scale`) so Staff can read them on the small camera view.
+ */
+const REAR_PLATE: Record<LaneVehicleKind, { shape: PlateShape; y: number; z: number; tilt: number; scale: number; front?: { y: number; z: number } }> = {
+  car: { shape: 'long', y: 0.57, z: -2.47, tilt: 0, scale: 1.5, front: { y: 0.36, z: 2.48 } },
+  suv: { shape: 'long', y: 0.78, z: -2.5, tilt: 0, scale: 1.5, front: { y: 0.42, z: 2.5 } },
+  motorbike: { shape: 'square', y: 0.79, z: -0.86, tilt: 0.2, scale: 1.5 },
 }
 
+/** Only for a vehicle the API gives no colour (e.g. the training samples): picked from its plate. */
 const PAINTS = [0xd9dde2, 0x1d2329, 0x9a1f24, 0x2f4f7a, 0x6e7378, 0xf1f1ee, 0x2e5e4e, 0xb88a2c]
+
+/** Motorbikes ride to the right of the lane centre, cars in the middle. */
+const laneX = (kind: LaneVehicleKind) => (kind === 'motorbike' ? 0.4 : 0)
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3
 const easeIn = (t: number) => t ** 3
@@ -168,14 +204,16 @@ function buildVehicle(
   const plate = new THREE.Mesh(plateGeometry, plateMaterial)
   plate.position.set(0, spot.y, spot.z - 0.005)
   plate.rotation.set(spot.tilt, Math.PI, 0)
+  plate.scale.setScalar(spot.scale)
   group.add(plate)
-  if (kind === 'car') {
+  if (spot.front) {
     // Cars carry a plate at the front too
     const front = new THREE.Mesh(plateGeometry, plateMaterial)
-    front.position.set(0, 0.36, 2.48)
+    front.position.set(0, spot.front.y, spot.front.z)
+    front.scale.setScalar(spot.scale)
     group.add(front)
   }
-  group.position.set(kind === 'car' ? 0 : 0.4, 0, -30)
+  group.position.set(laneX(kind), 0, -30)
   s.scene.add(group)
 
   // Canvas pixels -> plate metres (texture u runs along the plane's local x, v upwards)
@@ -262,7 +300,7 @@ function signTexture(direction: LaneDirection) {
   return texture
 }
 
-export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, ref }: GateLaneSceneProps) {
+export function GateLaneScene({ direction, view = 'rear', vehicle, open = true, onPhase, onDone, className, ref }: GateLaneSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const callbacks = useRef({ onPhase, onDone })
   useEffect(() => {
@@ -280,7 +318,8 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     render: () => void
     resize: () => void
     play: () => void
-    current: (BuiltVehicle & { startedAt: number }) | null
+    /** openAt: when the barrier starts lifting (performance.now() time); null while waiting for the Staff. */
+    current: (BuiltVehicle & { startedAt: number; openAt: number | null }) | null
   } | null>(null)
 
   /* Static scene: lane, booth, barrier, walls, lights and the camera */
@@ -314,8 +353,8 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     pmrem.dispose()
 
     const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 16 / 9, 0.1, 60)
-    camera.position.copy(CAMERA_POS)
-    camera.lookAt(CAMERA_TARGET)
+    camera.position.copy(VIEWS[view].position)
+    camera.lookAt(VIEWS[view].target)
 
     const std = (params: THREE.MeshStandardMaterialParameters) => track(new THREE.MeshStandardMaterial(params))
     const box = (w: number, h: number, d: number) => track(new THREE.BoxGeometry(w, h, d))
@@ -381,18 +420,21 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     sign.rotation.y = Math.PI
 
     /* Vehicles: shared geometry and materials */
-    const car = buildCarModel()
+    const car = buildCoupeModel()
+    const suv = buildSuvModel()
     const bike = buildBikeModel()
-    ;[...car.values(), ...bike.values()].forEach((g) => track(g))
+    ;[...car.values(), ...suv.values(), ...bike.values()].forEach((g) => track(g))
     const materials: Record<PartSlot, THREE.Material> = {
-      paint: std({ color: 0xffffff, metalness: 0.45, roughness: 0.32 }),
-      glass: std({ color: 0x1b2833, metalness: 0.6, roughness: 0.12 }),
+      paint: std({ color: 0xffffff, metalness: 0.45, roughness: 0.32, side: THREE.DoubleSide }),
+      glass: std({ color: 0x1b2833, metalness: 0.6, roughness: 0.12, transparent: true, opacity: 0.78, side: THREE.DoubleSide }),
       tyre: std({ color: 0x17191c, roughness: 0.92 }),
       rim: std({ color: 0xc9ccd1, metalness: 0.85, roughness: 0.3 }),
       trim: std({ color: 0x1b1e22, metalness: 0.3, roughness: 0.6 }),
       chrome: std({ color: 0xdfe3e8, metalness: 1, roughness: 0.22 }),
       frame: std({ color: 0x2a2d31, metalness: 0.5, roughness: 0.5 }),
       seat: std({ color: 0x3b2a20, roughness: 0.8 }),
+      interior: std({ color: 0xa8784f, roughness: 0.75 }),
+      caliper: std({ color: 0xb3121b, roughness: 0.4 }),
       headlight: std({ color: 0xffffff, emissive: 0xfff4d6, emissiveIntensity: 1.2 }),
       taillight: std({ color: 0x8b0000, emissive: 0xff2b2b, emissiveIntensity: 1.1 }),
     }
@@ -416,29 +458,33 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
         render()
         return
       }
-      const t = (performance.now() - current.startedAt) / 1000
+      const now = performance.now()
+      const t = (now - current.startedAt) / 1000
       const stopZ = READ_Z - REAR_PLATE[current.kind].z
-      let z: number
-      if (t < T_ARRIVE) {
-        z = stopZ - 14 * (1 - easeOut(t / T_ARRIVE))
-        setPhase('arriving')
-      } else if (t < T_ARRIVE + T_READ) {
-        z = stopZ
-        setPhase('reading')
-      } else {
-        z = stopZ + 24 * easeIn(clamp01((t - T_ARRIVE - T_READ) / T_PASS))
-        setPhase('passing')
+      const opening = current.openAt != null && now >= current.openAt
+      if (!opening) {
+        // Driving up, then waiting at the reading line with the barrier down
+        const arrived = t >= T_ARRIVE
+        current.group.position.z = arrived ? stopZ : stopZ - 14 * (1 - easeOut(t / T_ARRIVE))
+        barrier.rotation.z = 0
+        setPhase(arrived ? 'reading' : 'arriving')
+        render()
+        // Nothing moves while it waits for the Staff: the loop starts again when the barrier opens
+        if (arrived && current.openAt == null) return
+        frame = requestAnimationFrame(tick)
+        return
       }
-      current.group.position.z = z
 
-      // The barrier lifts near the end of the reading and drops once the vehicle is through
-      const openAt = T_ARRIVE + T_READ - T_BARRIER * 0.6
-      const closeAt = T_ARRIVE + T_READ + T_PASS - 0.4
-      const lift = t < closeAt ? clamp01((t - openAt) / T_BARRIER) : 1 - clamp01((t - closeAt) / T_BARRIER)
+      // The barrier lifts; the vehicle moves off once it is half up, then the barrier drops behind it
+      const u = (now - current.openAt!) / 1000
+      const drive = Math.max(0, u - T_BARRIER * 0.6)
+      current.group.position.z = stopZ + 24 * easeIn(clamp01(drive / T_PASS))
+      const lift = drive < T_PASS - 0.4 ? clamp01(u / T_BARRIER) : 1 - clamp01((drive - (T_PASS - 0.4)) / T_BARRIER)
       barrier.rotation.z = (Math.PI / 2) * 0.94 * easeOut(lift)
-
+      setPhase('passing')
       render()
-      if (t >= T_TOTAL) {
+
+      if (drive >= T_PASS + 0.6) {
         current.dispose()
         if (stage.current) stage.current.current = null
         barrier.rotation.z = 0
@@ -465,7 +511,7 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
     observer.observe(host)
     resize()
 
-    stage.current = { renderer, scene, camera, barrier, models: { car, motorbike: bike }, materials, render, resize, play, current: null }
+    stage.current = { renderer, scene, camera, barrier, models: { car, suv, motorbike: bike }, materials, render, resize, play, current: null }
 
     return () => {
       cancelAnimationFrame(frame)
@@ -476,16 +522,52 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
       renderer.dispose()
       renderer.domElement.remove()
     }
-  }, [direction])
+  }, [direction, view])
 
-  /* A new vehicle: build it with its own paint and plate, then start the pass */
+  const openRef = useRef(open)
+  useEffect(() => {
+    openRef.current = open
+  }, [open])
+
+  /* A new vehicle: build it with its own paint and plate, then drive it up */
   useEffect(() => {
     const s = stage.current
-    if (!s || !vehicle) return
+    if (!s) return
+    if (!vehicle) {
+      // The Staff refused (or moved on from) the waiting vehicle: it leaves the picture; one already let through drives on
+      if (s.current && s.current.openAt == null) {
+        s.current.dispose()
+        s.current = null
+        s.play()
+      }
+      return
+    }
     s.current?.dispose()
-    s.current = { ...buildVehicle(s, vehicle.plate, vehicle.kind, PAINTS[hash(vehicle.plate) % PAINTS.length]), startedAt: performance.now() }
+    if (view === 'front') {
+      // Zoom onto a motorbike; cars fill the wide view with their front plate
+      const bike = vehicle.kind === 'motorbike'
+      s.camera.fov = bike ? FRONT_BIKE.fov : CAMERA_FOV
+      s.camera.lookAt(bike ? FRONT_BIKE.target : VIEWS.front.target)
+      s.camera.updateProjectionMatrix()
+    }
+    const startedAt = performance.now()
+    s.current = {
+      // The colour the API gives it, the same the lot map and the other lane use
+      ...buildVehicle(s, vehicle.plate, vehicle.kind, scenePaint(vehicle.paint) ?? PAINTS[hash(vehicle.plate) % PAINTS.length]),
+      startedAt,
+      // Already allowed through: a short stop at the camera, then the barrier lifts
+      openAt: openRef.current ? startedAt + (T_ARRIVE + T_READ) * 1000 : null,
+    }
     s.play()
-  }, [vehicle])
+  }, [vehicle, view])
+
+  /* The Staff opened the barrier: lift it as soon as the vehicle has driven up */
+  useEffect(() => {
+    const s = stage.current
+    if (!open || !s?.current || s.current.openAt != null) return
+    s.current.openAt = Math.max(performance.now(), s.current.startedAt + T_ARRIVE * 1000)
+    s.play()
+  }, [open, vehicle])
 
   useImperativeHandle(ref, () => ({
     captureFrame: (options) => {
@@ -523,7 +605,7 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
       const { renderer, camera, barrier } = s
       const vehicle = buildVehicle(s, sample.plate, sample.kind, sample.paint, sample.grime)
       const stopZ = READ_Z - REAR_PLATE[sample.kind].z
-      vehicle.group.position.set((sample.kind === 'car' ? 0 : 0.4) + sample.offsetX, 0, stopZ + sample.offsetZ)
+      vehicle.group.position.set(laneX(sample.kind) + sample.offsetX, 0, stopZ + sample.offsetZ)
       vehicle.group.rotation.y = sample.yaw
 
       // Pose: camera off its mount, brightness, barrier; drawn at a fixed size
@@ -534,8 +616,8 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
       renderer.toneMappingExposure = 1.05 * sample.exposure
       camera.aspect = size.width / size.height
       camera.fov = sample.camera.fov
-      camera.position.copy(CAMERA_POS).add(new THREE.Vector3(sample.camera.dx, sample.camera.dy, sample.camera.dz))
-      camera.lookAt(CAMERA_TARGET)
+      camera.position.copy(VIEWS[view].position).add(new THREE.Vector3(sample.camera.dx, sample.camera.dy, sample.camera.dz))
+      camera.lookAt(VIEWS[view].target)
       camera.updateProjectionMatrix()
       barrier.rotation.z = (Math.PI / 2) * 0.94 * sample.barrierLift
 
@@ -549,8 +631,8 @@ export function GateLaneScene({ direction, vehicle, onPhase, onDone, className, 
         renderer.toneMappingExposure = exposure
         renderer.setPixelRatio(pixelRatio)
         camera.fov = CAMERA_FOV
-        camera.position.copy(CAMERA_POS)
-        camera.lookAt(CAMERA_TARGET)
+        camera.position.copy(VIEWS[view].position)
+        camera.lookAt(VIEWS[view].target)
         barrier.rotation.z = 0
         s.resize()
       })

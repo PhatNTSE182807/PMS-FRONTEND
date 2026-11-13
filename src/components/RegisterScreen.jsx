@@ -19,7 +19,7 @@ function passwordScore(pwd) {
   return Math.max(score, 1);
 }
 
-export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, onLoginSuccess }) {
+export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }) {
   const registerMutation = useRegister();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -116,15 +116,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess, o
       {successMsg && <AuthAlert tone="success">{successMsg}</AuthAlert>}
 
       {/* One click instead of the form: the first Google sign-in creates the account */}
-      <GoogleSignInButton
-        text="signup_with"
-        variant="dark"
-        onLoginSuccess={onLoginSuccess}
-        onError={(message) => {
-          setSuccessMsg('');
-          setErrorMsg(message);
-        }}
-      />
+      <GoogleSignInButton text="signup_with" />
       {GOOGLE_CLIENT_ID && <div className="auth-shell__divider">Or</div>}
 
       <form className="auth-shell__form" onSubmit={handleRegister} noValidate>

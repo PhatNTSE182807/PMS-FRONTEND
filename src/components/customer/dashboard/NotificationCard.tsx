@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, LogIn, LogOut, ShieldAlert, ShieldCheck, ShieldX, Tag } from 'lucide-react'
+import { ArrowLeftRight, Bell, CalendarX, Check, CheckCheck, CircleCheck, HandCoins, LogIn, LogOut, ShieldAlert, ShieldCheck, ShieldX, Tag, TriangleAlert, Undo2 } from 'lucide-react'
 import { useNotifications, useMarkRead, useMarkAllRead, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
 
@@ -8,6 +8,12 @@ const ICON_MAP: Record<string, typeof Bell> = {
   CheckIn: LogIn,
   CheckOut: LogOut,
   PriceChanged: Tag,
+  BookedBayTaken: TriangleAlert,
+  BookedBayReassigned: ArrowLeftRight,
+  BookedBayFreed: CircleCheck,
+  BookingCancelledByLot: CalendarX,
+  DepositRefunded: Undo2,
+  CompensationPaid: HandCoins,
 }
 
 const BADGE_MAP: Record<string, { label: string; className: string }> = {
@@ -16,6 +22,12 @@ const BADGE_MAP: Record<string, { label: string; className: string }> = {
   CheckIn: { label: 'Gate Check-In', className: '' },
   CheckOut: { label: 'Gate Check-Out', className: '' },
   PriceChanged: { label: 'Price Change', className: 'cx-chip--gold' },
+  BookedBayTaken: { label: 'Bay Taken', className: 'cx-chip--muted' },
+  BookedBayReassigned: { label: 'Bay Changed', className: 'cx-chip--gold' },
+  BookedBayFreed: { label: 'Bay Free Again', className: '' },
+  BookingCancelledByLot: { label: 'Booking Cancelled', className: 'cx-chip--muted' },
+  DepositRefunded: { label: 'Deposit Refunded', className: 'cx-chip--gold' },
+  CompensationPaid: { label: 'Compensation', className: 'cx-chip--gold' },
 }
 
 export function NotificationCard() {
@@ -40,7 +52,7 @@ export function NotificationCard() {
             )}
           </h2>
           <p className="cx-card__subtitle">
-            Vehicle approvals, gate check-in &amp; check-out events, price changes
+            Vehicle approvals, gate check-in &amp; check-out events, price changes, booked bay updates
           </p>
         </div>
 

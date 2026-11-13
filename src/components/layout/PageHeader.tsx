@@ -11,7 +11,7 @@ interface PageHeaderProps {
 /** Hero card at the top of every admin page (Stitch "Admin Command" design). */
 export function PageHeader({ title, description, eyebrow, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-5 rounded-2xl bg-linear-to-br from-[#182127] via-[#141d23] to-[#1a2a2f] px-6 py-6 ring-1 ring-slate-200 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+    <div className="flex flex-col gap-5 rounded-2xl bg-linear-to-br from-white via-slate-50 to-header-end px-6 py-6 ring-1 ring-slate-200 sm:flex-row sm:items-center sm:justify-between sm:px-7">
       <div className="min-w-0">
         {eyebrow && (
           <p className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold tracking-[0.12em] text-slate-700 uppercase">

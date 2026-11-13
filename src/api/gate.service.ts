@@ -1,6 +1,8 @@
 import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { SERVICE_PATHS } from '@/config/env'
 import type {
+  BaySessionDTO,
+  BookedBayCaseDTO,
   CheckInRequest,
   CheckInResultDTO,
   CheckoutQuoteDTO,
@@ -34,6 +36,31 @@ export const gateService = {
     return http.get<ZoneCounterDTO[]>(`${lotPath(lotId)}/zone-counters`)
   },
 
+  /** The vehicle parked in a bay, for the 3D lot model's popup: customer type, plate, time parked, fee so far. */
+  getBaySession(lotId: string, slotId: string): Promise<BaySessionDTO> {
+    return http.get<BaySessionDTO>(`${lotPath(lotId)}/slots/${slotId}/session`)
+  },
+
+  /** The same details by session id: a walk-in counted in its zone has no bay to look it up by. */
+  getParkedSession(lotId: string, sessionId: number): Promise<BaySessionDTO> {
+    return http.get<BaySessionDTO>(`${lotPath(lotId)}/sessions/${sessionId}/parked`)
+  },
+
+  /** Booked bays a walk-in took, open ones first; openOnly drops the resolved ones. */
+  getBookedBayCases(lotId: string, openOnly = false): Promise<BookedBayCaseDTO[]> {
+    return http.get<BookedBayCaseDTO[]>(`${lotPath(lotId)}/booked-bay-cases`, { params: { openOnly } })
+  },
+
+  /** Moves the booking to a free bay of its type; the customer is told and gets the first hour free. */
+  reassignBookedBay(caseId: number, slotId: number, note?: string): Promise<BookedBayCaseDTO> {
+    return http.post<BookedBayCaseDTO>(`${base}/booked-bay-cases/${caseId}/reassign`, { slotId, note })
+  },
+
+  /** No bay of the type is free: cancels the booking, refunds the deposit and pays the compensation to the wallet. */
+  compensateBookedBay(caseId: number, note?: string): Promise<BookedBayCaseDTO> {
+    return http.post<BookedBayCaseDTO>(`${base}/booked-bay-cases/${caseId}/compensate`, { note })
+  },
+
   /** Open sessions (vehicles inside or entering) unless a status is given. */
   getSessions(lotId: string, status?: string): Promise<ParkingSessionDTO[]> {
     return http.get<ParkingSessionDTO[]>(`${lotPath(lotId)}/sessions`, { params: { status } })
@@ -44,8 +71,9 @@ export const gateService = {
     page = 1,
     plate?: string,
     pageSize = 10,
+    orderBy?: 'exit',
   ): Promise<{ items: ParkingSessionDTO[]; page: number; pageSize: number; totalCount: number }> {
-    return http.get(`${lotPath(lotId)}/sessions/history`, { params: { page, pageSize, plate: plate || undefined } })
+    return http.get(`${lotPath(lotId)}/sessions/history`, { params: { page, pageSize, plate: plate || undefined, orderBy } })
   },
 
   /** Parking fees collected at this lot; method=Cash keeps cash only. */

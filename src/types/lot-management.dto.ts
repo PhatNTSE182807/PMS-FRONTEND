@@ -3,6 +3,8 @@ export type LotState =
   | 'Active'
   | 'Inactive'
   | 'TemporarilyClosed'
+  /** Closed for good (no reopening time); a lot must be Closed before it can be deleted. */
+  | 'Closed'
   | 'Maintenance'
 export type SlotState = 'Available' | 'Reserved' | 'Occupied' | 'Maintenance'
 export type ZoneKind = 'Floor' | 'Row' | 'Area'
@@ -29,6 +31,13 @@ export interface ManagedLot {
   code: string
   name: string
   address: string
+  city: string
+  district: string
+  /** Lot contact phone shown to customers. */
+  phone: string
+  /** Map position of the entrance for the customer's directions map; null: found by address. */
+  latitude: number | null
+  longitude: number | null
   is24Hours: boolean
   openTime: string
   closeTime: string
@@ -53,6 +62,7 @@ export const LOT_STATES: Record<LotState, string> = {
   Active: 'Active',
   Inactive: 'Inactive',
   TemporarilyClosed: 'Temporarily closed',
+  Closed: 'Closed',
   Maintenance: 'Maintenance',
 }
 export const SLOT_STATES: Record<SlotState, string> = {

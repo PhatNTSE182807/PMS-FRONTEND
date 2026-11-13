@@ -1,11 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { getErrorMessage } from '../api/apiError';
-import { useGoogleLogin } from '../hooks/useAuth';
-import { GOOGLE_CLIENT_ID, loadGoogleIdentity } from '../lib/google-identity';
-
-// Google draws its button 200-400px wide and 40px high (size "large").
-const GOOGLE_MAX_WIDTH = 400;
-const GOOGLE_HEIGHT = 40;
+import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { GOOGLE_CLIENT_ID, startGoogleSignIn } from '../lib/google-identity';
 
 const LABELS = {
   signin_with: 'Sign in with Google',
@@ -26,125 +21,35 @@ function GoogleMark() {
 
 /**
  * "Sign in with Google". The first sign-in creates the customer account, so it works on both
- * the Login and Register screens. Hidden until VITE_GOOGLE_CLIENT_ID is set.
- *
- * `variant="dark"` shows our own dark button (Login/Register design). Google only signs in
- * through its own iframe button, so that one is laid invisibly over ours and takes the click.
+ * the Login and Register screens. The click takes the whole page to Google, which sends the
+ * browser back to /auth/google/callback (GoogleCallbackPage) to finish signing in.
  *
  * @param {{
- *   onLoginSuccess: (user: import('../lib/session').SessionUser) => void,
- *   onError: (message: string) => void,
  *   rememberMe?: boolean,
  *   text?: 'signin_with' | 'signup_with' | 'continue_with',
- *   variant?: 'google' | 'dark',
  * }} props
  */
-export default function GoogleSignInButton({
-  onLoginSuccess,
-  onError,
-  rememberMe = false,
-  text = 'continue_with',
-  variant = 'google',
-}) {
-  const wrapperRef = useRef(null);
-  const containerRef = useRef(null);
-  const googleLogin = useGoogleLogin();
-  const [loadError, setLoadError] = useState('');
-  const isDark = variant === 'dark';
-
-  // Google calls back long after render; read the latest props through refs.
-  const latest = useRef({ onLoginSuccess, onError, rememberMe, mutateAsync: googleLogin.mutateAsync });
-  latest.current = { onLoginSuccess, onError, rememberMe, mutateAsync: googleLogin.mutateAsync };
-
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return undefined;
-    let cancelled = false;
-    let observer;
-
-    loadGoogleIdentity()
-      .then((googleId) => {
-        if (cancelled || !containerRef.current) return;
-        googleId.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          ux_mode: 'popup',
-          callback: async ({ credential }) => {
-            const { mutateAsync, rememberMe: remember, onLoginSuccess: done, onError: fail } = latest.current;
-            try {
-              done(await mutateAsync({ idToken: credential, rememberMe: remember }));
-            } catch (error) {
-              fail(getErrorMessage(error, 'Google sign-in failed. Please try again.'));
-            }
-          },
-        });
-
-        // Google draws a fixed-width iframe; match the form column as far as it allows.
-        const columnWidth = Math.round((wrapperRef.current ?? containerRef.current).getBoundingClientRect().width);
-        const width = Math.max(200, Math.min(GOOGLE_MAX_WIDTH, columnWidth));
-        containerRef.current.replaceChildren();
-        googleId.renderButton(containerRef.current, {
-          theme: 'outline',
-          size: 'large',
-          shape: isDark ? 'rectangular' : 'pill',
-          text,
-          logo_alignment: 'center',
-          width,
-          locale: 'en',
-        });
-
-        // Dark variant: stretch the invisible Google button over the whole visible one.
-        if (isDark && wrapperRef.current) {
-          // Layout sizes (offsetWidth/Height) ignore transforms, such as our scale and the form's
-          // fade-in animation, so they compare Google's real button with ours.
-          const fit = () => {
-            const face = wrapperRef.current;
-            const overlay = containerRef.current;
-            if (!face || !overlay) return;
-            const naturalWidth = overlay.offsetWidth || width;
-            const naturalHeight = overlay.offsetHeight || GOOGLE_HEIGHT;
-            overlay.style.transform = `scale(${face.offsetWidth / naturalWidth}, ${face.offsetHeight / naturalHeight})`;
-          };
-          fit();
-          observer = new ResizeObserver(fit);
-          observer.observe(wrapperRef.current);
-          observer.observe(containerRef.current);
-        }
-      })
-      .catch((error) => !cancelled && setLoadError(error.message));
-
-    return () => {
-      cancelled = true;
-      observer?.disconnect();
-    };
-  }, [text, isDark]);
+export default function GoogleSignInButton({ rememberMe = false, text = 'continue_with' }) {
+  const location = useLocation();
+  const [leaving, setLeaving] = useState(false);
 
   if (!GOOGLE_CLIENT_ID) return null;
 
-  const status = (
-    <>
-      {googleLogin.isPending && <p className="google-signin__status">Signing in with Google...</p>}
-      {loadError && <p className="google-signin__status google-signin__status--error">{loadError}</p>}
-    </>
-  );
-
-  if (isDark) {
-    return (
-      <div className="google-signin">
-        <div ref={wrapperRef} className="google-signin__dark" aria-busy={googleLogin.isPending}>
-          <span className="google-signin__face" aria-hidden="true">
-            <GoogleMark />
-            {LABELS[text]}
-          </span>
-          <div ref={containerRef} className="google-signin__overlay" />
-        </div>
-        {status}
-      </div>
-    );
-  }
+  const signIn = () => {
+    setLeaving(true);
+    // The page that asked for login, so the callback can return there
+    const from = location.state?.from;
+    startGoogleSignIn({ rememberMe, returnTo: typeof from === 'string' ? from : undefined });
+  };
 
   return (
     <div className="google-signin">
-      <div ref={containerRef} className="google-signin__button" aria-busy={googleLogin.isPending} />
-      {status}
+      <button type="button" className="google-signin__dark" onClick={signIn} disabled={leaving} aria-busy={leaving}>
+        <span className="google-signin__face">
+          <GoogleMark />
+          {leaving ? 'Opening Google...' : LABELS[text]}
+        </span>
+      </button>
     </div>
   );
 }

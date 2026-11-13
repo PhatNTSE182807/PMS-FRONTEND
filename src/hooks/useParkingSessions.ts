@@ -7,6 +7,7 @@ import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { parkingSessionService } from '@/api/parkingSession.service'
 import { queryKeys } from '@/api/queryKeys'
 import type { PaymentProvider } from '@/types/operations.dto'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /** The fee grows by block, so a minute is fine-grained enough; pushes refresh it at once. */
 const CURRENT_REFRESH_MS = 60_000
@@ -23,7 +24,7 @@ export function useCurrentSessions() {
     if (!live) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'SessionChanged' || event.type === 'PaymentChanged')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.parkingSessions.all })
+        invalidateFromPush(queryClient, queryKeys.parkingSessions.all)
     })
   }, [live, queryClient])
 

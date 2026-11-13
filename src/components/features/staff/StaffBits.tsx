@@ -26,7 +26,7 @@ export function SectionTitle({ icon, children, aside, className }: { icon?: Reac
 /** Licence plate chip in monospace (ANPR style). */
 export function Plate({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-block rounded bg-[#060f16] px-2 py-0.5 font-mono text-sm font-bold tracking-wider text-slate-950 ring-1 ring-slate-200', className)}>
+    <span className={cn('inline-block rounded bg-well px-2 py-0.5 font-mono text-sm font-bold tracking-wider text-slate-950 ring-1 ring-slate-200', className)}>
       {children}
     </span>
   )
@@ -57,7 +57,7 @@ export function Metric({ value, unit, className }: { value: ReactNode; unit?: Re
 
 /** Keyboard hint chip, e.g. [F5]. */
 export function Key({ children, className }: { children: ReactNode; className?: string }) {
-  return <kbd className={cn('rounded bg-[#060f16] px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-950', className)}>{children}</kbd>
+  return <kbd className={cn('rounded bg-well px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-950', className)}>{children}</kbd>
 }
 
 /** Camera still with a header strip and a plate overlay, used for ANPR feeds and evidence. */
@@ -81,7 +81,7 @@ export function CameraFrame({
   className?: string
 }) {
   return (
-    <div className={cn('relative aspect-video overflow-hidden rounded-xl bg-[#060f16]', className)}>
+    <div className={cn('relative aspect-video overflow-hidden rounded-xl bg-well', className)}>
       <img src={image} alt={alt} className="h-full w-full object-cover opacity-80" />
       <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-black/40" aria-hidden />
       {(topLeft || topRight) && (

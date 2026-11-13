@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2 } from 'lucide-react'
-import { ApiError, getErrorMessage } from '@/api/apiError'
+import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, ShieldAlert, Undo2 } from 'lucide-react'
+import { getErrorMessage } from '@/api/apiError'
 import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
 import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
@@ -26,7 +26,7 @@ import { BANKNOTES, cleanNotes, describeNotes, notesTotal, smallNotesFor, sugges
 import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/operations.dto'
+import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider, StaffPaymentHistoryItemDTO } from '@/types/operations.dto'
 
 
 /**
@@ -37,6 +37,29 @@ import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider } from '@/types/oper
  * (team decision, 2026-11-04: never from the POS). Every payment is listed in the payment history below.
  * Keyboard: F5 cash, F8 check gateway, Esc next vehicle.
  */
+type HistoryMethod = '' | 'Cash' | 'VNPay' | 'MoMo' | 'Wallet'
+
+/** Payment history filters; empty lists every method. */
+const HISTORY_METHODS: { value: HistoryMethod; label: string }[] = [
+  { value: '', label: 'All methods' },
+  { value: 'Cash', label: 'Cash' },
+  { value: 'VNPay', label: 'VNPay' },
+  { value: 'MoMo', label: 'MoMo' },
+  { value: 'Wallet', label: 'XXIV Wallet' },
+]
+
+const METHOD_LABEL: Record<string, string> = { Cash: 'Cash', VNPay: 'VNPay', MoMo: 'MoMo', Wallet: 'XXIV Wallet', Online: 'Online' }
+
+const CHANNEL_LABEL: Record<string, string> = { Lane: 'At the exit lane', Kiosk: 'At the counter', App: 'In the customer app' }
+
+/** Who took the payment: the Staff for cash, otherwise how it came in. */
+function collectorOf(p: StaffPaymentHistoryItemDTO) {
+  if (p.collectedByName) return p.collectedByName
+  if (p.isSimulated) return 'Simulation (automatic)'
+  if (p.method === 'Cash') return 'No Staff recorded'
+  return p.method === 'Wallet' ? 'Customer wallet' : 'Customer, paid online'
+}
+
 export default function StaffCheckoutPage() {
   const myLots = useMyStaffLots()
   const { lot } = useStaffLot()
@@ -69,15 +92,14 @@ export default function StaffCheckoutPage() {
   // Payments taken at the lot, cash only by default
   const [historyPlate, setHistoryPlate] = useState('')
   const [historyPage, setHistoryPage] = useState(1)
-  const [cashOnly, setCashOnly] = useState(true)
+  const [methodFilter, setMethodFilter] = useState<HistoryMethod>('')
   const history = useQuery({
-    queryKey: ['staff-payment-history', lotKey, historyPage, historyPlate, cashOnly],
-    queryFn: () => gateService.getPayments(lotKey!, { page: historyPage, plate: historyPlate, method: cashOnly ? 'Cash' : undefined }),
+    queryKey: ['staff-payment-history', lotKey, historyPage, historyPlate, methodFilter],
+    queryFn: () => gateService.getPayments(lotKey!, { page: historyPage, plate: historyPlate, method: methodFilter || undefined }),
     enabled: Boolean(lotKey),
     refetchInterval: 10000,
   })
   const [confirmCash, setConfirmCash] = useState(false)
-  const [lookup, setLookup] = useState('')
   const [quote, setQuote] = useState<CheckoutQuoteDTO | null>(null)
   const [qr, setQr] = useState<PaymentDTO | null>(null)
   // Cash taken note by note (it feeds the Staff's drawer), or typed as an amount when the notes are not entered
@@ -94,7 +116,6 @@ export default function StaffCheckoutPage() {
     setReceivedNotes((notes) => ({ ...notes, [value]: (notes[value] ?? 0) + 1 }))
   }
   const [exitPlate, setExitPlate] = useState('')
-  const [searching, setSearching] = useState(false)
   const cashRef = useRef<HTMLInputElement>(null)
   const now = useNow(1000)
 
@@ -156,28 +177,10 @@ export default function StaffCheckoutPage() {
     loadQuote(Number(sessionParam), plateParam ?? undefined)
   }, [sessionParam, plateParam, loadQuote])
 
-  const find = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!lotKey || !lookup.trim()) return
-    setSearching(true)
-    try {
-      const value = lookup.trim()
-      const found = await gateService.lookup(lotKey, /^SS/i.test(value) ? { code: value.toUpperCase() } : { plate: value })
-      setExitPlate(found.hasPlate ? found.plateNumber : '')
-      setParams({ session: String(found.id) })
-      toast.success(STAFF_TOAST.ticketLoaded)
-    } catch (e) {
-      toast.error(e instanceof ApiError && e.status === 404 ? STAFF_TOAST.vehicleNotFound : getErrorMessage(e))
-    } finally {
-      setSearching(false)
-    }
-  }
-
   const reset = useCallback(() => {
     setQuote(null)
     setQr(null)
     setTendered(0)
-    setLookup('')
     setExitPlate('')
     setParams({})
   }, [setParams])
@@ -276,30 +279,6 @@ export default function StaffCheckoutPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wider text-slate-700 uppercase">
-        <span className="text-slate-950">Payment counter POS</span>
-        {session && <span className="font-mono text-amber-500">Session #{session.code}</span>}
-        <span className="flex items-center gap-1.5 text-indigo-700">
-          <ShieldCheck className="size-4" aria-hidden /> Entry/exit plate check active
-        </span>
-        <Link to="/staff/gate?lane=checkout" className="ml-auto flex items-center gap-1.5 text-indigo-700 hover:underline">
-          <DoorOpen className="size-4" aria-hidden /> Barrier: Check-out lane
-        </Link>
-      </div>
-
-      <Panel>
-        <form className="flex flex-wrap items-center gap-3" onSubmit={find}>
-          <label className="relative min-w-0 flex-1">
-            <span className="sr-only">Plate or session code</span>
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-slate-500" aria-hidden />
-            <Input value={lookup} onChange={(e) => setLookup(e.target.value.toUpperCase())} placeholder="Plate read at the exit, or session code (SS…)" className="pl-8 font-mono uppercase" />
-          </label>
-          <Button type="submit" disabled={!lotKey || searching || !lookup.trim()}>
-            <Search /> Find vehicle
-          </Button>
-        </form>
-      </Panel>
-
       <Panel>
         <SectionTitle
           icon={<Clock />}
@@ -351,7 +330,7 @@ export default function StaffCheckoutPage() {
       {!session ? (
         <Panel>
           <p className="py-10 text-center text-slate-700">
-            {requestQuote.isPending ? 'Calculating the fee…' : 'Find a vehicle by plate or session code, or open one from the gate dashboard.'}
+            {requestQuote.isPending ? 'Calculating the fee…' : 'Pick a vehicle from the list above, or open one from the gate dashboard.'}
           </p>
         </Panel>
       ) : (
@@ -362,7 +341,7 @@ export default function StaffCheckoutPage() {
               <SectionTitle icon={<Car />} aside={<span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">{session.status}</span>}>
                 Vehicle
               </SectionTitle>
-              <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+              <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-well p-5 ring-1 ring-slate-200">
                 <div>
                   <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Entry plate</p>
                   <p className="mt-1 font-mono text-4xl font-bold tracking-[0.12em] text-slate-950">{session.plateNumber || 'NO PLATE'}</p>
@@ -423,7 +402,7 @@ export default function StaffCheckoutPage() {
                 {quote.depositApplied > 0 && <FeeLine label="Reservation deposit" value={-quote.depositApplied} tone="text-indigo-700" />}
                 {quote.alreadyPaid > 0 && <FeeLine label="Already paid" value={-quote.alreadyPaid} tone="text-indigo-700" />}
               </ul>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#060f16] p-5 ring-1 ring-slate-200">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-well p-5 ring-1 ring-slate-200">
                 <div>
                   <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Amount due</p>
                   <p className="text-sm text-slate-700">
@@ -452,10 +431,14 @@ export default function StaffCheckoutPage() {
                     </div>
                     {qr?.payUrl ? (
                       <>
-                        <QrCode value={qr.payUrl} label={`${qr.provider} payment QR`} className="mt-4 w-44 ring-1 ring-slate-200" />
+                        <QrCode value={qr.qrCode || qr.payUrl} label={`${qr.provider} payment QR`} className="mt-4 w-44 ring-1 ring-slate-200" />
                         <a href={qr.payUrl} target="_blank" rel="noreferrer" className="mt-2 text-xs font-semibold text-indigo-700 underline">Open payment page</a>
                         <Button size="sm" variant="secondary" className="mt-3" onClick={() => void checkGateway()}>
                           <RefreshCw /> Check gateway (F8)
+                        </Button>
+                        {/* Back to the payment choices (another QR, the wallet or cash); a late QR payment is refunded */}
+                        <Button size="sm" variant="ghost" className="mt-1" onClick={() => setQr(null)}>
+                          <Undo2 /> Back to payment options
                         </Button>
                       </>
                     ) : (
@@ -489,10 +472,10 @@ export default function StaffCheckoutPage() {
                           key={note}
                           type="button"
                           onClick={() => addNote(note)}
-                          className={cn('relative rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors', receivedNotes[note] ? 'bg-[#124e66] text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100')}
+                          className={cn('relative rounded-lg py-2 font-mono text-sm font-bold ring-1 transition-colors', receivedNotes[note] ? 'bg-selected text-indigo-800 ring-indigo-300' : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100')}
                         >
                           {formatNumber(note / 1000)}k
-                          {receivedNotes[note] ? <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-amber-500 text-[11px] text-slate-950">{receivedNotes[note]}</span> : null}
+                          {receivedNotes[note] ? <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-amber-500 text-[11px] text-(--color-on-gold)">{receivedNotes[note]}</span> : null}
                         </button>
                       ))}
                     </div>
@@ -512,7 +495,7 @@ export default function StaffCheckoutPage() {
                       value={tendered ? formatNumber(tendered) : ''}
                       placeholder="0"
                       onChange={(e) => setTendered(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                      className="mt-2 w-full rounded-lg bg-[#060f16] px-3 py-2 font-mono text-xl font-bold text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
+                      className="mt-2 w-full rounded-lg bg-well px-3 py-2 font-mono text-xl font-bold text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
                     />
                     <p className="mt-2 flex justify-between text-sm">
                       <span className="text-slate-700">{change >= 0 ? 'Change' : 'Still due'}</span>
@@ -549,7 +532,7 @@ export default function StaffCheckoutPage() {
                     <p className="mt-1 text-xs text-slate-600">
                       {drawer.data?.status === 'Open'
                         ? `Drawer ${drawer.data.closeNo} is open. Typing an amount instead of tapping notes keeps them out of the drawer count.`
-                        : 'No cash drawer open: one opens with this payment.'}
+                        : 'No cash drawer open: one opens with this payment, with the standard float.'}
                     </p>
                     <Button className="mt-3 w-full" disabled={tendered < due || payCash.isPending} onClick={() => setConfirmCash(true)}>
                       <Banknote /> Take cash
@@ -611,16 +594,16 @@ export default function StaffCheckoutPage() {
         <SectionTitle
           icon={<ReceiptText />}
           aside={
-            <div className="flex rounded-lg bg-slate-50 p-0.5 text-xs font-bold" role="group" aria-label="Payment method">
-              {[true, false].map((cash) => (
+            <div className="flex flex-wrap rounded-lg bg-slate-50 p-0.5 text-xs font-bold" role="group" aria-label="Payment method">
+              {HISTORY_METHODS.map(({ value, label }) => (
                 <button
-                  key={String(cash)}
+                  key={value || 'all'}
                   type="button"
-                  aria-pressed={cashOnly === cash}
-                  onClick={() => { setCashOnly(cash); setHistoryPage(1) }}
-                  className={cn('rounded-md px-3 py-1', cashOnly === cash ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-700')}
+                  aria-pressed={methodFilter === value}
+                  onClick={() => { setMethodFilter(value); setHistoryPage(1) }}
+                  className={cn('rounded-md px-3 py-1', methodFilter === value ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-700')}
                 >
-                  {cash ? 'Cash' : 'All methods'}
+                  {label}
                 </button>
               ))}
             </div>
@@ -635,7 +618,8 @@ export default function StaffCheckoutPage() {
         {history.data && history.data.items.length === 0 && <p className="mt-3 text-sm text-slate-700">No payments yet.</p>}
         {history.data && history.data.items.length > 0 && (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            {/* min-w: on a phone the table scrolls sideways instead of squeezing the columns into each other */}
+            <table className="w-full min-w-[52rem] text-left text-sm [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-xs font-bold tracking-wider text-slate-700 uppercase">
                 <tr><th className="py-2">Paid at</th><th>Plate</th><th>Session</th><th>Method</th><th className="text-right">Amount</th><th className="pl-6">Collected by</th></tr>
               </thead>
@@ -643,11 +627,24 @@ export default function StaffCheckoutPage() {
                 {history.data.items.map((p) => (
                   <tr key={p.id}>
                     <td className="py-2 font-mono">{p.paidAt ? new Date(p.paidAt).toLocaleString() : '—'}</td>
-                    <td className="font-mono font-bold text-slate-950">{p.plateNumber || 'No plate'}</td>
+                    <td className="font-mono font-bold text-slate-950">
+                      {p.plateNumber || 'No plate'}
+                      {p.isSimulated && (
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 font-sans text-[10px] font-bold tracking-wide text-amber-700 uppercase" title="Demo vehicle sent by the Admin parking simulation">
+                          Simulated
+                        </span>
+                      )}
+                    </td>
                     <td className="font-mono text-xs">{p.sessionCode ?? '—'}</td>
-                    <td>{p.method}{p.channel === 'Kiosk' ? ' · counter' : p.channel === 'Lane' ? ' · lane' : p.channel === 'App' ? ' · app' : ''}{p.status !== 'Succeeded' ? ` · ${p.status}` : ''}</td>
+                    <td>
+                      <span className="font-semibold text-slate-950">{METHOD_LABEL[p.method] ?? p.method}</span>
+                      <span className="block text-xs text-slate-600">
+                        {CHANNEL_LABEL[p.channel ?? ''] ?? p.channel ?? ''}
+                        {p.status !== 'Succeeded' ? ` · ${p.status === 'RefundPending' ? 'refund pending' : p.status.toLowerCase()}` : ''}
+                      </span>
+                    </td>
                     <td className="text-right font-mono font-bold text-slate-950">{vnd(p.amount)}</td>
-                    <td className="pl-6">{p.collectedByName ?? '—'}</td>
+                    <td className={cn('pl-6', !p.collectedByName && 'text-slate-600')}>{collectorOf(p)}</td>
                   </tr>
                 ))}
               </tbody>

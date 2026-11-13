@@ -274,6 +274,17 @@ export const reservationMock = {
       return customerReservations().map(refreshFlags).sort((a, b) => Date.parse(b.arrivalTime) - Date.parse(a.arrivalTime))
     }),
 
+  forLot: (lotId: string, from: string, to: string) =>
+    mockResponse(() => {
+      sweep()
+      const start = Date.parse(from)
+      const end = Date.parse(to)
+      return reservations
+        .filter((r) => (r.lotKey === lotId || String(r.parkingLotId) === lotId) && Date.parse(r.arrivalTime) >= start && Date.parse(r.arrivalTime) <= end)
+        .map(refreshFlags)
+        .sort((a, b) => Date.parse(a.arrivalTime) - Date.parse(b.arrivalTime))
+    }),
+
   get: (id: number) => mockResponse(() => (sweep(), refreshFlags(ownReservation(id)))),
 
   async create(request: CreateReservationRequest): Promise<ReservationDTO> {

@@ -1,3 +1,4 @@
+import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { Capabilities } from '@/components/home/Capabilities'
 import { CtaBanner } from '@/components/home/CtaBanner'
 import { FacilityShowcase } from '@/components/home/FacilityShowcase'
@@ -37,6 +38,7 @@ export default function HomePage() {
         <CtaBanner isSignedIn={Boolean(user)} dashboardTo={dashboardTo} />
       </main>
       <HomeFooter />
+      <AssistantWidget />
     </div>
   )
 }

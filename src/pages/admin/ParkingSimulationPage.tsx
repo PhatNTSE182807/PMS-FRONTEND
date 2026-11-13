@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { CalendarClock, Coins, FlaskConical, Power, RotateCcw, Save, TriangleAlert } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { EndOfDayPanel } from '@/components/features/simulation/EndOfDayPanel'
 import { WalkInSimulationPanel } from '@/components/features/simulation/WalkInSimulationPanel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -247,7 +246,6 @@ export default function ParkingSimulationPage() {
         <SimulationForm key={`${simulation.data.updatedAt ?? 'new'}-${simulation.data.enabled}`} current={simulation.data} />
       )}
       {simulation.data && <WalkInSimulationPanel simulating={simulation.data.enabled} />}
-      {simulation.data && <EndOfDayPanel />}
     </div>
   )
 }

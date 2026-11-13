@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { USER_TOAST, isPlateDuplicate } from '@/lib/userToasts'
+import { VEHICLE_COLOR_NAMES, vehiclePaint, vehiclePaintCss } from '@/lib/vehicleColor'
 import { KIND_ICON, vehicleKind, vehicleTitle } from '@/components/customer/customerFormat'
 import { VehicleDocumentsPanel } from '@/components/customer/VehicleDocumentsPanel'
 import { useAuth } from '@/hooks/useAuth'
@@ -49,13 +50,6 @@ const PLATE_PATTERN = /^\d{2}[A-Z]{1,2}\d?[-\s]?\d{3,4}(\.?\d{2})?$/
 
 const EMPTY_FORM = { licensePlate: '', vehicleTypeId: 0, brand: '', model: '', color: '', isDefault: false, consent: false }
 const CITIZEN_ID_PATTERN = /^\d{12}$/
-
-/** Best guess at a CSS colour for the swatch next to the colour name ("Gentian Blue" -> blue). */
-function swatchColor(name: string): string {
-  const words = name.toLowerCase().split(/\s+/).reverse()
-  const match = words.find((w) => typeof CSS !== 'undefined' && CSS.supports('color', w))
-  return match ?? '#41484c'
-}
 
 /** Registration status chip of a vehicle in the fleet list. */
 const REGISTRATION_CHIP: Record<string, { label: string; className: string }> = {
@@ -283,31 +277,12 @@ export default function RegisterVehiclePage() {
 
             <div className="cx-form">
               {!hasProfileCitizenId && (
-                <div
-                  role="alert"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '1rem',
-                    padding: '0.875rem 1rem',
-                    borderRadius: '0.5rem',
-                    background: 'rgba(234, 179, 8, 0.12)',
-                    border: '1px solid rgba(234, 179, 8, 0.35)',
-                    color: '#eab308',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <AlertTriangle style={{ flexShrink: 0, width: '1.25rem', height: '1.25rem' }} aria-hidden />
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-main, #f1f5f9)' }}>
-                      <strong>Citizen ID required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
-                    </span>
-                  </div>
-                  <Link
-                    to="/profile"
-                    className="cx-btn cx-btn--sm"
-                    style={{ whiteSpace: 'nowrap', textDecoration: 'none' }}
-                  >
+                <div role="alert" className="cx-note cx-note--warn">
+                  <AlertTriangle aria-hidden />
+                  <span className="cx-note__text">
+                    <strong>Citizen ID required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
+                  </span>
+                  <Link to="/me/profile" className="cx-btn cx-btn--sm">
                     Update Profile
                   </Link>
                 </div>
@@ -414,10 +389,16 @@ export default function RegisterVehiclePage() {
                 <label className="cx-field__label" htmlFor="vehicle-color">Exterior colour</label>
                 <div className="cx-control">
                   <span className="cx-control__icon">
-                    <span className="cx-swatch" style={{ background: swatchColor(form.color) }} aria-hidden="true" />
+                    <span className="cx-swatch" style={{ background: vehiclePaintCss(form.color) ?? '#41484c' }} aria-hidden="true" />
                   </span>
-                  <input id="vehicle-color" className="cx-input cx-input--with-icon" placeholder="Gentian Blue Metallic" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+                  <input id="vehicle-color" className="cx-input cx-input--with-icon" list="vehicle-color-names" placeholder="Gentian Blue Metallic" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+                  <datalist id="vehicle-color-names">
+                    {VEHICLE_COLOR_NAMES.map((name) => <option key={name} value={name} />)}
+                  </datalist>
                 </div>
+                {form.color.trim() && vehiclePaint(form.color) === null && (
+                  <p className="cx-field__hint">We do not recognise this colour, so the 3D map will not show your vehicle in it. Try a basic name such as Red or Silver.</p>
+                )}
               </div>
 
               <div className="cx-field">

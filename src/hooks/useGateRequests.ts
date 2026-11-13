@@ -4,6 +4,7 @@ import { gateRequestService } from '@/api/gateRequest.service'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
 import type { ApproveGateRequestRequest, GateRequestKind } from '@/types/gateRequest.dto'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /** Polling fallback when SignalR is not connected (demo mode, hub down). */
 const CUSTOMER_REFRESH_MS = 4_000
@@ -23,9 +24,9 @@ export function useMyGateRequests() {
     if (!live) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type !== 'GateRequestChanged') return
-      void queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.all })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.parkingSessions.all })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
+      invalidateFromPush(queryClient, queryKeys.gateRequests.all)
+      invalidateFromPush(queryClient, queryKeys.parkingSessions.all)
+      invalidateFromPush(queryClient, queryKeys.reservations.all)
     })
   }, [live, queryClient])
 
@@ -66,7 +67,7 @@ export function useGateRequestQueue(lotId: string | undefined, kind: GateRequest
     if (!live || !lotId) return
     return parkingOpsRealtime.subscribe((event) => {
       if (event.type === 'GateRequestChanged' || event.type === 'SessionChanged')
-        void queryClient.invalidateQueries({ queryKey: queryKeys.gateRequests.all })
+        invalidateFromPush(queryClient, queryKeys.gateRequests.all)
     }, lotId)
   }, [live, lotId, queryClient])
 

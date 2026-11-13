@@ -186,7 +186,7 @@ export const profileMock = {
   uploadAvatar: (file: File) =>
     mockResponse(() => {
       if (!file) mockFail(400, 'No file was uploaded.')
-      if (file.size > 2 * 1024 * 1024) mockFail(400, 'Avatar image must be smaller than 2 MB.')
+      if (file.size > 10 * 1024 * 1024) mockFail(400, 'Avatar image must be smaller than 10 MB.')
       const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       if (!allowed.includes(file.type)) mockFail(400, 'Only JPEG, PNG, GIF and WebP images are allowed.')
       const avatarUrl = URL.createObjectURL(file)

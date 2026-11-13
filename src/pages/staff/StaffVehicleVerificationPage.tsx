@@ -97,7 +97,7 @@ function PhotoTile({ verificationId, document }: { verificationId: string; docum
   const label = documentLabel(document.documentType, document.side)
 
   return (
-    <figure className="overflow-hidden rounded-xl bg-[#060f16] ring-1 ring-slate-200">
+    <figure className="overflow-hidden rounded-xl bg-well ring-1 ring-slate-200">
       <a
         href={photo.url ?? undefined}
         target="_blank"
@@ -225,7 +225,7 @@ function Decision({ item }: { item: VehicleVerificationReviewDTO }) {
         maxLength={500}
         rows={3}
         placeholder="e.g. The plate on the registration certificate is 51H-123.45; please register the vehicle again with that plate."
-        className="w-full rounded-lg bg-[#060f16] px-3 py-2 text-sm text-slate-950 ring-1 ring-slate-200 placeholder:text-slate-600 focus-visible:ring-indigo-400 focus-visible:outline-none"
+        className="w-full rounded-lg bg-well px-3 py-2 text-sm text-slate-950 ring-1 ring-slate-200 placeholder:text-slate-600 focus-visible:ring-indigo-400 focus-visible:outline-none"
         disabled={review.isPending}
       />
       <div className="flex flex-wrap justify-end gap-2">
@@ -335,7 +335,7 @@ export default function StaffVehicleVerificationPage() {
                 }}
                 className={cn(
                   'rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
-                  tab.status === status ? 'bg-[#124e66] text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+                  tab.status === status ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
                 )}
               >
                 {tab.label}

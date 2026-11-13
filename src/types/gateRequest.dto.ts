@@ -10,6 +10,8 @@ export type GateRequestStatus = 'Waiting' | 'Completed' | 'Refused' | 'Cancelled
 /** A check-in or check-out pressed in the customer app, with what the Staff need to decide at the lane. */
 export interface GateRequestDTO {
   id: number
+  /** A walk-in the Admin parking simulation sent to the entry lane (no booking, no account). */
+  isSimulated?: boolean
   kind: GateRequestKind
   status: GateRequestStatus
   parkingLotId: number
@@ -18,6 +20,8 @@ export interface GateRequestDTO {
   /** Brand and model, e.g. "Toyota Camry". */
   vehicleLabel: string | null
   vehicleColor: string | null
+  /** Colour the 3D gate cameras and lot map paint this vehicle: registered, or picked from the plate. */
+  paintColor?: string | null
   vehicleTypeId: number | null
   vehicleTypeName: string | null
   customerName: string | null

@@ -103,7 +103,7 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
               <XAxis dataKey="date" {...axisProps} tickFormatter={(date: string) => formatPeriodTick(granularity, date)} minTickGap={24} dy={6} />
               <YAxis {...axisProps} tickFormatter={m.tick} width={72} allowDecimals={false} />
               <Tooltip
-                cursor={{ stroke: '#41484c', strokeWidth: 1 }}
+                cursor={{ stroke: 'var(--color-slate-300)', strokeWidth: 1 }}
                 content={(props) => (
                   <ChartTooltip
                     active={props.active}
@@ -124,7 +124,7 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
                   strokeWidth={2}
                   fill={s.color}
                   fillOpacity={0.1}
-                  activeDot={{ r: 4, stroke: '#182127', strokeWidth: 2 }}
+                  activeDot={{ r: 4, stroke: 'var(--color-white)', strokeWidth: 2 }}
                   // A single point has no line to draw, so show it as a dot.
                   dot={points.length === 1 ? { r: 4, fill: s.color } : false}
                   isAnimationActive={false}
