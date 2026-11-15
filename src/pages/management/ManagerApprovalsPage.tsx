@@ -17,11 +17,13 @@ import type { ManagedLot } from '@/types/lot-management.dto'
 
 const dayClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 
-/** One Staff cash close waiting for the Manager: counted vs expected, and the confirmation (a note when off). */
+/** One Staff drawer handed in, waiting for the Manager: the cash total and the confirmation. */
 function CashCloseCard({ close }: { close: CashDrawerDTO }) {
   const { user } = useAuth()
   const confirm = useConfirmCashClose()
   const [note, setNote] = useState('')
+  // Drawers handed in before counting was dropped still carry their count and difference
+  const counted = close.countedTotal != null
   const difference = close.difference ?? 0
   const off = close.status === 'HasDifference'
   const own = close.staffUserId === user?.userId
@@ -35,23 +37,19 @@ function CashCloseCard({ close }: { close: CashDrawerDTO }) {
             {close.closedAt ? ` • closed at ${dayClock.format(Date.parse(close.closedAt))}` : ''}
           </p>
         </div>
-        <span className="flex flex-wrap gap-1">
-          <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', off ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700')}>
-            {off ? 'Difference over the limit' : 'Within the limit'}
-          </span>
-        </span>
+        <span className="font-mono text-lg font-bold text-amber-500">{formatNumber(close.cashTotal)} VND</span>
       </div>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
-        <div><dt className="text-xs text-slate-600">Counted</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.countedTotal ?? 0)}</dd></div>
-        <div><dt className="text-xs text-slate-600">Expected</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.expectedTotal)}</dd></div>
-        <div>
-          <dt className="text-xs text-slate-600">Difference</dt>
-          <dd className={cn('font-mono font-bold', difference === 0 ? 'text-emerald-700' : off ? 'text-rose-700' : 'text-amber-500')}>
-            {difference > 0 ? '+' : ''}
-            {formatNumber(difference)}
-          </dd>
-        </div>
+        <div><dt className="text-xs text-slate-600">Float</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.floatTotal)}</dd></div>
+        <div><dt className="text-xs text-slate-600">Cash taken ({close.cashPayments})</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.cashCollected)}</dd></div>
+        <div><dt className="text-xs text-slate-600">Added by you</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.topUpTotal)}</dd></div>
       </dl>
+      {counted && (
+        <p className={cn('mt-2 text-sm', off ? 'text-rose-700' : 'text-slate-700')}>
+          Counted {formatNumber(close.countedTotal ?? 0)} VND: {difference > 0 ? '+' : ''}
+          {formatNumber(difference)} VND off.
+        </p>
+      )}
       {close.differenceReason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">Staff reason:</strong> {close.differenceReason}</p>}
       {off && (
         <Input className="mt-3" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="What you checked (required for a difference)" aria-label="Confirmation note" />
@@ -63,20 +61,20 @@ function CashCloseCard({ close }: { close: CashDrawerDTO }) {
           title={own ? 'You closed this drawer: another Manager confirms it' : undefined}
           onClick={() => confirm.mutate({ id: close.id!, note: note.trim() || undefined })}
         >
-          <CircleCheck /> Confirm cash close
+          <CircleCheck /> Confirm handover
         </Button>
       </div>
     </Card>
   )
 }
 
-/** Staff cash closes of the lot waiting for the Manager (BR-12). */
+/** Staff drawers of the lot handed in and waiting for the Manager. */
 function CashCloses({ lot }: { lot: ManagedLot }) {
   const closes = useCashCloses(lot.id)
   return (
     <section className="space-y-3" aria-labelledby="cash-closes-title">
       <h2 id="cash-closes-title" className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-        <Banknote className="size-5 text-amber-500" aria-hidden /> Cash closes to confirm
+        <Banknote className="size-5 text-amber-500" aria-hidden /> Cash drawers to confirm
       </h2>
       {closes.isPending && <Skeleton className="h-28 rounded-xl" />}
       {closes.isError && (
@@ -85,7 +83,7 @@ function CashCloses({ lot }: { lot: ManagedLot }) {
         </Card>
       )}
       {closes.isSuccess && closes.data.length === 0 && (
-        <Card className="p-6 text-center text-sm text-slate-600">No Staff cash close is waiting for you.</Card>
+        <Card className="p-6 text-center text-sm text-slate-600">No Staff cash drawer is waiting for you.</Card>
       )}
       <div className="grid gap-3 lg:grid-cols-2">
         {(closes.data ?? []).map((close) => (
@@ -96,7 +94,7 @@ function CashCloses({ lot }: { lot: ManagedLot }) {
   )
 }
 
-/** One Staff request for more banknotes: the notes, then Approve (they join the drawer) or Reject with a reason. */
+/** One Staff request for more cash: the amount, then Approve (it joins the drawer) or Reject with a reason. */
 function CashTopUpCard({ request }: { request: CashTopUpDTO }) {
   const { user } = useAuth()
   const decide = useDecideCashTopUp()
@@ -112,15 +110,6 @@ function CashTopUpCard({ request }: { request: CashTopUpDTO }) {
         </div>
         <span className="font-mono text-lg font-bold text-amber-500">{formatNumber(request.total)} VND</span>
       </div>
-      <ul className="mt-3 flex flex-wrap gap-1.5">
-        {Object.entries(request.notes)
-          .sort(([a], [b]) => Number(b) - Number(a))
-          .map(([value, count]) => (
-            <li key={value} className="rounded-lg bg-slate-50 px-2.5 py-1 font-mono text-xs font-bold text-slate-900 ring-1 ring-slate-200">
-              {count} × {formatNumber(Number(value))}
-            </li>
-          ))}
-      </ul>
       {request.reason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">Staff reason:</strong> {request.reason}</p>}
       {!request.drawerOpen && <p className="mt-2 text-sm text-rose-700">The Staff already closed this drawer: reject it and let them ask again.</p>}
       {rejecting ? (
@@ -152,7 +141,7 @@ function CashTopUpCard({ request }: { request: CashTopUpDTO }) {
   )
 }
 
-/** Staff asking for more banknotes in their drawer (approved notes count as cash put into it). */
+/** Staff asking for more cash in their drawer (an approved amount counts as cash put into it). */
 function CashTopUps({ lot }: { lot: ManagedLot }) {
   const requests = useCashTopUps(lot.id)
   if (requests.isSuccess && requests.data.length === 0) return null

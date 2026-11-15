@@ -15,7 +15,7 @@ const TONE: Record<string, string> = {
   CashDrawerClosed: 'bg-amber-500',
 }
 
-/** A cash drawer closed off the expected cash stands out from one that balances. */
+/** An older drawer close that was counted off the expected cash stands out (new closes are not counted, so carry no difference). */
 const toneOf = (n: NotificationModel) =>
   n.type === 'CashDrawerClosed' && Number(n.data?.difference ?? 0) !== 0 ? 'bg-rose-500' : TONE[n.type] ?? 'bg-slate-400'
 

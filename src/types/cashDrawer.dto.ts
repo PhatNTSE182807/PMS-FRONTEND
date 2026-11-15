@@ -1,11 +1,9 @@
 /* Mirrors PMS.Application.Models.Operations.CashDrawerModels (StaffGateController /staff/lots/{id}/cash-drawer, ManagerOperationsController /manager/…/cash-closes). */
 
-/** Banknote value (VND) → how many notes, e.g. { 50000: 2, 10000: 1 }. */
-export type BanknoteCounts = Record<number, number>
-
+/** HasDifference only appears on drawers closed with a banknote count, before counting was dropped (2026-11-15). */
 export type CashDrawerStatus = 'NotOpened' | 'Open' | 'Closed' | 'HasDifference' | 'Confirmed'
 
-/** CashDrawerModel: one Staff drawer of a business day. */
+/** CashDrawerModel: one Staff drawer, kept as a single running cash total (banknotes are not counted). */
 export interface CashDrawerDTO {
   id: number | null
   parkingLotId: number
@@ -15,20 +13,15 @@ export interface CashDrawerDTO {
   closeNo: number
   status: CashDrawerStatus
   openedAt: string | null
-  float: BanknoteCounts
   floatTotal: number
-  /** Cash fees this Staff recorded while the drawer was open. */
+  /** Cash fees this Staff recorded while the drawer was open (change given back is not kept). */
   cashCollected: number
   cashPayments: number
-  /** Float + notes received − change given (payments entered note by note). */
-  expectedNotes: BanknoteCounts
-  /** Float + cash collected + cash the Manager added. */
-  expectedTotal: number
-  /** Cash entered as an amount only: in the total, not in expectedNotes. */
-  untrackedCash: number
-  counted: BanknoteCounts | null
+  /** Cash in the drawer: float + cash collected + cash the Manager added. Live while open, frozen at the close. */
+  cashTotal: number
+  /** Only on older drawers closed with a banknote count. */
   countedTotal: number | null
-  /** Counted − expected; negative when cash is missing. */
+  /** Counted − expected on those older drawers. */
   difference: number | null
   differenceReason: string | null
   closedAt: string | null
@@ -36,21 +29,17 @@ export interface CashDrawerDTO {
   confirmedByName: string | null
   confirmedAt: string | null
   confirmNote: string | null
-  /** A bigger difference needs a reason and a Manager's confirmation. */
-  differenceThreshold: number
-  /** Banknote values, largest first. */
-  denominations: number[]
-  /** The standard float a drawer opened by the system starts with. */
-  defaultFloat: BanknoteCounts
-  /** Cash the Manager approved into this drawer (already in expectedTotal and expectedNotes). */
+  /** The standard float (VND) a drawer opened by the system starts with. */
+  defaultFloat: number
+  /** Cash the Manager approved into this drawer (already in cashTotal). */
   topUpTotal: number
-  /** Requests for more banknotes made for this drawer, newest first. */
+  /** Requests for more cash made for this drawer, newest first. */
   topUps: CashTopUpDTO[]
 }
 
 export type CashTopUpStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'
 
-/** CashTopUpModel: banknotes a Staff asked the Manager to add to their open drawer. */
+/** CashTopUpModel: an amount of cash a Staff asked the Manager to add to their open drawer. */
 export interface CashTopUpDTO {
   id: number
   parkingLotId: number
@@ -58,7 +47,6 @@ export interface CashTopUpDTO {
   closeNo: number
   staffUserId: string
   staffName: string | null
-  notes: BanknoteCounts
   total: number
   reason: string | null
   status: CashTopUpStatus
@@ -67,6 +55,6 @@ export interface CashTopUpDTO {
   decidedByName: string | null
   decidedAt: string | null
   decisionNote: string | null
-  /** The drawer is still open, so the notes can still go into it. */
+  /** The drawer is still open, so the cash can still go into it. */
   drawerOpen: boolean
 }
