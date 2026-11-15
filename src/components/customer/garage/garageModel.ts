@@ -67,13 +67,16 @@ export interface GarageTemplate {
   /** Kind of each level, ground first. Motorbikes always park on the ground level. */
   floors: FloorKind[]
   slotsPerFloor: number
-  /** Penalty bays added to every level, outside its capacity (kept in sync with the backend LotTemplates). */
+  /**
+   * Penalty bays added to every level, outside its capacity (kept in sync with the backend LotTemplates). A multiple of
+   * the level's rows, so the penalty block is a full rectangle.
+   */
   penaltySlotsPerFloor: number
 }
 
 export const GARAGE_TEMPLATES: GarageTemplate[] = [
-  { id: 'L3S20', name: 'Compact deck', summary: '3 levels × 20 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 20, penaltySlotsPerFloor: 5 },
-  { id: 'L3S50', name: 'Wide deck', summary: '3 levels × 50 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 50, penaltySlotsPerFloor: 10 },
+  { id: 'L3S20', name: 'Compact deck', summary: '3 levels × 20 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 20, penaltySlotsPerFloor: 6 },
+  { id: 'L3S50', name: 'Wide deck', summary: '3 levels × 50 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 50, penaltySlotsPerFloor: 12 },
   { id: 'L4S30', name: 'Tower', summary: '4 levels × 30 bays · 3 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car', 'car'], slotsPerFloor: 30, penaltySlotsPerFloor: 6 },
 ]
 
