@@ -5,6 +5,7 @@ import { isMockService } from '@/config/env'
 import { LotDirectionsDialog } from '@/components/customer/LotDirectionsDialog'
 import { usePublicLots } from '@/hooks/usePublicLots'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
+import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { usePublicPrices } from '@/hooks/usePricing'
 import { useVehicles } from '@/hooks/useProfile'
 import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
@@ -116,7 +117,10 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   }
 
   // The published layout gives the real slot ids a reservation needs; the template model is the fallback
-  const plan = useLotPlan2D(lot?.id, 'slots', false)
+  // Bay changes arrive on the lot's public SignalR channel; while it is up the plan is only re-read on a push (and
+  // once a minute as a safety net) instead of every 2 seconds
+  const realtime = useLotRealtime(lot?.id)
+  const plan = useLotPlan2D(lot?.id, 'slots', realtime.connected)
   const planFloors = plan.data?.floors
   const floors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
   const bookableBays = Boolean(planFloors)
