@@ -26,8 +26,9 @@ const pendingByClient = new WeakMap<QueryClient, Map<string, Pending>>()
 export function invalidateFromPush(
   queryClient: QueryClient,
   queryKey: QueryKey,
-  options: { scope?: string; predicate?: (queryKey: QueryKey) => boolean } = {},
+  options: { scope?: string; predicate?: (queryKey: QueryKey) => boolean; windowMs?: number } = {},
 ) {
+  const windowMs = options.windowMs ?? WINDOW_MS
   let pending = pendingByClient.get(queryClient)
   if (!pending) {
     pending = new Map()
@@ -51,7 +52,7 @@ export function invalidateFromPush(
     entry.queued = true
     return
   }
-  const wait = WINDOW_MS - (Date.now() - entry.lastRun)
+  const wait = windowMs - (Date.now() - entry.lastRun)
   if (wait <= 0) run()
   else entry.queued = true
   entry.timer = setTimeout(
@@ -59,6 +60,6 @@ export function invalidateFromPush(
       entry.timer = null
       if (entry.queued) run()
     },
-    Math.max(wait, WINDOW_MS),
+    Math.max(wait, windowMs),
   )
 }

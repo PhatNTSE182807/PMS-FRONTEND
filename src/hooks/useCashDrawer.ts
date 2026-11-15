@@ -1,16 +1,32 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/apiError'
 import { cashDrawerService } from '@/api/cashDrawer.service'
+import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
-/** The signed-in Staff's open drawer at the lot (else their latest of today); refreshed every 10 s and after every cash payment. */
+/**
+ * The signed-in Staff's open drawer at the lot (else their latest of today). A payment push refreshes it (cash moves the
+ * drawer); polling is the fallback: every minute while pushes arrive, every 10 s in demo mode.
+ */
 export function useCashDrawer(lotId: string | undefined) {
+  const queryClient = useQueryClient()
+  const live = parkingOpsRealtime.isAvailable('gate')
+
+  useEffect(() => {
+    if (!live || !lotId) return
+    return parkingOpsRealtime.subscribe((event) => {
+      if (event.type === 'PaymentChanged') invalidateFromPush(queryClient, queryKeys.cashDrawer.current(lotId), { windowMs: 3_000 })
+    }, lotId)
+  }, [live, lotId, queryClient])
+
   return useQuery({
     queryKey: queryKeys.cashDrawer.current(lotId ?? ''),
     queryFn: () => cashDrawerService.current(lotId!),
     enabled: Boolean(lotId),
-    refetchInterval: 10_000,
+    refetchInterval: live ? 60_000 : 10_000,
   })
 }
 
