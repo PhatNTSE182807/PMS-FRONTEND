@@ -2946,6 +2946,21 @@
   margin-left: auto;
 }
 
+/* The selected lot has no free bay: stands out from the gold "your booking" notes */
+.cx-map__full {
+  background: color-mix(in srgb, var(--cx-crimson) 14%, transparent);
+  color: var(--cx-crimson);
+}
+
+/* "• Almost full" / "• Full" after a floor's name */
+.cx-map__fill {
+  color: var(--cx-gold);
+}
+
+.cx-map__fill--full {
+  color: var(--cx-crimson);
+}
+
 /* ---- Bay reservation and deposit payment (ReserveBayPanel, CustomerBookingsPage) ---- */
 .cx-reserve {
   display: flex;

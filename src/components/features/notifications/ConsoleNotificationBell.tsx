@@ -13,6 +13,9 @@ const TONE: Record<string, string> = {
   DepositRefunded: 'bg-emerald-500',
   DepartureOverdue: 'bg-amber-500',
   CashDrawerClosed: 'bg-amber-500',
+  LotAlmostFull: 'bg-amber-500',
+  LotFull: 'bg-rose-500',
+  LotSpaceAvailable: 'bg-emerald-500',
 }
 
 /** An older drawer close that was counted off the expected cash stands out (new closes are not counted, so carry no difference). */
@@ -24,6 +27,7 @@ const toneOf = (n: NotificationModel) =>
  * Staff: booked bays a walk-in took, bookings moved to another bay, the compensation sent to customers, and booked
  * vehicles that stayed past their time.
  * Manager: cash drawers their Staff closed, and how each taken booked bay was handled (moved, or compensated).
+ * Both: a zone of their lot that is almost full, full, or has free bays again.
  */
 export function ConsoleNotificationBell() {
   const [open, setOpen] = useState(false)
