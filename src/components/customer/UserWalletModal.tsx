@@ -353,7 +353,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                           <text x="50" y="60" fill="#ffffff" fontSize="32" fontWeight="900" textAnchor="middle" fontFamily="sans-serif">
                             VN
                           </text>
-                          <circle cx="75" cy="35" r="12" fill="#e11b22" />
+                          <circle cx="75" cy="35" r="12" fill="#ed1c24" />
                         </svg>
                       </div>
                       <span className="cx-wallet-method__name">VNPay Gateway</span>
