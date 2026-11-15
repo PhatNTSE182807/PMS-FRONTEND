@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { Bike, Car, Rotate3d } from 'lucide-react'
 import { GarageFloorsView } from '@/components/customer/garage/GaragePreview'
-import { buildTemplateGarage, findTemplate, liveFloorStats, templateForLot, type Bay } from '@/components/customer/garage/garageModel'
+import { buildTemplateGarage, findTemplate, liveFloorStats, standardBays, templateForLot, type Bay } from '@/components/customer/garage/garageModel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/hooks/useAuth'
 import type { AccountRole } from '@/types/identity.dto'
@@ -130,7 +130,7 @@ export function LiveLotModel({
                     <strong className="text-slate-950">{f.level}</strong> <span className="text-slate-600">{f.zoneLabel || (f.kind === 'car' ? 'Cars' : 'Motorbikes')}</span>
                   </span>
                   <span className="font-mono font-bold text-slate-950 tabular-nums">
-                    {f.liveTotal ? `${formatNumber(f.liveFree)}/${formatNumber(f.liveTotal)}` : `${f.bays.length} bays`}
+                    {f.liveTotal ? `${formatNumber(f.liveFree)}/${formatNumber(f.liveTotal)}` : `${standardBays(f).length} bays`}
                   </span>
                 </li>
               )

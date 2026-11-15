@@ -48,6 +48,8 @@ export interface PricingRuleDTO {
   noShowFee: number
   /** Paid into the customer's XXIV wallet when a walk-in took their booked bay and no other bay was free. */
   bookedBayCompensation: number
+  /** Owed at check-out by a vehicle Staff towed out of a booked bay (a walk-in in the wrong bay, or an overstay). */
+  penaltyFee?: number
   currency: string
   priority: number
   effectiveFrom: string
@@ -86,6 +88,8 @@ export interface PricingRuleInput {
   lostTicketFee: number
   /** Not a price: changing it never tells customers the price changed. */
   bookedBayCompensation: number
+  /** Not a price either; left out, a new rule gets the default of its vehicle type. */
+  penaltyFee?: number
   status?: PricingRuleStatus
   /** Kept from the rule on update (the API requires it). */
   effectiveFrom?: string

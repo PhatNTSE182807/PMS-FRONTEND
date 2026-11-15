@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import type { Bay, BayStatus, GarageFloor, ParkedKind } from './garageModel'
+import { standardBays, type Bay, type BayStatus, type GarageFloor, type ParkedKind } from './garageModel'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { buildCoupeModel, buildSuvModel } from './carModels'
 import { buildBikeModel, type PartSlot } from './vehicleModels'
@@ -74,6 +74,9 @@ const COLOR = {
   occupied: 0xef4444,
   selected: 0x38bdf8,
   mine: 0xffd166,
+  /** Penalty bays: orange pads and lines, a darker light while a towed vehicle is in */
+  penalty: 0xf97316,
+  penaltyTaken: 0x9a3412,
 }
 
 const STATUS_COLOR: Record<BayStatus, number> = {
@@ -166,7 +169,7 @@ function labelTexture(title: string, sub: string) {
 
 const floorTitle = (floor: GarageFloor) => `${floor.level} · ${floor.kind === 'car' ? 'Cars' : 'Motorbikes'}`
 const floorSub = (floor: GarageFloor) =>
-  floor.liveTotal ? `${floor.liveFree} free of ${floor.liveTotal}` : `${floor.bays.length} bays`
+  floor.liveTotal ? `${floor.liveFree} free of ${floor.liveTotal}` : `${standardBays(floor).length} bays`
 
 /* ------------------------------------------------------------------ */
 /* Scene builder                                                        */
@@ -354,6 +357,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
     const concreteDark = std({ color: COLOR.concreteDark, roughness: 0.95 })
     const asphalt = std({ color: 0xffffff, map: asphaltTex, roughness: 1 })
     const paint = basic({ color: COLOR.paint })
+    const penaltyPaint = basic({ color: COLOR.penalty })
     const steel = std({ color: 0x6b7178, metalness: 0.8, roughness: 0.35 })
     const darkGlass = std({ color: 0x22313b, metalness: 0.7, roughness: 0.15 })
 
@@ -470,16 +474,19 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
       // Bay lines (yellow U shapes) and light posts, merged with the rest of the level
       const sideLineGeo = track(new THREE.PlaneGeometry(0.14, size.depth))
       const backLineGeo = track(new THREE.PlaneGeometry(size.width, 0.14))
-      const lastInRow = new Map<number, number>()
-      floor.bays.forEach((b) => lastInRow.set(b.row, Math.max(lastInRow.get(b.row) ?? 0, b.col)))
+      // The normal bays and the penalty block each close their rows with a line of their own
+      const rowEnd = (bay: Bay) => `${bay.row}:${bay.penalty ? 'p' : 's'}`
+      const lastInRow = new Map<string, number>()
+      floor.bays.forEach((b) => lastInRow.set(rowEnd(b), Math.max(lastInRow.get(rowEnd(b)) ?? 0, b.col)))
       const centres = floor.bays.map((bay) => bayCentre(floor, bay))
       const lightAt: THREE.Vector3[] = []
       floor.bays.forEach((bay, i) => {
         const c = centres[i]
         const backZ = c.z - facing(bay) * (size.depth / 2)
-        batch.add(sideLineGeo, paint, c.x - size.width / 2, deckY + 0.02, c.z, -Math.PI / 2)
-        if (bay.col === lastInRow.get(bay.row)) batch.add(sideLineGeo, paint, c.x + size.width / 2, deckY + 0.02, c.z, -Math.PI / 2)
-        batch.add(backLineGeo, paint, c.x, deckY + 0.02, backZ, -Math.PI / 2)
+        const line = bay.penalty ? penaltyPaint : paint
+        batch.add(sideLineGeo, line, c.x - size.width / 2, deckY + 0.02, c.z, -Math.PI / 2)
+        if (bay.col === lastInRow.get(rowEnd(bay))) batch.add(sideLineGeo, line, c.x + size.width / 2, deckY + 0.02, c.z, -Math.PI / 2)
+        batch.add(backLineGeo, line, c.x, deckY + 0.02, backZ, -Math.PI / 2)
         const post = new THREE.Vector3(c.x + size.width / 2 - 0.25, deckY, backZ + facing(bay) * 0.2)
         batch.add(postGeo, steel, post.x, deckY + 0.45, post.z)
         lightAt.push(post.setY(deckY + 1.0))
@@ -586,7 +593,14 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
         floor.bays.forEach((bay, i) => {
           const isMine = bay.id === mine
           const isSelected = bay.id === sel
-          const status = isMine ? COLOR.mine : STATUS_COLOR[bay.status]
+          // A penalty bay keeps its own colour: free (orange) or holding a towed vehicle (dark orange)
+          const status = isMine
+            ? COLOR.mine
+            : bay.penalty
+              ? bay.status === 'OCCUPIED'
+                ? COLOR.penaltyTaken
+                : COLOR.penalty
+              : STATUS_COLOR[bay.status]
           const padColor = isSelected ? COLOR.selected : bay.id === state.hoverId ? 0xffffff : bay.status === 'OCCUPIED' && !isMine ? COLOR.asphalt : status
           level.pads.setColorAt(i, color.setHex(padColor))
           level.lights.setColorAt(i, color.setHex(status))
@@ -680,7 +694,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
         tip.style.opacity = '0'
         return
       }
-      const hint = latest.current.bayHint?.(bay) ?? null
+      const hint = latest.current.bayHint?.(bay) ?? (bay.penalty ? 'Penalty bay: only for towed vehicles' : null)
       const title = tip.firstElementChild as HTMLElement | null
       const sub = tip.lastElementChild as HTMLElement | null
       if (title) title.textContent = bay.code

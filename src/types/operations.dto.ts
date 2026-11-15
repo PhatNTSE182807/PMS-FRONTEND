@@ -312,6 +312,11 @@ export interface ParkingSessionDTO {
   isOverdue: boolean
   zeroFeeReason: string | null
   overrideNote: string | null
+  /** WrongBay or Overstay when Staff towed the vehicle out of a booked bay; null otherwise. */
+  penaltyReason?: 'WrongBay' | 'Overstay' | null
+  /** Penalty owed at check-out for the tow. */
+  penaltyFee?: number
+  relocatedAt?: string | null
 }
 
 /** LostTicketCaseStatus: a rejected case keeps the vehicle in the lot until a new case is approved. */
@@ -365,6 +370,9 @@ export interface CheckoutQuoteDTO {
   fee: number
   lostTicketFee: number
   exitWindowLateFee: number
+  /** Penalty of a vehicle towed out of a booked bay (0 when it never was). */
+  penaltyFee?: number
+  penaltyReason?: 'WrongBay' | 'Overstay' | null
   depositApplied: number
   alreadyPaid: number
   amountDue: number
@@ -477,7 +485,7 @@ export interface BaySessionDTO {
 }
 
 /** BookedBayCaseStatus */
-export type BookedBayCaseStatus = 'Open' | 'Reassigned' | 'Compensated' | 'Closed'
+export type BookedBayCaseStatus = 'Open' | 'Relocated' | 'Reassigned' | 'Compensated' | 'Closed'
 
 /**
  * GET /api/staff/lots/{lotId}/booked-bay-cases: BookedBayCaseModel. A walk-in parked in a booked bay, as the lot's
@@ -519,4 +527,15 @@ export interface BookedBayCaseDTO {
   compensationPaid: number
   /** Free bays of the booked vehicle type (open cases). Empty: cancel and compensate. */
   freeBays: { slotId: number; code: string; zoneName: string | null }[]
+  /**
+   * Bays the vehicle in the booked bay can be towed to (open cases), best first: free penalty bays, then free walk-in
+   * bays when every penalty bay is taken. Empty: move the booking instead, or compensate.
+   */
+  towBays?: { slotId: number; code: string; zoneName: string | null; kind: 'Standard' | 'Penalty' }[]
+  /** WrongBay (a walk-in parked there) or Overstay (a booking that stayed past its time). */
+  offence?: 'WrongBay' | 'Overstay'
+  /** Penalty a tow adds to that vehicle's fee (open), or what it was charged (Relocated). */
+  penaltyFee?: number
+  towedToBayId?: number | null
+  towedToBayCode?: string | null
 }

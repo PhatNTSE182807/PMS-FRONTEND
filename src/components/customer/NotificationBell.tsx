@@ -17,6 +17,7 @@ import {
   LogOut as LogOutIcon,
   Tag,
   TriangleAlert,
+  Truck,
   Undo2,
 } from 'lucide-react'
 import { useNotifications, useMarkRead, useMarkAllRead, useDeleteNotification, useTimeAgo } from '@/hooks/useNotifications'
@@ -37,6 +38,7 @@ const ICON_MAP: Record<string, typeof Bell> = {
   DepartureSoon: Clock,
   DepartureOverdue: TimerOff,
   BookingBayMoved: ArrowLeftRight,
+  VehicleTowed: Truck,
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -54,6 +56,7 @@ const COLOR_MAP: Record<string, string> = {
   DepartureSoon: 'cx-notif__icon--warning',
   DepartureOverdue: 'cx-notif__icon--danger',
   BookingBayMoved: 'cx-notif__icon--info',
+  VehicleTowed: 'cx-notif__icon--warning',
 }
 
 /** Notification bell with dropdown for the customer nav bar. */

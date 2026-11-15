@@ -9,6 +9,7 @@ import type { PricingChargeModel, PricingRuleDTO, PricingRuleInput } from '@/typ
 /** Form values as typed text, so empty fields can be told apart from zeros. */
 interface Draft {
   bookedBayCompensation: string
+  penaltyFee: string
   name: string
   chargeModel: PricingChargeModel
   hasFirstBlock: boolean
@@ -52,6 +53,7 @@ function toDraft(rule: PricingRuleDTO): Draft {
     maxDailyFee: rule.maxDailyFee == null ? '' : String(rule.maxDailyFee),
     lostTicketFee: String(rule.lostTicketFee),
     bookedBayCompensation: String(rule.bookedBayCompensation ?? 0),
+    penaltyFee: String(rule.penaltyFee ?? 0),
   }
 }
 
@@ -83,6 +85,8 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
   const bookedBayCompensation = whole('bookedBayCompensation', 0, 'Booked bay compensation')
   if (!errors.bookedBayCompensation && bookedBayCompensation > 10_000_000)
     errors.bookedBayCompensation = 'Booked bay compensation can be at most 10,000,000 VND.'
+  const penaltyFee = whole('penaltyFee', 0, 'Towing penalty')
+  if (!errors.penaltyFee && penaltyFee > 10_000_000) errors.penaltyFee = 'Towing penalty can be at most 10,000,000 VND.'
   if (Object.keys(errors).length) return { errors }
 
   return {
@@ -105,6 +109,7 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
       maxDailyFee,
       lostTicketFee,
       bookedBayCompensation,
+      penaltyFee,
     },
   }
 }
@@ -277,6 +282,14 @@ export function PricingRuleEditor({
                 value={draft.bookedBayCompensation}
                 onChange={(e) => set('bookedBayCompensation', e.target.value)}
               />
+            </Field>
+            <Field
+              id="rule-penalty"
+              label="Towing penalty (VND)"
+              hint="Added to the fee of a vehicle Staff towed out of a booked bay into a penalty bay: a walk-in in the wrong bay, or a booking that stayed past its time."
+              error={errors.penaltyFee}
+            >
+              <Input id="rule-penalty" inputMode="numeric" value={draft.penaltyFee} onChange={(e) => set('penaltyFee', e.target.value)} />
             </Field>
           </div>
 

@@ -16,6 +16,7 @@ import {
   Sun,
   TicketX,
   HandCoins,
+  Truck,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { PricingRuleEditor } from '@/components/features/manager/PricingRuleEditor'
@@ -194,6 +195,14 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
           unit="VND"
           note="Paid to the wallet when a walk-in took the booked bay and no other bay was free. Off this lot's revenue."
         />
+        <Rule
+          icon={Truck}
+          label="Towing penalty"
+          value={money(rule.penaltyFee ?? 0)}
+          unit="VND + stay"
+          tone="red"
+          note="Added to the fee of a vehicle towed out of a booked bay into a penalty bay."
+        />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -245,6 +254,8 @@ function starterRule(type: VehicleTypeDTO): PricingRuleInput {
     lostTicketFee: bike ? 50_000 : 100_000,
     // Booked bay compensation: 50,000 VND for motorbikes, 100,000 VND for 4- and 7-seat cars
     bookedBayCompensation: bike ? 50_000 : 100_000,
+    // Towing penalty: 50,000 VND for motorbikes, 200,000 VND for cars
+    penaltyFee: bike ? 50_000 : 200_000,
     status: 'Draft',
   }
 }

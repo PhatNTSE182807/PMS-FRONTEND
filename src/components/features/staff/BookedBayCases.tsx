@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { ArrowLeftRight, CalendarX, CircleCheck, HandCoins, ParkingSquare, TriangleAlert } from 'lucide-react'
+import { ArrowLeftRight, CalendarX, CircleCheck, HandCoins, ParkingSquare, TriangleAlert, Truck } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { vnd } from '@/components/features/manager/managerFormat'
 import { Panel, Plate, SectionTitle } from '@/components/features/staff/StaffBits'
@@ -15,6 +15,7 @@ const clock = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit
 const at = (iso: string | null | undefined) => (iso ? clock.format(Date.parse(iso)) : '—')
 
 const OUTCOME: Record<Exclude<BookedBayCaseStatus, 'Open'>, { label: string; className: string }> = {
+  Relocated: { label: 'Towed', className: 'bg-orange-50 text-orange-800 ring-orange-200' },
   Reassigned: { label: 'Moved', className: 'bg-indigo-50 text-indigo-700 ring-indigo-200' },
   Compensated: { label: 'Refunded & compensated', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
   Closed: { label: 'Closed', className: 'bg-slate-100 text-slate-700 ring-slate-200' },
@@ -29,15 +30,39 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-/** One open case: who booked, who parked there, and the way out (move the booking, or refund and compensate). */
+const towLabel = (bay: NonNullable<BookedBayCaseDTO['towBays']>[number]) =>
+  `${bay.kind === 'Penalty' ? 'Penalty bay' : 'Walk-in bay'} ${bay.code}${bay.zoneName ? ` · ${bay.zoneName}` : ''}`
+
+/**
+ * One open case: who booked, who parked there, and the way out, in order: tow the vehicle to a penalty bay (or a
+ * walk-in bay when every penalty bay is taken), move the booking, or, when nothing is left, refund and compensate.
+ */
 function OpenCase({ bayCase, lotId }: { bayCase: BookedBayCaseDTO; lotId: string }) {
   const resolve = useResolveBookedBay(lotId)
+  const towBays = bayCase.towBays ?? []
+  const canTow = bayCase.walkInInside && towBays.length > 0
+  const [towTo, setTowTo] = useState<number | ''>(towBays[0]?.slotId ?? '')
   const [slotId, setSlotId] = useState<number | ''>(bayCase.freeBays[0]?.slotId ?? '')
   const [note, setNote] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const hasFreeBay = bayCase.freeBays.length > 0
   const payout = bayCase.depositHeld + bayCase.compensationAmount
+
+  const tow = () => {
+    if (towTo === '') return setError('Pick the bay to tow the vehicle to.')
+    setError(null)
+    resolve.mutate(
+      { caseId: bayCase.id, kind: 'tow', slotId: towTo },
+      {
+        onSuccess: (r) =>
+          toast.success(
+            `Vehicle towed to bay ${r.towedToBayCode}. Booking ${r.reservationCode} keeps bay ${r.bayCode}; ${vnd(r.penaltyFee ?? 0)} penalty at check-out.`,
+          ),
+        onError: (e) => setError(getErrorMessage(e, 'Could not tow the vehicle.')),
+      },
+    )
+  }
 
   const move = () => {
     if (slotId === '') return setError('Pick the bay to move the booking to.')
@@ -89,7 +114,9 @@ function OpenCase({ bayCase, lotId }: { bayCase: BookedBayCaseDTO; lotId: string
           <Fact label="Hold ends">{at(bayCase.holdEndsAt)}</Fact>
         </dl>
         <dl className="space-y-1.5 rounded-lg bg-slate-50 p-3">
-          <p className="mb-1 text-xs font-bold tracking-wider text-slate-700 uppercase">Parked there (walk-in)</p>
+          <p className="mb-1 text-xs font-bold tracking-wider text-slate-700 uppercase">
+            Parked there ({bayCase.offence === 'Overstay' ? 'stayed past its booking' : 'walk-in'})
+          </p>
           <Fact label="Plate">
             <Plate>{bayCase.walkInPlate ?? '—'}</Plate>
           </Fact>
@@ -101,10 +128,35 @@ function OpenCase({ bayCase, lotId }: { bayCase: BookedBayCaseDTO; lotId: string
         </dl>
       </div>
 
+      {canTow && (
+        <div className="space-y-2 rounded-lg bg-orange-50 p-3 ring-1 ring-orange-200">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-48 flex-1 space-y-1.5">
+              <Label htmlFor={`bay-case-tow-${bayCase.id}`}>Tow the vehicle to</Label>
+              <NativeSelect id={`bay-case-tow-${bayCase.id}`} value={towTo} onChange={(e) => setTowTo(e.target.value ? Number(e.target.value) : '')}>
+                {towBays.map((b) => (
+                  <option key={b.slotId} value={b.slotId}>
+                    {towLabel(b)}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <Button onClick={tow} disabled={resolve.isPending}>
+              <Truck /> Tow vehicle
+            </Button>
+          </div>
+          <p className="text-xs text-orange-900">
+            Recommended: the customer keeps the bay they booked. The towed vehicle pays a {vnd(bayCase.penaltyFee ?? 0)} penalty at
+            check-out
+            {towBays[0]?.kind === 'Standard' ? '. Every penalty bay is taken, so it goes to a free walk-in bay.' : '.'}
+          </p>
+        </div>
+      )}
+
       {hasFreeBay ? (
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-48 flex-1 space-y-1.5">
-            <Label htmlFor={`bay-case-${bayCase.id}`}>Move the booking to a free bay</Label>
+            <Label htmlFor={`bay-case-${bayCase.id}`}>{canTow ? 'Or move the booking to a free bay' : 'Move the booking to a free bay'}</Label>
             <NativeSelect id={`bay-case-${bayCase.id}`} value={slotId} onChange={(e) => setSlotId(e.target.value ? Number(e.target.value) : '')}>
               {bayCase.freeBays.map((b) => (
                 <option key={b.slotId} value={b.slotId}>
@@ -114,19 +166,24 @@ function OpenCase({ bayCase, lotId }: { bayCase: BookedBayCaseDTO; lotId: string
               ))}
             </NativeSelect>
           </div>
-          <Button onClick={move} disabled={resolve.isPending}>
+          <Button variant={canTow ? 'outline' : 'default'} onClick={move} disabled={resolve.isPending}>
             <ArrowLeftRight /> Move booking
           </Button>
           <p className="w-full text-xs text-slate-600">
             {bayCase.freeBays.length} free {bayCase.vehicleTypeName ?? ''} bay{bayCase.freeBays.length === 1 ? '' : 's'}. The customer is told
-            the new bay and gets the first hour free. Cancelling with a refund is only possible when no bay is free.
+            the new bay and gets the first hour free. Cancelling with a refund is only possible when nothing can be towed and no bay is free.
           </p>
         </div>
+      ) : canTow ? (
+        <p className="text-xs text-slate-600">
+          No other {bayCase.vehicleTypeName ?? ''} bay is free for the booking, so tow the vehicle. Cancelling with a refund is only possible
+          when nothing can be towed.
+        </p>
       ) : (
         <div className="space-y-3">
           <p className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-            No other {bayCase.vehicleTypeName ?? ''} bay is free. Cancel the booking: the deposit ({vnd(bayCase.depositHeld)}) and the
+            Every penalty bay is taken and no other {bayCase.vehicleTypeName ?? ''} bay is free. Cancel the booking: the deposit ({vnd(bayCase.depositHeld)}) and the
             compensation ({vnd(bayCase.compensationAmount)}) go to the customer's XXIV wallet, and the compensation comes off this lot's revenue.
           </p>
           <div className="space-y-1.5">
@@ -166,8 +223,9 @@ function OpenCase({ bayCase, lotId }: { bayCase: BookedBayCaseDTO; lotId: string
 }
 
 /**
- * Booked bays a walk-in took (Exceptions screen): move the booking to a free bay of its type, or, when none is
- * left, cancel it with the deposit and the lot's compensation paid into the customer's XXIV wallet. Always shown,
+ * Booked bays a walk-in (or an overstaying vehicle) took (Exceptions screen): tow the vehicle to a penalty bay, move
+ * the booking to a free bay of its type, or, when nothing is left, cancel it with the deposit and the lot's
+ * compensation paid into the customer's XXIV wallet. Always shown,
  * so the Staff knows where these cases appear even before the first one.
  */
 export function BookedBayCases({ lotId }: { lotId: string | undefined }) {
@@ -186,7 +244,7 @@ export function BookedBayCases({ lotId }: { lotId: string | undefined }) {
           </span>
         }
       >
-        Booked bays taken by a walk-in
+        Booked bays taken
       </SectionTitle>
       {!lotId && <p className="text-sm text-slate-700">You are not assigned to a parking lot yet.</p>}
       {lotId && cases.isPending && <Skeleton className="h-48 rounded-xl" />}
@@ -217,6 +275,7 @@ export function BookedBayCases({ lotId }: { lotId: string | undefined }) {
                   <span className="font-mono text-xs text-slate-600">{c.reservationCode}</span>
                   <span className={cn('rounded px-1.5 py-0.5 text-xs font-bold ring-1', outcome.className)}>{outcome.label}</span>
                   <span className="text-slate-700">
+                    {c.status === 'Relocated' && c.towedToBayCode && `vehicle to bay ${c.towedToBayCode} · ${vnd(c.penaltyFee ?? 0)} penalty`}
                     {c.status === 'Reassigned' && c.newBayCode && `to bay ${c.newBayCode}`}
                     {c.status === 'Compensated' && `${vnd(c.depositRefunded + c.compensationPaid)} to the wallet`}
                     {c.status === 'Closed' && c.resolutionNote}

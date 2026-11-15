@@ -381,6 +381,12 @@ export default function StaffCheckoutPage() {
                 <FeeLine label="Parking fee" value={quote.fee} />
                 {quote.lostTicketFee > 0 && <FeeLine label="Lost ticket fine" value={quote.lostTicketFee} />}
                 {quote.exitWindowLateFee > 0 && <FeeLine label="Exit window missed" value={quote.exitWindowLateFee} />}
+                {(quote.penaltyFee ?? 0) > 0 && (
+                  <FeeLine
+                    label={quote.penaltyReason === 'Overstay' ? 'Towing penalty (stayed past booking)' : 'Towing penalty (parked in a booked bay)'}
+                    value={quote.penaltyFee ?? 0}
+                  />
+                )}
                 {quote.depositApplied > 0 && <FeeLine label="Reservation deposit" value={-quote.depositApplied} tone="text-indigo-700" />}
                 {quote.alreadyPaid > 0 && <FeeLine label="Already paid" value={-quote.alreadyPaid} tone="text-indigo-700" />}
               </ul>

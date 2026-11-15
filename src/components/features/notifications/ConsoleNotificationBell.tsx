@@ -13,6 +13,7 @@ const TONE: Record<string, string> = {
   DepositRefunded: 'bg-emerald-500',
   DepartureOverdue: 'bg-amber-500',
   CashDrawerClosed: 'bg-amber-500',
+  VehicleTowed: 'bg-orange-500',
   LotAlmostFull: 'bg-amber-500',
   LotFull: 'bg-rose-500',
   LotSpaceAvailable: 'bg-emerald-500',

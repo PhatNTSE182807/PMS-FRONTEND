@@ -87,14 +87,21 @@ export function useBookedBayCases(lotId: string | undefined) {
   })
 }
 
-/** Moves a booking away from a taken bay, or cancels it with the refund and the compensation. */
+/** Tows the vehicle out of a taken bay, moves the booking away from it, or cancels it with the refund and the compensation. */
 export function useResolveBookedBay(lotId: string | undefined) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (action: { caseId: number; kind: 'reassign'; slotId: number } | { caseId: number; kind: 'compensate'; note?: string }) =>
-      action.kind === 'reassign'
-        ? gateService.reassignBookedBay(action.caseId, action.slotId)
-        : gateService.compensateBookedBay(action.caseId, action.note),
+    mutationFn: (
+      action:
+        | { caseId: number; kind: 'tow'; slotId: number }
+        | { caseId: number; kind: 'reassign'; slotId: number }
+        | { caseId: number; kind: 'compensate'; note?: string },
+    ) =>
+      action.kind === 'tow'
+        ? gateService.towFromBookedBay(action.caseId, action.slotId)
+        : action.kind === 'reassign'
+          ? gateService.reassignBookedBay(action.caseId, action.slotId)
+          : gateService.compensateBookedBay(action.caseId, action.note),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.gate.bookedBayCases(lotId ?? '') })
       void queryClient.invalidateQueries({ queryKey: queryKeys.layout.all })

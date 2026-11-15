@@ -15,6 +15,7 @@ const BOOKED_BAY_TYPES = new Set<string>([
   'BookingCancelledByLot',
   'DepositRefunded',
   'CompensationPaid',
+  'VehicleTowed',
 ])
 
 /** Staff and Manager notices about how full a zone of their lot is. */
