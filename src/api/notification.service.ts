@@ -26,6 +26,10 @@ export interface NotificationModel {
     | 'BookingBayMoved'
     /** Manager bell: a Staff closed their cash drawer (data: closedAt, countedTotal, expectedTotal, difference, reason). */
     | 'CashDrawerClosed'
+    /** Staff and Manager bell: a zone of their lot is almost full, full, or has free bays again (data: zoneName, totalBays, freeBays, occupancyPercent). */
+    | 'LotAlmostFull'
+    | 'LotFull'
+    | 'LotSpaceAvailable'
   title: string
   message: string
   refType: string | null
