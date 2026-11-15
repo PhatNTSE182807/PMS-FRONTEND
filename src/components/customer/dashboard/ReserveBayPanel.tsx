@@ -128,7 +128,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
             <CreditCard aria-hidden /> Pay with XXIV Wallet
           </button>
-          <button type="button" className="cx-btn cx-btn--gold" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')}>
+          <button type="button" className="cx-btn cx-btn--vnpay" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')}>
             <Wallet aria-hidden /> VNPay
           </button>
           <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>

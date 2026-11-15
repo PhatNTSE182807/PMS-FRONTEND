@@ -269,7 +269,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
             <button type="button" className="cx-btn cx-btn--wallet" disabled={prepay.isPending || current.amountDue <= 0} onClick={() => pay('Wallet')}>
               <CreditCard aria-hidden /> Pay with XXIV Wallet
             </button>
-            <button type="button" className="cx-btn cx-btn--gold" disabled={prepay.isPending || current.amountDue <= 0} onClick={() => pay('VNPay')}>
+            <button type="button" className="cx-btn cx-btn--vnpay" disabled={prepay.isPending || current.amountDue <= 0} onClick={() => pay('VNPay')}>
               <Wallet aria-hidden /> VNPay
             </button>
             <button type="button" className="cx-btn cx-btn--momo" disabled={prepay.isPending || current.amountDue <= 0} onClick={() => pay('MoMo')}>
@@ -442,7 +442,7 @@ export function BookingCard({ booking, showAllLink = false }: { booking: Reserva
             <button type="button" className="cx-btn cx-btn--wallet" style={{ flex: 1 }} disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'Wallet' })}>
               <CreditCard aria-hidden /> Pay with XXIV Wallet
             </button>
-            <button type="button" className="cx-btn cx-btn--gold" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'VNPay' })}>
+            <button type="button" className="cx-btn cx-btn--vnpay" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'VNPay' })}>
               <Wallet aria-hidden /> VNPay
             </button>
             <button type="button" className="cx-btn cx-btn--momo" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ id: booking.id, provider: 'MoMo' })}>
