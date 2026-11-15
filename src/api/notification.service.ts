@@ -28,6 +28,10 @@ export interface NotificationModel {
     | 'CashDrawerClosed'
     /** Staff towed the vehicle out of a booked bay: the customer keeps the bay; the towed vehicle's owner owes a penalty. */
     | 'VehicleTowed'
+    /** Staff and Manager bell: a zone of their lot is almost full, full, or has free bays again (data: zoneName, totalBays, freeBays, occupancyPercent). */
+    | 'LotAlmostFull'
+    | 'LotFull'
+    | 'LotSpaceAvailable'
   title: string
   message: string
   refType: string | null

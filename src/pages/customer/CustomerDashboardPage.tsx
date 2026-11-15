@@ -7,6 +7,7 @@ import { RecentSessions } from '@/components/customer/dashboard/RecentSessions'
 import { ActiveSessionCard, ReservationCard } from '@/components/customer/dashboard/SessionCards'
 import { UtilitiesCard } from '@/components/customer/dashboard/UtilitiesCard'
 import { ZoneMap } from '@/components/customer/dashboard/ZoneMap'
+import { isMockService } from '@/config/env'
 import { useAuth } from '@/hooks/useAuth'
 import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
 import { useProfile, useVehicles } from '@/hooks/useProfile'
@@ -20,9 +21,11 @@ export default function CustomerDashboardPage() {
   const vehiclesQuery = useVehicles()
   // The system's parking lots with live free bays (same list as the homepage)
   const publicLots = usePublicLots()
-  // Demo capacity data: only the map's fallback model when the booking service runs on mock data
-  const capacity = useParkingCapacity()
-  useCapacitySimulation(true)
+  // Demo capacity data: only the map's fallback model when the booking service runs on mock data. The live
+  // overview is an Admin / Manager endpoint, so a customer asking for it got a 403 every 15 seconds.
+  const demoBooking = isMockService('booking')
+  const capacity = useParkingCapacity({ enabled: demoBooking })
+  useCapacitySimulation(demoBooking)
 
   const lots = [...(publicLots.data ?? [])].sort((a, b) => Number(b.isBookable) - Number(a.isBookable) || a.name.localeCompare(b.name))
   const [lotId, setLotId] = useState<string>()

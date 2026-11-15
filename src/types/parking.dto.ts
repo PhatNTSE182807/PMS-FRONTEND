@@ -1,3 +1,4 @@
+import type { FillLevel } from '@/lib/fillLevel'
 /*
  * Parking service (/v1/parking). Not implemented by the backend yet: served from
  * Live occupancy and performance: /v1/parking/lots/capacity. Source data: ParkingLot, Zone, ZoneCounter, Slots.
@@ -29,9 +30,11 @@ export interface LotOccupancyDTO {
   totalBays: number
   occupiedBays: number
   freeBays: number
+  /** Available, AlmostFull (80 % taken) or Full (no free bay). */
+  availability?: FillLevel
   /** 0-100, one decimal. */
   occupancyRate: number
-  baysByVehicle: { vehicleType: CapacityVehicleType; totalBays: number; freeBays: number }[]
+  baysByVehicle: { vehicleType: CapacityVehicleType; totalBays: number; freeBays: number; availability?: FillLevel }[]
   zones: {
     zoneId: number
     zoneName: string
@@ -39,6 +42,7 @@ export interface LotOccupancyDTO {
     totalBays: number
     occupiedBays: number
     freeBays: number
+    availability?: FillLevel
   }[]
 }
 

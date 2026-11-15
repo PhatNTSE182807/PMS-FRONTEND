@@ -17,6 +17,9 @@ const BOOKED_BAY_TYPES = new Set<string>([
   'VehicleTowed',
 ])
 
+/** Staff and Manager notices about how full a zone of their lot is. */
+const FILL_TYPES = new Set<string>(['LotAlmostFull', 'LotFull', 'LotSpaceAvailable'])
+
 /** Loads the bell's notifications and keeps them up-to-date through SignalR. */
 export function useNotifications(take = 30) {
   const { user } = useAuth()
@@ -62,8 +65,12 @@ export function useNotifications(take = 30) {
       // A closed cash drawer waits in the Manager's Approval Queue
       if (notification.type === 'CashDrawerClosed') void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
 
+      // A zone of the lot filled up or has space again: the capacity numbers on screen are stale
+      if (FILL_TYPES.has(notification.type)) void queryClient.invalidateQueries({ queryKey: queryKeys.parking.all })
+
       const id = `notification-${notification.id}`
-      if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
+      if (notification.type === 'LotFull') toast.warning(notification.title, { id, description: notification.message, duration: 8000 })
+      else if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
       else if (notification.type === 'CheckOut' && !notification.data?.note) toast.success(USER_TOAST.checkedOut, { id })
       else toast.info(notification.title, { id, description: notification.message, duration: 5000 })
     })

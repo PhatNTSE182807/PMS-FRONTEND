@@ -1,6 +1,9 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { queryKeys } from '@/api/queryKeys'
+import { lotRealtime } from '@/api/realtime'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 import { simulationService, walkInSimulationService } from '@/api/simulation.service'
 import { toastAdminError } from '@/lib/adminToasts'
 import type { UpdateParkingSimulationCommand } from '@/types/simulation.dto'
@@ -23,12 +26,33 @@ export function useUpdateParkingSimulation() {
   })
 }
 
-/** Simulated walk-ins still inside; refreshed every few seconds so automatic exits show up. */
+/** While vehicles are inside, how often the list is re-read so their automatic exits show up. */
+const WALK_INS_INSIDE_REFRESH_MS = 10_000
+/** With no vehicle inside nothing leaves by itself: a slow safety net only. */
+const WALK_INS_IDLE_REFRESH_MS = 60_000
+
+/**
+ * Simulated walk-ins of the chosen lot. Every bay change of that lot (a vehicle entering or leaving) arrives on the
+ * lot's SignalR channel and refreshes the list, coalesced; polling is only the fallback. It used to poll every
+ * 3 seconds even with no vehicle inside.
+ */
 export function useWalkInSimulation(lotId?: number) {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (lotId == null || !lotRealtime.isAvailable()) return
+    return lotRealtime.watch(String(lotId), {
+      onEvent: () => invalidateFromPush(queryClient, queryKeys.walkInSimulation(lotId)),
+      onConnectionChange: () => {},
+    })
+  }, [lotId, queryClient])
+
   return useQuery({
     queryKey: queryKeys.walkInSimulation(lotId),
     queryFn: () => walkInSimulationService.overview(lotId),
-    refetchInterval: 3_000,
+    refetchInterval: (query) =>
+      (query.state.data?.inside.length ?? 0) > 0 ? WALK_INS_INSIDE_REFRESH_MS : WALK_INS_IDLE_REFRESH_MS,
+    refetchIntervalInBackground: false,
   })
 }
 
