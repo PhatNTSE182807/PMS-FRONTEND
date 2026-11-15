@@ -11,6 +11,12 @@ import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 /** Polling fallback for the lane console when SignalR is not connected (demo, hub down). */
 const GATE_REFRESH_MS = 5_000
 
+/** A burst of session pushes (a busy lane, the Admin simulation) refreshes the gate lists at most this often. */
+const SESSION_PUSH_WINDOW_MS = 3_000
+
+/** Gate data a session push never changes: the lanes, the plate reader's health, and the counters (pushed on their own). */
+const PUSH_SKIPPED_GATE_KEYS = new Set(['gates', 'anpr-health', 'counters'])
+
 /** Live gate data of one lot: SignalR pushes refresh it, polling covers demo mode. */
 function useGateRealtime(lotId: string | undefined) {
   const queryClient = useQueryClient()
@@ -18,15 +24,23 @@ function useGateRealtime(lotId: string | undefined) {
   useEffect(() => {
     if (!live || !lotId) return
     return parkingOpsRealtime.subscribe((event) => {
-      if (event.type === 'SessionChanged' || event.type === 'ZoneCounterChanged' || event.type === 'PaymentChanged')
-        invalidateFromPush(queryClient, queryKeys.gate.all)
+      // A counter push only moves the zone counters
+      if (event.type === 'ZoneCounterChanged') invalidateFromPush(queryClient, queryKeys.gate.counters(lotId), { windowMs: SESSION_PUSH_WINDOW_MS })
+      // A session or payment push refreshes the session lists of the lot, never the lanes or the plate reader's health
+      // (they used to be re-read on every push, many times a minute while the simulation runs)
+      if (event.type === 'SessionChanged' || event.type === 'PaymentChanged')
+        invalidateFromPush(queryClient, queryKeys.gate.all, {
+          scope: `sessions-${lotId}`,
+          predicate: (key) => !PUSH_SKIPPED_GATE_KEYS.has(String(key[1])),
+          windowMs: SESSION_PUSH_WINDOW_MS,
+        })
       // Several gate hooks of one page each subscribe, so every copy would raise the same popup: one id per
       // alert makes them share a single popup
       if (event.type === 'OpsAlert' && !isCashAlert(event.code))
         toast.warning(event.message, { id: `ops-alert-${event.lotId}-${event.code}-${event.sessionId ?? 'lot'}-${event.message}` })
       // A walk-in parked in a booked bay: the Exceptions screen lists the new case at once
       if (event.type === 'OpsAlert' && event.code === 'BOOKED_BAY_TAKEN')
-        invalidateFromPush(queryClient, queryKeys.gate.all)
+        invalidateFromPush(queryClient, queryKeys.gate.bookedBayCases(lotId))
     }, lotId)
   }, [live, lotId, queryClient])
   return live
