@@ -1,4 +1,3 @@
-import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { isCashAlert } from './useCashAlerts'
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -163,8 +162,8 @@ export const useQuote = () => useGateMutation(({ sessionId, plateNumber }: { ses
 export const useCancelPaymentRequest = () => useGateMutation((sessionId: number) => gateService.cancelPayment(sessionId))
 export const usePayCash = () =>
   useGateMutation(
-    ({ sessionId, amount, prepaid, received, change }: { sessionId: number; amount: number; prepaid?: boolean; received?: BanknoteCounts; change?: BanknoteCounts }) =>
-      gateService.payCash(sessionId, amount, prepaid, received, change),
+    ({ sessionId, amount, prepaid }: { sessionId: number; amount: number; prepaid?: boolean }) =>
+      gateService.payCash(sessionId, amount, prepaid),
   )
 export const usePayOnline = () => useGateMutation(({ sessionId, provider, prepaid }: { sessionId: number; provider: PaymentProvider; prepaid?: boolean }) => gateService.payOnline(sessionId, provider, prepaid))
 export const useCheckout = () => useGateMutation(({ sessionId, request }: { sessionId: number; request: CheckoutRequest }) => gateService.checkout(sessionId, request))

@@ -100,7 +100,7 @@ function KpiRow({
         <p className="mt-1 text-sm text-slate-700">Checked in on a reservation</p>
       </StatTile>
       <StatTile label="Cash in drawer" icon={<Wallet />}>
-        <Metric value={drawerOpen ? formatNumber(drawer.expectedTotal) : '—'} unit={drawerOpen ? 'VND' : undefined} />
+        <Metric value={drawerOpen ? formatNumber(drawer.cashTotal) : '—'} unit={drawerOpen ? 'VND' : undefined} />
         <p className="mt-1 text-sm text-slate-700">
           {drawerNote} ·{' '}
           <Link to="/staff/cash-tally" className="font-semibold underline">Cash tally</Link>
