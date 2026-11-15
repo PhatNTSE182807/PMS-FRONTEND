@@ -76,7 +76,8 @@ export interface GarageTemplate {
 
 export const GARAGE_TEMPLATES: GarageTemplate[] = [
   { id: 'L3S20', name: 'Compact deck', summary: '3 levels × 20 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 20, penaltySlotsPerFloor: 6 },
-  { id: 'L3S50', name: 'Wide deck', summary: '3 levels × 50 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 50, penaltySlotsPerFloor: 12 },
+  // 52 bays: four full rows of 13; the id stays for lots built when it had 50
+  { id: 'L3S50', name: 'Wide deck', summary: '3 levels × 52 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 52, penaltySlotsPerFloor: 12 },
   { id: 'L4S30', name: 'Tower', summary: '4 levels × 30 bays · 3 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car', 'car'], slotsPerFloor: 30, penaltySlotsPerFloor: 6 },
 ]
 
