@@ -17,7 +17,7 @@ const SUGGESTIONS = [
 ]
 
 /**
- * Floating chat with Virgo, the XXIV Parking assistant, for Guests and Users (homepage and customer
+ * Floating chat with Optimus Prime, the XXIV Parking assistant, for Guests and Users (homepage and customer
  * area). It answers from the XXIV Parking help only; hidden when the assistant is off or unreachable.
  */
 export function AssistantWidget() {
@@ -166,7 +166,7 @@ function MessageBubble({ message, isStreaming }: { message: AssistantMessage; is
 
 const AVATAR_SRC = '/virgo-avatar.jpg'
 
-/** Virgo's avatar: a round robot portrait (decorative; the name is announced elsewhere). */
+/** Optimus Prime's avatar: a round robot portrait (decorative; the name is announced elsewhere). */
 function Avatar({ className }: { className: string }) {
   return (
     <span className={`ast-avatar ${className}`} aria-hidden="true">

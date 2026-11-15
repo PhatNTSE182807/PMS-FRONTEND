@@ -13,7 +13,8 @@ export function useAnprStatus(): AnprStatus {
     queryKey: queryKeys.gate.anprHealth(),
     queryFn: anprService.health,
     enabled: Boolean(ANPR_SERVICE_URL),
-    refetchInterval: 30_000,
+    // Every 30 s while it answers; while it is offline (not installed on this machine) every 2 minutes
+    refetchInterval: (query) => (query.state.status === 'error' ? 120_000 : 30_000),
     retry: false,
   })
   if (!ANPR_SERVICE_URL) return 'off'

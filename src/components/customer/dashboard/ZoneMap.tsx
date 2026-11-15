@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Navigation, Rotate3d, Wrench, X } from 'lucide-react'
+import { Bike, Car, CircleAlert, CircleCheck, Info, MapPin, MousePointerClick, Navigation, Rotate3d, Wrench, X } from 'lucide-react'
 import { isMockService } from '@/config/env'
 import { LotDirectionsDialog } from '@/components/customer/LotDirectionsDialog'
 import { usePublicLots } from '@/hooks/usePublicLots'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
+import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { usePublicPrices } from '@/hooks/usePricing'
 import { useVehicles } from '@/hooks/useProfile'
 import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { formatNumber } from '@/lib/format'
+import { FILL_LABEL, fillLevel, fillLevelOf, type FillLevel } from '@/lib/fillLevel'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 import type { PublicLotPriceDTO } from '@/types/pricing.dto'
 import { vehicleKind } from '../customerFormat'
@@ -108,9 +110,17 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const publicLots = usePublicLots()
   const directionsLot = publicLots.data?.find((l) => String(l.id) === lot?.id)
   const capacityLot = capacityLots.find((l) => l.id === lot?.id)
+  // How full each lot is right now, from the public list (live counters); the selected lot falls back to its floors
+  const fillOfLot = (id: string): FillLevel | null => {
+    const publicLot = publicLots.data?.find((l) => String(l.id) === id)
+    return publicLot ? fillLevelOf(publicLot) : null
+  }
 
   // The published layout gives the real slot ids a reservation needs; the template model is the fallback
-  const plan = useLotPlan2D(lot?.id, 'slots', false)
+  // Bay changes arrive on the lot's public SignalR channel; while it is up the plan is only re-read on a push (and
+  // once a minute as a safety net) instead of every 2 seconds
+  const realtime = useLotRealtime(lot?.id)
+  const plan = useLotPlan2D(lot?.id, 'slots', realtime.connected)
   const planFloors = plan.data?.floors
   const floors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
   const bookableBays = Boolean(planFloors)
@@ -145,6 +155,14 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const price = prices.data?.find((p) => p.vehicleTypeCode === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR_4'))
   const isLoadingLots = liveBooking ? bookable.isPending : isLoading
   const underMaintenance = lot?.isBookable === false
+  const lotFill =
+    (lot && fillOfLot(lot.id)) ??
+    fillLevel(
+      floors.reduce((sum, f) => sum + f.liveTotal, 0),
+      floors.reduce((sum, f) => sum + f.liveFree, 0),
+    )
+  // A motorbike claims its bay right now, so a full motorbike floor cannot take one more
+  const floorFull = (floor: { liveTotal: number; liveFree: number }) => fillLevel(floor.liveTotal, floor.liveFree) === 'Full'
 
   const changeLot = (id: string) => {
     onLotChange(id)
@@ -181,7 +199,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               onClick={() => changeLot(l.id)}
             >
               {l.name}
-              {l.isBookable === false && ' • Maintenance'}
+              {l.isBookable === false
+                ? ' • Maintenance'
+                : FILL_LABEL[fillOfLot(l.id) ?? 'Available'] && ` • ${FILL_LABEL[fillOfLot(l.id) ?? 'Available']}`}
             </button>
           ))}
         </div>
@@ -264,6 +284,18 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               </p>
             )}
 
+            {!underMaintenance && lotFill === 'Full' && (
+              <p className="cx-map__mine cx-map__full" role="status">
+                <CircleAlert size={15} aria-hidden /> This lot is full right now. You can still book a car bay for an arrival
+                more than 2 hours from now, or pick another lot.
+              </p>
+            )}
+            {!underMaintenance && lotFill === 'AlmostFull' && (
+              <p className="cx-map__mine" role="status">
+                <CircleAlert size={15} aria-hidden /> This lot is almost full: book soon to keep a bay.
+              </p>
+            )}
+
             {selected && selectedFloor ? (
               <>
                 <div className="cx-map__stall">
@@ -307,7 +339,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                         ? 'Booked for you • show my QR'
                         : 'Held for you • Staff checks you in at the gate'}
                   </Link>
-                ) : selected.status === 'AVAILABLE' && bookableBays && !underMaintenance ? (
+                ) : selected.status === 'AVAILABLE' && bookableBays && !underMaintenance && !(selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)) ? (
                   // Cars book ahead with a time and an optional deposit; motorbikes claim the bay now
                   selectedFloor.kind === 'car' ? (
                     <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
@@ -323,6 +355,8 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                         ? 'Under maintenance • view only'
                         : selected.status !== 'AVAILABLE'
                         ? 'Not available'
+                        : selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)
+                        ? 'The motorbike floor is full • try again soon'
                         : 'This lot has no published layout yet'}
                   </button>
                 )}
@@ -342,13 +376,15 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               {floors.map((f) => {
                 const free = f.bays.filter((b) => b.status === 'AVAILABLE').length
                 const percent = f.liveTotal ? ((f.liveTotal - f.liveFree) / f.liveTotal) * 100 : 0
+                const fill = fillLevel(f.liveTotal, f.liveFree)
                 return (
                   <button key={f.level} type="button" className="cx-map__floor" onClick={() => setFocusFloor(f.index)}>
                     <span className="cx-map__floor-name">
                       {f.level} • {f.kind === 'car' ? 'Cars' : 'Motorbikes'}
+                      {FILL_LABEL[fill] && <strong className={fill === 'Full' ? 'cx-map__fill cx-map__fill--full' : 'cx-map__fill'}> • {FILL_LABEL[fill]}</strong>}
                     </span>
                     <span className="cx-map__floor-meta">{f.zoneLabel}</span>
-                    <span className={`cx-meter ${percent >= 90 ? 'cx-meter--full' : percent >= 75 ? 'cx-meter--busy' : ''}`}>
+                    <span className={`cx-meter ${fill === 'Full' ? 'cx-meter--full' : fill === 'AlmostFull' ? 'cx-meter--busy' : ''}`}>
                       <span style={{ width: `${Math.min(100, percent)}%` }} />
                     </span>
                     <span className="cx-map__floor-meta">

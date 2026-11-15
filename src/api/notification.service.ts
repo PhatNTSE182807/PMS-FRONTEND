@@ -24,8 +24,12 @@ export interface NotificationModel {
     | 'DepartureOverdue'
     /** The booked bay was still in use when the hold started, so the booking moved to another bay. */
     | 'BookingBayMoved'
-    /** Manager bell: a Staff closed their cash drawer (data: closedAt, countedTotal, expectedTotal, difference, reason). */
+    /** Manager bell: a Staff closed their cash drawer (data: closedAt, floatTotal, cashTotal). */
     | 'CashDrawerClosed'
+    /** Staff and Manager bell: a zone of their lot is almost full, full, or has free bays again (data: zoneName, totalBays, freeBays, occupancyPercent). */
+    | 'LotAlmostFull'
+    | 'LotFull'
+    | 'LotSpaceAvailable'
   title: string
   message: string
   refType: string | null

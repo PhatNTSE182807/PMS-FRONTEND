@@ -66,8 +66,9 @@ export function useGateRequestQueue(lotId: string | undefined, kind: GateRequest
   useEffect(() => {
     if (!live || !lotId) return
     return parkingOpsRealtime.subscribe((event) => {
+      // Coalesced over 3 s: a burst of sessions (the Admin simulation) re-reads both queues a few times, not per push
       if (event.type === 'GateRequestChanged' || event.type === 'SessionChanged')
-        invalidateFromPush(queryClient, queryKeys.gateRequests.all)
+        invalidateFromPush(queryClient, queryKeys.gateRequests.all, { windowMs: 3_000 })
     }, lotId)
   }, [live, lotId, queryClient])
 

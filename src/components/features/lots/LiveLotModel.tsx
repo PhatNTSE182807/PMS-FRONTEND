@@ -53,11 +53,13 @@ export function LiveLotModel({
   const lot = lots.find((l) => l.id === lotId) ?? lots[0]
   const { user } = useAuth()
   const canInspect = user !== null && INSPECTING_ROLES.includes(user.role)
-  const capacity = useParkingCapacity()
+  // The overview is an Admin / Manager endpoint: Staff were refused (403) every 15 seconds
+  const readsCapacity = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  const capacity = useParkingCapacity({ enabled: readsCapacity })
   const live = capacity.data?.find((c) => c.id === lot?.id)
   // Answered once (data or error). Not `!isPending`: a query that failed (Staff get 403 here) goes back to
   // pending on every refetch, which unmounted the model and dropped the SignalR channel every few seconds.
-  const capacitySettled = capacity.data !== undefined || capacity.errorUpdateCount > 0
+  const capacitySettled = !readsCapacity || capacity.data !== undefined || capacity.errorUpdateCount > 0
   // The real bays always come first. The counts-only occupancy (Admin and Manager can read it) used to win here,
   // which drew vehicles and reserved bays in made-up places.
   const planLotId = lot?.id

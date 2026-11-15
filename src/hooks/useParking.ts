@@ -37,10 +37,12 @@ export function useLotOccupancy(lotId: string | undefined) {
   })
 }
 
-export function useParkingCapacity() {
+/** Capacity overview of every lot (Admin and Manager). `enabled: false` skips it on screens that only need it for demo data. */
+export function useParkingCapacity({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.parking.capacity(),
     queryFn: parkingService.getCapacityOverview,
+    enabled,
     refetchInterval: CAPACITY_REFRESH_MS,
     refetchIntervalInBackground: false,
   })
