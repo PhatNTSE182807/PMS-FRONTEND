@@ -8,6 +8,8 @@ import { session } from '@/lib/session'
  * receive its sessions, payments, zone counters, gate requests and alerts.
  */
 export type ParkingOpsEvent =
+  | { type: 'ConnectionRestored' }
+  | { type: 'WorkAttendanceChanged'; lotId: number }
   | { type: 'ReservationChanged'; reservationId: number; lotId: number; status: string; slotId: number | null }
   | { type: 'ReservationReminder'; reservationId: number; kind: 'Arrival' | 'HoldEnding'; at: string }
   | { type: 'PaymentChanged'; paymentId: number; status: string; purpose: string; reservationId: number | null; sessionId: number | null }
@@ -19,7 +21,7 @@ export type ParkingOpsEvent =
 
 type Listener = (event: ParkingOpsEvent) => void
 
-const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert', 'GateRequestChanged', 'NotificationCreated']
+const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert', 'GateRequestChanged', 'NotificationCreated', 'WorkAttendanceChanged']
 
 const listeners = new Set<Listener>()
 const joinedLots = new Map<string, number>()
@@ -41,8 +43,9 @@ function hub(): HubConnection {
     connection.on(type, (payload: object) => listeners.forEach((l) => l({ type, ...payload } as ParkingOpsEvent)))
   }
   // Groups are lost on reconnect: join the lots again
-  connection.onreconnected(() => {
-    for (const lotId of joinedLots.keys()) void connection?.invoke('JoinLot', Number(lotId)).catch(() => undefined)
+  connection.onreconnected(async () => {
+    await Promise.allSettled([...joinedLots.keys()].map(lotId => connection?.invoke('JoinLot', Number(lotId))))
+    listeners.forEach(listener => listener({ type: 'ConnectionRestored' }))
   })
   return connection
 }

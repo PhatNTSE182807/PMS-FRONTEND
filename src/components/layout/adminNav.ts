@@ -13,10 +13,12 @@ export const MANAGER_NAV: AdminNavItem[] = [
   { to: '/management/approvals', label: 'Approval Queue', icon: ClipboardCheck },
   { to: '/management/pricing', label: 'Pricing Rule', icon: BadgeDollarSign },
   { to: '/management/staff', label: 'Staff Assignment', icon: UserCog },
+  { to: '/management/work-schedules', label: 'Work Schedules', icon: CalendarCheck },
 ]
 
 /** Tabs of the Staff (gate attendant) POS terminal console. */
 export const STAFF_NAV: AdminNavItem[] = [
+  { to: '/staff/work-schedule', label: 'My Schedule', icon: CalendarCheck },
   { to: '/staff/gate', label: 'Gate Dashboard', icon: LayoutDashboard },
   { to: '/staff/checkout', label: 'Payment & Checkout POS', icon: CreditCard },
   { to: '/staff/exceptions', label: 'Exceptions & Alerts', icon: TriangleAlert },

@@ -32,6 +32,8 @@ const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerRes
 const ManagerApprovalsPage = lazy(() => import('@/pages/management/ManagerApprovalsPage'))
 const ManagerPricingPage = lazy(() => import('@/pages/management/ManagerPricingPage'))
 const ManagerStaffPage = lazy(() => import('@/pages/management/ManagerStaffPage'))
+const ManagerWorkSchedulingPage = lazy(() => import('@/pages/management/ManagerWorkSchedulingPage'))
+const StaffWorkSchedulePage = lazy(() => import('@/pages/staff/StaffWorkSchedulePage'))
 const PaymentReturnPage = lazy(() => import('@/pages/PaymentReturnPage'))
 const StaffGatePage = lazy(() => import('@/pages/staff/StaffGatePage'))
 const StaffCheckoutPage = lazy(() => import('@/pages/staff/StaffCheckoutPage'))
@@ -108,6 +110,7 @@ export const router = createBrowserRouter([
       { path: 'approvals', element: <ManagerApprovalsPage /> },
       { path: 'pricing', element: <ManagerPricingPage /> },
       { path: 'staff', element: <ManagerStaffPage /> },
+      { path: 'work-schedules', element: <ManagerWorkSchedulingPage /> },
       // The Manager no longer has a zones and bays page: old links land on the console
       { path: 'lots', element: <Navigate to="/management/console" replace /> },
     ],
@@ -118,6 +121,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="gate" replace /> },
       { path: 'gate', element: <StaffGatePage /> },
+      { path: 'work-schedule', element: <StaffWorkSchedulePage /> },
       { path: 'checkout', element: <StaffCheckoutPage /> },
       { path: 'exceptions', element: <StaffExceptionsPage /> },
       { path: 'cash-tally', element: <StaffCashTallyPage /> },

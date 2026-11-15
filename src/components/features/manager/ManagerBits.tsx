@@ -39,7 +39,7 @@ export function WithManagerLot({ children }: { children: (lot: ManagedLot) => Re
       </div>
     )
   }
-  if (lots.isError) {
+  if (lots.isError && !lots.data) {
     return (
       <Card>
         <ErrorState message={getErrorMessage(lots.error)} onRetry={() => lots.refetch()} />

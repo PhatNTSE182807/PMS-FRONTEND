@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { STAFF_NAV } from './adminNav'
+import { CurrentShiftPanel } from '@/components/features/manager/AssignmentAttendancePanel'
 
 function PageSkeleton() {
   return (
@@ -148,6 +149,7 @@ export function StaffLayout() {
       </header>
 
       <main className="flex-1 px-4 py-6 sm:px-6 lg:py-8">
+        <CurrentShiftPanel lotId={lot?.id} />
         {/* The gate dashboard uses the whole width for its four cameras and the lane panel */}
         <div key={pathname} className={cn('admin-page-enter mx-auto', pathname.startsWith('/staff/gate') ? 'max-w-none' : 'max-w-[1400px]')}>
           <ErrorBoundary

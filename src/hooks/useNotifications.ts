@@ -6,6 +6,7 @@ import { parkingOpsRealtime, type ParkingOpsEvent } from '@/api/parkingOpsRealti
 import { queryKeys } from '@/api/queryKeys'
 import { useAuth } from '@/hooks/useAuth'
 import { USER_TOAST } from '@/lib/userToasts'
+import { workSchedulingKeys } from './useWorkScheduling'
 
 const BOOKED_BAY_TYPES = new Set<string>([
   'BookedBayTaken',
@@ -31,6 +32,7 @@ export function useNotifications(take = 30) {
     enabled: isLoggedIn,
     staleTime: 60_000,
     refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
   })
 
   // Real-time: a new notification arrives through the parking-ops hub
@@ -63,6 +65,8 @@ export function useNotifications(take = 30) {
 
       // A closed cash drawer waits in the Manager's Approval Queue
       if (notification.type === 'CashDrawerClosed') void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
+      if (['RosterPublished', 'RosterChanged', 'AttendanceChanged'].includes(notification.type))
+        void queryClient.invalidateQueries({ queryKey: workSchedulingKeys })
 
       // A zone of the lot filled up or has space again: the capacity numbers on screen are stale
       if (FILL_TYPES.has(notification.type)) void queryClient.invalidateQueries({ queryKey: queryKeys.parking.all })
