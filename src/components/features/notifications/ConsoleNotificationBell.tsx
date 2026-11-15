@@ -13,6 +13,7 @@ const TONE: Record<string, string> = {
   DepositRefunded: 'bg-emerald-500',
   DepartureOverdue: 'bg-amber-500',
   CashDrawerClosed: 'bg-amber-500',
+  VehicleTowed: 'bg-orange-500',
 }
 
 /** An older drawer close that was counted off the expected cash stands out (new closes are not counted, so carry no difference). */

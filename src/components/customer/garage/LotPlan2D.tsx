@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { Bike, Car, Layers, LayoutGrid } from 'lucide-react'
 import type { Garage3DProps } from './Garage3D'
-import type { Bay, GarageFloor } from './garageModel'
+import { standardBays, type Bay, type GarageFloor } from './garageModel'
 
 /** Above this many bays on screen, the whole-building view starts at level summaries (Level of Detail). */
 const DETAIL_LIMIT = 240
@@ -11,6 +11,10 @@ const STATUS_STYLE: Record<Bay['status'], { fill: string; label: string }> = {
   RESERVED: { fill: '#f59e0b', label: 'reserved' },
   OCCUPIED: { fill: '#64748b', label: 'occupied' },
 }
+
+/** Penalty bays (for towed vehicles only): orange when free, dark orange while a towed vehicle is in. */
+const PENALTY_FILL = '#f97316'
+const PENALTY_TAKEN_FILL = '#9a3412'
 
 const styles = {
   root: { display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.75rem', overflow: 'auto', cursor: 'default' },
@@ -61,6 +65,11 @@ export function LotPlan2D({ floors, focusFloor, selectedBayId, myBayId, onSelect
               <span style={styles.swatch(s.fill)} aria-hidden /> {s.label}
             </span>
           ))}
+          {floors.some((f) => f.bays.some((b) => b.penalty)) && (
+            <span style={styles.legend}>
+              <span style={styles.swatch(PENALTY_FILL)} aria-hidden /> penalty
+            </span>
+          )}
         </span>
       </div>
 
@@ -76,7 +85,9 @@ export function LotPlan2D({ floors, focusFloor, selectedBayId, myBayId, onSelect
 }
 
 function FloorTitle({ floor }: { floor: GarageFloor }) {
-  const free = floor.bays.filter((b) => b.status === 'AVAILABLE').length
+  const bays = standardBays(floor)
+  const free = bays.filter((b) => b.status === 'AVAILABLE').length
+  const penalty = floor.bays.length - bays.length
   return (
     <div style={styles.floorHead}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -85,15 +96,17 @@ function FloorTitle({ floor }: { floor: GarageFloor }) {
         {floor.zoneLabel && <span style={{ fontWeight: 400, color: 'var(--map-muted)' }}>· {floor.zoneLabel}</span>}
       </span>
       <span style={{ color: free ? 'var(--map-good)' : 'var(--map-bad)' }}>
-        {free}/{floor.bays.length} free
+        {free}/{bays.length} free
+        {penalty > 0 && <span style={{ fontWeight: 400, color: 'var(--map-muted)' }}> · {penalty} penalty</span>}
       </span>
     </div>
   )
 }
 
 function FloorSummary({ floor, onOpen }: { floor: GarageFloor; onOpen: () => void }) {
-  const counts = (status: Bay['status']) => floor.bays.filter((b) => b.status === status).length
-  const total = Math.max(1, floor.bays.length)
+  const bays = standardBays(floor)
+  const counts = (status: Bay['status']) => bays.filter((b) => b.status === status).length
+  const total = Math.max(1, bays.length)
   return (
     <button type="button" onClick={onOpen} style={{ ...styles.floor, textAlign: 'left', cursor: 'pointer', color: 'inherit' }} aria-label={`Show the bays of ${floor.level}`}>
       <FloorTitle floor={floor} />
@@ -131,20 +144,23 @@ function FloorBays({
               const selected = bay.id === selectedBayId
               const mine = bay.id === myBayId
               const selectable = canSelectBay?.(bay) ?? true
+              const label = bay.penalty ? (bay.status === 'OCCUPIED' ? 'Penalty bay, towed vehicle' : 'Penalty bay') : STATUS_STYLE[bay.status].label
               return (
                 <button
                   key={bay.id}
                   type="button"
-                  title={`${bay.code} · ${STATUS_STYLE[bay.status].label}`}
-                  aria-label={`Bay ${bay.code}, ${STATUS_STYLE[bay.status].label}`}
+                  title={`${bay.code} · ${label}`}
+                  aria-label={`Bay ${bay.code}, ${label}`}
                   aria-pressed={selected}
                   onClick={() => selectable && onSelectBay(bay)}
                   aria-disabled={!selectable || undefined}
                   style={{
                     height: '1.6rem',
                     borderRadius: '0.2rem',
+                    // Placed by column, so the penalty block keeps its gap after the normal bays
+                    gridColumn: bay.col + 1,
                     border: 'none',
-                    background: STATUS_STYLE[bay.status].fill,
+                    background: bay.penalty ? (bay.status === 'OCCUPIED' ? PENALTY_TAKEN_FILL : PENALTY_FILL) : STATUS_STYLE[bay.status].fill,
                     opacity: bay.status === 'AVAILABLE' || selected || mine ? 1 : 0.75,
                     outline: selected ? '2px solid var(--map-selected)' : mine ? '2px solid var(--map-mine)' : 'none',
                     outlineOffset: '1px',

@@ -26,6 +26,8 @@ export interface NotificationModel {
     | 'BookingBayMoved'
     /** Manager bell: a Staff closed their cash drawer (data: closedAt, floatTotal, cashTotal). */
     | 'CashDrawerClosed'
+    /** Staff towed the vehicle out of a booked bay: the customer keeps the bay; the towed vehicle's owner owes a penalty. */
+    | 'VehicleTowed'
   title: string
   message: string
   refType: string | null

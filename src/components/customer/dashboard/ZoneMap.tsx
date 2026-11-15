@@ -18,7 +18,7 @@ import type { CurrentSessionDTO } from '@/types/operations.dto'
 import { BayVehicleCard } from '../garage/BayVehicleCard'
 import { formatStay, useStayMinutes, vndOrDash } from '../garage/bayVehicleFormat'
 import { GarageView } from '../garage/GarageView'
-import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
+import { buildGarage, standardBays, type Bay, type BayStatus } from '../garage/garageModel'
 import { ParkMotorbikePanel } from './ParkMotorbikePanel'
 import { ReserveBayPanel } from './ReserveBayPanel'
 
@@ -282,7 +282,13 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                   <div className="cx-map__cell">
                     <span className="cx-label">Status</span>
                     <strong className={selected.status === 'AVAILABLE' ? 'is-gold' : undefined}>
-                      {myBayIds.has(selected.id) ? 'Your booking' : myParkedByBay.has(selected.id) ? 'Your vehicle is parked here' : STATUS_LABEL[selected.status]}
+                      {myBayIds.has(selected.id)
+                        ? 'Your booking'
+                        : myParkedByBay.has(selected.id)
+                          ? 'Your vehicle is parked here'
+                          : selected.penalty
+                            ? selected.status === 'OCCUPIED' ? 'Penalty bay • towed vehicle' : 'Penalty bay'
+                            : STATUS_LABEL[selected.status]}
                     </strong>
                   </div>
                   <div className="cx-map__cell">
@@ -307,7 +313,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                         ? 'Booked for you • show my QR'
                         : 'Held for you • Staff checks you in at the gate'}
                   </Link>
-                ) : selected.status === 'AVAILABLE' && bookableBays && !underMaintenance ? (
+                ) : selected.status === 'AVAILABLE' && !selected.penalty && bookableBays && !underMaintenance ? (
                   // Cars book ahead with a time and an optional deposit; motorbikes claim the bay now
                   selectedFloor.kind === 'car' ? (
                     <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
@@ -319,7 +325,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                     <CircleCheck aria-hidden />
                     {myBayIds.has(selected.id)
                       ? 'Booked for you'
-                      : underMaintenance
+                      : selected.penalty
+                        ? 'Penalty bay • only for towed vehicles'
+                        : underMaintenance
                         ? 'Under maintenance • view only'
                         : selected.status !== 'AVAILABLE'
                         ? 'Not available'
@@ -340,7 +348,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
 
             <div className="cx-map__floors">
               {floors.map((f) => {
-                const free = f.bays.filter((b) => b.status === 'AVAILABLE').length
+                const free = standardBays(f).filter((b) => b.status === 'AVAILABLE').length
                 const percent = f.liveTotal ? ((f.liveTotal - f.liveFree) / f.liveTotal) * 100 : 0
                 return (
                   <button key={f.level} type="button" className="cx-map__floor" onClick={() => setFocusFloor(f.index)}>

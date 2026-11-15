@@ -37,15 +37,18 @@ export function planToGarageFloors(plan: LotPlan2DDTO): GarageFloor[] {
         walkInSessionId: walkIns.has(cell.slotId) ? (walkIns.get(cell.slotId)?.sessionId ?? null) : undefined,
         bayTypeCode: cell.vehicleTypeCode,
         bookedLater: (cell.status === 'Available' && !walkIns.has(cell.slotId) && cell.bookedLater) || undefined,
+        penalty: cell.kind === 'Penalty' || undefined,
       }
     })
+    // The penalty block stands after the normal bays, so the level is as wide as its last column
+    const cols = Math.max(floor.cols, ...floor.cells.map((c) => c.col + 1))
     return {
       index,
       level: floor.name,
       kind: floor.kind === 'motorbike' ? 'motorbike' : 'car',
       zoneLabel: floor.zoneBlocks.map((z) => z.name).join(' + '),
       rows: floor.rows,
-      cols: floor.cols,
+      cols,
       bays,
       // Walk-ins drawn on this level are not free either
       liveFree: Math.max(0, floor.free - floor.cells.filter((c) => walkIns.has(c.slotId)).length),
@@ -65,7 +68,8 @@ function walkInBays(plan: LotPlan2DDTO): Map<number, WalkIn | null> {
   const filled = new Map<number, WalkIn | null>()
   const cells = plan.floors.flatMap((floor, floorIndex) => floor.cells.map((cell) => ({ ...cell, floorIndex })))
   for (const zone of plan.zoneCounters ?? []) {
-    const inZone = cells.filter((c) => c.zoneId === zone.zoneId)
+    // Penalty bays are outside the counter: a counted walk-in is never drawn there
+    const inZone = cells.filter((c) => c.zoneId === zone.zoneId && c.kind !== 'Penalty')
     const shown = inZone.filter((c) => c.status !== 'Available').length
     const missing = Math.max(0, zone.total - zone.free - shown)
     // Bays without a booking first, as the lane and the simulation park walk-ins: a booked bay stays free as long as it can

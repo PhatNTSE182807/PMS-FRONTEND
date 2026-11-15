@@ -5,6 +5,8 @@
  */
 
 export type SlotStatus = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance'
+/** Standard bays are booked or used by walk-ins; penalty bays only take vehicles Staff towed out of a booked bay. */
+export type SlotKind = 'Standard' | 'Penalty'
 export type FloorKind = 'car' | 'motorbike' | 'mixed'
 
 /** LayoutFloorModel */
@@ -22,6 +24,8 @@ export interface LotTemplateDTO {
   name: string
   summary: string
   slotsPerFloor: number
+  /** Penalty bays on every level, for towed vehicles; not part of the slot counts. */
+  penaltySlotsPerFloor?: number
   carSlots: number
   motorbikeSlots: number
   totalSlots: number
@@ -49,6 +53,8 @@ export interface LotLayoutDTO {
     col: number
     rotation: number
     modelUrl: string | null
+    /** Penalty bays are kept for towed vehicles: never booked, outside the zone counter. */
+    kind?: SlotKind
   }[]
 }
 
@@ -90,8 +96,11 @@ export interface LotPlan2DDTO {
     kind: FloorKind
     rows: number
     cols: number
+    /** Normal bays only: penalty bays are counted on their own. */
     total: number
     free: number
+    penaltyTotal?: number
+    penaltyFree?: number
     cells: {
       slotId: number
       code: string
@@ -107,6 +116,7 @@ export interface LotPlan2DDTO {
       parkedVehicleTypeCode?: string | null
       /** Free now but booked for later: counted walk-ins are drawn in bays without a booking first. */
       bookedLater?: boolean
+      kind?: SlotKind
     }[]
     zoneBlocks: {
       zoneId: number

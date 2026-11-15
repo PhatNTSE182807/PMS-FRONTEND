@@ -14,6 +14,7 @@ const BOOKED_BAY_TYPES = new Set<string>([
   'BookingCancelledByLot',
   'DepositRefunded',
   'CompensationPaid',
+  'VehicleTowed',
 ])
 
 /** Loads the bell's notifications and keeps them up-to-date through SignalR. */

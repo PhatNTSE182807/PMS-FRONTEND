@@ -50,6 +50,14 @@ export const gateService = {
     return http.get<BookedBayCaseDTO[]>(`${lotPath(lotId)}/booked-bay-cases`, { params: { openOnly } })
   },
 
+  /**
+   * Tows the vehicle out of the booked bay to a free penalty bay (or a walk-in bay when every penalty bay is taken);
+   * without a bay the first one is used. The vehicle owes the penalty at check-out; the booking keeps its bay.
+   */
+  towFromBookedBay(caseId: number, slotId?: number, note?: string): Promise<BookedBayCaseDTO> {
+    return http.post<BookedBayCaseDTO>(`${base}/booked-bay-cases/${caseId}/tow`, { slotId, note })
+  },
+
   /** Moves the booking to a free bay of its type; the customer is told and gets the first hour free. */
   reassignBookedBay(caseId: number, slotId: number, note?: string): Promise<BookedBayCaseDTO> {
     return http.post<BookedBayCaseDTO>(`${base}/booked-bay-cases/${caseId}/reassign`, { slotId, note })
