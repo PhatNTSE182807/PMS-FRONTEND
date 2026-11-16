@@ -14,6 +14,17 @@ const shift = (id, day, people = [person(1)], extra = {}) => ({ id, workShiftTem
   minimumEntryStaff: 2, minimumExitStaff: 0, minimumCounterStaff: 0, exitAssigned: 0, counterAssigned: 0, ...extra })
 const roster = (id, shifts) => ({ id, parkingLotId: 1, name: `Roster ${id}`, status: 'Published', fromDate: '2026-11-01', toDate: '2027-02-01', shifts })
 
+test('approved leave retains its employee row without becoming an active assignment or covering a shortage', () => {
+  const original = { assignmentId: 91, employeeId: 1, staffName: 'Đặng Quốc Bảo', position: 'Entry', kind: 'ApprovedLeave', isPaid: true }
+  const dated = shift(1, '2026-11-16', [person(2, 'Replacement')], { trail: [original] })
+  const group = buildShiftGroups([roster(1, [dated])], calendarRange('2026-11-16', 'week'), '')[0]
+  assert.equal(group.employees.length, 2)
+  assert.equal(assignmentsForCell(group, 1, '2026-11-16').length, 0)
+  assert.equal(assignmentsForCell(group, 2, '2026-11-16').length, 1)
+  assert.equal(group.occurrences[0].shift.entryAssigned, 1)
+  assert.equal(buildShiftGroups([roster(1, [dated])], calendarRange('2026-11-16', 'week'), 'bao')[0].employees[0].id, 1)
+})
+
 test('Monday weeks cross month and year boundaries without local-time conversion', () => {
   const range = calendarRange('2027-01-03', 'week')
   assert.equal(range.from, '2026-12-28')

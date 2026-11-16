@@ -50,7 +50,7 @@ export function useAttendanceRealtime(lotId?: string) {
     return parkingOpsRealtime.subscribe(event => {
       if (event.type === 'ConnectionRestored'
         || event.type === 'WorkAttendanceChanged'
-        || (event.type === 'NotificationCreated' && ['AttendanceChanged', 'RosterPublished', 'RosterChanged'].includes(event.notification.type)))
+        || (event.type === 'NotificationCreated' && ['AttendanceChanged', 'RosterPublished', 'RosterChanged', 'WorkRequestChanged'].includes(event.notification.type)))
         void client.invalidateQueries({ queryKey: workSchedulingKeys })
     }, lotId)
   }, [client, lotId, userId])

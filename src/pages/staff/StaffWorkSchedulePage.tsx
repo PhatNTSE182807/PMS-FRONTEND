@@ -9,6 +9,7 @@ import { ErrorState, Spinner } from '@/components/ui/states'
 import WorkScheduleCalendar, { ScheduleToolbar } from '@/components/features/manager/WorkScheduleCalendar'
 import { calendarRange, type CalendarView } from '@/lib/workScheduleCalendar'
 import { toIsoDate } from '@/lib/format'
+import WorkRequestsBoard from '@/components/features/manager/WorkRequestsBoard'
 
 export default function StaffWorkSchedulePage() {
   const today = toIsoDate(new Date())
@@ -21,6 +22,7 @@ export default function StaffWorkSchedulePage() {
   const rosters = (schedule.data ?? []).filter(r => r.status === 'Published' && r.parkingLotId.toString() === lot?.id)
   return <div className="space-y-6">
     <PageHeader title="My work schedule" description="Your published assignments, grouped by shift and start date. All times use the parking lot's local time." actions={<CalendarDays className="size-9 text-indigo-700" />} />
+    {lot && <WorkRequestsBoard key={lot.id} lotId={lot.id} />}
     <Card className="min-w-0 overflow-hidden">
       <ScheduleToolbar anchor={anchor} view={view} search={search} today={today} onAnchor={setAnchor} onView={setView} onSearch={setSearch}
         lots={lots.data ?? []} lotId={lot?.id ?? ''} onLot={setLotId} />

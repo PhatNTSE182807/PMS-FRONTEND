@@ -38,7 +38,8 @@ export default function CalendarAssignmentDialog({ lotId, roster, cell, reason: 
   const employeeEligible = eligible.data?.some(e => e.employeeId.toString() === employeeId) ?? false
   const needsReason = roster.status === 'Published'
   const stale = roster.revision !== revision
-  const blocked = mutation.isPending || stale || (needsReason && !reason.trim())
+  const locked = Boolean(initialShift?.attendanceLocked || target?.attendanceLocked)
+  const blocked = locked || mutation.isPending || stale || (needsReason && !reason.trim())
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!employeeEligible || blocked) return
@@ -53,7 +54,8 @@ export default function CalendarAssignmentDialog({ lotId, roster, cell, reason: 
     <DialogDescription>{roster.name} · {roster.status}. {needsReason ? 'Changes are recorded and affected Staff are notified.' : 'Draft assignments are visible only to the Manager.'}</DialogDescription>
     {item && <div className="rounded-lg bg-slate-50 p-3"><AssignmentDetails item={item} /></div>}
     {item && <AssignmentAttendancePanel assignmentId={item.assignment.id} />}
-    <form onSubmit={submit} className="space-y-4">
+    {locked && <p role="status" className="text-sm font-semibold text-amber-900">Attendance period locked · assignment is read only.</p>}
+    <form onSubmit={submit} className="space-y-4"><fieldset disabled={locked} className="space-y-4">
       <label className="grid gap-1.5 text-sm font-medium text-slate-700">Dated shift
         <NativeSelect aria-label="Assignment dated shift" value={targetId} onChange={e => setTargetId(e.target.value)} disabled={mutation.isPending}>
           {!initialShift && <option value="new">{cell.day} · {cell.group.name} · create dated shift</option>}
@@ -86,6 +88,6 @@ export default function CalendarAssignmentDialog({ lotId, roster, cell, reason: 
         {item && <Button variant="ghost" onClick={() => setConfirmRemove(v => !v)} disabled={blocked}>Remove assignment</Button>}
       </div>
       {item && confirmRemove && <div className="space-y-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-900"><p>Remove this assignment? Its history is retained.{needsReason && ' The Staff member will be notified.'}</p><Button variant="destructive" disabled={blocked} onClick={() => mutation.mutate(() => workSchedulingApi.removeAssignment(lotId, roster.id, item.shift.id, item.assignment.id, { revision, reason }), { onSuccess: close })}>Confirm removal</Button></div>}
-    </form>
+    </fieldset></form>
   </DialogContent></Dialog>
 }

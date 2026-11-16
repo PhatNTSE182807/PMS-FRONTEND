@@ -6,6 +6,12 @@ import { getErrorMessage } from '@/api/apiError'
 import { WithManagerLot } from '@/components/features/manager/ManagerBits'
 import WorkScheduleCalendar, { ScheduleToolbar, type CalendarCell } from '@/components/features/manager/WorkScheduleCalendar'
 import CalendarAssignmentDialog from '@/components/features/manager/CalendarAssignmentDialog'
+import WorkRotationSetup from '@/components/features/manager/WorkRotationSetup'
+import GenerateRotationPanel from '@/components/features/manager/GenerateRotationPanel'
+import StandbyEditor from '@/components/features/manager/StandbyEditor'
+import WorkRequestsBoard from '@/components/features/manager/WorkRequestsBoard'
+import AttendancePeriodReviewPanel from '@/components/features/manager/AttendancePeriodReviewPanel'
+import type { RotationPreview } from '@/types/workScheduling.dto'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -93,7 +99,8 @@ function ShiftForm({ roster, templates, shift, busy, save, close }: { roster: Du
       <Field label="Shift template"><NativeSelect required value={templateId} onChange={e => setTemplate(e.target.value)}><option value="">Choose template</option>{templates.filter(t => t.isActive).map(t => <option key={t.id} value={t.id}>{t.name} · {t.startTime.slice(0, 5)}–{t.endTime.slice(0, 5)}{t.endTime < t.startTime ? ' (+1 day)' : ''}</option>)}</NativeSelect></Field>
     </div>
     {shift && <p className="text-sm text-amber-800">Saving this shift applies the selected template's current hours and staffing needs. Its existing assignments will be checked again.</p>}
-    <div className="flex gap-2"><Button type="submit" disabled={busy || !templateId} size="sm">{shift ? 'Update dated shift' : 'Add dated shift'}</Button><Button type="button" variant="outline" size="sm" onClick={close}>Cancel</Button></div>
+    {roster.attendanceLockedDates?.includes(date) && <p className="text-sm text-amber-900">Attendance period locked · read only.</p>}
+    <div className="flex gap-2"><Button type="submit" disabled={busy || !templateId || roster.attendanceLockedDates?.includes(date)} size="sm">{shift ? 'Update dated shift' : 'Add dated shift'}</Button><Button type="button" variant="outline" size="sm" onClick={close}>Cancel</Button></div>
   </form>
 }
 
@@ -103,7 +110,7 @@ function ShiftCard({ lotId, roster, shift, templates, staff, reason }: { lotId: 
   const [editingAssignment, setEditingAssignment] = useState<DutyAssignment | 'new' | null>(null)
   const [removing, setRemoving] = useState(false)
   const input = { revision: roster.revision, reason }
-  const disabled = mutation.isPending || (roster.status === 'Published' && !reason.trim())
+  const disabled = mutation.isPending || Boolean(shift.attendanceLocked) || (roster.status === 'Published' && !reason.trim())
   const shortages = roster.shortages.filter(x => x.shiftId === shift.id)
   return <Card className="space-y-4 p-5">
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -127,6 +134,8 @@ const HISTORY_ACTION: Record<string, string> = {
   Created: 'Roster created', Published: 'Roster published', ShiftAdded: 'Dated shift added',
   ShiftUpdated: 'Dated shift changed', ShiftRemoved: 'Dated shift removed',
   AssignmentAdded: 'Staff assigned', AssignmentUpdated: 'Assignment changed', AssignmentRemoved: 'Assignment removed',
+  RotationGenerated: 'Rotation draft generated', StandbyChanged: 'Standby updated',
+  LeaveApproved: 'Leave approved', SwapApproved: 'Swap approved', ReplacementConfirmed: 'Replacement confirmed', OpenShiftCreated: 'Open shift created',
 }
 
 function HistorySnapshot({ json }: { json: string | null }) {
@@ -168,18 +177,20 @@ function RosterHistory({ lotId, rosterId }: { lotId: string; rosterId: number })
   </Card>
 }
 
-function ManagerRosterCalendar({ lotId, roster, templates, reason }: { lotId: string; roster: DutyRoster; templates: WorkShiftTemplate[]; reason: string }) {
+function ManagerRosterCalendar({ lotId, roster, templates, reason, preview = false }: { lotId: string; roster: DutyRoster; templates: WorkShiftTemplate[]; reason: string; preview?: boolean }) {
   const { lots, setLotId } = useManagerLot()
   const today = toIsoDate(new Date())
   const [anchor, setAnchor] = useState(today >= roster.fromDate && today <= roster.toDate ? today : roster.fromDate)
   const [view, setView] = useState<CalendarView>('week')
   const [search, setSearch] = useState('')
   const [cell, setCell] = useState<CalendarCell | null>(null)
+  const [reviewIds, setReviewIds] = useState<ReadonlySet<number>>()
   const range = calendarRange(anchor, view)
   return <Card className="min-w-0 overflow-hidden">
     <ScheduleToolbar anchor={anchor} view={view} search={search} today={today} onAnchor={setAnchor} onView={setView} onSearch={setSearch}
       lots={lots.data ?? []} lotId={lotId} onLot={setLotId} />
-    <WorkScheduleCalendar rosters={[roster]} range={range} search={search} today={today} templates={templates} onCell={setCell} />
+    {!preview && <AttendancePeriodReviewPanel lotId={lotId} onFilter={setReviewIds} />}
+    <WorkScheduleCalendar rosters={[roster]} range={range} search={search} today={today} templates={preview ? [] : templates} onCell={preview ? undefined : setCell} preview={preview} reviewIds={reviewIds} />
     {cell && <CalendarAssignmentDialog lotId={lotId} roster={roster} cell={cell} reason={reason} close={() => setCell(null)} />}
   </Card>
 }
@@ -190,6 +201,7 @@ function RosterEditor({ lotId, roster, templates, staff }: { lotId: string; rost
   const [adding, setAdding] = useState(false)
   const [history, setHistory] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
+  const [preview, setPreview] = useState<RotationPreview | null>(null)
   const published = roster.status === 'Published'
   const disabled = mutation.isPending || (published && !reason.trim())
   return <div className="space-y-4">
@@ -197,22 +209,25 @@ function RosterEditor({ lotId, roster, templates, staff }: { lotId: string; rost
       <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-2xl font-semibold">{roster.name}</h2><p className="text-sm text-slate-600">{roster.fromDate} – {roster.toDate} · <strong className={published ? 'text-emerald-700' : 'text-amber-700'}>{roster.status}</strong> · version {roster.revision}</p></div><Button variant="outline" size="sm" onClick={() => setHistory(v => !v)}><History />History</Button></div>
       {published ? <Field label="Reason for changes to this published roster"><Input maxLength={500} required placeholder="Explain the change to affected Staff" value={reason} onChange={e => setReason(e.target.value)} /></Field> : <p className="text-sm text-slate-600">Draft: only your management view can see these shifts.</p>}
       {roster.shortages.length > 0 && <details className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"><summary className="cursor-pointer"><strong>{roster.shortages.length} position shortages.</strong> Publishing is allowed. View all shortages</summary><ul className="mt-2 max-h-48 space-y-1 overflow-auto">{roster.shortages.map(x => <li key={`${x.shiftId}:${x.position}`}>{x.workDate} {x.shiftName}: {POSITION_LABEL[x.position]} {x.assigned}/{x.required}</li>)}</ul></details>}
-      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={disabled || !templates.some(t => t.isActive)} onClick={() => setAdding(v => !v)}><Plus />Add dated shift</Button>{!published && <Button disabled={mutation.isPending || roster.shifts.length === 0} onClick={() => mutation.mutate(() => workSchedulingApi.publish(lotId, roster.id, { revision: roster.revision }))}>{roster.shortages.length ? 'Publish with staffing shortages' : 'Publish roster'}</Button>}</div>
+      {(roster.rotationIssues?.length ?? 0) > 0 && <ul className="max-h-48 overflow-auto rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{roster.rotationIssues?.map((issue, i) => <li key={i}>{issue.blocking ? 'Violation' : 'Warning'} · {issue.date} · {issue.message}</li>)}</ul>}
+      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={disabled || Boolean(preview) || !templates.some(t => t.isActive)} onClick={() => setAdding(v => !v)}><Plus />Add dated shift</Button>{!published && <Button disabled={mutation.isPending || Boolean(preview) || roster.shifts.length === 0 || roster.rotationIssues?.some(i => i.blocking)} onClick={() => mutation.mutate(() => workSchedulingApi.publish(lotId, roster.id, { revision: roster.revision }))}>{roster.shortages.length ? 'Publish with staffing shortages' : 'Publish roster'}</Button>}</div>
       {mutation.isError && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(mutation.error)}</p>}
       {!templates.some(t => t.isActive) && <p className="text-sm text-amber-800">Create an active shift template to add dated shifts.</p>}
       {staff.length === 0 && <p className="text-sm text-amber-800">No active Staff available at this lot. You can still prepare unfilled shifts.</p>}
       {adding && <ShiftForm roster={roster} templates={templates} busy={disabled} close={() => setAdding(false)} save={(date, template) => mutation.mutate(() => workSchedulingApi.saveShift(lotId, roster.id, { revision: roster.revision, reason, workDate: date, workShiftTemplateId: template }), { onSuccess: () => setAdding(false) })} />}
     </Card>
     {history && <RosterHistory lotId={lotId} rosterId={roster.id} />}
-    <ManagerRosterCalendar lotId={lotId} roster={roster} templates={templates} reason={reason} />
+    {!published && <GenerateRotationPanel lotId={lotId} roster={roster} onPreview={setPreview} />}
+    <ManagerRosterCalendar lotId={lotId} roster={preview?.roster ?? roster} templates={templates} reason={reason} preview={Boolean(preview)} />
     <Button variant="outline" aria-expanded={showDetails} onClick={() => setShowDetails(v => !v)}>{showDetails ? 'Hide dated shift controls' : 'Dated shift controls'}</Button>
     {showDetails && <div className="space-y-4">{roster.shifts.map(shift => <ShiftCard key={shift.id} lotId={lotId} roster={roster} shift={shift} templates={templates} staff={staff} reason={reason} />)}</div>}
+    {showDetails && !preview && <StandbyEditor lotId={lotId} roster={roster} staff={staff} reason={reason} />}
   </div>
 }
 
 function Scheduling({ lot }: { lot: ManagedLot }) {
   const { templates, staff, rosters } = useWorkScheduling(lot.id)
-  const [tab, setTab] = useState<'rosters' | 'templates'>('rosters')
+  const [tab, setTab] = useState<'rosters' | 'templates' | 'rotation'>('rosters')
   const [templateForm, setTemplateForm] = useState<WorkShiftTemplate | 'new' | null>(null)
   const [creating, setCreating] = useState(false)
   const [selectedId, setSelected] = useState<number>()
@@ -223,9 +238,9 @@ function Scheduling({ lot }: { lot: ManagedLot }) {
   const failed = [templates, staff, rosters].find(q => q.isError && !q.data)
   return <div className="space-y-6">
     <PageHeader title="Work schedules" description="Create shift templates, build a manual roster and publish it to your Staff." eyebrow={lot.name} actions={<CalendarDays className="size-9 text-indigo-700" />} />
-    <div className="flex gap-2"><Button variant={tab === 'rosters' ? 'default' : 'outline'} onClick={() => setTab('rosters')}>Duty rosters</Button><Button variant={tab === 'templates' ? 'default' : 'outline'} onClick={() => setTab('templates')}>Shift templates</Button></div>
+    <div className="flex flex-wrap gap-2"><Button variant={tab === 'rosters' ? 'default' : 'outline'} onClick={() => setTab('rosters')}>Duty rosters</Button><Button variant={tab === 'templates' ? 'default' : 'outline'} onClick={() => setTab('templates')}>Shift templates</Button><Button variant={tab === 'rotation' ? 'default' : 'outline'} onClick={() => setTab('rotation')}>Rotation setup</Button></div>
     {failed ? <Card><ErrorState message={getErrorMessage(failed.error)} onRetry={() => { void templates.refetch(); void staff.refetch(); void rosters.refetch() }} /></Card> : templates.isPending || staff.isPending || rosters.isPending ? <Spinner /> : <>
-      {tab === 'templates' ? <>
+      {tab === 'rotation' ? <WorkRotationSetup lotId={lot.id} templates={templateList} staff={staffList} /> : tab === 'templates' ? <>
         <div className="flex justify-end"><Button onClick={() => setTemplateForm('new')}><Plus />New template</Button></div>
         {templateForm && <TemplateForm key={templateForm === 'new' ? 'new' : templateForm.id} lotId={lot.id} template={templateForm === 'new' ? undefined : templateForm} close={() => setTemplateForm(null)} />}
         {templateList.length === 0 && <Card><EmptyState title="No shift templates" description="Start by creating your lot's shift hours and minimum staffing needs." /></Card>}
@@ -233,6 +248,7 @@ function Scheduling({ lot }: { lot: ManagedLot }) {
       </> : <>
         <div className="flex flex-wrap items-end gap-3"><div className="min-w-64 flex-1"><Field label="Roster period"><NativeSelect value={selected?.id ?? ''} onChange={e => setSelected(Number(e.target.value))}><option value="" disabled>Select roster</option>{rosterList.map(r => <option key={r.id} value={r.id}>{r.name} · {r.fromDate} – {r.toDate} · {r.status}</option>)}</NativeSelect></Field></div><Button onClick={() => setCreating(v => !v)}><Plus />New roster</Button></div>
         {creating && <CreateRoster lotId={lot.id} close={() => setCreating(false)} created={r => setSelected(r.id)} />}
+        <WorkRequestsBoard lotId={lot.id} />
         {selected ? <RosterEditor key={selected.id} lotId={lot.id} roster={selected} templates={templateList} staff={staffList} /> : <Card><EmptyState title="No duty rosters" description="Create a draft roster, add dated shifts and assign active Staff." /></Card>}
       </>}
     </>}

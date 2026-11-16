@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Activity, CircleCheck, CircleX, Clock, Flag, Play } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { workSchedulingApi } from '@/api/workScheduling.service'
+import { attendancePeriodsApi } from '@/api/attendancePeriods.service'
 import { getErrorMessage } from '@/api/apiError'
 import { useAuth } from '@/hooks/useAuth'
 import { useAttendanceDetail, useAttendanceMutation, useAttendanceRealtime, workSchedulingKeys } from '@/hooks/useWorkScheduling'
@@ -13,6 +14,7 @@ import { Spinner } from '@/components/ui/states'
 import { ATTENDANCE_LABEL, attendanceLocalInput, attendanceTime } from '@/lib/workAttendance'
 import { cn } from '@/lib/utils'
 import { POSITION_LABEL, type AttendanceDetail, type AttendanceState } from '@/types/workScheduling.dto'
+import AssignmentRequestPanel from './AssignmentRequestPanel'
 
 export function AttendanceBadge({ value }: { value?: AttendanceState }) {
   if (!value) return <span className="block text-[11px] text-slate-500">Attendance unavailable</span>
@@ -44,7 +46,7 @@ function AttendanceHistoryTimes({ json, zone }: { json: string; zone: string }) 
   } catch { return <p className="text-xs text-slate-500">Details unavailable</p> }
 }
 
-const ACTION: Record<string, string> = { Started: 'Staff started shift', Ended: 'Staff ended shift', Absent: 'Start deadline passed', AutoEnded: 'Automatically ended', Reopened: 'Manager reopened shift', Adjusted: 'Manager corrected actual times' }
+const ACTION: Record<string, string> = { Started: 'Staff started shift', Ended: 'Staff ended shift', Absent: 'Start deadline passed', AutoEnded: 'Automatically ended', Reopened: 'Manager reopened shift', Adjusted: 'Manager corrected actual times', LeaveApproved: 'Approved leave cleared absence' }
 
 export default function AssignmentAttendancePanel({ assignmentId }: { assignmentId: number }) {
   const { user } = useAuth()
@@ -56,6 +58,8 @@ export default function AssignmentAttendancePanel({ assignmentId }: { assignment
   if (!query.data) return <p role="alert" className="text-sm text-rose-700">{getErrorMessage(query.error)} <button className="underline" onClick={() => query.refetch()}>Retry</button></p>
   const detail = query.data
   const state = detail.attendance
+  const pay = detail.payReview
+  const locked = Boolean(pay?.locked)
   const stale = Boolean(edit && (edit.revision !== state.revision || edit.rosterRevision !== detail.rosterRevision))
   function save(e: FormEvent) {
     e.preventDefault()
@@ -67,6 +71,15 @@ export default function AssignmentAttendancePanel({ assignmentId }: { assignment
   }
   return <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-3" aria-label="Assignment attendance">
     <h3 className="font-semibold text-slate-950">Attendance</h3>
+    {detail.rosterStatus === 'Published' && !locked && <AssignmentRequestPanel assignmentId={assignmentId} />}
+    {pay && <div className="space-y-1 rounded border border-slate-200 bg-slate-50 p-3 text-xs">
+      <p className="font-semibold">{locked ? 'Attendance locked · read only' : 'Attendance period'} · {pay.periods.join(' / ') || 'No period configured'}</p>
+      <p>Original Staff in: {attendanceTime(pay.originalCheckInAt, detail.timeZoneId)} · out: {attendanceTime(pay.originalCheckOutAt, detail.timeZoneId)}</p>
+      <p>Original actual: {pay.originalHours?.toFixed(2) ?? 'Unknown'} h · Current / adjusted: {pay.adjustedHours.toFixed(2)} h · Approved: {pay.approvedHours.toFixed(2)} h</p>
+      <p>Ordinary hours: {pay.regularHours.toFixed(2)} h · Overtime: {pay.overtimeHours.toFixed(2)} h · {pay.overtimeStatus} · {pay.locked ? 'Locked evidence' : pay.reviewed ? 'Individually reviewed' : pay.periods.some(p => p.includes('Confirmed')) ? 'Lot confirmed' : 'Awaiting individual review or lot confirmation'}</p>
+      <p>Original clock events remain in history. Automatic end is not an actual Staff checkout. A correction does not approve overtime.</p>
+    </div>}
+    {Boolean(pay?.overtimeHistory?.length) && <details><summary className="cursor-pointer text-sm font-semibold">Overtime decision history</summary><ul className="mt-2 max-h-40 space-y-2 overflow-auto text-xs">{pay?.overtimeHistory?.map(d => <li key={d.id}>{attendanceTime(d.createdAt, detail.timeZoneId)} · {d.approved ? 'Approved' : 'Rejected'}{d.id === pay.overtimeDecisionId ? ' · Current decision' : ' · Previous / stale decision'} · {d.reason}</li>)}</ul></details>}
     <AttendanceBadge value={state} />
     <dl className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
       <div><dt className="text-xs text-slate-500">Planned start</dt><dd>{attendanceTime(detail.plannedStart, detail.timeZoneId)}</dd></div>
@@ -79,9 +92,11 @@ export default function AssignmentAttendancePanel({ assignmentId }: { assignment
     {state.autoEnded && <p className="text-xs text-amber-800">The scheduled end was used automatically after the grace period. This is not a Staff check-out; the Manager should review it.</p>}
     {query.isError && <p role="status" className="text-xs text-amber-800">Connection interrupted. Showing the last loaded record; it will refresh when reconnected.</p>}
     <StaffAttendanceActions detail={detail} />
-    {user?.role === 'MANAGER' && detail.rosterStatus === 'Published' && <div className="space-y-3 border-t border-slate-200 pt-3">
+    {user?.role === 'MANAGER' && !locked && detail.rosterStatus === 'Published' && !['ApprovedLeave', 'Reassigned'].includes(state.status) && <div className="space-y-3 border-t border-slate-200 pt-3">
       {!edit && <Button variant="outline" size="sm" onClick={() => setEdit({ start: attendanceLocalInput(state.checkInAt), end: attendanceLocalInput(state.checkOutAt), revision: state.revision, rosterRevision: detail.rosterRevision })}>Correct actual times</Button>}
-      {(edit || state.canReopen) && <label className="grid gap-1 text-sm text-slate-700">Reason (required)<Input aria-label="Attendance change reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} /></label>}
+      <label className="grid gap-1 text-sm text-slate-700">Reason (required)<Input aria-label="Attendance change reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} /></label>
+      {!edit && !['Working', 'Upcoming', 'StartWindow'].includes(state.status) && !pay?.reviewed && <Button size="sm" variant="outline" disabled={!reason.trim() || change.isPending || query.isFetching} onClick={() => change.mutate(() => attendancePeriodsApi.reviewAssignment(assignmentId, { revision: state.revision, rosterRevision: detail.rosterRevision, reason }), { onSuccess: () => setReason('') })}>Record individual review</Button>}
+      {!edit && Boolean(pay?.overtimeHours) && state.checkOutAt && <div className="flex flex-wrap gap-2">{[true, false].map(approved => <Button key={String(approved)} size="sm" variant="outline" disabled={!reason.trim() || change.isPending || query.isFetching} onClick={() => change.mutate(() => attendancePeriodsApi.overtime(assignmentId, { revision: state.revision, rosterRevision: detail.rosterRevision, reason, approved, decisionId: pay?.overtimeDecisionId ?? 0 }), { onSuccess: () => setReason('') })}>{approved ? 'Approve' : 'Reject'} overtime</Button>)}</div>}
       {edit && <form onSubmit={save} className="space-y-3">
         <p className="text-xs text-slate-500">Enter actual times in your device's time zone ({Intl.DateTimeFormat().resolvedOptions().timeZone}).</p>
         <label className="grid gap-1 text-sm text-slate-700">Actual in<Input aria-label="Corrected actual in" type="datetime-local" step="1" required value={edit.start} onChange={e => setEdit({ ...edit, start: e.target.value })} /></label>

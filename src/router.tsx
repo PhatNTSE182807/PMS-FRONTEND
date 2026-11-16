@@ -34,6 +34,7 @@ const ManagerPricingPage = lazy(() => import('@/pages/management/ManagerPricingP
 const ManagerStaffPage = lazy(() => import('@/pages/management/ManagerStaffPage'))
 const ManagerWorkSchedulingPage = lazy(() => import('@/pages/management/ManagerWorkSchedulingPage'))
 const StaffWorkSchedulePage = lazy(() => import('@/pages/staff/StaffWorkSchedulePage'))
+const PayrollPage = lazy(() => import('@/pages/PayrollPage'))
 const PaymentReturnPage = lazy(() => import('@/pages/PaymentReturnPage'))
 const StaffGatePage = lazy(() => import('@/pages/staff/StaffGatePage'))
 const StaffCheckoutPage = lazy(() => import('@/pages/staff/StaffCheckoutPage'))
@@ -91,6 +92,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'staff', element: <StaffAccountsPage /> },
+      { path: 'payroll', element: <PayrollPage /> },
       { path: 'customers', element: <CustomerAccountsPage /> },
       { path: 'lots', element: <ParkingLotsPage /> },
       { path: 'revenue', element: <RevenueReportPage /> },
@@ -111,6 +113,7 @@ export const router = createBrowserRouter([
       { path: 'pricing', element: <ManagerPricingPage /> },
       { path: 'staff', element: <ManagerStaffPage /> },
       { path: 'work-schedules', element: <ManagerWorkSchedulingPage /> },
+      { path: 'payroll', element: <PayrollPage /> },
       // The Manager no longer has a zones and bays page: old links land on the console
       { path: 'lots', element: <Navigate to="/management/console" replace /> },
     ],
@@ -122,6 +125,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="gate" replace /> },
       { path: 'gate', element: <StaffGatePage /> },
       { path: 'work-schedule', element: <StaffWorkSchedulePage /> },
+      { path: 'payroll', element: <PayrollPage /> },
       { path: 'checkout', element: <StaffCheckoutPage /> },
       { path: 'exceptions', element: <StaffExceptionsPage /> },
       { path: 'cash-tally', element: <StaffCashTallyPage /> },

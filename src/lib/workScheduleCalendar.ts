@@ -70,7 +70,7 @@ export function buildShiftGroups(rosters: DutyRoster[], range: CalendarRange, se
   }
   for (const group of groups.values()) {
     const people = new Map<number, string>()
-    for (const { shift } of group.occurrences) for (const a of shift.assignments) {
+    for (const { shift } of group.occurrences) for (const a of [...shift.assignments, ...(shift.trail ?? [])]) {
       const searchable = a.staffName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLocaleLowerCase()
       if (!term || searchable.includes(term)) people.set(a.employeeId, a.staffName)
     }
