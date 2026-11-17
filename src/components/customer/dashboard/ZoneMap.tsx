@@ -87,15 +87,26 @@ function MyVehicleCard({ current, bayCode, onClose }: { current: CurrentSessionD
         { label: 'Plate', value: session.hasPlate ? session.plateNumber : 'No plate' },
         { label: 'Entered', value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
         { label: 'Parked for', value: formatStay(stay ?? current.elapsedMinutes) },
-        { label: 'Fee so far', value: vndOrDash(current.feeSoFar), emphasis: true },
-        ...(current.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(current.depositApplied)}` }] : []),
-        ...(current.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(current.alreadyPaid)}` }] : []),
-        { label: 'Due now', value: vndOrDash(current.amountDue) },
+        // A lost-ticket case waiting for a Manager has no fee yet
+        ...(current.lostTicketPending
+          ? [{ label: 'Fee', value: 'Lost ticket • waiting for a Manager', emphasis: true }]
+          : [
+              { label: 'Fee so far', value: vndOrDash(current.feeSoFar), emphasis: true },
+              ...(current.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(current.depositApplied)}` }] : []),
+              ...(current.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(current.alreadyPaid)}` }] : []),
+              { label: 'Due now', value: vndOrDash(current.amountDue) },
+            ]),
       ]}
       footer={
-        <>
-          The fee refreshes every minute. <Link to="/me" className="cx-link">Pay or show the exit pass</Link>
-        </>
+        current.lostTicketPending ? (
+          <>
+            The fee and fine are settled at the exit lane once the case is decided. <Link to="/me" className="cx-link">See the details</Link>
+          </>
+        ) : (
+          <>
+            The fee refreshes every minute. <Link to="/me" className="cx-link">Pay or show the exit pass</Link>
+          </>
+        )
       }
       onClose={onClose}
     />
