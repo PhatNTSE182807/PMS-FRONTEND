@@ -531,3 +531,16 @@ export interface BookedBayCaseDTO {
   towedToBayId?: number | null
   towedToBayCode?: string | null
 }
+
+/** Expected state of a bay during the window to book (mirrors BayForecastState). */
+export type BayForecastState = 'Free' | 'FreeingUp' | 'Booked' | 'Occupied' | 'OutOfService' | 'Penalty'
+
+/** GET /reservations/forecast row: what a bay is expected to be during the window the customer is about to book. */
+export interface BayForecastDTO {
+  slotId: number
+  state: BayForecastState
+  /** True when that window can be booked in this bay. */
+  bookable: boolean
+  /** FreeingUp: when the vehicle in the bay now is expected to be gone (UTC ISO). */
+  freeFrom?: string | null
+}

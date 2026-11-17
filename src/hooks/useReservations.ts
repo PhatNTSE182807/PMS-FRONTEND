@@ -178,3 +178,17 @@ export function usePayDeposit() {
     onError: (error) => toastPaymentError(error),
   })
 }
+
+/**
+ * Expected state of the lot's bays during the window the customer is about to book (null window: none yet). Kept
+ * fresh while the map is open, since vehicles arrive and leave all the time.
+ */
+export function useBayForecast(lotId: string | undefined, window: { arrivalTime: string; departureTime: string | null } | null) {
+  return useQuery({
+    queryKey: queryKeys.reservations.forecast(lotId ?? '', window?.arrivalTime ?? '', window?.departureTime ?? null),
+    queryFn: () => reservationService.getForecast(lotId!, window!.arrivalTime, window!.departureTime),
+    enabled: Boolean(lotId && window),
+    refetchInterval: RESERVATIONS_REFRESH_MS,
+    placeholderData: (previous) => previous,
+  })
+}
