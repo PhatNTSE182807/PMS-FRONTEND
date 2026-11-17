@@ -36,8 +36,8 @@ export interface WalletTransactionDTO {
   title: string
   subtitle: string
   amount: number
-  balanceBefore?: number
-  balanceAfter?: number
+  balanceBefore: number
+  balanceAfter: number
   status: string
   type: 'deposit' | 'withdraw' | 'refund' | 'payment'
   method: string
