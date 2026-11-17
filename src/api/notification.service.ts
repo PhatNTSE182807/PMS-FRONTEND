@@ -59,9 +59,6 @@ export const notificationApi = {
   getMine: (unreadOnly = false, take = 30) =>
     http.get<NotificationListModel>(`${BASE}?unreadOnly=${unreadOnly}&take=${take}`),
 
-  /** Just the unread count (for the badge). */
-  getUnreadCount: () => http.get<number>(`${BASE}/unread-count`),
-
   /** Marks one notification as read. */
   markRead: (id: number) => http.post<NotificationModel>(`${BASE}/${id}/read`),
 

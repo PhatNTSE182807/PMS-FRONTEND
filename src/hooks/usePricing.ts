@@ -1,9 +1,9 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { pricingService } from '@/api/pricing.service'
 import { queryKeys } from '@/api/queryKeys'
 import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
-import type { PricingRuleInput, PricingRuleStatus, PricingSimulationRequest } from '@/types/pricing.dto'
+import type { PricingRuleInput, PricingRuleStatus } from '@/types/pricing.dto'
 
 /** The lot's pricing rules (not archived). */
 export function usePricingRules(lotId: string) {
@@ -46,16 +46,5 @@ export function usePublicPrices(lotId: string | undefined) {
     queryFn: () => pricingService.publicPrices(lotId!),
     enabled: Boolean(lotId),
     staleTime: 60_000,
-  })
-}
-
-/** What the gate would charge for one stay; keeps the last result while a new one loads. */
-export function usePricingSimulation(lotId: string, request: PricingSimulationRequest | null) {
-  return useQuery({
-    queryKey: queryKeys.pricing.simulation(lotId, request ?? {}),
-    queryFn: () => pricingService.simulate(lotId, request!),
-    enabled: request !== null,
-    placeholderData: keepPreviousData,
-    retry: false,
   })
 }

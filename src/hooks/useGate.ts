@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { gateService } from '@/api/gate.service'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
-import type { CheckInRequest, CheckoutRequest, LostTicketRequest, PaymentProvider } from '@/types/operations.dto'
+import type { CheckInRequest, PaymentProvider } from '@/types/operations.dto'
 import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 
 /** Polling fallback for the lane console when SignalR is not connected (demo, hub down). */
@@ -129,16 +129,6 @@ export function useZoneCounters(lotId: string | undefined) {
   })
 }
 
-export function useGateHistory(lotId: string | undefined, page = 1, pageSize = 50) {
-  const live = useGateRealtime(lotId)
-  return useQuery({
-    queryKey: queryKeys.gate.history(lotId ?? '', page),
-    queryFn: () => gateService.getHistory(lotId!, page, undefined, pageSize),
-    enabled: Boolean(lotId),
-    refetchInterval: live ? 60_000 : GATE_REFRESH_MS,
-  })
-}
-
 /**
  * The vehicles that left the lot last, newest exit first, whenever they came in: the exit lane cameras show each
  * one driving out (the entry-ordered history misses a vehicle that came in before the latest 50 entries).
@@ -150,16 +140,6 @@ export function useGateExits(lotId: string | undefined) {
     queryFn: () => gateService.getHistory(lotId!, 1, undefined, 20, 'exit'),
     enabled: Boolean(lotId),
     refetchInterval: live ? 15_000 : GATE_REFRESH_MS,
-  })
-}
-
-export function useLotPayments(lotId: string | undefined, method?: string, pageSize = 50) {
-  const live = useGateRealtime(lotId)
-  return useQuery({
-    queryKey: queryKeys.gate.payments(lotId ?? '', method),
-    queryFn: () => gateService.getPayments(lotId!, { method, page: 1, pageSize }),
-    enabled: Boolean(lotId),
-    refetchInterval: live ? 60_000 : GATE_REFRESH_MS,
   })
 }
 
@@ -178,7 +158,6 @@ function useGateMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) 
 
 export const useCheckIn = (lotId: string | undefined) => useGateMutation((request: CheckInRequest) => gateService.checkIn(lotId!, request))
 export const useConfirmEntry = () => useGateMutation((sessionId: number) => gateService.confirmEntry(sessionId))
-export const useCancelEntry = () => useGateMutation((sessionId: number) => gateService.cancelEntry(sessionId))
 export const useQuote = () => useGateMutation(({ sessionId, plateNumber }: { sessionId: number; plateNumber?: string }) => gateService.quote(sessionId, plateNumber))
 export const useCancelPaymentRequest = () => useGateMutation((sessionId: number) => gateService.cancelPayment(sessionId))
 export const usePayCash = () =>
@@ -187,9 +166,7 @@ export const usePayCash = () =>
       gateService.payCash(sessionId, amount, prepaid),
   )
 export const usePayOnline = () => useGateMutation(({ sessionId, provider, prepaid }: { sessionId: number; provider: PaymentProvider; prepaid?: boolean }) => gateService.payOnline(sessionId, provider, prepaid))
-export const useCheckout = () => useGateMutation(({ sessionId, request }: { sessionId: number; request: CheckoutRequest }) => gateService.checkout(sessionId, request))
 
-/** Lost ticket desk: finds the open session of the plate, then reports its ticket as lost. */
 /** A lost ticket was reported for a vehicle that came in with a booking. */
 export class BookedVehicleError extends Error {
   constructor() {
@@ -197,14 +174,6 @@ export class BookedVehicleError extends Error {
     this.name = 'BookedVehicleError'
   }
 }
-
-export const useReportLostTicket = (lotId: string | undefined) =>
-  useGateMutation(async ({ plate, request }: { plate: string; request: LostTicketRequest }) => {
-    const session = await gateService.lookup(lotId!, { plate })
-    // The API refuses it too; checking here keeps the message next to the plate field
-    if (session.sessionType === 'Reservation') throw new BookedVehicleError()
-    return gateService.reportLostTicket(session.id, request)
-  })
 
 /** Entry lane: the customer has no code, so find the booking of the typed plate (gives back its RSV code). */
 export function useFindReservationByPlate(lotId: string | undefined) {

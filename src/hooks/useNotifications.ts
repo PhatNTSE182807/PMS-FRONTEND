@@ -85,51 +85,11 @@ export function useNotifications(take = 30) {
   return query
 }
 
-/** Test notifications live only in this browser: their negative ids never reach the API. */
-let lastLocalId = 0
-
-/** Adds a test notification to the bell and shows its popup; a reload or refetch of the list removes it. */
-export function useAddNotification() {
-  const queryClient = useQueryClient()
-  return useCallback(
-    (title: string, message: string) => {
-      const notification: NotificationModel = {
-        id: --lastLocalId,
-        type: 'PriceChanged',
-        title,
-        message,
-        refType: null,
-        refId: null,
-        eventAt: null,
-        data: {},
-        createdAt: new Date().toISOString(),
-        readAt: null,
-        isRead: false,
-      }
-      queryClient.setQueryData<NotificationListModel>(queryKeys.notifications.list(), (prev) => ({
-        items: [notification, ...(prev?.items ?? [])],
-        unreadCount: (prev?.unreadCount ?? 0) + 1,
-      }))
-      toast.info(title, { description: message, duration: 4000 })
-    },
-    [queryClient],
-  )
-}
-
-/** Returns the unread count from the notification list (avoids a separate query). */
-export function useUnreadCount(): number {
-  return useNotifications().data?.unreadCount ?? 0
-}
-
 /** Mark one notification as read. */
 export function useMarkRead() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: number): Promise<NotificationModel> => {
-      if (id >= 0) return notificationApi.markRead(id)
-      const local = queryClient.getQueryData<NotificationListModel>(queryKeys.notifications.list())?.items.find((n) => n.id === id)
-      return { ...local!, readAt: new Date().toISOString(), isRead: true }
-    },
+    mutationFn: (id: number): Promise<NotificationModel> => notificationApi.markRead(id),
     onSuccess: (updated) => {
       queryClient.setQueryData<NotificationListModel>(queryKeys.notifications.list(), (prev) => {
         if (!prev) return prev
@@ -163,9 +123,7 @@ export function useMarkAllRead() {
 export function useDeleteNotification() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: number) => {
-      if (id >= 0) await notificationApi.delete(id)
-    },
+    mutationFn: (id: number) => notificationApi.delete(id),
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.notifications.list() })
       const prev = queryClient.getQueryData<NotificationListModel>(queryKeys.notifications.list())

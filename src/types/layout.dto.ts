@@ -9,63 +9,6 @@ export type SlotStatus = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance'
 export type SlotKind = 'Standard' | 'Penalty'
 export type FloorKind = 'car' | 'motorbike' | 'mixed'
 
-/** LayoutFloorModel */
-export interface LayoutFloorDTO {
-  floorNo: number
-  name: string
-  kind: FloorKind
-  rows: number
-  cols: number
-}
-
-/** GET /api/lot-templates: LotTemplateResponseModel */
-export interface LotTemplateDTO {
-  id: string
-  name: string
-  summary: string
-  slotsPerFloor: number
-  /** Penalty bays on every level, for towed vehicles; not part of the slot counts. */
-  penaltySlotsPerFloor?: number
-  carSlots: number
-  motorbikeSlots: number
-  totalSlots: number
-  floors: LayoutFloorDTO[]
-}
-
-/** GET /api/public/lots/{lotId}/layout: LayoutResponseModel. Cache it by version. */
-export interface LotLayoutDTO {
-  parkingLotId: number
-  parkingLotName: string
-  lotStatus: string
-  version: number
-  templateId: string | null
-  publishedAt: string | null
-  updatedAt: string
-  floors: LayoutFloorDTO[]
-  zones: { zoneId: number; code: string; name: string; zoneType: string; floorNo: number | null }[]
-  slots: {
-    slotId: number
-    code: string
-    zoneId: number
-    vehicleTypeCode: string | null
-    floorNo: number
-    row: number
-    col: number
-    rotation: number
-    modelUrl: string | null
-    /** Penalty bays are kept for towed vehicles: never booked, outside the zone counter. */
-    kind?: SlotKind
-  }[]
-}
-
-/** GET /api/public/lots/{lotId}/layout/status: statuses and free spaces, never plates (FR-3D-08). */
-export interface LotLayoutStatusDTO {
-  parkingLotId: number
-  version: number
-  generatedAt: string
-  slots: { slotId: number; status: SlotStatus }[]
-  zones: { zoneId: number; total: number; free: number }[]
-}
 
 /** "slots": every bay as a cell. "zones": one block per zone and level (Level of Detail). */
 export type Layout2DDetail = 'slots' | 'zones'

@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { profileService } from '@/api/profile.service'
 import { queryKeys } from '@/api/queryKeys'
 import { session } from '@/lib/session'
-import type { UpdateVehicleCommand } from '@/types/profile.dto'
 
 export function useProfile() {
   return useQuery({ queryKey: queryKeys.profile.me(), queryFn: profileService.getProfile })
@@ -84,11 +83,6 @@ function useVehicleMutation<TVariables, TData>(mutationFn: (variables: TVariable
 }
 
 export const useAddVehicle = () => useVehicleMutation(profileService.addVehicle)
-
-export const useUpdateVehicle = () =>
-  useVehicleMutation(({ vehicleId, command }: { vehicleId: string; command: UpdateVehicleCommand }) =>
-    profileService.updateVehicle(vehicleId, command),
-  )
 
 export const useDeleteVehicle = () => useVehicleMutation(profileService.deleteVehicle)
 

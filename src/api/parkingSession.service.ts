@@ -1,6 +1,6 @@
 import { isMockService, SERVICE_PATHS } from '@/config/env'
 import { customerSessionMock } from '@/mocks/operations.mock'
-import type { CurrentSessionDTO, ExitPassDTO, PaymentDTO, PaymentProvider } from '@/types/operations.dto'
+import type { CurrentSessionDTO, PaymentDTO, PaymentProvider } from '@/types/operations.dto'
 import { http } from './axiosClient'
 import { paymentReturnUrl } from './reservation.service'
 
@@ -13,11 +13,6 @@ export const parkingSessionService = {
   /** Vehicles inside a lot now, newest entry first (empty when nothing is parked). */
   getCurrent(): Promise<CurrentSessionDTO[]> {
     return mocked() ? customerSessionMock.current() : http.get<CurrentSessionDTO[]>(`${base}/current`)
-  },
-
-  /** The exit pass of a parked vehicle (every checked-in session has one). */
-  getExitPass(sessionId: number): Promise<ExitPassDTO> {
-    return mocked() ? customerSessionMock.exitPass(sessionId) : http.get<ExitPassDTO>(`${base}/${sessionId}/exit-pass`)
   },
 
   /** Starts a prepayment of the fee so far; redirect the browser to `payUrl`. Once paid an Exit Window opens. */

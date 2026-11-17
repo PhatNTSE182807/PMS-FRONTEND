@@ -116,37 +116,3 @@ export interface PublicLotPriceDTO {
   maxDailyFee: number | null
 }
 
-/** PricingSimulationRequestModel: with ruleId one rule is tried; without it the rule the gate would pick. */
-export interface PricingSimulationRequest {
-  ruleId?: number
-  vehicleTypeId?: number
-  entryTime: string
-  exitTime: string
-  depositAmount: number
-  isLostTicket: boolean
-}
-
-/** FeeDayModel: one calendar day of the stay. */
-export interface PricingFeeDay {
-  date: string
-  minutes: number
-  blocks: number
-  amount: number
-  capped: boolean
-}
-
-/** PricingSimulationResultModel */
-export interface PricingSimulationResult {
-  durationMinutes: number
-  withinGrace: boolean
-  grossFee: number
-  lostTicketFee: number
-  exitWindowLateFee: number
-  depositApplied: number
-  depositRefund: number
-  amountDue: number
-  days: PricingFeeDay[]
-  ruleId: number | null
-  ruleVersion: number | null
-  ruleName: string
-}

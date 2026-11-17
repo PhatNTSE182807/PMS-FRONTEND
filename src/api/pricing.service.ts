@@ -5,8 +5,6 @@ import type {
   PricingRuleDTO,
   PricingRuleInput,
   PricingRuleStatus,
-  PricingSimulationRequest,
-  PricingSimulationResult,
 } from '@/types/pricing.dto'
 import { http } from './axiosClient'
 
@@ -57,10 +55,5 @@ export const pricingService = {
   /** Public prices of a lot for customers (anonymous, rate limited): what the gates charge now per vehicle type. */
   publicPrices(lotId: string): Promise<PublicLotPriceDTO[]> {
     return mocked() ? pricingMock.publicPrices(lotId) : http.get<PublicLotPriceDTO[]>(`/public/lots/${lotId}/prices`)
-  },
-
-  /** What the gate would charge for one stay: with ruleId one rule, otherwise the lot's active rule. */
-  simulate(lotId: string, request: PricingSimulationRequest): Promise<PricingSimulationResult> {
-    return mocked() ? pricingMock.simulate(lotId, request) : http.post<PricingSimulationResult>(`${base(lotId)}/simulate`, request)
   },
 }
