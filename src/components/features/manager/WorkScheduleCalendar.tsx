@@ -77,9 +77,6 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
   const [slotId, setSlotId] = useState<number | null>(null)
   const [originalId, setOriginalId] = useState<number | null>(null)
   const [vacancy, setVacancy] = useState<{ lotId: string; shiftId: number } | null>(null)
-  const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase()
-  const standbyItems = rosters.flatMap(roster => (roster.standbys ?? []).filter(s => s.workDate >= range.from && s.workDate <= range.to && normalize(s.staffName).includes(normalize(search.trim()))).map(standby => ({ roster, standby })))
-  const standbyPeople = [...new Map(standbyItems.map(x => [x.standby.employeeId, x.standby.staffName])).entries()]
   const groups = useMemo(() => buildShiftGroups(rosters, range, search, templates), [rosters, range, search, templates])
   const [detail, setDetail] = useState<AssignmentReference | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
@@ -123,7 +120,7 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
       <span>Pending request ≠ approved leave · Open offer ≠ confirmed replacement</span>
     </div>
     <div key={`${range.from}:${range.to}`} ref={viewport} onScroll={event => { scrollPosition.current = { left: event.currentTarget.scrollLeft, top: event.currentTarget.scrollTop, range: `${range.from}:${range.to}` } }} className="max-h-[70vh] overflow-auto overscroll-contain rounded-b-xl bg-white [scrollbar-gutter:stable]" role="region" aria-label="Work schedule calendar, scroll horizontally for more dates" tabIndex={0} style={style}>
-      {groups.length === 0 && standbyItems.length === 0 ? <EmptyState icon={CalendarDays} title="No shifts in this period" description="Choose another date or roster. Only actual assignments are displayed." /> :
+      {groups.length === 0 ? <EmptyState icon={CalendarDays} title="No shifts in this period" description="Choose another date or roster. Only actual assignments are displayed." /> :
         <table className="w-full table-fixed border-separate border-spacing-0 text-sm" style={{ minWidth: 318 + range.days.length * 164 }}>
           <caption className="sr-only">Work schedule grouped by shift and employee. Staffing totals refer to the entire dated shift, even when searching or viewing your own assignments.</caption>
           <colgroup><col style={{ width: 'var(--shift-column)' }} /><col style={{ width: 'var(--employee-column)' }} />{range.days.map(day => <col key={day} style={{ width: 164 }} />)}</colgroup>
@@ -153,7 +150,7 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
                       <p className="font-semibold">{item.roster.status}</p>
                       <p className={cn(shortage && 'font-semibold text-amber-800')}>Staff: {item.shift.assigned} / {item.shift.minimumStaff}</p>
                       {shortage && <p className="font-semibold text-amber-800"><TriangleAlert className="mr-1 inline size-3" />Needs staff</p>}
-                      {(item.shift.openShifts ?? []).map(slot => <button key={slot.id} disabled={preview} className="block w-full rounded border border-amber-300 bg-amber-50 p-1 text-left font-semibold text-amber-900" onClick={() => setSlotId(slot.id)}>Open slot · {slot.status} · {slot.stage}</button>)}
+                      {(item.shift.openShifts ?? []).map(slot => <button key={slot.id} disabled={preview} className="block w-full rounded border border-amber-300 bg-amber-50 p-1 text-left font-semibold text-amber-900" onClick={() => setSlotId(slot.id)}>Vacancy · {slot.status}</button>)}
                       {(item.shift.managerCoverage ?? []).map(c => <p key={c.id} className="font-semibold">Manager coverage · {c.managerName}</p>)}
                       {item.shift.attendanceLocked && <p className="font-semibold">Attendance locked · read only</p>}
                       {!preview && !item.shift.attendanceLocked && user?.role === 'MANAGER' && item.roster.status === 'Published' && item.shift.minimumStaff - item.shift.assigned > openVacancies && <button className="block rounded border border-dashed border-amber-400 p-1 font-semibold text-amber-900" onClick={() => setVacancy({ lotId: item.roster.parkingLotId.toString(), shiftId: item.shift.id })}>Find replacement</button>}
@@ -192,13 +189,6 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
               })}
             </tr>)}
           </tbody>)}
-          {standbyPeople.length > 0 && <tbody aria-label="Standby — separate from direct staffing">
-            {standbyPeople.map(([id, name], index) => <tr key={id}>
-              {index === 0 && <th rowSpan={standbyPeople.length} scope="rowgroup" className="sticky left-0 z-20 border-r border-b border-t-2 border-slate-200 bg-white p-3 text-left align-top"><p className="font-semibold">Standby</p><p className="text-xs font-normal text-slate-500">Local day · excluded from direct staffing</p></th>}
-              <th scope="row" className="sticky left-[var(--shift-column)] z-10 border-r border-b border-slate-200 bg-white p-3 text-left align-top font-medium">{name}</th>
-              {range.days.map(day => <td key={day} className={cn('border-r border-b border-slate-200 p-2 align-top', cellBackground(day))}>{standbyItems.filter(x => x.standby.employeeId === id && x.standby.workDate === day).map(x => <div key={`${x.roster.id}:${x.standby.id}`} className="space-y-1 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-950"><p className="font-semibold">Standby · {x.roster.status}</p><p>{preview && x.standby.id < 0 ? 'Proposed' : x.standby.source === 'Manual' ? 'Manual · protected' : 'Rotation'}</p><p>No direct-work attendance</p></div>)}{!standbyItems.some(x => x.standby.employeeId === id && x.standby.workDate === day) && <span className="text-slate-400">—</span>}</td>)}
-            </tr>)}
-          </tbody>}
         </table>}
     </div>
     <p className="px-4 py-3 text-xs text-slate-500">Empty cells and unfilled shifts are not absences. Pending requests preserve the original assignment. Approved leave and original swapped assignments retain their history separately.</p>

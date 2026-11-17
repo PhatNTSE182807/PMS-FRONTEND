@@ -38,7 +38,7 @@ export interface DutyRoster {
   id: number; parkingLotId: number; name: string; fromDate: string; toDate: string
   status: 'Draft' | 'Published'; revision: number; publishedAt: string | null
   shifts: RosterShift[]; shortages: RosterShortage[]
-  standbys?: StandbyAssignment[]; rotationIssues?: RotationIssue[]
+  rotationIssues?: RotationIssue[]
 }
 export interface RosterChange {
   id: number; dutyRosterId: number; revision: number; action: string; changedBy: string; changedByName: string; changedAt: string
@@ -72,12 +72,11 @@ export interface RotationMember { employeeId: number }
 export interface RotationGroup { id: number; name: string; offsetDays: number; isActive: boolean; revision: number; members: RotationMember[] }
 export interface RotationStep { templateId: number | null; days: number }
 export interface RotationCycle { id: number; name: string; revision: number; steps: RotationStep[] }
-export interface StandbyAssignment { id: number; workDate: string; employeeId: number; staffName: string; source: string }
 export interface RotationIssue { code: string; date: string | null; employeeId: number | null; message: string; blocking: boolean }
 export interface RotationChange { kind: string; date: string; employeeId: number; staffName: string; detail: string; assignmentId?: number }
 export interface RotationGeneration extends RosterMutation {
   fromDate: string; toDate: string; cycleStartDate: string; cycleId: number; groupIds: number[]
-  replaceGenerated: boolean; includeStandby: boolean; standbyGroupIds: number[]; previewToken?: string
+  replaceGenerated: boolean; previewToken?: string
 }
 export interface RotationPreview {
   roster: DutyRoster; token: string; proposedAssignments: number; changes: RotationChange[]; issues: RotationIssue[]

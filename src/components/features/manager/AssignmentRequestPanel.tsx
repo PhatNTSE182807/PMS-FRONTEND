@@ -34,7 +34,7 @@ export default function AssignmentRequestPanel({ assignmentId }: { assignmentId:
   const { user } = useAuth(); const mutation = useScheduleMutation()
   const query = useQuery({ queryKey: [...workSchedulingKeys, user?.userId, 'assignment-requests', assignmentId], queryFn: () => workRequestsApi.assignment(assignmentId), refetchInterval: 10_000, refetchOnReconnect: 'always' })
   const [mode, setMode] = useState<'leave' | 'swap' | null>(null); const [reason, setReason] = useState('')
-  const [kind, setKind] = useState('Planned'); const [proposed, setProposed] = useState(''); const [other, setOther] = useState('')
+  const [kind, setKind] = useState('Planned'); const [other, setOther] = useState('')
   if (query.isPending) return <Spinner />
   if (!query.data) return <p role="alert" className="text-sm text-rose-700">{getErrorMessage(query.error)} <button onClick={() => query.refetch()}>Retry</button></p>
   const data = query.data
@@ -44,11 +44,10 @@ export default function AssignmentRequestPanel({ assignmentId }: { assignmentId:
     <RequestRows leaves={data.leaves} swaps={data.swaps} actorEmployeeId={user?.role === 'STAFF' ? data.employeeId : undefined} />
     {data.canRequest && <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => { setMode('leave'); setKind(new Date(data.startsAt).getTime() - Date.now() >= 24 * 3600_000 ? 'Planned' : 'Emergency') }}>Request leave</Button><Button size="sm" variant="outline" onClick={() => setMode('swap')}>Propose shift swap</Button></div>}
     {data.canRequest && mode && <form className="space-y-3 border-t border-slate-200 pt-3" onSubmit={e => {
-      e.preventDefault(); mutation.mutate(() => mode === 'leave' ? workRequestsApi.leave({ assignmentId, kind, reason, proposedEmployeeId: kind === 'Planned' && proposed ? Number(proposed) : undefined }) : workRequestsApi.swap({ assignmentId, otherAssignmentId: Number(other), reason }), { onSuccess: () => { setMode(null); setReason('') } })
+      e.preventDefault(); mutation.mutate(() => mode === 'leave' ? workRequestsApi.leave({ assignmentId, kind, reason }) : workRequestsApi.swap({ assignmentId, otherAssignmentId: Number(other), reason }), { onSuccess: () => { setMode(null); setReason('') } })
     }}>
       {mode === 'leave' ? <>
         <label className="grid gap-1 text-sm">Leave type<NativeSelect aria-label="Leave type" value={kind} onChange={e => setKind(e.target.value)}><option value="Planned">Planned · at least 24 hours notice</option><option value="Emergency">Emergency · less than 24 hours</option></NativeSelect></label>
-        {kind === 'Planned' ? <label className="grid gap-1 text-sm">Proposed replacement (optional)<NativeSelect aria-label="Proposed leave replacement" value={proposed} onChange={e => setProposed(e.target.value)}><option value="">No proposal</option>{data.staff.filter(s => s.employeeId !== data.employeeId).map(s => <option key={s.employeeId} value={s.employeeId}>{s.fullName}</option>)}</NativeSelect></label> : <p className="text-xs text-amber-800">Emergency leave is sent to the Manager. Direct replacement proposals are disabled.</p>}
       </> : <label className="grid gap-1 text-sm">Colleague's Published assignment<NativeSelect aria-label="Swap with assignment" required value={other} onChange={e => setOther(e.target.value)}><option value="">Choose assignment</option>{data.swapCandidates.map(s => <option key={s.assignmentId} value={s.assignmentId}>{s.staffName} · {s.shiftName} · {attendanceTime(s.startsAt)} → {attendanceTime(s.endsAt)}</option>)}</NativeSelect><span className="text-xs text-slate-500">The colleague must agree, then the Manager approves both changes together. Eligibility is checked again on approval.</span></label>}
       <label className="grid gap-1 text-sm">Reason<textarea aria-label="New request reason" required maxLength={1000} rows={2} value={reason} onChange={e => setReason(e.target.value)} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-900" /></label>
       <div className="flex gap-2"><Button size="sm" type="submit" disabled={mutation.isPending || !reason.trim() || (mode === 'swap' && !other)}>Submit request</Button><Button size="sm" variant="outline" onClick={() => setMode(null)}>Cancel form</Button></div>

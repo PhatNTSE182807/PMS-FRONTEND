@@ -10,14 +10,13 @@ import { Input, NativeSelect } from '@/components/ui/form-controls'
 import type { PayrollPerson, PayrollSource } from '@/types/payroll.dto'
 
 function SealSource({ source, people }: { source: PayrollSource; people: PayrollPerson[] }) {
-  const save = usePayrollMutation(); const [reason, setReason] = useState(''); const [manager, setManager] = useState(source.managerUserId ?? ''); const [choices, setChoices] = useState<Record<string, string>>({})
+  const save = usePayrollMutation(); const [reason, setReason] = useState(''); const [manager, setManager] = useState(source.managerUserId ?? '')
   return <div className="space-y-2 rounded border p-3"><h3 className="font-semibold">{source.name} · {source.fromDate} – {source.toDate}</h3>
     {source.sealed ? <p className="break-all text-xs">Sealed · {source.hash}</p> : <>
-      <p className="text-xs text-slate-600">This legacy attendance period predates payroll source snapshots. Sealing verifies approved totals and retains its source times, paid leave, holidays and standby evidence without editing locked attendance.</p>
+      <p className="text-xs text-slate-600">This legacy attendance period predates payroll source snapshots. Sealing verifies approved totals and retains its source times, paid leave and holidays without editing locked attendance.</p>
       {!source.managerUserId && <label className="grid gap-1 text-sm">Historical Manager (explicit Admin confirmation)<NativeSelect aria-label={`Historical Manager for source ${source.periodLotId}`} value={manager} onChange={e => setManager(e.target.value)}><option value="">Select the Manager for this locked period</option>{people.filter(p => p.role === 'Manager').map(p => <option key={p.userId} value={p.userId}>{p.name}</option>)}</NativeSelect></label>}
-      {source.legacyStandbys.map(s => <label key={s.id} className="grid gap-1 text-sm">Legacy cancelled standby #{s.id} · {s.workDate} · {s.fullName}<NativeSelect aria-label={`Classify legacy standby ${s.id}`} value={choices[s.id] ?? ''} onChange={e => setChoices(v => ({ ...v, [s.id]: e.target.value }))}><option value="">Unclassified · do not infer allowance</option><option value="yes">Allowance earned (called or completed standby)</option><option value="no">Cancelled before standby · no allowance</option></NativeSelect></label>)}
       <label className="grid gap-1 text-sm">Seal reason<Input aria-label={`Payroll source ${source.periodLotId} reason`} maxLength={1000} value={reason} onChange={e => setReason(e.target.value)} /></label>
-      <Button size="sm" disabled={save.isPending || !reason.trim() || !manager || source.legacyStandbys.some(s => !choices[s.id])} onClick={() => save.mutate(() => payrollApi.seal(source.periodLotId, { reason, managerUserId: manager, legacyStandbyDecisions: Object.fromEntries(Object.entries(choices).map(([id, value]) => [id, value === 'yes'])) }))}>Seal verified payroll source</Button>
+      <Button size="sm" disabled={save.isPending || !reason.trim() || !manager} onClick={() => save.mutate(() => payrollApi.seal(source.periodLotId, { reason, managerUserId: manager }))}>Seal verified payroll source</Button>
     </>}
     {save.isError && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(save.error)}</p>}
   </div>

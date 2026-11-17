@@ -29,9 +29,9 @@ export default function WorkRequestsBoard({ lotId }: { lotId: string }) {
     {query.isPending && <Spinner />}
     {query.isError && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(query.error)} <button className="underline" onClick={() => query.refetch()}>Retry</button></p>}
     {data && <>
-      <p className="text-xs text-slate-500">Pending leave keeps the assignment active. Accepted offers wait for Manager confirmation and do not count towards staffing. Cut-off: {data.options.cutoffHoursBeforeStart ?? 'unconfigured'} hours before the shift; public offer maximum: {(data.options.publicClaimMinutes ?? 0) / 60} hours.</p>
+      <p className="text-xs text-slate-500">Pending leave keeps the assignment active. Claims wait for Manager confirmation and do not count towards staffing. Vacancies close when the shift starts.</p>
       <RequestRows leaves={leaves} swaps={swaps} actorEmployeeId={!manager ? data.balances[0]?.employeeId : undefined} />
-      <div className="grid gap-3 md:grid-cols-2">{slots.map(s => <button key={s.id} className="space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-3 text-left text-sm text-amber-950" onClick={() => setSlot(s.id)}><p className="font-semibold">{s.workDate} · {s.shiftName}</p><p>{s.status} · {s.stage}</p><p className="text-xs">View offer, claims and {manager ? 'confirm replacement' : 'respond'}</p></button>)}</div>
+      <div className="grid gap-3 md:grid-cols-2">{slots.map(s => <button key={s.id} className="space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-3 text-left text-sm text-amber-950" onClick={() => setSlot(s.id)}><p className="font-semibold">{s.workDate} · {s.shiftName}</p><p>{s.status}</p><p className="text-xs">View vacancy, claims and {manager ? 'confirm replacement' : 'respond'}</p></button>)}</div>
       {!leaves.length && !swaps.length && !slots.length && <p className="text-sm text-slate-500">No {all ? 'recent' : 'pending'} requests or visible open shifts. Open your assignment details to request leave or propose a swap.</p>}
     </>}
     {slot !== null && <OpenShiftDialog id={slot} close={() => setSlot(null)} />}

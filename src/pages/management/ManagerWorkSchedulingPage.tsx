@@ -8,7 +8,6 @@ import WorkScheduleCalendar, { ScheduleToolbar, type CalendarCell } from '@/comp
 import CalendarAssignmentDialog from '@/components/features/manager/CalendarAssignmentDialog'
 import WorkRotationSetup from '@/components/features/manager/WorkRotationSetup'
 import GenerateRotationPanel from '@/components/features/manager/GenerateRotationPanel'
-import StandbyEditor from '@/components/features/manager/StandbyEditor'
 import WorkRequestsBoard from '@/components/features/manager/WorkRequestsBoard'
 import AttendancePeriodReviewPanel from '@/components/features/manager/AttendancePeriodReviewPanel'
 import type { RotationPreview } from '@/types/workScheduling.dto'
@@ -217,7 +216,6 @@ function RosterEditor({ lotId, roster, templates, staff }: { lotId: string; rost
     <ManagerRosterCalendar lotId={lotId} roster={preview?.roster ?? roster} templates={templates} reason={reason} preview={Boolean(preview)} />
     <Button variant="outline" aria-expanded={showDetails} onClick={() => setShowDetails(v => !v)}>{showDetails ? 'Hide dated shift controls' : 'Dated shift controls'}</Button>
     {showDetails && <div className="space-y-4">{roster.shifts.map(shift => <ShiftCard key={shift.id} lotId={lotId} roster={roster} shift={shift} templates={templates} staff={staff} reason={reason} />)}</div>}
-    {showDetails && !preview && <StandbyEditor lotId={lotId} roster={roster} staff={staff} reason={reason} />}
   </div>
 }
 
