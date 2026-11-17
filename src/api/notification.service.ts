@@ -32,6 +32,10 @@ export interface NotificationModel {
     | 'LotAlmostFull'
     | 'LotFull'
     | 'LotSpaceAvailable'
+    /** Admin bell: a customer asked for their account to be deleted (data: userId, email, customerName, reason, openSessions, upcomingBookings, walletBalance). */
+    | 'AccountDeletionRequested'
+    /** Admin bell: a Manager changed a lot's prices (data: lotId, lotName, vehicleType, changedBy, oldPrices, newPrices). */
+    | 'LotPricingChanged'
   title: string
   message: string
   refType: string | null

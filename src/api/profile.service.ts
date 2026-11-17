@@ -10,10 +10,15 @@ import type {
   VehicleDTO,
   VehicleTypeDTO,
 } from '@/types/profile.dto'
+import type { AccountDeletionRequestDTO } from '@/types/identity.dto'
+import { mockResponse } from '@/mocks/mockApi'
 import { http } from './axiosClient'
 
 const base = SERVICE_PATHS.profile
 const mocked = () => isMockService('profile')
+
+/** Demo mode keeps the deletion request in memory. */
+let demoDeletionRequest: AccountDeletionRequestDTO | null = null
 
 /** Self-service profile and vehicles of the signed-in user (Identity service). */
 export const profileService = {
@@ -75,5 +80,30 @@ export const profileService = {
 
   changePassword(command: ChangePasswordCommand): Promise<boolean> {
     return mocked() ? profileMock.changePassword(command) : http.put<boolean>(`${base}/change-password`, command)
+  },
+
+  /** GET /Users/profile/deletion-request: the pending account deletion request, or null. */
+  getDeletionRequest(): Promise<AccountDeletionRequestDTO | null> {
+    if (mocked()) return mockResponse(() => demoDeletionRequest)
+    return http.get<AccountDeletionRequestDTO | null>(`${base}/deletion-request`)
+  },
+
+  /** POST /Users/profile/deletion-request: asks the Admins to delete the account; they lock it once it can be closed. */
+  requestDeletion(reason?: string): Promise<AccountDeletionRequestDTO> {
+    if (mocked())
+      return mockResponse(() => {
+        demoDeletionRequest ??= { id: 1, reason: reason?.trim() || null, status: 'Pending', requestedAt: new Date().toISOString(), closedAt: null }
+        return demoDeletionRequest
+      })
+    return http.post<AccountDeletionRequestDTO>(`${base}/deletion-request`, { reason: reason?.trim() || null })
+  },
+
+  /** DELETE /Users/profile/deletion-request: withdraws the pending request. */
+  async cancelDeletion(): Promise<void> {
+    if (mocked()) {
+      await mockResponse(() => (demoDeletionRequest = null))
+      return
+    }
+    await http.delete(`${base}/deletion-request`)
   },
 }

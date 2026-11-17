@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
+import { AccountDeletionCard } from '@/components/customer/AccountDeletionCard'
 import {
   STRENGTH_LABEL,
   formatMonthYear,
@@ -569,6 +570,8 @@ export default function CustomerProfilePage() {
               <span className="cx-chip cx-chip--teal">Current device</span>
             </div>
           </section>
+
+          <AccountDeletionCard />
         </div>
       </div>
     </>

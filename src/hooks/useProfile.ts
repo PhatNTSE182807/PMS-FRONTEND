@@ -91,3 +91,18 @@ export const useSetDefaultVehicle = () => useVehicleMutation(profileService.setD
 export function useChangePassword() {
   return useMutation({ mutationFn: profileService.changePassword })
 }
+
+/** The signed-in customer's pending account deletion request (null when there is none). */
+export function useDeletionRequest() {
+  return useQuery({ queryKey: queryKeys.profile.deletionRequest(), queryFn: profileService.getDeletionRequest })
+}
+
+/** Asks the Admins to delete the account, or withdraws the request. */
+export function useDeletionRequestActions() {
+  const queryClient = useQueryClient()
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.profile.deletionRequest() })
+  return {
+    request: useMutation({ mutationFn: (reason?: string) => profileService.requestDeletion(reason), onSuccess: refresh }),
+    cancel: useMutation({ mutationFn: () => profileService.cancelDeletion(), onSuccess: refresh }),
+  }
+}

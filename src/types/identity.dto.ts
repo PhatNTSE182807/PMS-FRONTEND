@@ -123,9 +123,19 @@ export interface UserDTO {
   createdAt: string
 }
 
+/** PMS.Application.Models.User.AccountDeletionRequestModel: a customer asked for their account to be deleted. */
+export interface AccountDeletionRequestDTO {
+  id: number
+  reason: string | null
+  /** Pending, Completed (an Admin locked the account) or Cancelled (the customer withdrew it). */
+  status: 'Pending' | 'Completed' | 'Cancelled'
+  requestedAt: string
+  closedAt: string | null
+}
+
 /**
- * Customer (driver) account as returned by GET /Users
- * (PMS.Application.Models.User.UserResponseModel).
+ * Customer (driver) account as returned by GET /admin/customers
+ * (PMS.Application.Models.User.CustomerAccountModel).
  */
 export interface CustomerAccountDTO {
   id: string
@@ -135,6 +145,8 @@ export interface CustomerAccountDTO {
   phoneNumber: string
   role: string
   isActive?: boolean
+  /** The pending deletion request, if the customer asked for their account to be deleted. */
+  deletionRequest?: AccountDeletionRequestDTO | null
 }
 
 /** PMS.Application.Models.User.UserResponseModel, as returned by GET /admin/users. */

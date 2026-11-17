@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDeleteNotification, useMarkAllRead, useMarkRead, useNotifications, useTimeAgo } from '@/hooks/useNotifications'
@@ -17,6 +18,16 @@ const TONE: Record<string, string> = {
   LotAlmostFull: 'bg-amber-500',
   LotFull: 'bg-rose-500',
   LotSpaceAvailable: 'bg-emerald-500',
+  AccountDeletionRequested: 'bg-rose-500',
+  LotPricingChanged: 'bg-indigo-500',
+}
+
+/** Admin notices open the page where the Admin acts on them. */
+const linkOf = (n: NotificationModel): string | null => {
+  if (n.type === 'AccountDeletionRequested')
+    return `/admin/customers${n.data?.email ? `?q=${encodeURIComponent(n.data.email)}` : ''}`
+  if (n.type === 'LotPricingChanged') return '/admin/pricing-history'
+  return null
 }
 
 /** An older drawer close that was counted off the expected cash stands out (new closes are not counted, so carry no difference). */
@@ -29,6 +40,7 @@ const toneOf = (n: NotificationModel) =>
  * vehicles that stayed past their time.
  * Manager: cash drawers their Staff closed, and how each taken booked bay was handled (moved, or compensated).
  * Both: a zone of their lot that is almost full, full, or has free bays again.
+ * Admin: customers who asked for their account to be deleted, and every price change a Manager made.
  */
 export function ConsoleNotificationBell() {
   const [open, setOpen] = useState(false)
@@ -38,6 +50,16 @@ export function ConsoleNotificationBell() {
   const markAllRead = useMarkAllRead()
   const remove = useDeleteNotification()
   const timeAgo = useTimeAgo()
+  const navigate = useNavigate()
+
+  const openItem = (n: NotificationModel) => {
+    if (!n.isRead) markRead.mutate(n.id)
+    const link = linkOf(n)
+    if (link) {
+      setOpen(false)
+      navigate(link)
+    }
+  }
   const items = data?.items ?? []
   const unread = data?.unreadCount ?? 0
 
@@ -100,7 +122,7 @@ export function ConsoleNotificationBell() {
             {items.map((n) => (
               <li key={n.id} className={cn('group flex gap-3 px-4 py-3', !n.isRead && 'bg-slate-50')}>
                 <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', toneOf(n), n.isRead && 'opacity-40')} aria-hidden />
-                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => !n.isRead && markRead.mutate(n.id)}>
+                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openItem(n)}>
                   <p className={cn('text-sm text-slate-950', !n.isRead && 'font-semibold')}>{n.title}</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{n.message}</p>
                   <p className="mt-1 text-[11px] text-slate-500">{timeAgo(n.createdAt)}</p>
