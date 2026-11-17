@@ -19,7 +19,8 @@ import {
   Truck,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
-import { PricingRuleEditor } from '@/components/features/manager/PricingRuleEditor'
+import { PricingDraftList } from '@/components/features/manager/PricingDraftList'
+import { PricingRuleEditor, type PricingEditorValues } from '@/components/features/manager/PricingRuleEditor'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatMinutes, vnd } from '@/components/features/manager/managerFormat'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -30,15 +31,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useVehicleTypes } from '@/hooks/useProfile'
 import {
+  useApplyPricingDraft,
   useArchivePricingRule,
   useCreatePricingRule,
+  useDiscardPricingDraft,
+  usePricingDrafts,
   usePricingRules,
+  useSavePricingDraft,
   useSetPricingRuleStatus,
   useUpdatePricingRule,
 } from '@/hooks/usePricing'
 import { cn } from '@/lib/utils'
 import type { ManagedLot } from '@/types/lot-management.dto'
-import type { PricingRuleDTO, PricingRuleInput } from '@/types/pricing.dto'
+import type { PricingRuleDraftDTO, PricingRuleDTO, PricingRuleInput } from '@/types/pricing.dto'
 import type { VehicleTypeDTO } from '@/types/profile.dto'
 
 /** Minutes a pre-paid vehicle has to leave (BR-10). A system setting, not part of a rule. */
@@ -90,38 +95,46 @@ const startingPrice = (prices: PricingRuleDTO) =>
     ? prices.entryFee
     : (prices.firstBlockPrice ?? (prices.chargeModel === 'DayNight' ? prices.dayPrice : prices.blockPrice) ?? 0)
 
-/** One rule as the gates apply it, with its edit / activate / archive actions. */
-function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
-  const [editing, setEditing] = useState(false)
+/** One rule as the gates apply it, with its edit / activate / archive actions and its saved price drafts. */
+function RuleCard({ lotId, rule, drafts }: { lotId: string; rule: PricingRuleDTO; drafts: PricingRuleDraftDTO[] }) {
+  // "live": editing the live prices; a draft: editing that saved draft
+  const [editing, setEditing] = useState<'live' | PricingRuleDraftDTO | null>(null)
   const [archiving, setArchiving] = useState(false)
   const update = useUpdatePricingRule(lotId)
   const setStatus = useSetPricingRuleStatus(lotId)
   const archive = useArchivePricingRule(lotId)
+  const saveDraft = useSavePricingDraft(lotId)
+  const applyDraft = useApplyPricingDraft(lotId)
+  const discardDraft = useDiscardPricingDraft(lotId)
+  const editedDraft = editing && editing !== 'live' ? editing : null
   const Icon = typeIcon(rule.vehicleTypeCode)
   const block = rule.blockMinutes ?? 60
   const dayNight = rule.chargeModel === 'DayNight'
   const perEntry = rule.chargeModel === 'PerEntry'
   const active = rule.status === 'Active'
 
-  const save =(input: Omit<PricingRuleInput, 'vehicleTypeId'>) =>
-    update.mutate(
-      {
-        id: rule.id,
-        input: {
-          ...input,
-          // Fields this page does not edit go back as they are: the API replaces the whole rule
-          graceMinutes: rule.graceMinutes,
-          overnightSurcharge: rule.overnightSurcharge,
-          overstayAfterHours: rule.overstayAfterHours,
-          overstaySurchargePerDay: rule.overstaySurchargePerDay,
-          noShowFee: rule.noShowFee,
-          vehicleTypeId: rule.vehicleTypeId,
-          status: rule.status,
-          effectiveFrom: rule.effectiveFrom,
-        },
-      },
-      { onSuccess: () => setEditing(false) },
-    )
+  /** The full rule values for the API: fields this page does not edit go back as they are (the API replaces the whole rule). */
+  const full = (input: PricingEditorValues): PricingRuleInput => ({
+    ...input,
+    graceMinutes: rule.graceMinutes,
+    overnightSurcharge: rule.overnightSurcharge,
+    overstayAfterHours: rule.overstayAfterHours,
+    overstaySurchargePerDay: rule.overstaySurchargePerDay,
+    noShowFee: rule.noShowFee,
+    vehicleTypeId: rule.vehicleTypeId,
+    status: rule.status,
+    effectiveFrom: rule.effectiveFrom,
+  })
+  const close = () => setEditing(null)
+
+  // Applying from the editor: the live prices, or the edited draft (saved with its latest values first)
+  const save = (input: PricingEditorValues, note: string) =>
+    editedDraft
+      ? applyDraft.mutate({ ruleId: rule.id, draftId: editedDraft.id, input: { values: full(input), note } }, { onSuccess: close })
+      : update.mutate({ id: rule.id, input: full(input) }, { onSuccess: close })
+
+  const keepDraft = (input: PricingEditorValues, note: string) =>
+    saveDraft.mutate({ ruleId: rule.id, draftId: editedDraft?.id, input: { values: full(input), note } }, { onSuccess: close })
 
   return (
     <Card className={cn('border-t-2 p-5', rule.vehicleTypeCode === 'MOTORBIKE' ? 'border-amber-500' : 'border-indigo-700')}>
@@ -206,7 +219,7 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+        <Button variant="outline" size="sm" onClick={() => setEditing('live')}>
           <Pencil /> Edit prices
         </Button>
         <Button variant="outline" size="sm" disabled={setStatus.isPending} onClick={() => setStatus.mutate({ id: rule.id, status: active ? 'Inactive' : 'Active' })}>
@@ -219,7 +232,31 @@ function RuleCard({ lotId, rule }: { lotId: string; rule: PricingRuleDTO }) {
         )}
       </div>
 
-      {editing && <PricingRuleEditor rule={rule} open={editing} saving={update.isPending} onOpenChange={setEditing} onSave={save} />}
+      <PricingDraftList
+        rule={rule}
+        drafts={drafts}
+        applying={applyDraft.isPending}
+        discarding={discardDraft.isPending}
+        onEdit={setEditing}
+        onApply={(draft, done) => applyDraft.mutate({ ruleId: rule.id, draftId: draft.id }, { onSuccess: done })}
+        onDiscard={(draft, done) => discardDraft.mutate({ ruleId: rule.id, draftId: draft.id }, { onSuccess: done })}
+      />
+
+      {editing && (
+        <PricingRuleEditor
+          // A new form for each draft, so its values are read again
+          key={editedDraft ? `draft-${editedDraft.id}` : 'live'}
+          rule={rule}
+          open
+          saving={update.isPending || applyDraft.isPending}
+          savingDraft={saveDraft.isPending}
+          draftValues={editedDraft?.values}
+          draftNote={editedDraft?.note}
+          onOpenChange={(open) => !open && close()}
+          onSave={save}
+          onSaveDraft={keepDraft}
+        />
+      )}
       <ConfirmDialog
         open={archiving}
         onOpenChange={setArchiving}
@@ -262,6 +299,7 @@ function starterRule(type: VehicleTypeDTO): PricingRuleInput {
 
 function Pricing({ lot }: { lot: ManagedLot }) {
   const rules = usePricingRules(lot.id)
+  const drafts = usePricingDrafts(lot.id)
   const { data: types = [] } = useVehicleTypes()
   const create = useCreatePricingRule(lot.id)
   const [typeFilter, setTypeFilter] = useState<'ALL' | number>('ALL')
@@ -281,7 +319,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
       <PageHeader
         eyebrow={<span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-700">Applied at every gate checkout</span>}
         title="Pricing Rules"
-        description={`${lot.name} • 4-seat cars, 7-seat cars and motorbikes. Saved prices apply at once to vehicles entering from now on.`}
+        description={`${lot.name} • 4-seat cars, 7-seat cars and motorbikes. Saved prices apply at once to vehicles entering from now on; save a change as a draft to apply it later.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -329,7 +367,7 @@ function Pricing({ lot }: { lot: ManagedLot }) {
             </Card>
           )}
           {shown.map((r) => (
-            <RuleCard key={r.id} lotId={lot.id} rule={r} />
+            <RuleCard key={r.id} lotId={lot.id} rule={r} drafts={(drafts.data ?? []).filter((d) => d.pricingRuleId === r.id)} />
           ))}
 
           {!rules.isPending && missing.length > 0 && (

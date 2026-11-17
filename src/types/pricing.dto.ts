@@ -116,3 +116,27 @@ export interface PublicLotPriceDTO {
   maxDailyFee: number | null
 }
 
+
+/** PricingRuleDraftModel: a price change saved for later. The gates keep charging the live prices until it is applied. */
+export interface PricingRuleDraftDTO {
+  id: number
+  pricingRuleId: number
+  /** The proposed values, in the same shape as a rule update. */
+  values: PricingRuleInput
+  note: string | null
+  /** The rule version the draft was based on. */
+  baseVersionNo: number
+  /** The rule's live version now: newer than baseVersionNo means the prices changed after the draft was saved. */
+  currentVersionNo: number
+  status: 'Open' | 'Applied' | 'Discarded'
+  createdBy: string | null
+  createdByName: string | null
+  createdAt: string
+  updatedAt: string | null
+}
+
+/** Body of POST / PUT .../pricing-rules/{id}/drafts. */
+export interface SavePricingRuleDraftInput {
+  values: PricingRuleInput
+  note?: string | null
+}

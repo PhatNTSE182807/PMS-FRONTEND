@@ -1,8 +1,10 @@
 import type {
   PublicLotPriceDTO,
+  PricingRuleDraftDTO,
   PricingRuleDTO,
   PricingRuleInput,
   PricingRuleStatus,
+  SavePricingRuleDraftInput,
 } from '@/types/pricing.dto'
 import { mockFail, mockResponse } from './mockApi'
 
@@ -20,6 +22,21 @@ const TYPES = [
 
 const stores = new Map<string, PricingRuleDTO[]>()
 let nextId = 100
+
+/** Demo price drafts per lot; like the API, applied or discarded drafts are kept but no longer listed. */
+const draftStores = new Map<string, PricingRuleDraftDTO[]>()
+let nextDraftId = 1
+const drafts = (lotId: string) => {
+  if (!draftStores.has(lotId)) draftStores.set(lotId, [])
+  return draftStores.get(lotId)!
+}
+
+function openDraft(lotId: string, ruleId: number, draftId: number) {
+  const draft = drafts(lotId).find((d) => d.id === draftId && d.pricingRuleId === ruleId)
+  if (!draft) mockFail(404, 'Price draft not found.')
+  if (draft.status !== 'Open') mockFail(400, draft.status === 'Applied' ? 'This draft has already been applied.' : 'This draft has been discarded.')
+  return draft
+}
 
 function seed(lotId: string): PricingRuleDTO[] {
   const now = new Date().toISOString()
@@ -120,6 +137,61 @@ export const pricingMock = {
     mockResponse(() => {
       // Like the API: archived, never deleted (pricing history is kept)
       find(lotId, id).status = 'Archived'
+      return true
+    }),
+
+  drafts: (lotId: string) =>
+    mockResponse(() =>
+      drafts(lotId)
+        .filter((d) => d.status === 'Open' && store(lotId).some((r) => r.id === d.pricingRuleId && r.status !== 'Archived'))
+        .map((d) => ({ ...d, currentVersionNo: find(lotId, d.pricingRuleId).versionNo })),
+    ),
+
+  createDraft: (lotId: string, ruleId: number, input: SavePricingRuleDraftInput) =>
+    mockResponse(() => {
+      const rule = find(lotId, ruleId)
+      const draft: PricingRuleDraftDTO = {
+        id: nextDraftId++,
+        pricingRuleId: ruleId,
+        values: input.values,
+        note: input.note?.trim() || null,
+        baseVersionNo: rule.versionNo,
+        currentVersionNo: rule.versionNo,
+        status: 'Open',
+        createdBy: null,
+        createdByName: 'Demo Manager',
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+      }
+      drafts(lotId).unshift(draft)
+      return draft
+    }),
+
+  updateDraft: (lotId: string, ruleId: number, draftId: number, input: SavePricingRuleDraftInput) =>
+    mockResponse(() => {
+      const draft = openDraft(lotId, ruleId, draftId)
+      draft.values = input.values
+      draft.note = input.note?.trim() || null
+      draft.baseVersionNo = find(lotId, ruleId).versionNo
+      draft.updatedAt = new Date().toISOString()
+      return { ...draft, currentVersionNo: draft.baseVersionNo }
+    }),
+
+  /** Like the API: only the prices and name come from the draft, the rule keeps its status. */
+  applyDraft: (lotId: string, ruleId: number, draftId: number) =>
+    mockResponse(() => {
+      const draft = openDraft(lotId, ruleId, draftId)
+      const rule = find(lotId, ruleId)
+      apply(rule, { ...draft.values, vehicleTypeId: rule.vehicleTypeId, status: rule.status })
+      rule.versionNo++
+      rule.updatedAt = new Date().toISOString()
+      draft.status = 'Applied'
+      return rule
+    }),
+
+  discardDraft: (lotId: string, ruleId: number, draftId: number) =>
+    mockResponse(() => {
+      openDraft(lotId, ruleId, draftId).status = 'Discarded'
       return true
     }),
 
