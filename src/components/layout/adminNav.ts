@@ -1,4 +1,4 @@
-import { BadgeDollarSign, CalendarCheck, ChartColumnBig, ClipboardCheck, CreditCard, FlaskConical, Gauge, LayoutDashboard, ScanText, SquareParking, TriangleAlert, UserCog, Users, Vault, type LucideIcon } from 'lucide-react'
+import { BadgeDollarSign, CalendarCheck, ChartColumnBig, ClipboardCheck, CreditCard, FlaskConical, Gauge, History, LayoutDashboard, ScanText, SquareParking, TriangleAlert, UserCog, Users, Vault, type LucideIcon } from 'lucide-react'
 
 export interface AdminNavItem {
   to: string
@@ -35,6 +35,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { to: '/admin/staff', label: 'Facility Managers', icon: UserCog },
   { to: '/admin/payroll', label: 'Payroll', icon: BadgeDollarSign },
   { to: '/admin/revenue', label: 'Revenue Report', icon: ChartColumnBig },
+  { to: '/admin/pricing-history', label: 'Pricing History', icon: History },
   { to: '/admin/capacity', label: 'Lot Performance', icon: Gauge },
   { to: '/admin/simulation', label: 'Parking Simulation', icon: FlaskConical },
 ]

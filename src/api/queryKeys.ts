@@ -61,6 +61,7 @@ export const queryKeys = {
     all: ['pricing'] as const,
     rules: (lotId: string) => ['pricing', 'rules', lotId] as const,
     drafts: (lotId: string) => ['pricing', 'drafts', lotId] as const,
+    history: (lotId: string, ruleId: number | null, take: number) => ['pricing', 'history', lotId, ruleId, take] as const,
     publicPrices: (lotId: string) => ['pricing', 'public', lotId] as const,
   },
   /** Admin dashboard: network overview and per-hub performance. */

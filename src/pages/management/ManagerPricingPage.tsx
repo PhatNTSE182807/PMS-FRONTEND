@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { PricingDraftList } from '@/components/features/manager/PricingDraftList'
+import { PricingHistoryPanel } from '@/components/features/manager/PricingHistoryPanel'
 import { PricingRuleEditor, type PricingEditorValues } from '@/components/features/manager/PricingRuleEditor'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatMinutes, vnd } from '@/components/features/manager/managerFormat'
@@ -407,6 +408,8 @@ function Pricing({ lot }: { lot: ManagedLot }) {
           </Card>
         </div>
       </div>
+
+      <PricingHistoryPanel lotId={lot.id} rules={list.map((r) => ({ id: r.id, label: `${r.vehicleTypeName} • ${r.name}` }))} />
     </div>
   )
 }

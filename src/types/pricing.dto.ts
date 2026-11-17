@@ -140,3 +140,42 @@ export interface SavePricingRuleDraftInput {
   values: PricingRuleInput
   note?: string | null
 }
+
+/** PricingRuleHistoryModel change types: rule changes, and price drafts saved, edited or discarded. */
+export type PricingHistoryChangeType =
+  | 'Create'
+  | 'Update'
+  | 'StatusChange'
+  | 'Delete'
+  | 'DraftSaved'
+  | 'DraftUpdated'
+  | 'DraftDiscarded'
+
+/** One changed field with its raw old and new values (numbers, "HH:mm:ss" times, text or null). */
+export interface PricingFieldChangeDTO {
+  /** camelCase rule field, e.g. "blockPrice", "maxDailyFee", "status". */
+  field: string
+  oldValue: string | number | null
+  newValue: string | number | null
+}
+
+/** GET /manager/lots/{lotId}/pricing-rules/history: one entry, newest first. The lot's Manager and every Admin can read it. */
+export interface PricingHistoryEntryDTO {
+  id: number
+  pricingRuleId: number
+  ruleName: string | null
+  vehicleTypeCode: string | null
+  vehicleTypeName: string | null
+  changeType: PricingHistoryChangeType | string
+  versionNo: number | null
+  /** Set on draft rows and on an Update that applied a draft. */
+  draftId: number | null
+  changedBy: string | null
+  changedByName: string | null
+  /** "Admin" or "Manager" when known. */
+  changedByRole: string | null
+  changedAt: string
+  reason: string | null
+  /** For a created rule its starting values (oldValue null); for a draft what it proposed. */
+  changes: PricingFieldChangeDTO[]
+}
