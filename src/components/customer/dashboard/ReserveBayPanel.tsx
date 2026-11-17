@@ -13,6 +13,7 @@ import { formatNumber } from '@/lib/format'
 import { USER_TOAST, toastBookingError } from '@/lib/userToasts'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
 import { holdDuration } from '../customerFormat'
+import { VnpayButton } from '@/components/payment/VnpayButton'
 
 /** Deposit choices: the hold after arrival is longer when a deposit is paid. */
 const DEPOSIT_OPTIONS = [
@@ -128,9 +129,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
             <CreditCard aria-hidden /> Pay with XXIV Wallet
           </button>
-          <button type="button" className="cx-btn cx-btn--vnpay" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')}>
-            <Wallet aria-hidden /> VNPay
-          </button>
+          <VnpayButton className="cx-btn" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')} />
           <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
             <Wallet aria-hidden /> MoMo
           </button>

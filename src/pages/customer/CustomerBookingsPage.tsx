@@ -27,6 +27,7 @@ import { useCancelReservation, useMyReservations, usePayDeposit, useReservationQ
 import { checkBookingTimes, describeWindow, toLocalInput, type BookingTimes } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
 import type { PaymentProvider, ReservationDTO, ReservationStatus } from '@/types/operations.dto'
+import { VnpayButton } from '@/components/payment/VnpayButton'
 
 type Filter = 'ALL' | 'CONFIRMED' | 'PENDING_DEPOSIT' | 'COMPLETED' | 'CANCELLED'
 
@@ -276,9 +277,7 @@ function PendingDeposit({ booking, now }: { booking: ReservationDTO; now: number
         <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
           <CreditCard aria-hidden /> Pay with XXIV Wallet
         </button>
-        <button type="button" className="cx-btn cx-btn--vnpay" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')}>
-          <Wallet aria-hidden /> VNPay
-        </button>
+        <VnpayButton className="cx-btn" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')} />
         <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
           <Wallet aria-hidden /> MoMo
         </button>

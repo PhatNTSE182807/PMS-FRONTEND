@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner'
 import { useWallet, formatVndBalance, formatVndQuick, type WalletTransaction, type UseWalletReturn } from '@/hooks/useWallet'
 import '@/styles/wallet.css'
+import { VnpayMark, VnpayWordmark } from '@/components/payment/VnpayButton'
 
 interface UserWalletModalProps {
   isOpen: boolean
@@ -347,16 +348,12 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       <div className="cx-wallet-radio">
                         {paymentMethod === 'vnpay' && <div className="cx-wallet-radio__dot" />}
                       </div>
-                      <div className="cx-wallet-method__logo" style={{ background: '#005baa' }}>
-                        <svg viewBox="0 0 100 100" width="100%" height="100%" fill="none">
-                          <rect width="100" height="100" fill="#005baa" />
-                          <text x="50" y="60" fill="#ffffff" fontSize="32" fontWeight="900" textAnchor="middle" fontFamily="sans-serif">
-                            VN
-                          </text>
-                          <circle cx="75" cy="35" r="12" fill="#ed1c24" />
-                        </svg>
+                      <div className="cx-wallet-method__logo cx-wallet-method__logo--vnpay">
+                        <VnpayMark />
                       </div>
-                      <span className="cx-wallet-method__name">VNPay Gateway</span>
+                      <span className="cx-wallet-method__name">
+                        <VnpayWordmark /> Gateway
+                      </span>
                     </div>
 
                     {/* MoMo */}
