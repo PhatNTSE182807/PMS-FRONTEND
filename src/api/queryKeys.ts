@@ -60,6 +60,7 @@ export const queryKeys = {
   pricing: {
     all: ['pricing'] as const,
     rules: (lotId: string) => ['pricing', 'rules', lotId] as const,
+    drafts: (lotId: string) => ['pricing', 'drafts', lotId] as const,
     publicPrices: (lotId: string) => ['pricing', 'public', lotId] as const,
   },
   /** Admin dashboard: network overview and per-hub performance. */

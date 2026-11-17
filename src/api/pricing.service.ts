@@ -2,9 +2,11 @@ import { isMockService } from '@/config/env'
 import { pricingMock } from '@/mocks/pricing.mock'
 import type {
   PublicLotPriceDTO,
+  PricingRuleDraftDTO,
   PricingRuleDTO,
   PricingRuleInput,
   PricingRuleStatus,
+  SavePricingRuleDraftInput,
 } from '@/types/pricing.dto'
 import { http } from './axiosClient'
 
@@ -50,6 +52,32 @@ export const pricingService = {
   /** Archives the rule (pricing history is never deleted). */
   remove(lotId: string, id: number): Promise<unknown> {
     return mocked() ? pricingMock.remove(lotId, id) : http.delete(`${base(lotId)}/${id}`)
+  },
+
+  /** The lot's open price drafts (saved for later, not charged by the gates). */
+  drafts(lotId: string): Promise<PricingRuleDraftDTO[]> {
+    return mocked() ? pricingMock.drafts(lotId) : http.get<PricingRuleDraftDTO[]>(`${base(lotId)}/drafts`)
+  },
+
+  createDraft(lotId: string, ruleId: number, input: SavePricingRuleDraftInput): Promise<PricingRuleDraftDTO> {
+    if (mocked()) return pricingMock.createDraft(lotId, ruleId, input)
+    return http.post<PricingRuleDraftDTO>(`${base(lotId)}/${ruleId}/drafts`, { ...input, values: body(input.values) })
+  },
+
+  updateDraft(lotId: string, ruleId: number, draftId: number, input: SavePricingRuleDraftInput): Promise<PricingRuleDraftDTO> {
+    if (mocked()) return pricingMock.updateDraft(lotId, ruleId, draftId, input)
+    return http.put<PricingRuleDraftDTO>(`${base(lotId)}/${ruleId}/drafts/${draftId}`, { ...input, values: body(input.values) })
+  },
+
+  /** Applies the draft: its prices go live at once, like a save, and the draft closes. Returns the updated rule. */
+  applyDraft(lotId: string, ruleId: number, draftId: number): Promise<PricingRuleDTO> {
+    if (mocked()) return pricingMock.applyDraft(lotId, ruleId, draftId)
+    return http.post<PricingRuleDTO>(`${base(lotId)}/${ruleId}/drafts/${draftId}/apply`)
+  },
+
+  /** Discards the draft (the API keeps it as a record). */
+  discardDraft(lotId: string, ruleId: number, draftId: number): Promise<unknown> {
+    return mocked() ? pricingMock.discardDraft(lotId, ruleId, draftId) : http.delete(`${base(lotId)}/${ruleId}/drafts/${draftId}`)
   },
 
   /** Public prices of a lot for customers (anonymous, rate limited): what the gates charge now per vehicle type. */
