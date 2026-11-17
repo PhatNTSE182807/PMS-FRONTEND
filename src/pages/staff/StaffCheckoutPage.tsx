@@ -438,7 +438,7 @@ export default function StaffCheckoutPage() {
                             <CreditCard /> Charge XXIV Wallet
                           </Button>
                         )}
-                        <VnpayButton suffix="QR" disabled={payOnline.isPending} onClick={() => showQr('VNPay')} />
+                        <VnpayButton aria-label="Show the VNPAY QR code" disabled={payOnline.isPending} onClick={() => showQr('VNPay')} />
                         <Button className="bg-[#a50064] text-white hover:bg-[#c2187a]" disabled={payOnline.isPending} onClick={() => showQr('MoMo')}>
                           <QrIcon /> MoMo QR
                         </Button>
