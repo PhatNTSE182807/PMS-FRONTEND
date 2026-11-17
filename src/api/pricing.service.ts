@@ -2,6 +2,7 @@ import { isMockService } from '@/config/env'
 import { pricingMock } from '@/mocks/pricing.mock'
 import type {
   PublicLotPriceDTO,
+  PricingHistoryEntryDTO,
   PricingRuleDraftDTO,
   PricingRuleDTO,
   PricingRuleInput,
@@ -52,6 +53,12 @@ export const pricingService = {
   /** Archives the rule (pricing history is never deleted). */
   remove(lotId: string, id: number): Promise<unknown> {
     return mocked() ? pricingMock.remove(lotId, id) : http.delete(`${base(lotId)}/${id}`)
+  },
+
+  /** The lot's pricing history, newest first (the lot's Manager or any Admin); optionally one rule only. */
+  history(lotId: string, ruleId: number | null, take: number): Promise<PricingHistoryEntryDTO[]> {
+    if (mocked()) return pricingMock.history(lotId, ruleId, take)
+    return http.get<PricingHistoryEntryDTO[]>(`${base(lotId)}/history`, { params: { ruleId: ruleId ?? undefined, take } })
   },
 
   /** The lot's open price drafts (saved for later, not charged by the gates). */

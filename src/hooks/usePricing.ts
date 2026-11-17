@@ -39,6 +39,16 @@ export const useSetPricingRuleStatus = (lotId: string) =>
 
 export const useArchivePricingRule = (lotId: string) => usePricingMutation((id: number) => pricingService.remove(lotId, id))
 
+/** The lot's pricing history (newest first), optionally for one rule; refreshed by every pricing change. */
+export function usePricingHistory(lotId: string | undefined, ruleId: number | null, take: number) {
+  return useQuery({
+    queryKey: queryKeys.pricing.history(lotId ?? '', ruleId, take),
+    queryFn: () => pricingService.history(lotId!, ruleId, take),
+    enabled: Boolean(lotId),
+    placeholderData: (previous) => previous,
+  })
+}
+
 /** The lot's open price drafts. */
 export function usePricingDrafts(lotId: string) {
   return useQuery({
@@ -55,6 +65,7 @@ function useDraftMutation<TArgs>(lotId: string, fn: (args: TArgs) => Promise<unk
     onSuccess: () => {
       toast.success(message)
       void queryClient.invalidateQueries({ queryKey: queryKeys.pricing.drafts(lotId) })
+      void queryClient.invalidateQueries({ queryKey: ['pricing', 'history', lotId] })
     },
     onError: (error) => toastAdminError(error, { fallback: 'The draft could not be saved.' }),
   })

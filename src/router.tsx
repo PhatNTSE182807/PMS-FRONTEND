@@ -26,6 +26,7 @@ const CustomerAccountsPage = lazy(() => import('@/pages/admin/CustomerAccountsPa
 const RevenueReportPage = lazy(() => import('@/pages/admin/RevenueReportPage'))
 const ParkingCapacityPage = lazy(() => import('@/pages/admin/ParkingCapacityPage'))
 const ParkingSimulationPage = lazy(() => import('@/pages/admin/ParkingSimulationPage'))
+const PricingHistoryPage = lazy(() => import('@/pages/admin/PricingHistoryPage'))
 const AnprDatasetPage = lazy(() => import('@/pages/admin/AnprDatasetPage'))
 const ManagerConsolePage = lazy(() => import('@/pages/management/ManagerConsolePage'))
 const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerReservationsPage'))
@@ -98,6 +99,7 @@ export const router = createBrowserRouter([
       { path: 'revenue', element: <RevenueReportPage /> },
       { path: 'capacity', element: <ParkingCapacityPage /> },
       { path: 'simulation', element: <ParkingSimulationPage /> },
+      { path: 'pricing-history', element: <PricingHistoryPage /> },
       // Development only: training images for the plate reader
       ...(import.meta.env.DEV ? [{ path: 'anpr-dataset', element: <AnprDatasetPage /> }] : []),
     ],

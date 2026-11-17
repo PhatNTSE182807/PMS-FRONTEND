@@ -1,5 +1,6 @@
 import type {
   PublicLotPriceDTO,
+  PricingHistoryEntryDTO,
   PricingRuleDraftDTO,
   PricingRuleDTO,
   PricingRuleInput,
@@ -29,6 +30,41 @@ let nextDraftId = 1
 const drafts = (lotId: string) => {
   if (!draftStores.has(lotId)) draftStores.set(lotId, [])
   return draftStores.get(lotId)!
+}
+
+/** Demo pricing history per lot, newest first, written like the API does on every change. */
+const historyStores = new Map<string, PricingHistoryEntryDTO[]>()
+let nextHistoryId = 1
+const HISTORY_FIELDS = [
+  'name', 'chargeModel', 'entryFee', 'firstBlockMinutes', 'firstBlockPrice', 'blockMinutes', 'blockPrice', 'dayStartTime',
+  'nightStartTime', 'dayPrice', 'nightPrice', 'maxDailyFee', 'lostTicketFee', 'bookedBayCompensation', 'penaltyFee', 'status',
+] as const
+
+function log(lotId: string, rule: PricingRuleDTO, changeType: string, before: object | null, after: object | null, reason: string, draftId: number | null = null) {
+  const b = (before ?? {}) as Record<string, string | number | null>
+  const a = (after ?? {}) as Record<string, string | number | null>
+  const changes = HISTORY_FIELDS.flatMap((field) => {
+    if (changeType === 'Create') return a[field] != null && field !== 'status' ? [{ field, oldValue: null, newValue: a[field] }] : []
+    if (!(field in b) || !(field in a) || b[field] === a[field]) return []
+    return [{ field, oldValue: b[field] ?? null, newValue: a[field] ?? null }]
+  })
+  if (!historyStores.has(lotId)) historyStores.set(lotId, [])
+  historyStores.get(lotId)!.unshift({
+    id: nextHistoryId++,
+    pricingRuleId: rule.id,
+    ruleName: (a.name as string) ?? rule.name,
+    vehicleTypeCode: rule.vehicleTypeCode,
+    vehicleTypeName: rule.vehicleTypeName,
+    changeType,
+    versionNo: changeType === 'Update' || changeType === 'Create' ? rule.versionNo : null,
+    draftId,
+    changedBy: null,
+    changedByName: 'Demo Manager',
+    changedByRole: 'Manager',
+    changedAt: new Date().toISOString(),
+    reason,
+    changes,
+  })
 }
 
 function openDraft(lotId: string, ruleId: number, draftId: number) {
@@ -113,21 +149,25 @@ export const pricingMock = {
       const rule = { ...seed(lotId)[0], id: nextId++, code, status: input.status ?? 'Draft', versionNo: 1, createdAt: new Date().toISOString() } as PricingRuleDTO
       apply(rule, input)
       store(lotId).push(rule)
+      log(lotId, rule, 'Create', null, { ...rule }, 'Created initial pricing rule')
       return rule
     }),
 
   update: (lotId: string, id: number, input: PricingRuleInput) =>
     mockResponse(() => {
       const rule = find(lotId, id)
+      const before = { ...rule }
       apply(rule, input)
       rule.versionNo++
       rule.updatedAt = new Date().toISOString()
+      log(lotId, rule, 'Update', before, { ...rule }, 'Updated pricing rule parameters')
       return rule
     }),
 
   setStatus: (lotId: string, id: number, status: PricingRuleStatus) =>
     mockResponse(() => {
       const rule = find(lotId, id)
+      log(lotId, rule, 'StatusChange', { status: rule.status }, { status }, `Status changed from ${rule.status} to ${status}`)
       rule.status = status
       rule.updatedAt = new Date().toISOString()
       return rule
@@ -136,9 +176,14 @@ export const pricingMock = {
   remove: (lotId: string, id: number) =>
     mockResponse(() => {
       // Like the API: archived, never deleted (pricing history is kept)
-      find(lotId, id).status = 'Archived'
+      const rule = find(lotId, id)
+      log(lotId, rule, 'Delete', { status: rule.status }, { status: 'Archived' }, 'Pricing rule archived')
+      rule.status = 'Archived'
       return true
     }),
+
+  history: (lotId: string, ruleId: number | null, take: number) =>
+    mockResponse(() => (historyStores.get(lotId) ?? []).filter((h) => ruleId == null || h.pricingRuleId === ruleId).slice(0, take)),
 
   drafts: (lotId: string) =>
     mockResponse(() =>
@@ -164,6 +209,7 @@ export const pricingMock = {
         updatedAt: null,
       }
       drafts(lotId).unshift(draft)
+      log(lotId, rule, 'DraftSaved', { ...rule }, { ...input.values }, `Saved price draft #${draft.id}`, draft.id)
       return draft
     }),
 
@@ -174,6 +220,7 @@ export const pricingMock = {
       draft.note = input.note?.trim() || null
       draft.baseVersionNo = find(lotId, ruleId).versionNo
       draft.updatedAt = new Date().toISOString()
+      log(lotId, find(lotId, ruleId), 'DraftUpdated', { ...find(lotId, ruleId) }, { ...input.values }, `Edited price draft #${draft.id}`, draft.id)
       return { ...draft, currentVersionNo: draft.baseVersionNo }
     }),
 
@@ -182,16 +229,20 @@ export const pricingMock = {
     mockResponse(() => {
       const draft = openDraft(lotId, ruleId, draftId)
       const rule = find(lotId, ruleId)
+      const before = { ...rule }
       apply(rule, { ...draft.values, vehicleTypeId: rule.vehicleTypeId, status: rule.status })
       rule.versionNo++
       rule.updatedAt = new Date().toISOString()
       draft.status = 'Applied'
+      log(lotId, rule, 'Update', before, { ...rule }, `Applied price draft #${draft.id}`, draft.id)
       return rule
     }),
 
   discardDraft: (lotId: string, ruleId: number, draftId: number) =>
     mockResponse(() => {
-      openDraft(lotId, ruleId, draftId).status = 'Discarded'
+      const draft = openDraft(lotId, ruleId, draftId)
+      draft.status = 'Discarded'
+      log(lotId, find(lotId, ruleId), 'DraftDiscarded', null, null, `Discarded price draft #${draft.id}`, draft.id)
       return true
     }),
 
