@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/states'
 import { cn } from '@/lib/utils'
 import { assignmentsForCell, buildShiftGroups, calendarRange, isCalendarWeekend, navigateCalendar, shiftEndDate,
   type AssignmentReference, type CalendarRange, type CalendarView, type ShiftGroup, type ShiftReference } from '@/lib/workScheduleCalendar'
-import { POSITION_LABEL, type DutyRoster, type WorkShiftTemplate } from '@/types/workScheduling.dto'
+import type { DutyRoster, WorkShiftTemplate } from '@/types/workScheduling.dto'
 import AssignmentAttendancePanel, { AttendanceBadge } from './AssignmentAttendancePanel'
 import OpenShiftDialog, { CreateOpenShiftDialog } from './OpenShiftDialog'
 import { useAuth } from '@/hooks/useAuth'
@@ -58,7 +58,7 @@ export function AssignmentDetails({ item }: { item: AssignmentReference }) {
   return <div className="space-y-2 text-sm text-slate-700">
     <p className="font-semibold text-slate-950">{assignment.staffName} · {shift.name}</p>
     <p>{shift.workDate} {shift.startTime.slice(0, 5)} → {shiftEndDate(shift)} {shift.endTime.slice(0, 5)}</p>
-    <p>{shift.timeZoneId} · {POSITION_LABEL[assignment.position]}</p>
+    <p>{shift.timeZoneId}</p>
     <p>Roster: <strong>{roster.status}</strong> · {roster.name}</p>
     <p>Assignment: <strong>Assigned</strong></p>
     {assignment.notes && <p className="whitespace-pre-wrap break-words">Notes: {assignment.notes}</p>}
@@ -66,12 +66,6 @@ export function AssignmentDetails({ item }: { item: AssignmentReference }) {
     {assignment.allowWeeklyOvertime && <p>Weekly-hours exception · overtime review required</p>}
   </div>
 }
-
-const NEEDS = [
-  { label: 'Entry', required: 'minimumEntryStaff', assigned: 'entryAssigned' },
-  { label: 'Exit', required: 'minimumExitStaff', assigned: 'exitAssigned' },
-  { label: 'Counter', required: 'minimumCounterStaff', assigned: 'counterAssigned' },
-] as const
 
 export default function WorkScheduleCalendar({ rosters, range, search, today, templates = [], onCell, onAssignment, preview = false, reviewIds }: {
   rosters: DutyRoster[]; range: CalendarRange; search: string; today: string; templates?: WorkShiftTemplate[]
@@ -82,7 +76,7 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
   const { user } = useAuth()
   const [slotId, setSlotId] = useState<number | null>(null)
   const [originalId, setOriginalId] = useState<number | null>(null)
-  const [vacancy, setVacancy] = useState<{ lotId: string; shiftId: number; position: string } | null>(null)
+  const [vacancy, setVacancy] = useState<{ lotId: string; shiftId: number } | null>(null)
   const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase()
   const standbyItems = rosters.flatMap(roster => (roster.standbys ?? []).filter(s => s.workDate >= range.from && s.workDate <= range.to && normalize(s.staffName).includes(normalize(search.trim()))).map(standby => ({ roster, standby })))
   const standbyPeople = [...new Map(standbyItems.map(x => [x.standby.employeeId, x.standby.staffName])).entries()]
@@ -153,16 +147,16 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
                 const empty = blankAction(group, day)
                 return <td key={day} className={cn('border-t-2 border-r border-b border-slate-200 p-2 align-top', cellBackground(day))}>
                   {occurrences.map(item => {
-                    const shortage = NEEDS.some(n => item.shift[n.assigned] < item.shift[n.required])
+                    const shortage = item.shift.assigned < item.shift.minimumStaff
+                    const openVacancies = (item.shift.openShifts ?? []).filter(o => o.status === 'Open').length
                     return <div key={`${item.roster.id}:${item.shift.id}`} className="mb-2 space-y-1 rounded border border-slate-200 bg-white p-2 text-[11px] last:mb-0">
                       <p className="font-semibold">{item.roster.status}</p>
-                      {NEEDS.map(n => <p key={n.label} className={cn(item.shift[n.assigned] < item.shift[n.required] && 'font-semibold text-amber-800')}>
-                        {n.label}: {item.shift[n.assigned]} / {item.shift[n.required]}</p>)}
+                      <p className={cn(shortage && 'font-semibold text-amber-800')}>Staff: {item.shift.assigned} / {item.shift.minimumStaff}</p>
                       {shortage && <p className="font-semibold text-amber-800"><TriangleAlert className="mr-1 inline size-3" />Needs staff</p>}
-                      {(item.shift.openShifts ?? []).map(slot => <button key={slot.id} disabled={preview} className="block w-full rounded border border-amber-300 bg-amber-50 p-1 text-left font-semibold text-amber-900" onClick={() => setSlotId(slot.id)}>Open slot · {POSITION_LABEL[slot.position]} · {slot.status} · {slot.stage}</button>)}
-                      {(item.shift.managerCoverage ?? []).map(c => <p key={c.id} className="font-semibold">Manager coverage · {c.managerName} · {POSITION_LABEL[c.position]}</p>)}
+                      {(item.shift.openShifts ?? []).map(slot => <button key={slot.id} disabled={preview} className="block w-full rounded border border-amber-300 bg-amber-50 p-1 text-left font-semibold text-amber-900" onClick={() => setSlotId(slot.id)}>Open slot · {slot.status} · {slot.stage}</button>)}
+                      {(item.shift.managerCoverage ?? []).map(c => <p key={c.id} className="font-semibold">Manager coverage · {c.managerName}</p>)}
                       {item.shift.attendanceLocked && <p className="font-semibold">Attendance locked · read only</p>}
-                      {!preview && !item.shift.attendanceLocked && user?.role === 'MANAGER' && item.roster.status === 'Published' && NEEDS.filter(n => item.shift[n.required] - item.shift[n.assigned] > (item.shift.openShifts ?? []).filter(o => o.position === n.label && o.status === 'Open').length).map(n => <button key={n.label} className="block rounded border border-dashed border-amber-400 p-1 font-semibold text-amber-900" onClick={() => setVacancy({ lotId: item.roster.parkingLotId.toString(), shiftId: item.shift.id, position: n.label })}>Find replacement · {n.label}</button>)}
+                      {!preview && !item.shift.attendanceLocked && user?.role === 'MANAGER' && item.roster.status === 'Published' && item.shift.minimumStaff - item.shift.assigned > openVacancies && <button className="block rounded border border-dashed border-amber-400 p-1 font-semibold text-amber-900" onClick={() => setVacancy({ lotId: item.roster.parkingLotId.toString(), shiftId: item.shift.id })}>Find replacement</button>}
                       {onCell && !reviewIds && !item.shift.attendanceLocked && <button className="mt-1 flex items-center gap-1 rounded px-1 py-1 font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2" aria-label={`Assign Staff ${group.name} ${day} roster ${item.roster.name}`} onClick={() => onCell({ day, group, occurrence: item })}><Plus className="size-3" />Assign</button>}
                     </div>
                   })}
@@ -179,9 +173,9 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
                 const empty = blankAction(group, day, employee.id)
                 return <td key={day} className={cn('border-r border-b border-slate-200 p-2 align-top', cellBackground(day))}>
                   {items.map(item => <button disabled={preview} key={`${item.roster.id}:${item.shift.id}:${item.assignment.id}`} onClick={() => onAssignment ? onAssignment(item) : onCell ? onCell({ day, group, employeeId: employee.id, occurrence: item, assignment: item }) : setDetail(item)}
-                    aria-label={`${employee.name}, ${group.name}, ${day}, ${POSITION_LABEL[item.assignment.position]}, assignment ${item.assignment.id}`}
+                    aria-label={`${employee.name}, ${group.name}, ${day}, assignment ${item.assignment.id}`}
                     className="mb-2 block w-full rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-2 text-left text-xs text-indigo-950 last:mb-0 hover:ring-2 hover:ring-indigo-300 focus-visible:outline-2">
-                    <span className="block font-semibold"><CircleCheck className="mr-1 inline size-3" />Assigned · {POSITION_LABEL[item.assignment.position]}</span>
+                    <span className="block font-semibold"><CircleCheck className="mr-1 inline size-3" />Assigned</span>
                     <span className="mt-1 block">{item.shift.startTime.slice(0, 5)} → {item.shift.endTime.slice(0, 5)}</span>
                     {item.shift.endTime < item.shift.startTime && <span className="block font-medium">↗ Ends {shiftEndDate(item.shift)}</span>}
                     <span className="block text-[10px]">{item.roster.status}</span>
@@ -192,7 +186,7 @@ export default function WorkScheduleCalendar({ rosters, range, search, today, te
                     {item.assignment.isManuallyEdited && <span className="block">Manual edit · protected on regeneration</span>}
                     {item.assignment.notes && <span className="mt-1 line-clamp-2 whitespace-pre-wrap break-words">{item.assignment.notes}</span>}
                   </button>)}
-                  {trails.map(t => <button key={t.assignmentId} disabled={preview} onClick={() => setOriginalId(t.assignmentId)} className="mb-2 block w-full rounded-lg border border-slate-300 bg-slate-50 p-2 text-left text-xs text-slate-700"><strong>{t.kind === 'ApprovedLeave' ? `Approved ${t.isPaid ? 'paid' : 'unpaid'} leave` : 'Swapped · original assignment'}</strong><span className="block">Original #{t.assignmentId} · {POSITION_LABEL[t.position]}</span><span className="block">View retained assignment and request history</span></button>)}
+                  {trails.map(t => <button key={t.assignmentId} disabled={preview} onClick={() => setOriginalId(t.assignmentId)} className="mb-2 block w-full rounded-lg border border-slate-300 bg-slate-50 p-2 text-left text-xs text-slate-700"><strong>{t.kind === 'ApprovedLeave' ? `Approved ${t.isPaid ? 'paid' : 'unpaid'} leave` : 'Swapped · original assignment'}</strong><span className="block">Original #{t.assignmentId}</span><span className="block">View retained assignment and request history</span></button>)}
                   {items.length === 0 && trails.length === 0 && (originalItems.length > 0 ? <span className="block p-2 text-center text-[10px] text-slate-500">Filtered out</span> : empty && onCell ? <button className="min-h-16 w-full rounded border border-dashed border-slate-200 text-slate-500 hover:border-indigo-300 hover:bg-indigo-50" aria-label={`Assign ${employee.name} ${group.name} ${day}`} onClick={() => onCell(empty)}><Plus className="mx-auto size-3.5" /><span className="text-[10px]">No assignment</span></button> : <span className="block p-2 text-center text-slate-400" aria-label="No assignment">—</span>)}
                 </td>
               })}

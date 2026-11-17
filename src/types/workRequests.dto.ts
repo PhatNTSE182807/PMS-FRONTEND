@@ -1,4 +1,4 @@
-import type { RosterStaff, StandbyAssignment, WorkPosition } from './workScheduling.dto'
+import type { RosterStaff, StandbyAssignment } from './workScheduling.dto'
 export interface LeaveRequest {
   id: number; assignmentId: number; employeeId: number; staffName: string; kind: string; status: string; revision: number
   leaveDate: string; startsAt: string; endsAt: string; reason: string; isPaid: boolean; proposedEmployeeId: number | null; decisionReason: string | null
@@ -8,7 +8,7 @@ export interface SwapRequest {
   otherStaffName: string; status: string; revision: number; reason: string; decisionReason: string | null
 }
 export interface OpenShift {
-  id: number; shiftId: number; position: WorkPosition; status: string; stage: string; revision: number; originalAssignmentId: number | null
+  id: number; shiftId: number; status: string; stage: string; revision: number; originalAssignmentId: number | null
   targetEmployeeId: number | null; deadlineAt: string | null; replacementAssignmentId: number | null
   startsAt: string; endsAt: string; workDate: string; shiftName: string
 }
@@ -20,7 +20,7 @@ export interface WorkRequests {
 export interface RequestCommand { revision: number; action: string; reason?: string; claimId?: number; employeeId?: number; allowWeeklyOvertime?: boolean }
 export interface AssignmentRequestDetail {
   assignmentId: number; lotId: number; employeeId: number; staffName: string; status: string; startsAt: string; endsAt: string; canRequest: boolean
-  staff: RosterStaff[]; swapCandidates: { assignmentId: number; employeeId: number; staffName: string; shiftName: string; workDate: string; startsAt: string; endsAt: string; position: WorkPosition }[]
+  staff: RosterStaff[]; swapCandidates: { assignmentId: number; employeeId: number; staffName: string; shiftName: string; workDate: string; startsAt: string; endsAt: string }[]
   leaves: LeaveRequest[]; swaps: SwapRequest[]
 }
 export interface OpenShiftDetail {

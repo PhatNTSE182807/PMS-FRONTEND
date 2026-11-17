@@ -10,7 +10,7 @@ export const workRequestsApi = {
   swapAction: (id: number, input: RequestCommand) => http.post(`${root}/swap-requests/${id}/actions`, input),
   openShift: (id: number) => http.get<OpenShiftDetail>(`${root}/open-shifts/${id}`),
   openShiftAction: (id: number, input: RequestCommand) => http.post(`${root}/open-shifts/${id}/actions`, input),
-  createOpenShift: (lotId: string, input: { shiftId: number; position: string; reason: string }) => http.post(`${root}/lots/${lotId}/open-shifts`, input),
+  createOpenShift: (lotId: string, input: { shiftId: number; reason: string }) => http.post(`${root}/lots/${lotId}/open-shifts`, input),
   adminBalances: (year: number) => http.get<LeaveBalance[]>('/admin/work-scheduling/leave-balances', { params: { year } }),
   setBalance: (id: number, year: number, input: { revision: number; entitledDays: number; reason: string }) => http.put(`/admin/work-scheduling/leave-balances/${id}/${year}`, input),
 }

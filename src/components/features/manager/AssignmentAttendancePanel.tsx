@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/form-controls'
 import { Spinner } from '@/components/ui/states'
 import { ATTENDANCE_LABEL, attendanceLocalInput, attendanceTime } from '@/lib/workAttendance'
 import { cn } from '@/lib/utils'
-import { POSITION_LABEL, type AttendanceDetail, type AttendanceState } from '@/types/workScheduling.dto'
+import type { AttendanceDetail, AttendanceState } from '@/types/workScheduling.dto'
 import AssignmentRequestPanel from './AssignmentRequestPanel'
 
 export function AttendanceBadge({ value }: { value?: AttendanceState }) {
@@ -133,7 +133,7 @@ export function CurrentShiftPanel({ lotId }: { lotId?: string }) {
     {query.isError && <p role="status" className="text-xs text-amber-800">Could not refresh the current shift. <button className="underline" onClick={() => query.refetch()}>Retry</button></p>}
     {!query.isPending && !query.isError && items.length === 0 && <p className="text-sm text-slate-500">No recent or upcoming published shift at this lot in the next 48 hours.</p>}
     <div className="grid gap-3 lg:grid-cols-2">{items.map(item => <div key={item.assignmentId} className="space-y-2 rounded-lg border border-slate-200 p-3">
-      <p className="font-semibold text-slate-950">{item.shiftName} · {POSITION_LABEL[item.position]}</p>
+      <p className="font-semibold text-slate-950">{item.shiftName}</p>
       <p className="text-sm font-medium text-slate-800">{attendanceTime(item.plannedStart, item.timeZoneId)} → {attendanceTime(item.plannedEnd, item.timeZoneId)}</p>
       <AttendanceBadge value={item.attendance} />
       <div className="flex flex-wrap items-center gap-2"><StaffAttendanceActions detail={item} /><Button size="sm" variant="outline" onClick={() => setSelectedId(item.assignmentId)}>Shift details</Button></div>
