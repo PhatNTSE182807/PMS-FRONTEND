@@ -222,7 +222,7 @@ export interface CurrentSessionDTO {
   bookingMode: BookingMode | null
   plannedDeparture: string | null
   elapsedMinutes: number
-  /** The ticket was reported lost and the case waits for a Manager: no fee yet (amounts are 0), no prepay or check-out. */
+  /** The ticket was reported lost and the case waits for the Staff decision: no fee yet (amounts are 0), no prepay or check-out. */
   lostTicketPending?: boolean
   feeSoFar: number
   depositApplied: number

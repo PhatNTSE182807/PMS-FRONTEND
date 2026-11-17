@@ -159,7 +159,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
   const exitRequest = useLatestRequest((r) => r.kind === 'CheckOut' && r.sessionId === current.session.id, now)
   // Check-out asked for: the vehicle is on its way out, so the card offers no more payment (the Staff takes any fee at the lane)
   const leaving = exitRequest?.status === 'Waiting'
-  // A lost-ticket case waiting for a Manager: no fee yet, and nothing can be paid or checked out until it is decided
+  // A lost-ticket case waiting for the Staff decision: no fee yet, and nothing can be paid or checked out until it is decided
   const lostTicket = Boolean(current.lostTicketPending)
 
   const s = current.session
@@ -261,7 +261,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         <p className="cx-prepay" role="status">
           <span>
             <ShieldAlert size={15} aria-hidden style={{ verticalAlign: '-3px', color: 'var(--cx-gold)' }} /> Your ticket was reported
-            lost and a Manager is reviewing the case. The fee and the lost-ticket fine are settled with the Staff at the exit lane
+            lost and the Staff are checking your Citizen ID and registration papers. The fee and the lost-ticket fine are settled with the Staff at the exit lane
             once it is decided.
           </span>
         </p>
@@ -306,7 +306,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
           disabled={checkOut.isPending || leaving || lostTicket}
           title={
             lostTicket
-              ? 'Wait for the Manager to decide the lost-ticket case'
+              ? 'Wait for the Staff to decide the lost-ticket case'
               : pass.prepaid || current.amountDue <= 0 ? undefined : 'Prepay first, or pay the Staff at the exit lane'
           }
           onClick={askCheckOut}
