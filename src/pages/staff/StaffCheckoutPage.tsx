@@ -26,6 +26,7 @@ import { BANKNOTES } from '@/lib/cashNotes'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider, StaffPaymentHistoryItemDTO } from '@/types/operations.dto'
+import { VnpayButton } from '@/components/payment/VnpayButton'
 
 
 /**
@@ -437,10 +438,7 @@ export default function StaffCheckoutPage() {
                             <CreditCard /> Charge XXIV Wallet
                           </Button>
                         )}
-                        {/* VNPAY brand blue with the logo's red underline */}
-                        <Button className="bg-[#005baa] text-white shadow-[inset_0_-3px_0_#ed1c24] hover:bg-[#004a8f]" disabled={payOnline.isPending} onClick={() => showQr('VNPay')}>
-                          <QrIcon /> VNPay QR
-                        </Button>
+                        <VnpayButton suffix="QR" disabled={payOnline.isPending} onClick={() => showQr('VNPay')} />
                         <Button className="bg-[#a50064] text-white hover:bg-[#c2187a]" disabled={payOnline.isPending} onClick={() => showQr('MoMo')}>
                           <QrIcon /> MoMo QR
                         </Button>

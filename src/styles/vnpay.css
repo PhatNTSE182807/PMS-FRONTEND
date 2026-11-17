@@ -1,0 +1,105 @@
+/* =========================================================
+   VNPAY payment button (components/payment/VnpayButton.tsx).
+   Looks like the VNPAY brand: a white card with a light border, the mark and the red/blue wordmark,
+   in both the light and the dark theme. Selectors are written as button.vnpay-btn so the brand colors
+   win over layout classes passed in (such as .cx-btn); sizing sits in :where() so those classes keep
+   their own padding and corners.
+========================================================= */
+
+:where(button.vnpay-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  padding: 0.4rem 1rem;
+  border-radius: 0.5rem;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+button.vnpay-btn {
+  background: #ffffff;
+  color: #005baa;
+  border: 1px solid #cfdcec;
+  box-shadow: 0 1px 2px rgba(0, 45, 100, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+}
+
+button.vnpay-btn:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #005baa;
+  box-shadow: 0 4px 12px rgba(0, 91, 170, 0.18);
+  transform: translateY(-1px);
+}
+
+button.vnpay-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 45, 100, 0.12);
+}
+
+button.vnpay-btn:focus-visible {
+  outline: 2px solid #0066b3;
+  outline-offset: 2px;
+}
+
+button.vnpay-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* On a dark page (the default theme) the white card needs no shadow, just a softer edge */
+html:not([data-theme='light']) button.vnpay-btn {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: none;
+}
+
+html:not([data-theme='light']) button.vnpay-btn:hover:not(:disabled) {
+  border-color: #5bc2f0;
+  box-shadow: 0 0 0 3px rgba(91, 194, 240, 0.25);
+}
+
+button.vnpay-btn svg.vnpay-btn__mark,
+button.vnpay-btn svg.vnpay-btn__spinner {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+}
+
+button.vnpay-btn svg.vnpay-btn__spinner {
+  color: #005baa;
+  animation: vnpay-spin 0.9s linear infinite;
+}
+
+.vnpay-wordmark {
+  display: inline-flex;
+  font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.vnpay-btn__suffix {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #005baa;
+}
+
+@keyframes vnpay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.vnpay-btn,
+  button.vnpay-btn:hover:not(:disabled) {
+    transform: none;
+  }
+
+  button.vnpay-btn svg.vnpay-btn__spinner {
+    animation-duration: 2s;
+  }
+}

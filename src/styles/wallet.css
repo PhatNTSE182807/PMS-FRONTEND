@@ -504,6 +504,18 @@
   overflow: hidden;
 }
 
+/* VNPAY mark on a white tile, as the brand shows it */
+.cx-wallet-method__logo--vnpay {
+  background: #ffffff;
+  padding: 0.12rem;
+  border: 1px solid #cfdcec;
+}
+
+.cx-wallet-method__logo--vnpay svg {
+  width: 100%;
+  height: 100%;
+}
+
 .cx-wallet-method__name {
   font-size: 0.85rem;
   font-weight: 600;
