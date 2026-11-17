@@ -69,6 +69,10 @@ export function useNotifications(take = 30) {
       if (['RosterPublished', 'RosterChanged', 'AttendanceChanged'].includes(notification.type))
         void queryClient.invalidateQueries({ queryKey: workSchedulingKeys })
 
+      // Admin: a customer asked for their account to be deleted, so the customer list shows the request
+      if (notification.type === 'AccountDeletionRequested') void queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
+      if (notification.type === 'LotPricingChanged') void queryClient.invalidateQueries({ queryKey: queryKeys.pricing.all })
+
       // A zone of the lot filled up or has space again: the capacity numbers on screen are stale
       if (FILL_TYPES.has(notification.type)) void queryClient.invalidateQueries({ queryKey: queryKeys.parking.all })
 

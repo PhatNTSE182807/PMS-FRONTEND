@@ -89,16 +89,24 @@ export const identityService = {
     return http.post<RegisterResponseDTO>(`${SERVICE_PATHS.auth}/register`, command)
   },
 
-  /* Customer accounts (Admin, view only) ----------------------------- */
+  /* Customer accounts (Admin) --------------------------------------- */
 
   /**
-   * GET /Users (Admin only) filtered to the "User" role. The endpoint has no paging yet,
-   * so search and paging happen here until the backend supports them.
+   * GET /admin/customers: customer accounts with their pending deletion request. The endpoint searches but has no
+   * paging yet, so paging happens here.
    */
   async getCustomers(query: CustomerListQuery): Promise<PaginatedResponse<CustomerAccountDTO>> {
     if (isMockService('auth')) return customersMock.list(query)
-    const accounts = await http.get<CustomerAccountDTO[]>(SERVICE_PATHS.auth, { params: { role: 'User' } })
+    const accounts = await http.get<CustomerAccountDTO[]>(`${SERVICE_PATHS.staff}/customers`, {
+      params: { searchTerm: query.search?.trim() || undefined },
+    })
     return toCustomerPage(accounts, query)
+  },
+
+  /** PATCH /admin/users/{id}/status: locks or unlocks a customer. Locking completes their pending deletion request. */
+  async setCustomerActive(id: string, isActive: boolean): Promise<boolean> {
+    if (isMockService('auth')) return customersMock.setActive(id, isActive)
+    return http.patch<boolean>(`${SERVICE_PATHS.staff}/users/${id}/status`, { isActive })
   },
 
   /* Staff accounts (Admin only) ------------------------------------- */

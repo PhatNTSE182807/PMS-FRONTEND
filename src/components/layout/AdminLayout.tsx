@@ -202,8 +202,8 @@ export function AdminLayout() {
             <Button asChild variant="ghost" size="icon">
               <ThemeToggle />
             </Button>
-            {/* The notifications API serves Managers, not Admins */}
-            {user?.role === 'MANAGER' && <ConsoleNotificationBell />}
+            {/* Managers: their lots' cash drawers and booked bays. Admins: account deletion requests and price changes */}
+            <ConsoleNotificationBell />
             <div className="flex items-center gap-2.5 sm:border-l sm:border-slate-200 sm:pl-3">
               <img
                 src={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}

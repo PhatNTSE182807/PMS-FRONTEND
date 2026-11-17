@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { BadgeCheck, Download, Mail, Phone, Search, ShieldCheck, UserRound, UserSearch, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { BadgeCheck, Download, Lock, LockOpen, Mail, Phone, Search, ShieldCheck, Trash2, UserRound, UserSearch, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/form-controls'
 import { Pagination } from '@/components/ui/pagination'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useCustomerList } from '@/hooks/useCustomers'
+import { useCustomerList, useSetCustomerActive } from '@/hooks/useCustomers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { formatNumber, formatPhone, initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -21,6 +23,18 @@ const COLUMNS = ['User profile', 'Username', 'Account status']
 const AVATAR_TONES = ['bg-indigo-100 text-indigo-700', 'bg-amber-100 text-amber-700', 'bg-slate-100 text-slate-900']
 
 const displayName = (c: CustomerAccountDTO) => c.fullName || c.userName
+
+const formatWhen = (iso: string) =>
+  new Date(iso).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
+
+/** Small pill shown on accounts whose owner asked for them to be deleted. */
+function DeletionBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">
+      <Trash2 className="size-3" aria-hidden /> Deletion requested
+    </span>
+  )
+}
 
 function SkeletonRows() {
   return Array.from({ length: 6 }, (_, row) => (
@@ -43,8 +57,8 @@ function SkeletonRows() {
 /** Downloads the listed accounts as CSV (opens in Excel). */
 function exportAccounts(rows: CustomerAccountDTO[]) {
   const quote = (v: string) => `"${v.replace(/"/g, '""')}"`
-  const lines = rows.map((c) => [displayName(c), c.userName, c.email, c.phoneNumber ?? '', c.isActive === false ? 'Inactive' : 'Active'].map(quote).join(','))
-  const blob = new Blob(['﻿' + ['Name,Username,Email,Phone,Status', ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' })
+  const lines = rows.map((c) => [displayName(c), c.userName, c.email, c.phoneNumber ?? '', c.isActive === false ? 'Locked' : 'Active', c.deletionRequest ? 'Yes' : ''].map(quote).join(','))
+  const blob = new Blob(['﻿' + ['Name,Username,Email,Phone,Status,Deletion requested', ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -55,6 +69,24 @@ function exportAccounts(rows: CustomerAccountDTO[]) {
 
 function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined }) {
   const active = customer?.isActive !== false
+  const request = customer?.deletionRequest
+  const setActive = useSetCustomerActive()
+  const [confirming, setConfirming] = useState(false)
+
+  const apply = () => {
+    if (!customer) return
+    setActive.mutate(
+      { id: customer.id, isActive: !active },
+      {
+        onSuccess: () => {
+          toast.success(active ? `${displayName(customer)}'s account is locked.` : `${displayName(customer)}'s account is unlocked.`)
+          setConfirming(false)
+        },
+        onError: (err) => toast.error(getErrorMessage(err)),
+      },
+    )
+  }
+
   return (
     <Card className="p-5 lg:sticky lg:top-24">
       <div className="flex items-center justify-between gap-3">
@@ -63,7 +95,7 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
         </h2>
         {customer && (
           <span className={cn('rounded-md px-2.5 py-1 text-xs font-bold tracking-wide uppercase', active ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700')}>
-            {active ? 'Active' : 'Inactive'}
+            {active ? 'Active' : 'Locked'}
           </span>
         )}
       </div>
@@ -98,10 +130,52 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
             ))}
           </dl>
 
+          {request && (
+            <div className="mt-5 rounded-xl bg-rose-50 p-4 text-sm text-rose-900 ring-1 ring-rose-200">
+              <p className="flex items-center gap-2 font-semibold">
+                <Trash2 className="size-4 shrink-0" aria-hidden /> Asked to delete this account
+              </p>
+              <p className="mt-1">Requested {formatWhen(request.requestedAt)}.</p>
+              {request.reason && <p className="mt-1 italic">&ldquo;{request.reason}&rdquo;</p>}
+              <p className="mt-2 text-rose-800">
+                Check that the driver has no vehicle parked, no upcoming booking and no wallet money left, then lock the
+                account. Their parking history and payments are kept.
+              </p>
+            </div>
+          )}
+
           <p className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-indigo-700" aria-hidden />
-            Read-only profile: drivers manage their own details and vehicles from the app.
+            Drivers manage their own details and vehicles from the app. A locked account cannot sign in until it is unlocked.
           </p>
+
+          <Button
+            className="mt-4 w-full"
+            size="lg"
+            variant={active ? 'destructive' : 'outline'}
+            onClick={() => setConfirming(true)}
+            disabled={setActive.isPending}
+          >
+            {active ? <Lock /> : <LockOpen />}
+            {active ? (request ? 'Lock account (complete deletion request)' : 'Lock account') : 'Unlock account'}
+          </Button>
+
+          <ConfirmDialog
+            open={confirming}
+            onOpenChange={setConfirming}
+            title={active ? `Lock ${displayName(customer)}'s account?` : `Unlock ${displayName(customer)}'s account?`}
+            description={
+              active
+                ? request
+                  ? 'The driver can no longer sign in, and their deletion request is marked as done. You can unlock the account later.'
+                  : 'The driver can no longer sign in until you unlock the account.'
+                : 'The driver can sign in again.'
+            }
+            confirmLabel={active ? 'Lock account' : 'Unlock account'}
+            tone={active ? 'destructive' : 'default'}
+            pending={setActive.isPending}
+            onConfirm={apply}
+          />
         </>
       )}
     </Card>
@@ -109,8 +183,8 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
 }
 
 /**
- * Read-only list of customer (driver) accounts. Customers manage their own profile, so the
- * admin can look them up here but cannot change or deactivate them.
+ * Customer (driver) accounts for the Admin. Customers manage their own profile; the Admin looks them up, sees who
+ * asked for their account to be deleted (listed first), and locks or unlocks accounts.
  */
 export default function CustomerAccountsPage() {
   const [params, setParams] = useSearchParams()
@@ -118,6 +192,12 @@ export default function CustomerAccountsPage() {
   const pageNumber = Math.max(1, Number(params.get('page')) || 1)
 
   const [searchInput, setSearchInput] = useState(search)
+  // A link (e.g. a deletion request in the bell) can change the search while the page is open: show it in the box
+  const [shownSearch, setShownSearch] = useState(search)
+  if (search !== shownSearch) {
+    setShownSearch(search)
+    if (search !== searchInput.trim()) setSearchInput(search)
+  }
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const [selectedId, setSelectedId] = useState<string>()
 
@@ -154,7 +234,7 @@ export default function CustomerAccountsPage() {
           </>
         }
         title="User Accounts Directory"
-        description="Look up registered drivers and their contact details. View only: customers manage their own profile and vehicles."
+        description="Look up registered drivers, see who asked to delete their account, and lock or unlock accounts."
         actions={
           <Button variant="outline" size="lg" onClick={() => exportAccounts(items)} disabled={!items.length}>
             <Download />
@@ -252,9 +332,12 @@ export default function CustomerAccountsPage() {
                           </TableCell>
                           <TableCell className="font-mono text-sm text-slate-800">{customer.userName}</TableCell>
                           <TableCell>
-                            <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700')}>
-                              {active ? 'Active' : 'Inactive'}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700')}>
+                                {active ? 'Active' : 'Locked'}
+                              </span>
+                              {customer.deletionRequest && <DeletionBadge />}
+                            </div>
                           </TableCell>
                         </TableRow>
                       )
