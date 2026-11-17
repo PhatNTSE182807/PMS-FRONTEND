@@ -14,7 +14,7 @@ import { HoursSummary } from './AttendancePeriodReviewPanel'
 export default function AdminAttendancePeriods() {
   const { user } = useAuth(); const change = useScheduleMutation(); useAttendanceRealtime()
   const [open, setOpen] = useState(false); const [periodId, setPeriodId] = useState(''); const [lotId, setLotId] = useState('')
-  const [name, setName] = useState(''); const [from, setFrom] = useState(''); const [to, setTo] = useState(''); const [lotIds, setLotIds] = useState<number[]>([])
+  const [name, setName] = useState(''); const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); const [lotIds, setLotIds] = useState<number[]>([])
   const [lock, setLock] = useState<AttendancePeriod | null>(null); const [reason, setReason] = useState(''); const [ack, setAck] = useState(false)
   const [day, setDay] = useState(''); const [kind, setKind] = useState<ManagerDayKind>('Work'); const [dayReason, setDayReason] = useState(''); const [revision, setRevision] = useState(0)
   const directory = useQuery({ queryKey: [...workSchedulingKeys, user?.userId, 'period-directory'], queryFn: api.directory, enabled: open })
@@ -27,13 +27,12 @@ export default function AdminAttendancePeriods() {
   return <Card className="space-y-4 p-4">
     <Button variant="outline" aria-expanded={open} onClick={() => setOpen(v => !v)}>Attendance periods and Manager workdays</Button>
     {open && <>
-      <p className="text-sm text-slate-600">Admin creates the explicit period and lot scope, records Manager workdays / leave, and locks attendance. This does not create payroll or mark payments.</p>
-      <details><summary className="cursor-pointer font-semibold">Create attendance period</summary><form className="mt-3 grid gap-3 sm:grid-cols-3" onSubmit={e => { e.preventDefault(); change.mutate(() => api.create({ name, fromDate: from, toDate: to, lotIds }), { onSuccess: p => { const result = p as AttendancePeriod; setPeriodId(String(result.id)); setLotId(String(result.lots[0].parkingLotId)); setName('') } }) }}>
-        <label className="grid gap-1 text-sm">Name<Input required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label>
-        <label className="grid gap-1 text-sm">From (inclusive)<Input type="date" required value={from} onChange={e => setFrom(e.target.value)} /></label>
-        <label className="grid gap-1 text-sm">To (inclusive)<Input type="date" required min={from} value={to} onChange={e => setTo(e.target.value)} /></label>
+      <p className="text-sm text-slate-600">Each attendance period is one calendar month, matching one payroll month. Admin records Manager workdays / leave and locks attendance. This does not create payroll or mark payments.</p>
+      <details><summary className="cursor-pointer font-semibold">Create attendance period</summary><form className="mt-3 grid gap-3 sm:grid-cols-3" onSubmit={e => { e.preventDefault(); change.mutate(() => api.create({ name: name.trim() || undefined, month: `${month}-01`, lotIds }), { onSuccess: p => { const result = p as AttendancePeriod; setPeriodId(String(result.id)); setLotId(String(result.lots[0].parkingLotId)); setName('') } }) }}>
+        <label className="grid gap-1 text-sm">Month<Input aria-label="Attendance period month" type="month" required value={month} onChange={e => setMonth(e.target.value)} /></label>
+        <label className="grid gap-1 text-sm">Name (optional)<Input maxLength={100} placeholder="Defaults to the month name" value={name} onChange={e => setName(e.target.value)} /></label>
         <fieldset className="sm:col-span-3"><legend className="text-sm font-semibold">Included lots</legend><div className="flex flex-wrap gap-3">{directory.data?.map(l => <label key={l.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={lotIds.includes(l.id)} onChange={e => setLotIds(e.target.checked ? [...lotIds, l.id] : lotIds.filter(id => id !== l.id))} />{l.name}</label>)}</div></fieldset>
-        <Button type="submit" disabled={change.isPending || lotIds.length === 0}>Create period</Button>
+        <Button type="submit" disabled={change.isPending || lotIds.length === 0 || !month}>Create period</Button>
       </form></details>
       <div className="flex flex-wrap gap-3"><label className="grid gap-1 text-sm">Period<NativeSelect aria-label="Admin attendance period" value={periodId} onChange={e => { const p = periods.data?.find(x => String(x.id) === e.target.value); setPeriodId(e.target.value); setLotId(p?.lots[0]?.parkingLotId.toString() ?? ''); setDay('') }}><option value="">Choose period</option>{periods.data?.map(p => <option key={p.id} value={p.id}>{p.name} · {p.fromDate} – {p.toDate} · {p.status}</option>)}</NativeSelect></label>
         <label className="grid gap-1 text-sm">Lot<NativeSelect aria-label="Admin attendance lot" value={lotId} onChange={e => { setLotId(e.target.value); setDay('') }}><option value="">Choose lot</option>{period?.lots.map(l => <option key={l.id} value={l.parkingLotId}>{l.lotName} · {l.status}</option>)}</NativeSelect></label>

@@ -4,7 +4,7 @@ export interface SalaryProfile {
   employeeName?: string
   id: number; userId: string; role: PayrollRole; effectiveFrom: string; hourlyRate: number | null; monthlyRate: number | null
   nightStart: string | null; nightEnd: string | null; nightFactor: number | null; holidayFactor: number | null; overtimeFactor: number | null
-  standardWorkDays: number | null; managerProration: string | null; managerUnpaidLeavePolicy: string | null
+  standardWorkDays: number | null
   currency: string | null; moneyDecimals: number | null; roundingMode: string | null; reason: string; revision: number
 }
 export interface PayrollPerson { userId: string; name: string; role: PayrollRole; employeeId: number | null; parkingLotId: number | null; isActive: boolean }
@@ -15,6 +15,7 @@ export interface PayrollComplaint { id: number; payrollSlipId: number; userId: s
 export interface PayrollAudit { id: number; action: string; actorId: string; parkingLotId: number | null; payrollSlipId: number | null; reason: string | null; createdAt: string; beforeJson: string | null; afterJson: string | null }
 export interface PayrollDetail { slip: PayrollSlip; lines: PayrollLine[]; complaints: PayrollComplaint[]; history: PayrollAudit[]; stale: boolean }
 export interface PayrollPreview { userId: string; employeeName: string; role: PayrollRole; currency: string; total: number; lines: PayrollLine[]; basisHash: string }
-export interface PayrollSource { periodLotId: number; name: string; fromDate: string; toDate: string; sealed: boolean; hash: string | null; managerUserId: string | null; carryAdjustments?: { id: number; employeeId: number; hours: number; reason: string }[] }
+/** Hours carried between locked attendance months, valued by Admin as an adjustment. */
+export interface PayrollCarry { id: number; employeeId: number; hours: number; reason: string }
 export interface PayrollAdjustment { id: number; userId: string; role: PayrollRole; parkingLotId: number; payMonth: string; sourceSlipId: number | null; sourceCarryId: number | null; kind: 'Adjustment' | 'Allowance' | 'Bonus'; quantity: number; unitRate: number; reason: string }
 export interface PayrollFrozenSource { line: PayrollLine; roster: DutyRoster | null; frozen: true; assignment: { assignmentId: number; shiftName: string; staffName: string; timeZoneId: string; plannedStart: string; plannedEnd: string; actualStart: string | null; actualEnd: string | null; attendanceRevision: number; attendance: AttendanceState; attendanceHistoryJson: string; overtimeHistoryJson: string } | null }

@@ -1,12 +1,11 @@
 import { http } from './axiosClient'
-import type { PayrollAdjustment, PayrollAudit, PayrollDetail, PayrollDirectory, PayrollFrozenSource, PayrollPreview, PayrollRole, PayrollSlip, PayrollSource, SalaryProfile } from '@/types/payroll.dto'
+import type { PayrollAdjustment, PayrollAudit, PayrollDetail, PayrollDirectory, PayrollFrozenSource, PayrollCarry, PayrollPreview, PayrollRole, PayrollSlip, SalaryProfile } from '@/types/payroll.dto'
 const base = '/payroll'
 export const payrollApi = {
   directory: () => http.get<PayrollDirectory>(`${base}/directory`),
   profiles: (lotId?: string) => http.get<SalaryProfile[]>(`${base}/profiles`, { params: { lotId } }),
   saveProfile: (value: Partial<SalaryProfile>, id?: number) => id ? http.put<SalaryProfile>(`${base}/profiles/${id}`, value) : http.post<SalaryProfile>(`${base}/profiles`, value),
-  sources: (lotId: string) => http.get<PayrollSource[]>(`${base}/sources`, { params: { lotId } }),
-  seal: (id: number, value: { reason: string; managerUserId?: string }) => http.post(`${base}/sources/${id}/seal`, value),
+  carries: (lotId: string) => http.get<PayrollCarry[]>(`${base}/carries`, { params: { lotId } }),
   preview: (value: { parkingLotId: number; payMonth: string; role?: PayrollRole; userId?: string }) => http.post<PayrollPreview[]>(`${base}/preview`, value),
   generate: (value: { parkingLotId: number; payMonth: string; role?: PayrollRole; userId?: string; reason: string }) => http.post<PayrollSlip[]>(`${base}/generate`, value),
   slips: (lotId?: string, month?: string, mine = false) => http.get<PayrollSlip[]>(`${base}/slips`, { params: { lotId, month, mine } }),

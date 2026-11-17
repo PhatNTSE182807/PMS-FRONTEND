@@ -15,8 +15,8 @@ export default function PayrollAdjustments({ lotId, month, people }: { lotId: st
   const person = people.find(p => p.userId === userId)
   const query = useQuery({ queryKey: [...payrollKeys, user?.userId, 'adjustments', lotId, month], queryFn: () => payrollApi.adjustments(lotId, `${month}-01`) })
   const previous = useQuery({ queryKey: [...payrollKeys, user?.userId, 'slips', lotId, 'all'], queryFn: () => payrollApi.slips(lotId) })
-  const sources = useQuery({ queryKey: [...payrollKeys, user?.userId, 'sources', lotId], queryFn: () => payrollApi.sources(lotId) })
-  const carries = sources.data?.flatMap(s => s.carryAdjustments ?? []).filter(c => c.employeeId === person?.employeeId) ?? []
+  const carryList = useQuery({ queryKey: [...payrollKeys, user?.userId, 'carries', lotId], queryFn: () => payrollApi.carries(lotId) })
+  const carries = carryList.data?.filter(c => c.employeeId === person?.employeeId) ?? []
   return <Card className="space-y-4 p-4"><h2 className="font-semibold">Subsequent-month adjustments and Manager allowances / bonuses</h2>
     <p className="text-sm text-slate-600">Entries are append-only. A negative correction needs an earlier approved/paid payslip or a locked hours carry. A carry valuation preserves its signed hours; Admin supplies the unit rate explicitly. Paid source payslips remain unchanged.</p>
     <form className="grid gap-3 sm:grid-cols-2" onSubmit={e => { e.preventDefault(); if (!person) return; save.mutate(() => payrollApi.addAdjustment({ userId, role: person.role, parkingLotId: Number(lotId), payMonth: `${month}-01`, sourceSlipId: sourceId ? Number(sourceId) : null, sourceCarryId: carryId ? Number(carryId) : null, kind, quantity: Number(quantity), unitRate: Number(rate), reason }), { onSuccess: () => { setReason(''); setQuantity(''); setCarry('') } }) }}>
@@ -30,6 +30,6 @@ export default function PayrollAdjustments({ lotId, month, people }: { lotId: st
       <Button type="submit" disabled={save.isPending || !person || !Number(quantity) || rate === '' || !reason.trim()}>Record for {month}</Button>
     </form>
     <ul className="space-y-2 text-sm">{query.data?.map(a => <li key={a.id} className="rounded border p-2">#{a.id} · {people.find(p => p.userId === a.userId)?.name ?? 'Employee'} · {a.kind} · {a.quantity} × {a.unitRate} · {a.reason}</li>)}</ul>
-    {(query.isError || save.isError || sources.isError) && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(query.error ?? save.error ?? sources.error)}</p>}
+    {(query.isError || save.isError || carryList.isError) && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(query.error ?? save.error ?? carryList.error)}</p>}
   </Card>
 }

@@ -17,13 +17,13 @@ function ProfileEditor({ people, profile, close }: { people: PayrollPerson[]; pr
   const [reason, setReason] = useState('')
   const person = people.find(p => p.userId === userId)
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries([
-    'hourlyRate', 'monthlyRate', 'nightStart', 'nightEnd', 'nightFactor', 'holidayFactor', 'overtimeFactor', 'standardWorkDays', 'managerProration', 'managerUnpaidLeavePolicy', 'currency', 'moneyDecimals', 'roundingMode',
+    'hourlyRate', 'monthlyRate', 'nightStart', 'nightEnd', 'nightFactor', 'holidayFactor', 'overtimeFactor', 'standardWorkDays', 'currency', 'moneyDecimals', 'roundingMode',
   ].map(key => [key, profile?.[key as keyof SalaryProfile]?.toString() ?? ''])))
   const set = (key: string, value: string) => setValues(v => ({ ...v, [key]: value }))
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!person) return
-    const fields = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value === '' ? null : ['nightStart', 'nightEnd'].includes(key) ? (value.length === 5 ? `${value}:00` : value) : ['currency', 'roundingMode', 'managerProration', 'managerUnpaidLeavePolicy'].includes(key) ? value : Number(value)]))
+    const fields = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value === '' ? null : ['nightStart', 'nightEnd'].includes(key) ? (value.length === 5 ? `${value}:00` : value) : ['currency', 'roundingMode'].includes(key) ? value : Number(value)]))
     save.mutate(() => payrollApi.saveProfile({ ...fields, userId, role: person.role, effectiveFrom: date, reason, revision: profile?.revision ?? 0 }, profile?.id), { onSuccess: close })
   }
   const numeric = (key: string, label: string, step = '0.000001') => <label className="grid gap-1 text-sm" key={key}>{label}<Input aria-label={label} type="number" min="0" step={step} placeholder="Not configured" value={values[key]} onChange={e => set(key, e.target.value)} /></label>
@@ -38,9 +38,7 @@ function ProfileEditor({ people, profile, close }: { people: PayrollPerson[]; pr
       </>}
       {person?.role === 'Manager' && <>
         <div className="grid gap-3 sm:grid-cols-2">{numeric('monthlyRate', 'Monthly salary')}{numeric('standardWorkDays', 'Standard workdays', '0.000001')}</div>
-        <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm">Mid-month salary change policy<NativeSelect aria-label="Manager salary proration" value={values.managerProration} onChange={e => set('managerProration', e.target.value)}><option value="">Not agreed / not configured</option><option value="WholeMonthOnly">Require one monthly rate</option><option value="CalendarDays">Split base by effective calendar days</option></NativeSelect></label>
-          <label className="grid gap-1 text-sm">Manager unpaid leave policy<NativeSelect aria-label="Manager unpaid leave policy" value={values.managerUnpaidLeavePolicy} onChange={e => set('managerUnpaidLeavePolicy', e.target.value)}><option value="">Not agreed / not configured</option><option value="NoDeduction">Retain monthly base</option><option value="DeductDaily">Deduct monthly rate / standard days</option></NativeSelect></label></div>
-        <p className="text-xs text-slate-600">Only explicit locked Absent days reduce the base. Approved paid leave retains salary. Missing day records are not inferred as absences.</p>
+        <p className="text-xs text-slate-600">Fixed monthly salary from the version in effect on the 1st of the month. Each locked Absent or unpaid-leave day deducts salary / standard workdays. Paid leave keeps full salary.</p>
       </>}
       <div className="grid gap-3 sm:grid-cols-3"><label className="grid gap-1 text-sm">Currency (3 letters)<Input aria-label="Payroll currency" maxLength={3} placeholder="Not configured" value={values.currency} onChange={e => set('currency', e.target.value.toUpperCase())} /></label>
         {numeric('moneyDecimals', 'Money decimal places', '1')}
