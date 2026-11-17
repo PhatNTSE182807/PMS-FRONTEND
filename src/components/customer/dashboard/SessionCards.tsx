@@ -159,6 +159,8 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
   const exitRequest = useLatestRequest((r) => r.kind === 'CheckOut' && r.sessionId === current.session.id, now)
   // Check-out asked for: the vehicle is on its way out, so the card offers no more payment (the Staff takes any fee at the lane)
   const leaving = exitRequest?.status === 'Waiting'
+  // A lost-ticket case waiting for a Manager: no fee yet, and nothing can be paid or checked out until it is decided
+  const lostTicket = Boolean(current.lostTicketPending)
 
   const s = current.session
   const entry = Date.parse(s.entryTime)
@@ -217,8 +219,10 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         </div>
         <div>
           <span className="cx-label">Accrued total</span>
-          <span className="cx-metric__big">{formatNumber(current.feeSoFar)}</span>
-          <span className="cx-metric__sub">{tariffText(current) ? `VND (${tariffText(current)})` : 'VND so far'}</span>
+          <span className="cx-metric__big">{lostTicket ? '—' : formatNumber(current.feeSoFar)}</span>
+          <span className="cx-metric__sub">
+            {lostTicket ? 'Set once the lost-ticket case is decided' : tariffText(current) ? `VND (${tariffText(current)})` : 'VND so far'}
+          </span>
         </div>
       </div>
 
@@ -253,7 +257,15 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         </div>
       </div>
 
-      {pass.prepaid ? (
+      {lostTicket ? (
+        <p className="cx-prepay" role="status">
+          <span>
+            <ShieldAlert size={15} aria-hidden style={{ verticalAlign: '-3px', color: 'var(--cx-gold)' }} /> Your ticket was reported
+            lost and a Manager is reviewing the case. The fee and the lost-ticket fine are settled with the Staff at the exit lane
+            once it is decided.
+          </span>
+        </p>
+      ) : pass.prepaid ? (
         <p className="cx-prepay">
           <span><ShieldCheck size={15} aria-hidden style={{ verticalAlign: '-3px', color: 'var(--cx-success)' }} /> Paid. Drive out before {pass.validUntil ? timeFormat.format(Date.parse(pass.validUntil)) : 'the exit window ends'}.</span>
         </p>
@@ -280,7 +292,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
       ) : null}
 
       <div className="cx-session__actions">
-        {!pass.prepaid && !leaving && (
+        {!pass.prepaid && !leaving && !lostTicket && (
           <button type="button" className="cx-btn cx-btn--teal" disabled={current.amountDue <= 0} onClick={() => setChoosing(true)}>
             <ScanLine aria-hidden /> {current.amountDue > 0 ? 'Prepay parking fee' : 'Nothing to pay yet'}
           </button>
@@ -291,8 +303,12 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
         <button
           type="button"
           className="cx-btn cx-btn--teal"
-          disabled={checkOut.isPending || leaving}
-          title={pass.prepaid || current.amountDue <= 0 ? undefined : 'Prepay first, or pay the Staff at the exit lane'}
+          disabled={checkOut.isPending || leaving || lostTicket}
+          title={
+            lostTicket
+              ? 'Wait for the Manager to decide the lost-ticket case'
+              : pass.prepaid || current.amountDue <= 0 ? undefined : 'Prepay first, or pay the Staff at the exit lane'
+          }
           onClick={askCheckOut}
         >
           <LogOut aria-hidden /> {leaving ? 'Check-out requested' : 'Check out'}
