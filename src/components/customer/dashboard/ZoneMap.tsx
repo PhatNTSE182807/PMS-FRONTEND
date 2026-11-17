@@ -87,9 +87,9 @@ function MyVehicleCard({ current, bayCode, onClose }: { current: CurrentSessionD
         { label: 'Plate', value: session.hasPlate ? session.plateNumber : 'No plate' },
         { label: 'Entered', value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
         { label: 'Parked for', value: formatStay(stay ?? current.elapsedMinutes) },
-        // A lost-ticket case waiting for a Manager has no fee yet
+        // A lost-ticket case waiting for the Staff decision has no fee yet
         ...(current.lostTicketPending
-          ? [{ label: 'Fee', value: 'Lost ticket • waiting for a Manager', emphasis: true }]
+          ? [{ label: 'Fee', value: 'Lost ticket • Staff checking the papers', emphasis: true }]
           : [
               { label: 'Fee so far', value: vndOrDash(current.feeSoFar), emphasis: true },
               ...(current.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(current.depositApplied)}` }] : []),
