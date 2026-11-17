@@ -2,7 +2,7 @@
    CUSTOMER AREA — light mode, on when <html data-theme="light"> (see lib/theme.ts and the sun/moon button
    of the top bar); dark stays the default. It only swaps the .cx tokens of customer.css: off-white and
    black (an off-white page, white panels, light grey hairlines, near-black ink and buttons; only the
-   status colors add a hue); square corners.
+   status colors add a hue). Corners stay as rounded as in dark mode.
 ========================================================= */
 
 html[data-theme='light'] .cx {
@@ -39,13 +39,6 @@ html[data-theme='light'] .cx .cx-nav {
 
 html[data-theme='light'] .cx .cx-welcome {
   background: var(--cx-lowest);
-}
-
-html[data-theme='light'] .cx :is(.cx-card, .cx-welcome, .cx-tabs, .cx-tab, .cx-btn, .cx-chip, .cx-input, .cx-tile,
-    .cx-utility, .cx-vehicle, .cx-mini-vehicle, .cx-metrics, .cx-stats, .cx-kv, .cx-note, .cx-exit-pass, .cx-prepay,
-    .cx-summary, .cx-empty, .cx-zone, .cx-map__board, .cx-map__detail, .cx-map__floor, .cx-map__hint, .cx-map__mine,
-    .cx-session__plate-row, .cx-gate-request, .cx-upcoming__icon, .cx-category, .garage3d) {
-  border-radius: 2px;
 }
 
 /* Cards read as flat panels with a hairline instead of a shadow */
