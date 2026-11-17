@@ -5,11 +5,8 @@ import type {
   CheckInRequest,
   CheckInResultDTO,
   CheckoutQuoteDTO,
-  CheckoutRequest,
-  CheckoutResultDTO,
   GateDTO,
   GateReservationLookupDTO,
-  LostTicketRequest,
   ParkingSessionDTO,
   PaymentDTO,
   PaymentProvider,
@@ -113,11 +110,6 @@ export const gateService = {
     return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/entry-confirm`)
   },
 
-  /** The vehicle turned around before the sensor. */
-  cancelEntry(sessionId: number): Promise<ParkingSessionDTO> {
-    return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/entry-cancel`)
-  },
-
   /** Fee request at the exit lane: deposit deducted, Exit Window checked. */
   quote(sessionId: number, plateNumber?: string): Promise<CheckoutQuoteDTO> {
     return http.post<CheckoutQuoteDTO>(`${sessionPath(sessionId)}/quote`, { plateNumber })
@@ -161,16 +153,4 @@ export const gateService = {
     }
   },
 
-  /**
-   * Lost ticket / card: adds the lost-ticket fine. With `conditionsMet` the session moves straight to
-   * PendingPayment; otherwise it waits in LostTicketPending for a Manager's approval.
-   */
-  reportLostTicket(sessionId: number, request: LostTicketRequest): Promise<ParkingSessionDTO> {
-    return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/lost-ticket`, request)
-  },
-
-  /** The vehicle passes the exit barrier. */
-  checkout(sessionId: number, request: CheckoutRequest): Promise<CheckoutResultDTO> {
-    return http.post<CheckoutResultDTO>(`${sessionPath(sessionId)}/check-out`, request)
-  },
 }

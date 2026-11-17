@@ -1,6 +1,6 @@
 import { isMockService, SERVICE_PATHS } from '@/config/env'
 import { paymentMock } from '@/mocks/operations.mock'
-import type { PaymentCallbackResultDTO, PaymentDTO } from '@/types/operations.dto'
+import type { PaymentCallbackResultDTO } from '@/types/operations.dto'
 import { http } from './axiosClient'
 
 const base = `${SERVICE_PATHS.booking}/payments`
@@ -16,10 +16,6 @@ export const paymentService = {
     // Demo payments (?demo=1) never reached a real gateway
     if (mocked() || params.demo === '1') return paymentMock.handleReturn(provider, params)
     return http.get<PaymentCallbackResultDTO>(`${base}/${provider}/return`, { params })
-  },
-
-  get(id: number): Promise<PaymentDTO> {
-    return mocked() ? paymentMock.get(id) : http.get<PaymentDTO>(`${base}/${id}`)
   },
 
   /**

@@ -6,7 +6,6 @@ import type {
   PlateAvailabilityDTO,
   ProfileFieldAvailabilityDTO,
   UpdateProfileCommand,
-  UpdateVehicleCommand,
   UserProfileDTO,
   VehicleDTO,
   VehicleTypeDTO,
@@ -62,12 +61,6 @@ export const profileService = {
 
   addVehicle(command: CreateVehicleCommand): Promise<VehicleDTO> {
     return mocked() ? profileMock.addVehicle(command) : http.post<VehicleDTO>(`${base}/vehicles`, command)
-  },
-
-  updateVehicle(vehicleId: string, command: UpdateVehicleCommand): Promise<VehicleDTO> {
-    return mocked()
-      ? profileMock.updateVehicle(vehicleId, command)
-      : http.put<VehicleDTO>(`${base}/vehicles/${vehicleId}`, command)
   },
 
   deleteVehicle(vehicleId: string): Promise<boolean> {

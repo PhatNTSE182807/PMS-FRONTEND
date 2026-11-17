@@ -3,8 +3,6 @@ import type {
   PricingRuleDTO,
   PricingRuleInput,
   PricingRuleStatus,
-  PricingSimulationRequest,
-  PricingSimulationResult,
 } from '@/types/pricing.dto'
 import { mockFail, mockResponse } from './mockApi'
 
@@ -19,10 +17,6 @@ const TYPES = [
   { id: 2, code: 'CAR_7', name: '7-Seat Car' },
   { id: 3, code: 'MOTORBIKE', name: 'Motorbike' },
 ]
-
-/** Fees are rounded up to 1,000 VND, like the gates. */
-const ROUNDING_STEP = 1_000
-
 
 const stores = new Map<string, PricingRuleDTO[]>()
 let nextId = 100
@@ -84,98 +78,11 @@ function apply(rule: PricingRuleDTO, input: PricingRuleInput) {
   })
 }
 
-/** Minutes since midnight of an "HH:mm(:ss)" time. */
-const toMinutes = (hhmm: string) => {
-  const [h, m] = hhmm.split(':').map(Number)
-  return h * 60 + m
-}
-
-/** Price of one block starting at `start` (local time), like FeeCalculator.BlockPrice. */
-function blockPrice(rule: PricingRuleDTO, start: Date): number {
-  const fallback = rule.blockPrice ?? 0
-  if (rule.chargeModel !== 'DayNight' || !rule.dayStartTime || !rule.nightStartTime) return fallback
-  const t = start.getHours() * 60 + start.getMinutes()
-  const day = toMinutes(rule.dayStartTime)
-  const night = toMinutes(rule.nightStartTime)
-  const isDay = day <= night ? t >= day && t < night : t >= day || t < night
-  return (isDay ? rule.dayPrice : rule.nightPrice) ?? fallback
-}
-
 /** The rule the gate would use for a vehicle type: the Active one (latest version first). */
 function activeFor(lotId: string, vehicleTypeId: number | undefined) {
   return store(lotId)
     .filter((r) => r.status === 'Active' && r.vehicleTypeId === vehicleTypeId)
     .sort((a, b) => b.priority - a.priority || b.versionNo - a.versionNo)[0]
-}
-
-/** Mirror of the backend FeeCalculator.Calculate + Settle for one stay. */
-function simulate(rule: PricingRuleDTO, request: PricingSimulationRequest): PricingSimulationResult {
-  const entry = new Date(request.entryTime)
-  const exit = new Date(request.exitTime)
-  const duration = Math.max(0, Math.ceil((exit.getTime() - entry.getTime()) / 60_000))
-  const days: PricingSimulationResult['days'] = []
-  let gross = 0
-  // No free period: the first block is owed from entry, even for a stay of one minute
-  const withinGrace = false
-  const end = exit > entry ? exit : new Date(entry.getTime() + 60_000)
-  {
-    // Split the stay at local midnights; the daily cap applies per calendar day
-    let dayStart = entry
-    let first = true
-    while (dayStart < end) {
-      const midnight = new Date(dayStart)
-      midnight.setHours(24, 0, 0, 0)
-      const dayEnd = end < midnight ? end : midnight
-      let remaining = Math.ceil((dayEnd.getTime() - dayStart.getTime()) / 60_000)
-      const minutes = remaining
-      let cursor = new Date(dayStart)
-      let blocks = 0
-      let amount = 0
-      if (rule.chargeModel === 'PerEntry') {
-        blocks = 1
-        amount = rule.entryFee
-        remaining = 0
-      } else if (first && rule.firstBlockMinutes && rule.firstBlockPrice != null) {
-        blocks++
-        amount += rule.firstBlockPrice
-        remaining -= rule.firstBlockMinutes
-        cursor = new Date(cursor.getTime() + rule.firstBlockMinutes * 60_000)
-      }
-      const size = rule.blockMinutes && rule.blockMinutes > 0 ? rule.blockMinutes : 60
-      while (remaining > 0) {
-        blocks++
-        amount += blockPrice(rule, cursor)
-        remaining -= size
-        cursor = new Date(cursor.getTime() + size * 60_000)
-      }
-      const capped = rule.maxDailyFee != null && amount > rule.maxDailyFee
-      if (capped) amount = rule.maxDailyFee!
-      days.push({ date: dayStart.toISOString().slice(0, 10), minutes, blocks, amount, capped })
-      gross += amount
-      dayStart = dayEnd
-      first = false
-    }
-    if (rule.chargeModel !== 'PerEntry') gross += rule.entryFee
-  }
-  const fee = gross <= 0 ? 0 : Math.ceil(gross / ROUNDING_STEP) * ROUNDING_STEP
-  const lost = request.isLostTicket ? rule.lostTicketFee : 0
-  const total = fee + lost
-  const depositApplied = Math.min(request.depositAmount, total)
-  return {
-    durationMinutes: duration,
-    withinGrace,
-    grossFee: fee,
-    lostTicketFee: lost,
-    // The calculator never misses the exit window
-    exitWindowLateFee: 0,
-    depositApplied,
-    depositRefund: request.depositAmount - depositApplied,
-    amountDue: Math.max(0, total - request.depositAmount),
-    days,
-    ruleId: rule.id,
-    ruleVersion: rule.versionNo,
-    ruleName: rule.name,
-  }
 }
 
 export const pricingMock = {
@@ -242,12 +149,4 @@ export const pricingMock = {
         } satisfies PublicLotPriceDTO]
       }),
     ),
-
-  simulate: (lotId: string, request: PricingSimulationRequest) =>
-    mockResponse(() => {
-      if (new Date(request.exitTime) < new Date(request.entryTime)) mockFail(400, 'Exit time must be after the entry time.')
-      const rule = request.ruleId ? find(lotId, request.ruleId) : activeFor(lotId, request.vehicleTypeId)
-      if (!rule) mockFail(404, 'No active pricing rule for this vehicle type.')
-      return simulate(rule, request)
-    }),
 }

@@ -1,11 +1,10 @@
 import type { ReservationDTO, ReservationStatus } from '@/types/operations.dto'
 
 /**
- * Active bookings allowed per account and per vehicle (BR-07). Same defaults as the backend
- * (`Parking:Reservations:MaxActivePerAccount` / `MaxActivePerVehicle`), which enforces them.
+ * Active bookings allowed per account (BR-07). Same default as the backend
+ * (`Parking:Reservations:MaxActivePerAccount`), which enforces it.
  */
 export const MAX_ACTIVE_BOOKINGS_PER_ACCOUNT = 2
-export const MAX_ACTIVE_BOOKINGS_PER_VEHICLE = 1
 
 /** Bookings still in progress: waiting for the deposit, confirmed, or the vehicle is parked on it. */
 const ACTIVE_STATUSES: ReservationStatus[] = ['PendingDeposit', 'Confirmed', 'CheckedIn']

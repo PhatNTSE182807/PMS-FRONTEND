@@ -1,10 +1,9 @@
-import { buildTemplateGarage, GARAGE_TEMPLATES, standardBays, templateCapacity, templateForLot, type BayStatus } from '@/components/customer/garage/garageModel'
-import type { Layout2DDetail, LotLayoutDTO, LotLayoutStatusDTO, LotPlan2DDTO, LotTemplateDTO, SlotStatus } from '@/types/layout.dto'
+import { buildTemplateGarage, standardBays, templateForLot, type BayStatus } from '@/components/customer/garage/garageModel'
+import type { Layout2DDetail, LotPlan2DDTO, SlotStatus } from '@/types/layout.dto'
 import { mockFail, mockResponse } from './mockApi'
 import { findMockLot } from './parkingLots.mock'
 
 const SLOT_STATUS: Record<BayStatus, SlotStatus> = { AVAILABLE: 'Available', RESERVED: 'Reserved', OCCUPIED: 'Occupied' }
-const rowsFor = (slots: number) => (slots > 30 ? 4 : 2)
 
 /** Demo lots use the same model the 3D map shows, about half full, like the backend generates it. */
 function demoLayout(lotId: string) {
@@ -24,74 +23,6 @@ function demoLayout(lotId: string) {
 }
 
 export const layoutMock = {
-  templates(): Promise<LotTemplateDTO[]> {
-    return mockResponse(() =>
-      GARAGE_TEMPLATES.map((t) => {
-        const mix = templateCapacity(t)
-        const rows = rowsFor(t.slotsPerFloor)
-        return {
-          id: t.id,
-          name: t.name,
-          summary: t.summary,
-          slotsPerFloor: t.slotsPerFloor,
-          penaltySlotsPerFloor: t.penaltySlotsPerFloor,
-          carSlots: mix.car,
-          motorbikeSlots: mix.motorbike,
-          totalSlots: mix.total,
-          floors: t.floors.map((kind, i) => ({ floorNo: i, name: `L${i + 1}`, kind, rows, cols: Math.ceil(t.slotsPerFloor / rows) })),
-        }
-      }),
-    )
-  },
-
-  layout(lotId: string): Promise<LotLayoutDTO> {
-    return mockResponse(() => {
-      const { lot, template, floors } = demoLayout(lotId)
-      return {
-        parkingLotId: 0,
-        parkingLotName: lot.name,
-        lotStatus: 'Active',
-        version: 1,
-        templateId: template.id,
-        publishedAt: null,
-        updatedAt: new Date().toISOString(),
-        floors: floors.map((f) => ({ floorNo: f.index, name: f.level, kind: f.kind, rows: f.rows, cols: f.cols })),
-        zones: floors.map((f) => ({ zoneId: f.index + 1, code: f.level, name: f.zoneLabel, zoneType: 'Floor', floorNo: f.index })),
-        slots: floors.flatMap((f) =>
-          f.bays.map((b, i) => ({
-            slotId: f.index * 1000 + i + 1,
-            code: b.code,
-            zoneId: f.index + 1,
-            vehicleTypeCode: f.kind === 'car' ? 'CAR_4' : 'MOTORBIKE',
-            floorNo: f.index,
-            row: b.row,
-            col: b.col,
-            rotation: b.row % 2 === 0 ? 0 : 180,
-            modelUrl: null,
-            kind: b.penalty ? ('Penalty' as const) : ('Standard' as const),
-          })),
-        ),
-      }
-    })
-  },
-
-  status(lotId: string): Promise<LotLayoutStatusDTO> {
-    return mockResponse(() => {
-      const { floors } = demoLayout(lotId)
-      return {
-        parkingLotId: 0,
-        version: 1,
-        generatedAt: new Date().toISOString(),
-        slots: floors.flatMap((f) => f.bays.map((b, i) => ({ slotId: f.index * 1000 + i + 1, status: SLOT_STATUS[b.status] }))),
-        zones: floors.map((f) => ({
-          zoneId: f.index + 1,
-          total: standardBays(f).length,
-          free: standardBays(f).filter((b) => b.status === 'AVAILABLE').length,
-        })),
-      }
-    })
-  },
-
   plan2D(lotId: string, detail: Layout2DDetail): Promise<LotPlan2DDTO> {
     return mockResponse(() => {
       const { lot, floors } = demoLayout(lotId)
