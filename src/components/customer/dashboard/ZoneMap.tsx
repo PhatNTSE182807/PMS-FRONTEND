@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bike, Car, CircleAlert, CircleCheck, Info, MapPin, MousePointerClick, Navigation, Rotate3d, Wrench, X } from 'lucide-react'
+import { Bike, CalendarClock, Car, CircleAlert, CircleCheck, Info, MapPin, MousePointerClick, Navigation, Rotate3d, Wrench, X } from 'lucide-react'
 import { isMockService } from '@/config/env'
 import { LotDirectionsDialog } from '@/components/customer/LotDirectionsDialog'
 import { usePublicLots } from '@/hooks/usePublicLots'
@@ -8,7 +8,11 @@ import { useLotPlan2D } from '@/hooks/useLotLayout'
 import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { usePublicPrices } from '@/hooks/usePricing'
 import { useVehicles } from '@/hooks/useProfile'
-import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
+import { useBayForecast, useBookableLots, useMyReservations } from '@/hooks/useReservations'
+import { useNow } from '@/hooks/useNow'
+import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
+import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
+import type { BayForecastDTO } from '@/types/operations.dto'
 import { formatNumber } from '@/lib/format'
 import { FILL_LABEL, fillLevel, fillLevelOf, type FillLevel } from '@/lib/fillLevel'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
@@ -20,7 +24,7 @@ import type { CurrentSessionDTO } from '@/types/operations.dto'
 import { BayVehicleCard } from '../garage/BayVehicleCard'
 import { formatStay, useStayMinutes, vndOrDash } from '../garage/bayVehicleFormat'
 import { GarageView } from '../garage/GarageView'
-import { buildGarage, standardBays, type Bay, type BayStatus } from '../garage/garageModel'
+import { buildGarage, standardBays, type Bay, type BayStatus, type GarageFloor } from '../garage/garageModel'
 import { ParkMotorbikePanel } from './ParkMotorbikePanel'
 import { ReserveBayPanel } from './ReserveBayPanel'
 
@@ -37,6 +41,26 @@ const STATUS_LABEL: Record<BayStatus, string> = {
   AVAILABLE: 'Available',
   RESERVED: 'Booked by another driver',
   OCCUPIED: 'Occupied',
+}
+
+const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+
+/** The selected car bay's state during the picked window. */
+function forecastLabel(f: BayForecastDTO): string {
+  switch (f.state) {
+    case 'Free':
+      return 'Free at your time'
+    case 'FreeingUp':
+      return f.freeFrom ? `Free from ${clock.format(Date.parse(f.freeFrom))} • vehicle leaving` : 'Free at your time • vehicle leaving'
+    case 'Booked':
+      return 'Booked by another driver at your time'
+    case 'Occupied':
+      return f.bookable ? 'Occupied now • may be free by your time' : 'Still occupied at your time'
+    case 'OutOfService':
+      return 'Out of service'
+    default:
+      return 'Penalty bay'
+  }
 }
 
 /** "20,000 VND / 1h", "35,000 VND first 2h", "5,000 VND / day", or day and night prices, from the lot's public price. */
@@ -75,6 +99,35 @@ function MyVehicleCard({ current, bayCode, onClose }: { current: CurrentSessionD
       }
       onClose={onClose}
     />
+  )
+}
+
+/** The live status a forecast state is drawn with in the 3D model. */
+const FORECAST_STATUS: Partial<Record<BayForecastDTO['state'], BayStatus>> = {
+  Free: 'AVAILABLE',
+  FreeingUp: 'AVAILABLE',
+  Booked: 'RESERVED',
+  Occupied: 'OCCUPIED',
+}
+
+/**
+ * The car floors as they are expected to be during the picked window: a bay whose vehicle leaves in time is drawn
+ * empty, a bay booked then is drawn booked. Motorbike floors, penalty bays and bays without a forecast stay live.
+ */
+function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastDTO>): GarageFloor[] {
+  if (forecast.size === 0) return floors
+  return floors.map((floor) =>
+    floor.kind !== 'car'
+      ? floor
+      : {
+          ...floor,
+          bays: floor.bays.map((bay) => {
+            const status = bay.penalty ? undefined : FORECAST_STATUS[forecast.get(bay.id)?.state ?? 'Penalty']
+            if (!status || status === bay.status) return bay
+            // A vehicle expected to be gone is not drawn; a bay expected to fill gets the model's own car
+            return { ...bay, status, vehicleColor: null, vehicleKind: null, countedWalkIn: false, walkInSessionId: null }
+          }),
+        },
   )
 }
 
@@ -122,8 +175,24 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const realtime = useLotRealtime(lot?.id)
   const plan = useLotPlan2D(lot?.id, 'slots', realtime.connected)
   const planFloors = plan.data?.floors
-  const floors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
+  const liveFloors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
   const bookableBays = Boolean(planFloors)
+
+  // Team rule (2026-11-17): the customer picks the time first and the car floors show what each bay is expected to be
+  // then, e.g. a bay booked until 15:00 is free from 15:30, a simulated walk-in's bay is free once its stay is over
+  const now = useNow(30_000)
+  const [times, setTimes] = useState(() => defaultBookingTimes(Date.now()))
+  const checkedTimes = checkBookingTimes(times, now)
+  const bookingWindow = checkedTimes.ok ? { arrivalTime: checkedTimes.arrivalTime, departureTime: checkedTimes.departureTime } : null
+  const hasCarFloor = liveFloors.some((f) => f.kind === 'car')
+  const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow)
+  const forecastBySlot = useMemo(() => new Map((forecast.data ?? []).map((f) => [String(f.slotId), f])), [forecast.data])
+  const floors = useMemo(() => projectFloors(liveFloors, forecastBySlot), [liveFloors, forecastBySlot])
+  const forecastOn = forecastBySlot.size > 0
+  // Car bays only: motorbikes claim a bay on arrival and are not part of the picked window
+  const projectedFree = floors
+    .filter((f) => f.kind === 'car')
+    .reduce((sum, f) => sum + standardBays(f).filter((b) => forecastBySlot.get(b.id)?.bookable).length, 0)
   const [focusFloor, setFocusFloor] = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -146,6 +215,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const allBays = floors.flatMap((f) => f.bays)
   const selected = allBays.find((b) => b.id === selectedId) ?? null
   const selectedFloor = selected ? floors[selected.floorIndex] : null
+  // Car bays follow the forecast of the picked window; motorbikes claim a bay now, so they follow the live state
+  const selectedForecast = selected && selectedFloor?.kind === 'car' ? forecastBySlot.get(selected.id) : undefined
+  const selectedBookable = selectedForecast ? selectedForecast.bookable : selected?.status === 'AVAILABLE'
   // Highlighted in the model as "your booking", or else your parked vehicle
   const myBayId = myActive[0] ? String(myActive[0].slotId) : myParked[0] ? String(myParked[0].session.slotId) : null
   const myVehicle = vehicles.data?.find((v) => v.vehicleId === myActive[0]?.vehicleId)
@@ -286,14 +358,30 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
 
             {!underMaintenance && lotFill === 'Full' && (
               <p className="cx-map__mine cx-map__full" role="status">
-                <CircleAlert size={15} aria-hidden /> This lot is full right now. You can still book a car bay for an arrival
-                more than 2 hours from now, or pick another lot.
+                <CircleAlert size={15} aria-hidden /> This lot is full right now. Pick your time: bays whose vehicle leaves
+                before you arrive turn green, or pick another lot.
               </p>
             )}
             {!underMaintenance && lotFill === 'AlmostFull' && (
               <p className="cx-map__mine" role="status">
                 <CircleAlert size={15} aria-hidden /> This lot is almost full: book soon to keep a bay.
               </p>
+            )}
+
+            {bookableBays && hasCarFloor && !underMaintenance && (
+              <div className="cx-map__when">
+                <span className="cx-label">
+                  <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> When will you park your car?
+                </span>
+                <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`map-${lot.id}`} />
+                <p className="cx-field__hint" role="status">
+                  {!checkedTimes.ok
+                    ? checkedTimes.error
+                    : forecastOn
+                      ? `${describeWindow(checkedTimes.arrivalTime, checkedTimes.departureTime, now)}: ${projectedFree} car bays free. A bay whose vehicle leaves before you arrive shows as free.`
+                      : 'Loading the bays for your time…'}
+                </p>
+              </div>
             )}
 
             {selected && selectedFloor ? (
@@ -313,14 +401,16 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                 <div className="cx-map__cells">
                   <div className="cx-map__cell">
                     <span className="cx-label">Status</span>
-                    <strong className={selected.status === 'AVAILABLE' ? 'is-gold' : undefined}>
+                    <strong className={selectedBookable ? 'is-gold' : undefined}>
                       {myBayIds.has(selected.id)
                         ? 'Your booking'
                         : myParkedByBay.has(selected.id)
                           ? 'Your vehicle is parked here'
                           : selected.penalty
                             ? selected.status === 'OCCUPIED' ? 'Penalty bay • towed vehicle' : 'Penalty bay'
-                            : STATUS_LABEL[selected.status]}
+                            : selectedForecast
+                              ? forecastLabel(selectedForecast)
+                              : STATUS_LABEL[selected.status]}
                     </strong>
                   </div>
                   <div className="cx-map__cell">
@@ -345,10 +435,16 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                         ? 'Booked for you • show my QR'
                         : 'Held for you • Staff checks you in at the gate'}
                   </Link>
-                ) : selected.status === 'AVAILABLE' && !selected.penalty && bookableBays && !underMaintenance && !(selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)) ? (
+                ) : selectedBookable && !selected.penalty && bookableBays && !underMaintenance && !(selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)) ? (
                   // Cars book ahead with a time and an optional deposit; motorbikes claim the bay now
                   selectedFloor.kind === 'car' ? (
-                    <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
+                    <ReserveBayPanel
+                      key={`${lot.id}-${selected.id}`}
+                      lotKey={lot.id}
+                      slotId={selected.id}
+                      slotCode={selected.code}
+                      times={times}
+                    />
                   ) : (
                     <ParkMotorbikePanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
                   )
@@ -361,8 +457,8 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                         ? 'Penalty bay • only for towed vehicles'
                         : underMaintenance
                         ? 'Under maintenance • view only'
-                        : selected.status !== 'AVAILABLE'
-                        ? 'Not available'
+                        : !selectedBookable
+                        ? selectedForecast ? 'Not available at your time • pick another time or bay' : 'Not available'
                         : selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)
                         ? 'The motorbike floor is full • try again soon'
                         : 'This lot has no published layout yet'}

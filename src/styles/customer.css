@@ -3540,3 +3540,12 @@
     max-height: calc(100dvh - 5rem);
   }
 }
+
+/* Booking time picked above the bays: the car floors of the 3D model are drawn for it */
+.cx-map__when {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cx-border, rgba(255, 255, 255, 0.1));
+  border-radius: 0.75rem;
+}
