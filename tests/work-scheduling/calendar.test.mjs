@@ -8,20 +8,20 @@ const code = ts.transpileModule(readFileSync(new URL('../../src/lib/workSchedule
 const { addCalendarDays, calendarRange, navigateCalendar, shiftEndDate, isCalendarWeekend, buildShiftGroups, assignmentsForCell } =
   await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
 
-const person = (id, name = 'Đặng Quốc Bảo') => ({ id, employeeId: id, staffName: name, position: 'Entry', notes: 'Gate A', status: 'Assigned' })
+const person = (id, name = 'Đặng Quốc Bảo') => ({ id, employeeId: id, staffName: name, notes: 'Gate A', status: 'Assigned' })
 const shift = (id, day, people = [person(1)], extra = {}) => ({ id, workShiftTemplateId: 1, workDate: day, name: 'Morning',
-  startTime: '06:00:00', endTime: '14:00:00', assignments: people, entryAssigned: people.length,
-  minimumEntryStaff: 2, minimumExitStaff: 0, minimumCounterStaff: 0, exitAssigned: 0, counterAssigned: 0, ...extra })
+  startTime: '06:00:00', endTime: '14:00:00', assignments: people, assigned: people.length,
+  minimumStaff: 2, ...extra })
 const roster = (id, shifts) => ({ id, parkingLotId: 1, name: `Roster ${id}`, status: 'Published', fromDate: '2026-11-01', toDate: '2027-02-01', shifts })
 
 test('approved leave retains its employee row without becoming an active assignment or covering a shortage', () => {
-  const original = { assignmentId: 91, employeeId: 1, staffName: 'Đặng Quốc Bảo', position: 'Entry', kind: 'ApprovedLeave', isPaid: true }
+  const original = { assignmentId: 91, employeeId: 1, staffName: 'Đặng Quốc Bảo', kind: 'ApprovedLeave', isPaid: true }
   const dated = shift(1, '2026-11-16', [person(2, 'Replacement')], { trail: [original] })
   const group = buildShiftGroups([roster(1, [dated])], calendarRange('2026-11-16', 'week'), '')[0]
   assert.equal(group.employees.length, 2)
   assert.equal(assignmentsForCell(group, 1, '2026-11-16').length, 0)
   assert.equal(assignmentsForCell(group, 2, '2026-11-16').length, 1)
-  assert.equal(group.occurrences[0].shift.entryAssigned, 1)
+  assert.equal(group.occurrences[0].shift.assigned, 1)
   assert.equal(buildShiftGroups([roster(1, [dated])], calendarRange('2026-11-16', 'week'), 'bao')[0].employees[0].id, 1)
 })
 
@@ -70,14 +70,14 @@ test('search is accent-insensitive and does not change staffing totals', () => {
   const data = [roster(1, [shift(1, '2026-11-16', [person(1), person(2, 'Nguyễn Thị Hoa')])])]
   const [group] = buildShiftGroups(data, calendarRange('2026-11-16', 'week'), 'dang quoc')
   assert.deepEqual(group.employees.map(p => p.id), [1])
-  assert.equal(group.occurrences[0].shift.entryAssigned, 2)
+  assert.equal(group.occurrences[0].shift.assigned, 2)
   assert.equal(group.occurrences[0].shift.assignments.length, 2)
 })
 test('unfilled dated shifts retain a group with no employee rows', () => {
   const [group] = buildShiftGroups([roster(1, [shift(1, '2026-11-16', [])])], calendarRange('2026-11-16', 'week'), '')
   assert.equal(group.employees.length, 0)
   assert.equal(group.occurrences.length, 1)
-  assert.equal(group.occurrences[0].shift.minimumEntryStaff, 2)
+  assert.equal(group.occurrences[0].shift.minimumStaff, 2)
 })
 test('93-day rosters and large teams are filtered to the visible month without truncating cells', () => {
   const shifts = Array.from({ length: 93 }, (_, i) => shift(i + 1, addCalendarDays('2026-11-01', i), Array.from({ length: 150 }, (_, p) => person(p + 1, `Staff ${p + 1}`))))

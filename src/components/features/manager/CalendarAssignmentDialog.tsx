@@ -9,7 +9,7 @@ import { Spinner } from '@/components/ui/states'
 import { useAuth } from '@/hooks/useAuth'
 import { useScheduleMutation, workSchedulingKeys } from '@/hooks/useWorkScheduling'
 import { shiftEndDate } from '@/lib/workScheduleCalendar'
-import { POSITION_LABEL, WORK_POSITIONS, type DutyRoster, type EligibleStaffQuery, type WorkPosition } from '@/types/workScheduling.dto'
+import type { DutyRoster, EligibleStaffQuery } from '@/types/workScheduling.dto'
 import { AssignmentDetails, type CalendarCell } from './WorkScheduleCalendar'
 import AssignmentAttendancePanel from './AssignmentAttendancePanel'
 
@@ -21,7 +21,6 @@ export default function CalendarAssignmentDialog({ lotId, roster, cell, reason: 
   const initialShift = item?.shift ?? cell.occurrence?.shift
   const [targetId, setTargetId] = useState(initialShift?.id.toString() ?? 'new')
   const [employeeId, setEmployeeId] = useState((item?.assignment.employeeId ?? cell.employeeId)?.toString() ?? '')
-  const [position, setPosition] = useState<WorkPosition>(item?.assignment.position ?? 'Entry')
   const [notes, setNotes] = useState(item?.assignment.notes ?? '')
   const [reason, setReason] = useState(initialReason)
   // Preserve the version the user opened; polling must never silently authorize overwriting a newer version.
@@ -43,7 +42,7 @@ export default function CalendarAssignmentDialog({ lotId, roster, cell, reason: 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!employeeEligible || blocked) return
-    const input = { employeeId: Number(employeeId), position, notes, reason, revision }
+    const input = { employeeId: Number(employeeId), notes, reason, revision }
     mutation.mutate(() => item
       ? workSchedulingApi.saveAssignment(lotId, roster.id, item.shift.id, { ...input, targetShiftId: target?.id }, item.assignment.id)
       : workSchedulingApi.assignFromCalendar(lotId, roster.id, { ...input, shiftId: target?.id,
@@ -73,9 +72,6 @@ export default function CalendarAssignmentDialog({ lotId, roster, cell, reason: 
       {eligible.isPending && <p className="flex items-center gap-2 text-xs text-slate-500"><Spinner />Checking lot membership, active status and overlapping shifts…</p>}
       {eligible.isError && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(eligible.error)} <button type="button" className="underline" onClick={() => eligible.refetch()}>Retry</button></p>}
       {eligible.isSuccess && eligible.data.length === 0 && <p role="status" className="text-sm text-amber-800">No eligible Staff for this shift. Existing assignments, including drafts and overnight shifts, can block availability.</p>}
-      <label className="grid gap-1.5 text-sm font-medium text-slate-700">Position
-        <NativeSelect aria-label="Assignment position" value={position} onChange={e => setPosition(e.target.value as WorkPosition)}>{WORK_POSITIONS.map(p => <option key={p} value={p}>{POSITION_LABEL[p]}</option>)}</NativeSelect>
-      </label>
       <label className="grid gap-1.5 text-sm font-medium text-slate-700">Assignment notes
         <textarea aria-label="Assignment notes" maxLength={1000} rows={3} value={notes} onChange={e => setNotes(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900" />
       </label>

@@ -8,7 +8,6 @@ import WorkScheduleCalendar, { ScheduleToolbar, type CalendarCell } from '@/comp
 import CalendarAssignmentDialog from '@/components/features/manager/CalendarAssignmentDialog'
 import WorkRotationSetup from '@/components/features/manager/WorkRotationSetup'
 import GenerateRotationPanel from '@/components/features/manager/GenerateRotationPanel'
-import StandbyEditor from '@/components/features/manager/StandbyEditor'
 import WorkRequestsBoard from '@/components/features/manager/WorkRequestsBoard'
 import AttendancePeriodReviewPanel from '@/components/features/manager/AttendancePeriodReviewPanel'
 import type { RotationPreview } from '@/types/workScheduling.dto'
@@ -23,7 +22,7 @@ import { useManagerLot } from '@/hooks/useManagerLot'
 import { calendarRange, type CalendarView } from '@/lib/workScheduleCalendar'
 import { toIsoDate } from '@/lib/format'
 import type { ManagedLot } from '@/types/lot-management.dto'
-import { POSITION_LABEL, WORK_POSITIONS, type DutyAssignment, type DutyRoster, type RosterShift, type RosterStaff, type WorkPosition, type WorkShiftTemplate, type WorkShiftTemplateInput } from '@/types/workScheduling.dto'
+import type { DutyAssignment, DutyRoster, RosterShift, RosterStaff, WorkShiftTemplate, WorkShiftTemplateInput } from '@/types/workScheduling.dto'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="grid gap-1.5 text-sm font-medium text-slate-700">{label}{children}</label>
@@ -31,7 +30,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function TemplateForm({ lotId, template, close }: { lotId: string; template?: WorkShiftTemplate; close: () => void }) {
   const save = useScheduleMutation()
-  const [value, setValue] = useState<WorkShiftTemplateInput>(template ?? { name: '', startTime: '06:00:00', endTime: '14:00:00', minimumEntryStaff: 1, minimumExitStaff: 1, minimumCounterStaff: 0, isActive: true, revision: 0 })
+  const [value, setValue] = useState<WorkShiftTemplateInput>(template ?? { name: '', startTime: '06:00:00', endTime: '14:00:00', minimumStaff: 2, isActive: true, revision: 0 })
   const patch = (change: Partial<WorkShiftTemplateInput>) => setValue(v => ({ ...v, ...change }))
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -43,9 +42,7 @@ function TemplateForm({ lotId, template, close }: { lotId: string; template?: Wo
       <Field label="Shift name"><Input required maxLength={100} value={value.name} onChange={e => patch({ name: e.target.value })} /></Field>
       <Field label="Starts at"><Input required type="time" step="60" value={value.startTime.slice(0, 5)} onChange={e => patch({ startTime: `${e.target.value}:00` })} /></Field>
       <Field label="Ends at"><Input required type="time" step="60" value={value.endTime.slice(0, 5)} onChange={e => patch({ endTime: `${e.target.value}:00` })} /></Field>
-      <Field label="Minimum entry lane staff"><Input type="number" required min={0} max={100} value={value.minimumEntryStaff} onChange={e => patch({ minimumEntryStaff: Number(e.target.value) })} /></Field>
-      <Field label="Minimum exit lane staff"><Input type="number" required min={0} max={100} value={value.minimumExitStaff} onChange={e => patch({ minimumExitStaff: Number(e.target.value) })} /></Field>
-      <Field label="Minimum counter staff"><Input type="number" required min={0} max={100} value={value.minimumCounterStaff} onChange={e => patch({ minimumCounterStaff: Number(e.target.value) })} /></Field>
+      <Field label="Minimum staff"><Input type="number" required min={0} max={100} value={value.minimumStaff} onChange={e => patch({ minimumStaff: Number(e.target.value) })} /></Field>
     </div>
     <p className="text-sm text-slate-600">End times before the start time finish on the next day. Equal times are not allowed. Existing dated shifts keep their saved hours and staffing needs.</p>
     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={value.isActive} onChange={e => patch({ isActive: e.target.checked })} />Available for new shifts</label>
@@ -75,16 +72,14 @@ function CreateRoster({ lotId, close, created }: { lotId: string; close: () => v
   </form>
 }
 
-function AssignmentForm({ staff, assignment, busy, save, close }: { staff: RosterStaff[]; assignment?: DutyAssignment; busy: boolean; save: (employeeId: number, position: WorkPosition, notes: string) => void; close: () => void }) {
+function AssignmentForm({ staff, assignment, busy, save, close }: { staff: RosterStaff[]; assignment?: DutyAssignment; busy: boolean; save: (employeeId: number, notes: string) => void; close: () => void }) {
   const [employeeId, setEmployeeId] = useState(assignment?.employeeId.toString() ?? '')
-  const [position, setPosition] = useState<WorkPosition>(assignment?.position ?? 'Entry')
   const [notes, setNotes] = useState(assignment?.notes ?? '')
-  return <form className="grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end" onSubmit={e => { e.preventDefault(); save(Number(employeeId), position, notes) }}>
+  return <form className="grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end" onSubmit={e => { e.preventDefault(); save(Number(employeeId), notes) }}>
     <Field label="Staff"><NativeSelect required value={employeeId} onChange={e => setEmployeeId(e.target.value)}>
       <option value="">Choose active Staff</option>
       {staff.map(p => <option key={p.employeeId} value={p.employeeId}>{p.fullName} · {p.employeeCode}</option>)}
     </NativeSelect></Field>
-    <Field label="Position"><NativeSelect value={position} onChange={e => setPosition(e.target.value as WorkPosition)}>{WORK_POSITIONS.map(p => <option key={p} value={p}>{POSITION_LABEL[p]}</option>)}</NativeSelect></Field>
     <Field label="Notes"><Input maxLength={1000} value={notes} onChange={e => setNotes(e.target.value)} /></Field>
     <div className="flex gap-2"><Button type="submit" disabled={busy || !employeeId} size="sm">Save</Button><Button type="button" size="sm" variant="outline" onClick={close}>Cancel</Button></div>
   </form>
@@ -118,13 +113,13 @@ function ShiftCard({ lotId, roster, shift, templates, staff, reason }: { lotId: 
         <p className="flex items-center gap-1.5 text-sm text-slate-600"><Clock className="size-4" />{shift.startTime.slice(0, 5)}–{shift.endTime.slice(0, 5)}{shift.endTime < shift.startTime && ' · ends next day'}</p></div>
       <div className="flex gap-2"><Button variant="outline" size="sm" disabled={disabled} onClick={() => setEditingShift(v => !v)}><Pencil />Edit shift</Button><Button variant="ghost" size="sm" disabled={disabled} onClick={() => setRemoving(v => !v)}>Remove shift</Button></div>
     </div>
-    <p className="text-xs text-slate-500">Local time: {shift.timeZoneId}. Minimum staffing: entry {shift.minimumEntryStaff}, exit {shift.minimumExitStaff}, counter {shift.minimumCounterStaff}.</p>
-    {shortages.length > 0 && <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Staffing shortage: {shortages.map(x => `${POSITION_LABEL[x.position]} ${x.assigned}/${x.required}`).join(' · ')}. Publishing is still allowed.</p>}
+    <p className="text-xs text-slate-500">Local time: {shift.timeZoneId}. Staff: {shift.assigned} / {shift.minimumStaff}.</p>
+    {shortages.length > 0 && <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Staffing shortage: {shortages.map(x => `${x.assigned}/${x.required}`).join(' · ')}. Publishing is still allowed.</p>}
     {editingShift && <ShiftForm roster={roster} templates={templates} shift={shift} busy={disabled} close={() => setEditingShift(false)} save={(date, template) => mutation.mutate(() => workSchedulingApi.saveShift(lotId, roster.id, { ...input, workDate: date, workShiftTemplateId: template }, shift.id), { onSuccess: () => setEditingShift(false) })} />}
     {removing && <div className="flex flex-wrap items-center gap-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-900"><p>Remove this shift and all its assignments? Published Staff will be notified.</p><Button size="sm" disabled={disabled} onClick={() => mutation.mutate(() => workSchedulingApi.removeShift(lotId, roster.id, shift.id, input))}>Confirm removal</Button><Button variant="outline" size="sm" onClick={() => setRemoving(false)}>Keep shift</Button></div>}
-    <ul className="divide-y divide-slate-100">{shift.assignments.map(a => <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"><span><strong>{a.staffName}</strong> · {POSITION_LABEL[a.position]}</span><div className="flex gap-1"><Button size="sm" variant="ghost" disabled={disabled} onClick={() => setEditingAssignment(a)}>Edit</Button><Button size="sm" variant="ghost" disabled={disabled} onClick={() => mutation.mutate(() => workSchedulingApi.removeAssignment(lotId, roster.id, shift.id, a.id, input))}>Remove</Button></div></li>)}</ul>
+    <ul className="divide-y divide-slate-100">{shift.assignments.map(a => <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"><span><strong>{a.staffName}</strong></span><div className="flex gap-1"><Button size="sm" variant="ghost" disabled={disabled} onClick={() => setEditingAssignment(a)}>Edit</Button><Button size="sm" variant="ghost" disabled={disabled} onClick={() => mutation.mutate(() => workSchedulingApi.removeAssignment(lotId, roster.id, shift.id, a.id, input))}>Remove</Button></div></li>)}</ul>
     {shift.assignments.length === 0 && <p className="text-sm text-slate-500">No Staff assigned yet.</p>}
-    {editingAssignment ? <AssignmentForm key={editingAssignment === 'new' ? 'new' : editingAssignment.id} staff={staff} assignment={editingAssignment === 'new' ? undefined : editingAssignment} busy={disabled} close={() => setEditingAssignment(null)} save={(employeeId, position, notes) => mutation.mutate(() => workSchedulingApi.saveAssignment(lotId, roster.id, shift.id, { ...input, employeeId, position, notes }, editingAssignment === 'new' ? undefined : editingAssignment.id), { onSuccess: () => setEditingAssignment(null) })} />
+    {editingAssignment ? <AssignmentForm key={editingAssignment === 'new' ? 'new' : editingAssignment.id} staff={staff} assignment={editingAssignment === 'new' ? undefined : editingAssignment} busy={disabled} close={() => setEditingAssignment(null)} save={(employeeId, notes) => mutation.mutate(() => workSchedulingApi.saveAssignment(lotId, roster.id, shift.id, { ...input, employeeId, notes }, editingAssignment === 'new' ? undefined : editingAssignment.id), { onSuccess: () => setEditingAssignment(null) })} />
       : <Button variant="outline" size="sm" disabled={disabled || staff.length === 0} onClick={() => setEditingAssignment('new')}><Users />Assign Staff</Button>}
     {mutation.isError && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(mutation.error)}</p>}
   </Card>
@@ -141,8 +136,8 @@ const HISTORY_ACTION: Record<string, string> = {
 function HistorySnapshot({ json }: { json: string | null }) {
   if (!json) return <p className="text-slate-500">New roster</p>
   type SavedRoster = { Status: string; Shifts: { Id: number; WorkDate: string; Name: string; StartTime: string; EndTime: string;
-    MinimumEntryStaff: number; MinimumExitStaff: number; MinimumCounterStaff: number;
-    Assignments: { StaffName: string; Position: WorkPosition; Notes?: string }[] }[] }
+    MinimumStaff?: number; MinimumEntryStaff?: number; MinimumExitStaff?: number; MinimumCounterStaff?: number;
+    Assignments: { StaffName: string; Notes?: string }[] }[] }
   let saved: SavedRoster
   try { saved = JSON.parse(json) as SavedRoster } catch { return <p>History details unavailable.</p> }
   return <div className="max-h-80 space-y-3 overflow-auto rounded-lg bg-slate-50 p-3">
@@ -151,8 +146,8 @@ function HistorySnapshot({ json }: { json: string | null }) {
     {saved.Shifts.map(s => <div key={s.Id} className="border-t border-slate-200 pt-2">
       <p className="font-semibold">{s.WorkDate} · {s.Name}</p>
       <p>{s.StartTime.slice(0, 5)}–{s.EndTime.slice(0, 5)}{s.EndTime < s.StartTime && ' · ends next day'}</p>
-      <p className="text-xs text-slate-600">Minimum: entry {s.MinimumEntryStaff}, exit {s.MinimumExitStaff}, counter {s.MinimumCounterStaff}</p>
-      {s.Assignments.length ? <ul>{s.Assignments.map((a, i) => <li key={i}>{a.StaffName} · {POSITION_LABEL[a.Position]}{a.Notes && <p className="whitespace-pre-wrap break-words text-xs">{a.Notes}</p>}</li>)}</ul> : <p>No Staff assigned</p>}
+      <p className="text-xs text-slate-600">Minimum staff: {s.MinimumStaff ?? (s.MinimumEntryStaff ?? 0) + (s.MinimumExitStaff ?? 0) + (s.MinimumCounterStaff ?? 0)}</p>
+      {s.Assignments.length ? <ul>{s.Assignments.map((a, i) => <li key={i}>{a.StaffName}{a.Notes && <p className="whitespace-pre-wrap break-words text-xs">{a.Notes}</p>}</li>)}</ul> : <p>No Staff assigned</p>}
     </div>)}
   </div>
 }
@@ -208,7 +203,7 @@ function RosterEditor({ lotId, roster, templates, staff }: { lotId: string; rost
     <Card className="space-y-4 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-2xl font-semibold">{roster.name}</h2><p className="text-sm text-slate-600">{roster.fromDate} – {roster.toDate} · <strong className={published ? 'text-emerald-700' : 'text-amber-700'}>{roster.status}</strong> · version {roster.revision}</p></div><Button variant="outline" size="sm" onClick={() => setHistory(v => !v)}><History />History</Button></div>
       {published ? <Field label="Reason for changes to this published roster"><Input maxLength={500} required placeholder="Explain the change to affected Staff" value={reason} onChange={e => setReason(e.target.value)} /></Field> : <p className="text-sm text-slate-600">Draft: only your management view can see these shifts.</p>}
-      {roster.shortages.length > 0 && <details className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"><summary className="cursor-pointer"><strong>{roster.shortages.length} position shortages.</strong> Publishing is allowed. View all shortages</summary><ul className="mt-2 max-h-48 space-y-1 overflow-auto">{roster.shortages.map(x => <li key={`${x.shiftId}:${x.position}`}>{x.workDate} {x.shiftName}: {POSITION_LABEL[x.position]} {x.assigned}/{x.required}</li>)}</ul></details>}
+      {roster.shortages.length > 0 && <details className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"><summary className="cursor-pointer"><strong>{roster.shortages.length} understaffed shifts.</strong> Publishing is allowed. View all shortages</summary><ul className="mt-2 max-h-48 space-y-1 overflow-auto">{roster.shortages.map(x => <li key={x.shiftId}>{x.workDate} {x.shiftName}: {x.assigned}/{x.required}</li>)}</ul></details>}
       {(roster.rotationIssues?.length ?? 0) > 0 && <ul className="max-h-48 overflow-auto rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{roster.rotationIssues?.map((issue, i) => <li key={i}>{issue.blocking ? 'Violation' : 'Warning'} · {issue.date} · {issue.message}</li>)}</ul>}
       <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={disabled || Boolean(preview) || !templates.some(t => t.isActive)} onClick={() => setAdding(v => !v)}><Plus />Add dated shift</Button>{!published && <Button disabled={mutation.isPending || Boolean(preview) || roster.shifts.length === 0 || roster.rotationIssues?.some(i => i.blocking)} onClick={() => mutation.mutate(() => workSchedulingApi.publish(lotId, roster.id, { revision: roster.revision }))}>{roster.shortages.length ? 'Publish with staffing shortages' : 'Publish roster'}</Button>}</div>
       {mutation.isError && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(mutation.error)}</p>}
@@ -221,7 +216,6 @@ function RosterEditor({ lotId, roster, templates, staff }: { lotId: string; rost
     <ManagerRosterCalendar lotId={lotId} roster={preview?.roster ?? roster} templates={templates} reason={reason} preview={Boolean(preview)} />
     <Button variant="outline" aria-expanded={showDetails} onClick={() => setShowDetails(v => !v)}>{showDetails ? 'Hide dated shift controls' : 'Dated shift controls'}</Button>
     {showDetails && <div className="space-y-4">{roster.shifts.map(shift => <ShiftCard key={shift.id} lotId={lotId} roster={roster} shift={shift} templates={templates} staff={staff} reason={reason} />)}</div>}
-    {showDetails && !preview && <StandbyEditor lotId={lotId} roster={roster} staff={staff} reason={reason} />}
   </div>
 }
 
@@ -244,7 +238,7 @@ function Scheduling({ lot }: { lot: ManagedLot }) {
         <div className="flex justify-end"><Button onClick={() => setTemplateForm('new')}><Plus />New template</Button></div>
         {templateForm && <TemplateForm key={templateForm === 'new' ? 'new' : templateForm.id} lotId={lot.id} template={templateForm === 'new' ? undefined : templateForm} close={() => setTemplateForm(null)} />}
         {templateList.length === 0 && <Card><EmptyState title="No shift templates" description="Start by creating your lot's shift hours and minimum staffing needs." /></Card>}
-        <div className="grid gap-4 lg:grid-cols-2">{templateList.map(t => <Card key={t.id} className="space-y-2 p-5"><div className="flex items-start justify-between gap-3"><h2 className="font-display text-xl font-semibold">{t.name}</h2><Button size="sm" variant="outline" onClick={() => setTemplateForm(t)}><Pencil />Edit</Button></div><p>{t.startTime.slice(0, 5)}–{t.endTime.slice(0, 5)}{t.endTime < t.startTime && ' · ends next day'}</p><p className="text-sm text-slate-600">Entry {t.minimumEntryStaff} · Exit {t.minimumExitStaff} · Counter {t.minimumCounterStaff}</p><p className="text-xs font-semibold text-slate-500">{t.isActive ? 'Available' : 'Inactive'} · version {t.revision}</p></Card>)}</div>
+        <div className="grid gap-4 lg:grid-cols-2">{templateList.map(t => <Card key={t.id} className="space-y-2 p-5"><div className="flex items-start justify-between gap-3"><h2 className="font-display text-xl font-semibold">{t.name}</h2><Button size="sm" variant="outline" onClick={() => setTemplateForm(t)}><Pencil />Edit</Button></div><p>{t.startTime.slice(0, 5)}–{t.endTime.slice(0, 5)}{t.endTime < t.startTime && ' · ends next day'}</p><p className="text-sm text-slate-600">Minimum staff: {t.minimumStaff}</p><p className="text-xs font-semibold text-slate-500">{t.isActive ? 'Available' : 'Inactive'} · version {t.revision}</p></Card>)}</div>
       </> : <>
         <div className="flex flex-wrap items-end gap-3"><div className="min-w-64 flex-1"><Field label="Roster period"><NativeSelect value={selected?.id ?? ''} onChange={e => setSelected(Number(e.target.value))}><option value="" disabled>Select roster</option>{rosterList.map(r => <option key={r.id} value={r.id}>{r.name} · {r.fromDate} – {r.toDate} · {r.status}</option>)}</NativeSelect></Field></div><Button onClick={() => setCreating(v => !v)}><Plus />New roster</Button></div>
         {creating && <CreateRoster lotId={lot.id} close={() => setCreating(false)} created={r => setSelected(r.id)} />}

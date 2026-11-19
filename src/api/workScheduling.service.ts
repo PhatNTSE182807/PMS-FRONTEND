@@ -10,7 +10,6 @@ export const workSchedulingApi = {
   saveRotationCycle: (lotId: string, value: Omit<RotationCycle, 'id'>, id?: number) => id ? http.put<RotationCycle>(`${base(lotId)}/rotation-cycles/${id}`, value) : http.post<RotationCycle>(`${base(lotId)}/rotation-cycles`, value),
   previewRotation: (lotId: string, id: number, value: RotationGeneration) => http.post<RotationPreview>(`${roster(lotId, id)}/rotation-preview`, value),
   applyRotation: (lotId: string, id: number, value: RotationGeneration) => http.post<DutyRoster>(`${roster(lotId, id)}/rotation-apply`, value),
-  saveStandby: (lotId: string, rosterId: number, value: RosterMutation & { workDate: string; employeeId: number | null }, id?: number) => id ? http.put<DutyRoster>(`${roster(lotId, rosterId)}/standby/${id}`, value) : http.post<DutyRoster>(`${roster(lotId, rosterId)}/standby`, value),
   templates: (lotId: string) => http.get<WorkShiftTemplate[]>(`${base(lotId)}/templates`),
   saveTemplate: (lotId: string, input: WorkShiftTemplateInput, id?: number) => id
     ? http.put<WorkShiftTemplate>(`${base(lotId)}/templates/${id}`, input)
