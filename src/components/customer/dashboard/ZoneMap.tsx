@@ -200,7 +200,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const checkedTimes = checkBookingTimes(times, now)
   const bookingWindow = checkedTimes.ok ? { arrivalTime: checkedTimes.arrivalTime, departureTime: checkedTimes.departureTime } : null
   const hasCarFloor = liveFloors.some((f) => f.kind === 'car')
-  const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow)
+  const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow, realtime.connected)
   const forecastBySlot = useMemo(() => new Map((forecast.data ?? []).map((f) => [String(f.slotId), f])), [forecast.data])
   const floors = useMemo(() => projectFloors(liveFloors, forecastBySlot), [liveFloors, forecastBySlot])
   const forecastOn = forecastBySlot.size > 0

@@ -22,6 +22,11 @@ const BOOKED_BAY_TYPES = new Set<string>([
 /** Staff and Manager notices about how full a zone of their lot is. */
 const FILL_TYPES = new Set<string>(['LotAlmostFull', 'LotFull', 'LotSpaceAvailable'])
 
+/** Polling without SignalR (demo mode, hub down). */
+const NOTIFICATIONS_REFRESH_MS = 30_000
+/** Safety net while new notifications arrive as pushes. */
+const NOTIFICATIONS_PUSHED_MS = 5 * 60_000
+
 /** Loads the bell's notifications and keeps them up-to-date through SignalR. */
 export function useNotifications(take = 30) {
   const { user } = useAuth()
@@ -34,7 +39,8 @@ export function useNotifications(take = 30) {
     enabled: isLoggedIn,
     staleTime: 60_000,
     refetchOnWindowFocus: true,
-    refetchInterval: 30_000,
+    // New notifications are pushed; while the hub is live the timer only covers a missed push
+    refetchInterval: parkingOpsRealtime.isAvailable('booking') ? NOTIFICATIONS_PUSHED_MS : NOTIFICATIONS_REFRESH_MS,
   })
 
   // Real-time: a new notification arrives through the parking-ops hub
@@ -42,6 +48,11 @@ export function useNotifications(take = 30) {
     if (!parkingOpsRealtime.isAvailable('booking')) return
 
     const unsubscribe = parkingOpsRealtime.subscribe((event: ParkingOpsEvent) => {
+      // Back online after a drop: notifications created meanwhile were not pushed
+      if (event.type === 'ConnectionRestored') {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list() })
+        return
+      }
       if (event.type !== 'NotificationCreated') return
 
       const { notification, unreadCount } = event

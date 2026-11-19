@@ -114,7 +114,6 @@ export function LostTicketPapersDialog({ vehicle, onClose }: { vehicle: LostTick
     mutationFn: () => gateService.reportLostTicketWithPapers(vehicle!.sessionId, reason.trim(), citizenId!, registration!),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
-      void queryClient.invalidateQueries({ queryKey: ['lost-ticket-reviews'] })
       toast.success('Papers uploaded: compare them with the vehicle and decide.')
       navigate('/staff/exceptions', {
         state: { lostTicketReview: vehicle!.sessionId },

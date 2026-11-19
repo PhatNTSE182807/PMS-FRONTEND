@@ -30,13 +30,17 @@ export function useSimulatePayday() {
   })
 }
 
-/** Admin report of a month; polled so simulated paydays of Staff show up quickly. */
+/**
+ * Admin report of a month. Paying, adjusting and the payroll notices refresh it; a Staff's simulated payday sends
+ * no notice to the Admin, so it is also re-read when the tab gets focus and once a minute.
+ */
 export function usePayrollReport(filter: PayrollFilter) {
   const { user } = useAuth()
   return useQuery({
     queryKey: [...payrollKeys, user?.userId, 'report', filter],
     queryFn: () => payrollApi.report(filter),
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
     placeholderData: (previous) => previous,
   })
 }

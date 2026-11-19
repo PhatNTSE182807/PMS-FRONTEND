@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Banknote, Car, Clock, CreditCard, DoorOpen, HandCoins, QrCode as QrIcon, ReceiptText, RefreshCw, ShieldAlert, Undo2 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
-import { gateService } from '@/api/gate.service'
 import { paymentService } from '@/api/payment.service'
 import { Key, Panel, SectionTitle } from '@/components/features/staff/StaffBits'
 import { CashTopUpDialog, CashTopUpStatusLine } from '@/components/features/staff/CashTopUp'
@@ -15,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { ConfirmDialog } from '@/components/ui/dialog'
 import { QrCode } from '@/components/ui/qr-code'
-import { useCancelPaymentRequest, usePayCash, usePayOnline, useQuote } from '@/hooks/useGate'
+import { useCancelPaymentRequest, useGatePayments, useOpenSessions, usePayCash, usePayOnline, useQuote } from '@/hooks/useGate'
 import { useNow } from '@/hooks/useNow'
 import { useGateRequestQueue } from '@/hooks/useGateRequests'
 import { useMyStaffLots } from '@/hooks/useParking'
@@ -71,12 +70,8 @@ export default function StaffCheckoutPage() {
   // parked are not listed; find one by plate to charge it anyway.
   const exitRequests = useGateRequestQueue(lotKey, 'CheckOut')
   const leavingIds = new Set((exitRequests.data ?? []).filter((r) => r.status === 'Waiting' && r.sessionId).map((r) => r.sessionId))
-  const sessions = useQuery({
-    queryKey: ['staff-waiting-payment', lotKey],
-    queryFn: () => gateService.getSessions(lotKey!),
-    enabled: Boolean(lotKey),
-    refetchInterval: 5000,
-  })
+  // The lot's open sessions, shared with the gate dashboard: session and payment pushes refresh them
+  const sessions = useOpenSessions(lotKey)
   const waiting = {
     ...sessions,
     // Paid vehicles are done here: they wait in the Check-out lane of the gate dashboard
@@ -93,12 +88,8 @@ export default function StaffCheckoutPage() {
   const [historyPlate, setHistoryPlate] = useState('')
   const [historyPage, setHistoryPage] = useState(1)
   const [methodFilter, setMethodFilter] = useState<HistoryMethod>('')
-  const history = useQuery({
-    queryKey: ['staff-payment-history', lotKey, historyPage, historyPlate, methodFilter],
-    queryFn: () => gateService.getPayments(lotKey!, { page: historyPage, plate: historyPlate, method: methodFilter || undefined }),
-    enabled: Boolean(lotKey),
-    refetchInterval: 10000,
-  })
+  // Refreshed by the lot's payment pushes, not on a timer
+  const history = useGatePayments(lotKey, { page: historyPage, plate: historyPlate, method: methodFilter })
   const [confirmCash, setConfirmCash] = useState(false)
   const [quote, setQuote] = useState<CheckoutQuoteDTO | null>(null)
   const [qr, setQr] = useState<PaymentDTO | null>(null)
@@ -133,8 +124,7 @@ export default function StaffCheckoutPage() {
         {
           onSuccess: (q) => {
             setQuote(q)
-            // The vehicle now waits to pay: show it in the queue at once
-            void queryClient.invalidateQueries({ queryKey: ['staff-waiting-payment'] })
+            // The vehicle now waits to pay: the quote mutation refreshes the gate sessions, so the queue shows it at once
             setQr(null)
             setTendered(0)
             if (q.amountDue > 0 && q.exitWindowLateFee > 0) toast.warning(STAFF_TOAST.graceExceeded)
@@ -186,8 +176,6 @@ export default function StaffCheckoutPage() {
             description: change > 0 ? `Give back ${vnd(change)}.` : undefined,
           })
           void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
-          void queryClient.invalidateQueries({ queryKey: ['staff-payment-history'] })
-          void queryClient.invalidateQueries({ queryKey: ['staff-waiting-payment'] })
           loadQuote(session.id, exitPlate)
         },
         onError: (e) => {

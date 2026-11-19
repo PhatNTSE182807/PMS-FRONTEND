@@ -27,7 +27,14 @@ export function useDutyRealtime(lotId?: string) {
   }, [client, lotId, userId])
 }
 
-const live = { refetchInterval: 15_000, refetchOnReconnect: 'always' as const }
+/**
+ * Duty pushes and duty notices refresh these lists while SignalR is live, so the timer is only a safety net then;
+ * demo mode (no hub) keeps a 15 s poll.
+ */
+const live = {
+  refetchInterval: () => (parkingOpsRealtime.isAvailable('gate') ? 2 * 60_000 : 15_000),
+  refetchOnReconnect: 'always' as const,
+}
 
 export function useManagerDutyWeek(lotId: string, start: string) {
   useDutyRealtime(lotId)
