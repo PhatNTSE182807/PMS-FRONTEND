@@ -55,16 +55,17 @@ export function LiveLotModel({
   const canInspect = user !== null && INSPECTING_ROLES.includes(user.role)
   // The overview is an Admin / Manager endpoint: Staff were refused (403) every 15 seconds
   const readsCapacity = user?.role === 'ADMIN' || user?.role === 'MANAGER'
-  const capacity = useParkingCapacity({ enabled: readsCapacity })
+  const planLotId = lot?.id
+  const realtime = useLotRealtime(planLotId)
+  const plan = useLotPlan2D(planLotId, 'slots', realtime)
+  // The overview only draws a lot without a bay layout: once the plan is here it is read once, not every 15 s
+  const capacity = useParkingCapacity({ enabled: readsCapacity, poll: !plan.data?.floors.length })
   const live = capacity.data?.find((c) => c.id === lot?.id)
   // Answered once (data or error). Not `!isPending`: a query that failed (Staff get 403 here) goes back to
   // pending on every refetch, which unmounted the model and dropped the SignalR channel every few seconds.
   const capacitySettled = !readsCapacity || capacity.data !== undefined || capacity.errorUpdateCount > 0
   // The real bays always come first. The counts-only occupancy (Admin and Manager can read it) used to win here,
   // which drew vehicles and reserved bays in made-up places.
-  const planLotId = lot?.id
-  const realtime = useLotRealtime(planLotId)
-  const plan = useLotPlan2D(planLotId, 'slots', realtime.connected)
   const template = lot ? (findTemplate(lot.layoutTemplate) ?? templateForLot({ id: lot.id, layoutTemplate: live?.layoutTemplate })) : undefined
 
   const view = useMemo(() => {

@@ -40,7 +40,7 @@ function SimulateDialog({ backup, onClose }: { backup: boolean; onClose: () => v
             </Label>
           )}
           <Label className="grid gap-1">{backup ? 'Hours worked' : 'Overtime hours'} (× {formatVnd(HOURLY)})
-            <Input type="number" min={0} max={200} step={0.5} value={hours} onChange={(e) => setHours(Number(e.target.value))} />
+            <Input type="number" min={0} max={200} step={1} value={hours} onChange={(e) => setHours(Math.max(0, Math.trunc(Number(e.target.value))))} />
           </Label>
           <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-3 ring-1 ring-slate-200">
             <span className="font-semibold text-slate-800">You receive</span>

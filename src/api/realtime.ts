@@ -1,5 +1,6 @@
 import { HubConnectionBuilder, HubConnectionState, LogLevel, type HubConnection } from '@microsoft/signalr'
 import { getApiBaseUrl, isMockService } from '@/config/env'
+import type { LotLiveChangesDTO } from '@/types/layout.dto'
 
 /** Server → client events of PMS.API LotHub (/api/hubs/lots). Public: ids and statuses, never plates. */
 export interface SlotStatusChangedEvent {
@@ -28,6 +29,8 @@ export type LotEvent =
   | ({ type: 'LotStatusChanged' } & LotStatusChangedEvent)
   | ({ type: 'LayoutChanged' } & LayoutChangedEvent)
   | ({ type: 'ZoneCounterChanged' } & ZoneCounterChangedEvent)
+  /** The new state of the bays and zones a saved change touched: the map patches itself with it. */
+  | ({ type: 'LotLiveChanged'; lotId: number } & LotLiveChangesDTO)
 
 interface Watcher {
   onEvent: (event: LotEvent) => void
@@ -62,6 +65,10 @@ function hub(): HubConnection {
   built.on('LotStatusChanged', dispatch('LotStatusChanged'))
   built.on('LayoutChanged', dispatch('LayoutChanged'))
   built.on('ZoneCounterChanged', dispatch('ZoneCounterChanged'))
+  // Its lot id is named parkingLotId, like the 2D plan
+  built.on('LotLiveChanged', (payload: LotLiveChangesDTO) =>
+    dispatch('LotLiveChanged')({ ...payload, lotId: payload.parkingLotId }),
+  )
   built.onreconnecting(notifyConnection)
   built.onreconnected(() => joinAll(built).finally(notifyConnection))
   built.onclose(notifyConnection)

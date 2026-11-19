@@ -74,3 +74,21 @@ export interface LotPlan2DDTO {
     }[]
   }[]
 }
+
+type LotPlanCell = LotPlan2DDTO['floors'][number]['cells'][number]
+type LotPlanZoneCounter = NonNullable<LotPlan2DDTO['zoneCounters']>[number]
+
+/**
+ * "LotLiveChanged" on the public lot channel (PMS.API LotHub): the new state of the bays and zones a saved change
+ * touched, so an open map patches its cached plan instead of reloading it. Never a plate.
+ */
+export interface LotLiveChangesDTO {
+  parkingLotId: number
+  /** When the server read this state (Unix ms): an older push for the same bay or zone is dropped. */
+  at: number
+  cells: (Pick<LotPlanCell, 'slotId' | 'status' | 'bookedLater'> & {
+    vehicleColor: string | null
+    parkedVehicleTypeCode: string | null
+  })[]
+  zoneCounters: LotPlanZoneCounter[]
+}

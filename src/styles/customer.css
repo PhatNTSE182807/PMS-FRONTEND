@@ -2286,16 +2286,6 @@
   color: var(--cx-on-variant);
 }
 
-.cx-footer__links {
-  display: flex;
-  gap: 1.5rem;
-  font-size: 0.875rem;
-}
-
-.cx-footer__links a:hover {
-  color: var(--cx-primary);
-}
-
 /* Social media icon buttons (YouTube, Facebook, TikTok) */
 .cx-footer__social {
   display: flex;

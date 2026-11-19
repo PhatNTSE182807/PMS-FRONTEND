@@ -185,10 +185,10 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   }
 
   // The published layout gives the real slot ids a reservation needs; the template model is the fallback
-  // Bay changes arrive on the lot's public SignalR channel; while it is up the plan is only re-read on a push (and
-  // once a minute as a safety net) instead of every 2 seconds
+  // Bay changes arrive on the lot's public SignalR channel and patch the cached plan; while it is up the plan is only
+  // re-read on a reconnect or a layout change (and every few minutes as a safety net) instead of every 2 seconds
   const realtime = useLotRealtime(lot?.id)
-  const plan = useLotPlan2D(lot?.id, 'slots', realtime.connected)
+  const plan = useLotPlan2D(lot?.id, 'slots', realtime)
   const planFloors = plan.data?.floors
   const liveFloors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
   const bookableBays = Boolean(planFloors)
@@ -200,7 +200,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const checkedTimes = checkBookingTimes(times, now)
   const bookingWindow = checkedTimes.ok ? { arrivalTime: checkedTimes.arrivalTime, departureTime: checkedTimes.departureTime } : null
   const hasCarFloor = liveFloors.some((f) => f.kind === 'car')
-  const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow)
+  const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow, realtime.connected)
   const forecastBySlot = useMemo(() => new Map((forecast.data ?? []).map((f) => [String(f.slotId), f])), [forecast.data])
   const floors = useMemo(() => projectFloors(liveFloors, forecastBySlot), [liveFloors, forecastBySlot])
   const forecastOn = forecastBySlot.size > 0

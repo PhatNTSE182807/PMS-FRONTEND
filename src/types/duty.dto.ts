@@ -28,7 +28,8 @@ export interface DutyCell {
   onLeaveName: string | null
   leavePending: boolean
   attendanceStatus: AttendanceStatus | null
-  isAutoEnded: boolean
+  /** Started after the shift began. */
+  isLate: boolean
   checkInAt: string | null
   checkOutAt: string | null
   isPast: boolean
@@ -76,7 +77,7 @@ export interface DutyShift {
   startsAt: string
   endsAt: string
   attendanceStatus: AttendanceStatus | null
-  isAutoEnded: boolean
+  isLate: boolean
   checkInAt: string | null
   checkOutAt: string | null
 }
@@ -85,19 +86,9 @@ export interface DutyStatus {
   requireShiftForPos: boolean
   onShift: boolean
   canStart: boolean
-  canEnd: boolean
   current: DutyShift | null
   next: DutyShift | null
   employmentType: EmploymentType
-}
-
-export interface DutyAttendanceInput {
-  date: string
-  slot: DutySlot
-  employeeId: number
-  checkInAt: string | null
-  checkOutAt: string | null
-  reason: string
 }
 
 export interface LeaveShift {

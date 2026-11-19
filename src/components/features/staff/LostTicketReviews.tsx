@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox, FieldError, Label } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { useLostTicketSessions } from '@/hooks/useGate'
 import type { ParkingSessionDTO } from '@/types/operations.dto'
 
 const clock = new Intl.DateTimeFormat('en-GB', {
@@ -72,7 +73,6 @@ function Review({ session }: { session: ParkingSessionDTO }) {
     mutationFn: (approve: boolean) => gateService.reviewLostTicket(session.id, approve, note.trim()),
     onSuccess: (_, approve) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
-      void queryClient.invalidateQueries({ queryKey: ['lost-ticket-reviews'] })
       toast.success(
         approve
           ? `${session.plateNumber || 'The vehicle'} stays parked: the lost ticket fine is added when it checks out.`
@@ -163,13 +163,9 @@ function Review({ session }: { session: ParkingSessionDTO }) {
  * nothing is forgotten.
  */
 export function LostTicketReviews({ lotId, selectedSessionId }: { lotId: string | undefined; selectedSessionId?: number }) {
-  const waiting = useQuery({
-    queryKey: ['lost-ticket-reviews', lotId],
-    // Every waiting case is the Staff's to decide (the Manager no longer does), with or without uploaded papers
-    queryFn: () => gateService.getSessions(lotId!, 'LostTicketPending'),
-    enabled: Boolean(lotId),
-    refetchInterval: 10_000,
-  })
+  // Every waiting case is the Staff's to decide (the Manager no longer does), with or without uploaded papers.
+  // Session pushes keep the list current.
+  const waiting = useLostTicketSessions(lotId)
   const [pickedId, setPickedId] = useState<number | undefined>(selectedSessionId)
   const sessions = waiting.data ?? []
   const selected = sessions.find((s) => s.id === pickedId) ?? sessions[0]
