@@ -20,6 +20,11 @@ const TONE: Record<string, string> = {
   LotSpaceAvailable: 'bg-emerald-500',
   AccountDeletionRequested: 'bg-rose-500',
   LotPricingChanged: 'bg-indigo-500',
+  DutyAbsent: 'bg-rose-500',
+  DutyLeaveRequested: 'bg-amber-500',
+  DutyShiftChanged: 'bg-indigo-500',
+  PayrollPaid: 'bg-emerald-500',
+  PayrollReady: 'bg-amber-500',
 }
 
 /** Admin notices open the page where the Admin acts on them. */
@@ -27,6 +32,12 @@ const linkOf = (n: NotificationModel): string | null => {
   if (n.type === 'AccountDeletionRequested')
     return `/admin/customers${n.data?.email ? `?q=${encodeURIComponent(n.data.email)}` : ''}`
   if (n.type === 'LotPricingChanged') return '/admin/pricing-history'
+  if (n.type === 'PayrollReady') return '/admin/payroll'
+  // Duty and pay notices go to the console the person is in (Manager or Staff)
+  const manager = window.location.pathname.startsWith('/management')
+  if (n.type === 'DutyLeaveRequested') return '/management/work-schedules?tab=leave'
+  if (n.type.startsWith('Duty')) return manager ? '/management/work-schedules' : '/staff/work-schedule'
+  if (n.type === 'PayrollPaid') return manager ? '/management/payroll' : '/staff/payroll'
   return null
 }
 

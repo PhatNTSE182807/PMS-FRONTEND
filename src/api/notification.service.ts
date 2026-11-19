@@ -36,6 +36,15 @@ export interface NotificationModel {
     | 'AccountDeletionRequested'
     /** Admin bell: a Manager changed a lot's prices (data: lotId, lotName, vehicleType, changedBy, oldPrices, newPrices). */
     | 'LotPricingChanged'
+    /** Duty board: a shift of the person changed, they were absent, their attendance was corrected; leave asked or decided. */
+    | 'DutyShiftChanged'
+    | 'DutyAbsent'
+    | 'DutyAttendanceChanged'
+    | 'DutyLeaveRequested'
+    | 'DutyLeaveDecided'
+    /** Pay: the person's salary was paid; Admin bell: last month's payroll is ready to pay. */
+    | 'PayrollPaid'
+    | 'PayrollReady'
   title: string
   message: string
   refType: string | null

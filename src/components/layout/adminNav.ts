@@ -19,7 +19,7 @@ export const MANAGER_NAV: AdminNavItem[] = [
 
 /** Tabs of the Staff (gate attendant) POS terminal console. */
 export const STAFF_NAV: AdminNavItem[] = [
-  { to: '/staff/work-schedule', label: 'My Schedule', icon: CalendarCheck },
+  { to: '/staff/work-schedule', label: 'Duty Board', icon: CalendarCheck },
   { to: '/staff/payroll', label: 'My Payslips', icon: BadgeDollarSign },
   { to: '/staff/gate', label: 'Gate Dashboard', icon: LayoutDashboard },
   { to: '/staff/checkout', label: 'Payment & Checkout POS', icon: CreditCard },

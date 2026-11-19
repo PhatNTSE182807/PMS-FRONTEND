@@ -16,6 +16,7 @@ import CustomerDashboardPage from '@/pages/customer/CustomerDashboardPage'
 import CustomerProfilePage from '@/pages/customer/CustomerProfilePage'
 import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
 import CustomerBookingsPage from '@/pages/customer/CustomerBookingsPage'
+import { OffDutyPanel, PosShiftGate, StaffHome } from '@/components/features/duty/ShiftStatus'
 import CustomerActiveSessionsPage from '@/pages/customer/CustomerActiveSessionsPage'
 
 // Admin pages are code-split: drivers never download the dashboard (or its chart library).
@@ -124,14 +125,17 @@ export const router = createBrowserRouter([
     path: '/staff',
     element: <RequireAuth roles={['STAFF']}><StaffLayout /></RequireAuth>,
     children: [
-      { index: true, element: <Navigate to="gate" replace /> },
-      { path: 'gate', element: <StaffGatePage /> },
+      // On shift (or about to start): the POS; otherwise Off duty
+      { index: true, element: <StaffHome /> },
+      { path: 'off-duty', element: <OffDutyPanel /> },
       { path: 'work-schedule', element: <StaffWorkSchedulePage /> },
       { path: 'payroll', element: <PayrollPage /> },
-      { path: 'checkout', element: <StaffCheckoutPage /> },
-      { path: 'exceptions', element: <StaffExceptionsPage /> },
-      { path: 'cash-tally', element: <StaffCashTallyPage /> },
-      { path: 'verifications', element: <StaffVehicleVerificationPage /> },
+      // POS pages open only during the Staff's shift
+      { path: 'gate', element: <PosShiftGate><StaffGatePage /></PosShiftGate> },
+      { path: 'checkout', element: <PosShiftGate><StaffCheckoutPage /></PosShiftGate> },
+      { path: 'exceptions', element: <PosShiftGate><StaffExceptionsPage /></PosShiftGate> },
+      { path: 'cash-tally', element: <PosShiftGate><StaffCashTallyPage /></PosShiftGate> },
+      { path: 'verifications', element: <PosShiftGate><StaffVehicleVerificationPage /></PosShiftGate> },
     ],
   },
   { path: '*', element: <HomeRedirect /> },
