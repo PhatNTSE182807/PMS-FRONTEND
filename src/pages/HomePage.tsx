@@ -25,7 +25,7 @@ export default function HomePage() {
       </a>
       <HomeNav isOnline={!publicLots.isError} />
       <main>
-        <HeroSection reserveTo={dashboardTo} />
+        <HeroSection />
         <FacilityShowcase />
         <Capabilities />
         <TerminalNetwork

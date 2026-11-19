@@ -1,55 +1,93 @@
-import { Link } from 'react-router-dom'
-import { Boxes, Gauge, ShieldCheck, SlidersHorizontal, Zap } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 
-interface HeroSectionProps {
-  /** Where "Reserve priority slot" goes: the dashboard when signed in, otherwise sign-up. */
-  reserveTo: string
-}
+/**
+ * Background videos of the hero carousel, shown one at a time. `start` (seconds) skips an intro:
+ * the Lamborghini clip opens with the filmmaker's logo for its first 4 seconds.
+ */
+const HERO_VIDEOS = [
+  { src: '/home/videos/lamborghini-revuelto.mp4', start: 4.5 },
+  { src: '/home/videos/pagani-huayra.mp4', start: 0 },
+  { src: '/home/videos/bmw-m3-competition.mp4', start: 0 },
+]
 
-export function HeroSection({ reserveTo }: HeroSectionProps) {
+/** How long each video stays on screen before the carousel moves to the next one. */
+const SLIDE_DURATION_MS = 30_000
+
+/** Full-screen video hero: the title in the middle and a Discover button that scrolls to the facilities. */
+export function HeroSection() {
+  const [active, setActive] = useState(0)
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
+  // Users who ask the system for less motion see the poster frame only.
+  const [reducedMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+
+  // Move to the next video every 30 seconds.
+  useEffect(() => {
+    if (reducedMotion) return
+    const id = window.setTimeout(() => setActive((i) => (i + 1) % HERO_VIDEOS.length), SLIDE_DURATION_MS)
+    return () => window.clearTimeout(id)
+  }, [active, reducedMotion])
+
+  // Only the visible video plays; the others are paused and rewound to their start for next time.
+  useEffect(() => {
+    videoRefs.current.forEach((video, i) => {
+      if (!video) return
+      if (i === active && !reducedMotion) {
+        if (video.currentTime < HERO_VIDEOS[i].start) video.currentTime = HERO_VIDEOS[i].start
+        video.play().catch(() => {
+          /* autoplay blocked: the poster stays visible */
+        })
+      } else {
+        video.pause()
+        if (i !== active) video.currentTime = HERO_VIDEOS[i].start
+      }
+    })
+  }, [active, reducedMotion])
+
+  // Instead of the native loop (which would replay the intro), go back to the video's start when it ends.
+  const restart = (i: number) => {
+    const video = videoRefs.current[i]
+    if (!video || i !== active) return
+    video.currentTime = HERO_VIDEOS[i].start
+    void video.play().catch(() => {})
+  }
+
+  const discover = () => {
+    document.getElementById('facilities')?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
+  }
 
   return (
     <section className="home-hero" id="top">
-      <img src="/home/hero-garage.jpg" alt="" className="home-hero__photo" />
-      <div className="home-hero__shade" aria-hidden="true" />
-      <div className="home-hero__glow home-hero__glow--teal" aria-hidden="true" />
-      <div className="home-hero__glow home-hero__glow--gold" aria-hidden="true" />
+      <div className="home-hero__media" aria-hidden="true">
+        {HERO_VIDEOS.map(({ src, start }, i) => (
+          <video
+            key={src}
+            ref={(el) => {
+              videoRefs.current[i] = el
+            }}
+            className={`home-hero__video${i === active ? ' is-active' : ''}`}
+            // The media fragment makes the browser load and show the first frame at `start` already.
+            src={start > 0 ? `${src}#t=${start}` : src}
+            poster="/home/hero-garage.jpg"
+            muted
+            playsInline
+            onEnded={() => restart(i)}
+            // Load the first video right away; the others only fetch metadata until their turn.
+            preload={i === active ? 'auto' : 'metadata'}
+          />
+        ))}
+      </div>
 
-      <div className="home-container home-hero__grid">
-        <div>
-          <h1 className="home-hero__title">
-            Next-generation
-            <span className="home-hero__title-accent">Parking System</span>
-          </h1>
+      <div className="home-container home-hero__center">
+        <h1 className="home-hero__title">
+          Next-generation
+          <span className="home-hero__title-accent">Parking System</span>
+        </h1>
 
-          <p className="home-hero__lead">
-            Seamless optical ANPR access, 3D digital twin spatial guidance, and precision slot allocation for prestige
-            &amp; performance fleets.
-          </p>
-
-          <div className="home-hero__actions">
-            <a href="#facilities" className="home-btn home-btn--teal">
-              <Boxes aria-hidden />
-              Explore 3D bay architecture
-            </a>
-            <Link to={reserveTo} className="home-btn home-btn--gold-outline">
-              <ShieldCheck aria-hidden />
-              Reserve priority slot
-            </Link>
-          </div>
-
-          <ul className="home-hero__features">
-            <li>
-              <Gauge aria-hidden /> Optical ANPR access
-            </li>
-            <li>
-              <SlidersHorizontal aria-hidden /> Dedicated wide bays
-            </li>
-            <li>
-              <Zap aria-hidden /> Rapid high-power charging
-            </li>
-          </ul>
-        </div>
+        <button type="button" className="home-hero__discover" onClick={discover}>
+          Discover
+          <ChevronDown aria-hidden />
+        </button>
       </div>
     </section>
   )
