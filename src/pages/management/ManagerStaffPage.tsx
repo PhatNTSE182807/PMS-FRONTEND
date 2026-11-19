@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Info, Pencil, Search, Trash2, UserCheck, UserPlus, UserX, Users } from 'lucide-react'
+import { Info, Pencil, Search, UserCheck, UserPlus, UserX, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/apiError'
 import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useDeleteManagedStaff, useManagedStaff, useSetManagedStaffStatus } from '@/hooks/useManagedStaff'
+import { useManagedStaff, useSetManagedStaffStatus } from '@/hooks/useManagedStaff'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
 import { formatPhone, initials } from '@/lib/format'
@@ -24,19 +24,18 @@ import type { UserDTO } from '@/types/identity.dto'
 import type { ManagedLot } from '@/types/lot-management.dto'
 
 type Tab = 'ALL' | 'ACTIVE' | 'LOCKED'
-type PendingAction = { type: 'lock' | 'delete'; user: UserDTO }
+type PendingAction = { type: 'lock'; user: UserDTO }
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'ACTIVE', label: 'Active' },
-  { value: 'LOCKED', label: 'Locked' },
+  { value: 'LOCKED', label: 'Deactivated' },
 ]
 
 function Staff({ lot }: { lot: ManagedLot }) {
   const { lots } = useManagerLot()
   const staff = useManagedStaff({ parkingLotId: lot.id })
   const setStatus = useSetManagedStaffStatus()
-  const deleteStaff = useDeleteManagedStaff()
   const [tab, setTab] = useState<Tab>('ALL')
   const [query, setQuery] = useState('')
   const [form, setForm] = useState<{ open: boolean; user?: UserDTO }>({ open: false })
@@ -63,15 +62,6 @@ function Staff({ lot }: { lot: ManagedLot }) {
     }
   }
 
-  const confirmDelete = async (user: UserDTO) => {
-    try {
-      await deleteStaff.mutateAsync(user.id)
-      toast.success(`${user.fullName} was removed from your team`)
-      setPending(null)
-    } catch (error) {
-      toastAdminError(error, { fallback: 'Could not remove the staff member.' })
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -199,22 +189,12 @@ function Staff({ lot }: { lot: ManagedLot }) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              title={isLocked ? 'Unlock' : 'Lock'}
-                              aria-label={`${isLocked ? 'Unlock' : 'Lock'} ${p.fullName}`}
+                              title={isLocked ? 'Reactivate' : 'Deactivate'}
+                              aria-label={`${isLocked ? 'Reactivate' : 'Deactivate'} ${p.fullName}`}
                               className={isLocked ? 'text-emerald-600 hover:text-emerald-700' : 'text-amber-600 hover:text-amber-700'}
                               onClick={() => setPending({ type: 'lock', user: p })}
                             >
                               {isLocked ? <UserCheck /> : <UserX />}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Remove"
-                              aria-label={`Remove ${p.fullName}`}
-                              className="text-rose-600 hover:text-rose-700"
-                              onClick={() => setPending({ type: 'delete', user: p })}
-                            >
-                              <Trash2 />
                             </Button>
                           </div>
                         </TableCell>
@@ -227,8 +207,8 @@ function Staff({ lot }: { lot: ManagedLot }) {
 
         <p className="flex items-start gap-2 border-t border-slate-200 px-4 py-3 text-sm text-slate-700">
           <Info className="mt-0.5 size-4 shrink-0 text-amber-500" aria-hidden />
-          Each lot has one Manager and any number of Staff. Removing a staff member locks the account and keeps its history; lock
-          an account only after its cash for the day has been counted.
+          Each lot has one Manager and any number of Staff. Deactivating a staff member blocks sign-in and keeps all their history;
+          it is not possible while they are on shift. Have them hand in their cash drawer first.
         </p>
       </Card>
 
@@ -244,42 +224,27 @@ function Staff({ lot }: { lot: ManagedLot }) {
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setPending(null)}
-          title={pending.user.status === 'ACTIVE' ? 'Lock account?' : 'Unlock account?'}
+          title={pending.user.status === 'ACTIVE' ? 'Deactivate staff member?' : 'Reactivate staff member?'}
           description={
             <>
               <strong className="text-slate-900">{pending.user.fullName}</strong>{' '}
-              {pending.user.status === 'ACTIVE' ? 'will not be able to sign in until you unlock the account.' : 'will be able to sign in again right away.'}
+              {pending.user.status === 'ACTIVE'
+                ? 'can no longer sign in or be put on shifts until you reactivate the account. Their sessions, cash and pay records are kept.'
+                : 'can sign in and be put on shifts again right away.'}
             </>
           }
-          confirmLabel={pending.user.status === 'ACTIVE' ? 'Lock' : 'Unlock'}
+          confirmLabel={pending.user.status === 'ACTIVE' ? 'Deactivate' : 'Reactivate'}
           tone={pending.user.status === 'ACTIVE' ? 'destructive' : 'default'}
           pending={setStatus.isPending}
           onConfirm={() => confirmLock(pending.user)}
         />
       )}
 
-      {pending?.type === 'delete' && (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => !open && setPending(null)}
-          title="Remove staff member?"
-          description={
-            <>
-              <strong className="text-slate-900">{pending.user.fullName}</strong> leaves your team: the account is locked and marked as no
-              longer working here. Their sessions and cash records are kept.
-            </>
-          }
-          confirmLabel="Remove"
-          tone="destructive"
-          pending={deleteStaff.isPending}
-          onConfirm={() => confirmDelete(pending.user)}
-        />
-      )}
     </div>
   )
 }
 
-/** /management/staff: the Manager's gate staff for the selected lot, with add/edit/lock/remove. */
+/** /management/staff: the Manager's gate staff for the selected lot, with add, edit and deactivate. */
 export default function ManagerStaffPage() {
   return <WithManagerLot>{(lot) => <Staff lot={lot} />}</WithManagerLot>
 }
