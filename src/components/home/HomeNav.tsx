@@ -53,7 +53,8 @@ export function HomeNav({ isOnline }: HomeNavProps) {
 
         <div className="home-nav__actions">
           <ThemeToggle className="home-theme-toggle" />
-          <span className="home-pill">
+          {/* Plain text like Sign in: no box behind the status or the Book a slot link */}
+          <span className="home-nav__status">
             <span className={`home-dot ${isOnline ? 'home-dot--live' : 'home-dot--off'}`} aria-hidden="true" />
             {isOnline ? 'System online' : 'Feed offline'}
           </span>
@@ -66,7 +67,7 @@ export function HomeNav({ isOnline }: HomeNavProps) {
               Sign in
             </Link>
           )}
-          <Link to={bookTo} className="home-btn home-btn--teal">
+          <Link to={bookTo} className="home-nav__signin">
             Book a slot
           </Link>
         </div>
