@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { CalendarDays, Clock, LockKeyhole, LogIn, LogOut, Wallet } from 'lucide-react'
+import { CalendarDays, Clock, LockKeyhole, LogIn, Wallet } from 'lucide-react'
 import { dutyApi } from '@/api/duty.service'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -36,7 +36,6 @@ function NextShift({ shift }: { shift: DutyShift | null }) {
 export function ShiftBanner() {
   useDutyRealtime()
   const status = useDutyStatus()
-  const end = useDutyMutation('Shift ended.')
   const s = status.data
   if (!s?.current) return null
   if (s.canStart)
@@ -44,23 +43,21 @@ export function ShiftBanner() {
       <div role="status" className="mx-auto mb-4 flex max-w-[1400px] flex-wrap items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
         <Clock className="size-5 text-emerald-700" />
         <p className="min-w-0 flex-1 text-sm font-semibold text-emerald-900">
-          Your shift {slotHours(s.current.slot)} {new Date(s.current.startsAt).getTime() <= Date.now() ? 'has started' : `starts ${startsIn(s.current.startsAt)}`}.
+          Your shift {slotHours(s.current.slot)} {new Date(s.current.startsAt).getTime() <= Date.now() ? 'has started: you will be marked late' : `starts ${startsIn(s.current.startsAt)}`}.
           {s.requireShiftForPos && ' Start it to use the POS.'}
         </p>
         <StartButton size="sm" />
       </div>
     )
-  if (s.canEnd)
+  if (s.onShift)
     return (
       <div className="mx-auto mb-4 flex max-w-[1400px] flex-wrap items-center gap-3 rounded-xl bg-white px-4 py-2.5 ring-1 ring-slate-200">
         <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
         <p className="min-w-0 flex-1 text-sm text-slate-700">
           On shift <strong className="text-slate-950">{slotHours(s.current.slot)}</strong> since {clock(s.current.checkInAt)}
-          {!s.onShift && <span className="text-amber-700"> · the shift is over, end it now</span>}
+          {s.current.isLate && <span className="text-amber-700"> · late</span>}
+          <span className="text-slate-500"> · ends by itself at {clock(s.current.endsAt)}</span>
         </p>
-        <Button size="sm" variant="outline" disabled={end.isPending} onClick={() => end.mutate(() => dutyApi.endShift())}>
-          {end.isPending ? <Spinner /> : <LogOut />}End shift
-        </Button>
       </div>
     )
   return null
