@@ -135,6 +135,9 @@ function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastD
           bays: floor.bays.map((bay) => {
             const status = bay.penalty ? undefined : FORECAST_STATUS[forecast.get(bay.id)?.state ?? 'Penalty']
             if (!status || status === bay.status) return bay
+            // A vehicle parked now that is still there at the picked time (e.g. inside its own booking's window, which
+            // the forecast reports as Booked) keeps the car the model draws for it: its colour and 4- or 7-seat body
+            if (bay.status === 'OCCUPIED' && status !== 'AVAILABLE') return bay
             // A vehicle expected to be gone is not drawn; a bay expected to fill gets the model's own car
             return { ...bay, status, vehicleColor: null, vehicleKind: null, countedWalkIn: false, walkInSessionId: null }
           }),
