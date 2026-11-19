@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-/** Background videos of the hero carousel, shown one at a time. */
+/**
+ * Background videos of the hero carousel, shown one at a time. `start` (seconds) skips an intro:
+ * the Lamborghini clip opens with the filmmaker's logo for its first 4 seconds.
+ */
 const HERO_VIDEOS = [
-  '/home/videos/lamborghini-revuelto.mp4',
-  '/home/videos/pagani-huayra.mp4',
-  '/home/videos/bmw-m3-competition.mp4',
+  { src: '/home/videos/lamborghini-revuelto.mp4', start: 4.5 },
+  { src: '/home/videos/pagani-huayra.mp4', start: 0 },
+  { src: '/home/videos/bmw-m3-competition.mp4', start: 0 },
 ]
 
 /** How long each video stays on screen before the carousel moves to the next one. */
@@ -25,20 +28,29 @@ export function HeroSection() {
     return () => window.clearTimeout(id)
   }, [active, reducedMotion])
 
-  // Only the visible video plays; the others are paused and rewound so they start from the top next time.
+  // Only the visible video plays; the others are paused and rewound to their start for next time.
   useEffect(() => {
     videoRefs.current.forEach((video, i) => {
       if (!video) return
       if (i === active && !reducedMotion) {
+        if (video.currentTime < HERO_VIDEOS[i].start) video.currentTime = HERO_VIDEOS[i].start
         video.play().catch(() => {
           /* autoplay blocked: the poster stays visible */
         })
       } else {
         video.pause()
-        if (i !== active) video.currentTime = 0
+        if (i !== active) video.currentTime = HERO_VIDEOS[i].start
       }
     })
   }, [active, reducedMotion])
+
+  // Instead of the native loop (which would replay the intro), go back to the video's start when it ends.
+  const restart = (i: number) => {
+    const video = videoRefs.current[i]
+    if (!video || i !== active) return
+    video.currentTime = HERO_VIDEOS[i].start
+    void video.play().catch(() => {})
+  }
 
   const discover = () => {
     document.getElementById('facilities')?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
@@ -47,18 +59,19 @@ export function HeroSection() {
   return (
     <section className="home-hero" id="top">
       <div className="home-hero__media" aria-hidden="true">
-        {HERO_VIDEOS.map((src, i) => (
+        {HERO_VIDEOS.map(({ src, start }, i) => (
           <video
             key={src}
             ref={(el) => {
               videoRefs.current[i] = el
             }}
             className={`home-hero__video${i === active ? ' is-active' : ''}`}
-            src={src}
+            // The media fragment makes the browser load and show the first frame at `start` already.
+            src={start > 0 ? `${src}#t=${start}` : src}
             poster="/home/hero-garage.jpg"
             muted
-            loop
             playsInline
+            onEnded={() => restart(i)}
             // Load the first video right away; the others only fetch metadata until their turn.
             preload={i === active ? 'auto' : 'metadata'}
           />
