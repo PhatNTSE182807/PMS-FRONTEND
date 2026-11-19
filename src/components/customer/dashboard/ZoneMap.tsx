@@ -7,7 +7,6 @@ import { usePublicLots } from '@/hooks/usePublicLots'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
 import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { usePublicPrices } from '@/hooks/usePricing'
-import { useVehicles } from '@/hooks/useProfile'
 import { useBayForecast, useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { useNow } from '@/hooks/useNow'
 import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
@@ -133,11 +132,13 @@ function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastD
       : {
           ...floor,
           bays: floor.bays.map((bay) => {
-            const status = bay.penalty ? undefined : FORECAST_STATUS[forecast.get(bay.id)?.state ?? 'Penalty']
-            if (!status || status === bay.status) return bay
-            // A vehicle parked now that is still there at the picked time (e.g. inside its own booking's window, which
-            // the forecast reports as Booked) keeps the car the model draws for it: its colour and 4- or 7-seat body
-            if (bay.status === 'OCCUPIED' && status !== 'AVAILABLE') return bay
+            const f = bay.penalty ? undefined : forecast.get(bay.id)
+            const status = f ? FORECAST_STATUS[f.state] : undefined
+            if (!f || !status) return bay
+            // A vehicle parked now that is still there at the picked time keeps the car the model draws for it (its
+            // colour and 4- or 7-seat body), even when a booking also covers that time
+            if (bay.status === 'OCCUPIED' && status !== 'AVAILABLE' && f.parkedThen !== false) return bay
+            if (status === bay.status) return bay
             // A vehicle expected to be gone is not drawn; a bay expected to fill gets the model's own car
             return { ...bay, status, vehicleColor: null, vehicleKind: null, countedWalkIn: false, walkInSessionId: null }
           }),
@@ -211,7 +212,6 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const myReservations = useMyReservations()
-  const vehicles = useVehicles()
   const myActive = (myReservations.data ?? []).filter(
     (r) => (r.status === 'PendingDeposit' || r.status === 'Confirmed') && lot && (String(r.parkingLotId) === lot.id || r.parkingLotName === lot.name),
   )
@@ -234,8 +234,11 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const selectedBookable = selectedForecast ? selectedForecast.bookable : selected?.status === 'AVAILABLE'
   // Highlighted in the model as "your booking", or else your parked vehicle
   const myBayId = myActive[0] ? String(myActive[0].slotId) : myParked[0] ? String(myParked[0].session.slotId) : null
-  const myVehicle = vehicles.data?.find((v) => v.vehicleId === myActive[0]?.vehicleId)
-  const myVehicleKind = myVehicle && vehicleKind({ name: myVehicle.vehicleType }) === 'suv' ? 'suv' : 'car'
+  // Only a vehicle that checked in is drawn, so the colour and body the model may fall back on are those of the
+  // customer's parked vehicle, never of a booked one (its bay may still hold someone else's car)
+  const myParkedHere = myActive[0] ? undefined : myParked[0]
+  const myVehicleColor = myParkedHere?.session.paintColor ?? null
+  const myVehicleKind = myParkedHere && vehicleKind({ name: myParkedHere.session.vehicleTypeName ?? '' }) === 'suv' ? 'suv' : 'car'
   // The lot's real prices (the same rule the exit gate uses): motorbike floors show the motorbike price, car floors the 4-seat car price
   const prices = usePublicPrices(lot?.id)
   const price = prices.data?.find((p) => p.vehicleTypeCode === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR_4'))
@@ -331,7 +334,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                 focusFloor={focusFloor}
                 selectedBayId={selectedId}
                 myBayId={myBayId}
-                myVehicleColor={myVehicle?.color}
+                myVehicleColor={myVehicleColor}
                 myVehicleKind={myVehicleKind}
                 onSelectBay={selectBay}
                 bayHint={(bay) => (myParkedByBay.has(bay.id) ? 'Your vehicle · click for details' : null)}
