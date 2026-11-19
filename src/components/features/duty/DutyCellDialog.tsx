@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Siren } from 'lucide-react'
 import { dutyApi } from '@/api/duty.service'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -7,62 +7,35 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input, Label } from '@/components/ui/form-controls'
 import { Spinner } from '@/components/ui/states'
 import { useDutyCandidates, useDutyMutation } from '@/hooks/useDuty'
-import { EMPLOYMENT_LABEL, shiftLabel } from '@/lib/duty'
+import { EMPLOYMENT_LABEL, clock, shiftLabel } from '@/lib/duty'
 import { cn } from '@/lib/utils'
 import type { DutyCell, DutyScope } from '@/types/duty.dto'
 
-/** datetime-local value (viewer's time) of an ISO instant. */
-function localInput(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-function AttendanceForm({ lotId, cell, onDone }: { lotId: string; cell: DutyCell; onDone: () => void }) {
-  const save = useDutyMutation('Attendance saved.')
-  const [checkIn, setCheckIn] = useState(localInput(cell.checkInAt))
-  const [checkOut, setCheckOut] = useState(localInput(cell.checkOutAt))
-  const [reason, setReason] = useState('')
-  return (
-    <form className="space-y-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200" onSubmit={(e) => {
-      e.preventDefault()
-      save.mutate(() => dutyApi.adjustAttendance(lotId, {
-        date: cell.date, slot: cell.slot, employeeId: cell.employeeId!, reason,
-        checkInAt: checkIn ? new Date(checkIn).toISOString() : null, checkOutAt: checkOut ? new Date(checkOut).toISOString() : null,
-      }), { onSuccess: onDone })
-    }}>
-      <p className="text-sm font-semibold text-slate-900">Correct attendance of {cell.employeeName}</p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Label className="grid gap-1">Check-in<Input type="datetime-local" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} /></Label>
-        <Label className="grid gap-1">Check-out<Input type="datetime-local" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} /></Label>
-      </div>
-      <p className="text-xs text-slate-600">Leave both empty to mark the shift absent.</p>
-      <Label className="grid gap-1">Reason<Input required maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Forgot to start the shift" /></Label>
-      <Button type="submit" size="sm" disabled={save.isPending || !reason.trim()}>{save.isPending && <Spinner />}Save attendance</Button>
-    </form>
-  )
-}
-
-/** Manager: who works one shift. Pick a person (or nobody) for this day only or for every week from this day. */
+/**
+ * Manager: who works one shift.
+ * - Only this day = emergency replacement: backup Staff only, possible until the shift ends (someone working is taken off now).
+ * - This and following weeks = the weekly pattern: full-time Staff only, for shifts that have not begun.
+ */
 export function DutyCellDialog({ lotId, cell, onClose }: { lotId: string; cell: DutyCell; onClose: () => void }) {
   const started = new Date(cell.startsAt).getTime() <= Date.now()
-  const checkedIn = Boolean(cell.checkInAt)
-  const canChange = !cell.isPast && !checkedIn
+  const canChange = !cell.isPast
   const candidates = useDutyCandidates(lotId, cell.date, cell.slot, cell.employeeId ?? undefined, canChange)
-  const save = useDutyMutation('Duty board saved.')
-  const [choice, setChoice] = useState<number | 'empty' | null>(null)
+  const save = useDutyMutation(started ? 'Replacement saved.' : 'Duty board saved.')
   const [scope, setScope] = useState<DutyScope>('Day')
+  const [choice, setChoice] = useState<number | 'empty' | null>(null)
   const [reason, setReason] = useState('')
-  const [correcting, setCorrecting] = useState(false)
-  const chosen = typeof choice === 'number' ? candidates.data?.find((c) => c.employeeId === choice) : undefined
-  const followingBlocked = chosen?.employmentType === 'Backup'
+  const wanted = scope === 'Day' ? 'Backup' : 'FullTime'
+  const list = (candidates.data ?? []).filter((c) => c.employmentType === wanted)
+
+  const pickScope = (value: DutyScope) => {
+    setScope(value)
+    setChoice(null)
+  }
 
   const submit = () => {
     if (choice == null) return
     save.mutate(() => dutyApi.setCell(lotId, {
-      date: cell.date, slot: cell.slot, employeeId: choice === 'empty' ? null : choice,
-      scope: followingBlocked ? 'Day' : scope, reason: reason.trim() || undefined,
+      date: cell.date, slot: cell.slot, employeeId: choice === 'empty' ? null : choice, scope, reason: reason.trim() || undefined,
     }), { onSuccess: onClose })
   }
 
@@ -76,17 +49,38 @@ export function DutyCellDialog({ lotId, cell, onClose }: { lotId: string; cell: 
             {cell.employmentType && <Badge tone={cell.employmentType === 'Backup' ? 'violet' : 'neutral'}>{EMPLOYMENT_LABEL[cell.employmentType]}</Badge>}
             {cell.onLeaveName && <Badge tone="amber">{cell.onLeaveName} on leave</Badge>}
             {cell.leavePending && <Badge tone="amber">Leave pending</Badge>}
-            {cell.attendanceStatus && <Badge tone={cell.attendanceStatus === 'Absent' ? 'rose' : 'emerald'}>{cell.attendanceStatus}</Badge>}
+            {cell.attendanceStatus === 'Absent' && <Badge tone="rose">Absent</Badge>}
+            {cell.isLate && <Badge tone="amber">Late · {clock(cell.checkInAt)}</Badge>}
+            {cell.attendanceStatus === 'Working' && !cell.isLate && <Badge tone="emerald">On shift · {clock(cell.checkInAt)}</Badge>}
           </div>
         </div>
 
         {canChange ? (
           <div className="space-y-4">
+            <fieldset className="grid gap-2 sm:grid-cols-2">
+              <legend className="mb-1 text-sm font-semibold text-slate-800">What to do</legend>
+              <label className={cn('flex cursor-pointer items-start gap-2 rounded-lg px-3 py-2 ring-1 ring-slate-200', scope === 'Day' && 'bg-rose-50 ring-rose-300')}>
+                <input type="radio" name="scope" className="mt-1" checked={scope === 'Day'} onChange={() => pickScope('Day')} />
+                <span>
+                  <span className="flex items-center gap-1 text-sm font-semibold text-slate-900"><Siren className="size-4 text-rose-600" />Emergency replacement</span>
+                  <span className="block text-xs text-slate-600">This day only, with a backup Staff member.{started && cell.employeeId ? ' The person on shift is taken off now.' : ''}</span>
+                </span>
+              </label>
+              <label className={cn('flex items-start gap-2 rounded-lg px-3 py-2 ring-1 ring-slate-200', started ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+                scope === 'Following' && 'bg-indigo-50 ring-indigo-300')}>
+                <input type="radio" name="scope" className="mt-1" disabled={started} checked={scope === 'Following'} onChange={() => pickScope('Following')} />
+                <span>
+                  <span className="block text-sm font-semibold text-slate-900">Change the weekly pattern</span>
+                  <span className="block text-xs text-slate-600">{started ? 'Not for a shift that has begun.' : 'This and following weeks, with a full-time Staff member.'}</span>
+                </span>
+              </label>
+            </fieldset>
+
             <fieldset className="space-y-2">
-              <legend className="mb-1 text-sm font-semibold text-slate-800">{cell.employeeId ? 'Replace with' : 'Put on this shift'}</legend>
+              <legend className="mb-1 text-sm font-semibold text-slate-800">{scope === 'Day' ? 'Backup Staff' : 'Full-time Staff'}</legend>
               {candidates.isPending ? <Spinner /> : (
                 <ul className="max-h-72 space-y-1 overflow-y-auto pr-1">
-                  {(candidates.data ?? []).map((c) => (
+                  {list.map((c) => (
                     <li key={c.employeeId}>
                       <label className={cn('flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ring-1 ring-slate-200',
                         choice === c.employeeId && 'bg-indigo-50 ring-indigo-300', !c.eligible && 'cursor-not-allowed opacity-60')}>
@@ -95,11 +89,11 @@ export function DutyCellDialog({ lotId, cell, onClose }: { lotId: string; cell: 
                           <span className="block truncate text-sm font-semibold text-slate-900">{c.fullName}</span>
                           <span className="block text-xs text-slate-600">{c.shiftsThisWeek} shift(s) this week{c.blockedReason ? ` · ${c.blockedReason}` : ''}</span>
                         </span>
-                        {c.employmentType === 'Backup' && <Badge tone="violet">Backup</Badge>}
                         {c.warning && <Badge tone="amber">{c.warning}</Badge>}
                       </label>
                     </li>
                   ))}
+                  {list.length === 0 && <li className="text-sm text-slate-600">Nobody available.</li>}
                   {cell.employeeId && (
                     <li>
                       <label className={cn('flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ring-1 ring-slate-200', choice === 'empty' && 'bg-rose-50 ring-rose-300')}>
@@ -112,44 +106,21 @@ export function DutyCellDialog({ lotId, cell, onClose }: { lotId: string; cell: 
               )}
             </fieldset>
 
-            <fieldset className="grid gap-2 sm:grid-cols-2">
-              <legend className="mb-1 text-sm font-semibold text-slate-800">Apply to</legend>
-              {(['Day', 'Following'] as const).map((value) => (
-                <label key={value} className={cn('flex cursor-pointer items-start gap-2 rounded-lg px-3 py-2 ring-1 ring-slate-200',
-                  scope === value && !(value === 'Following' && followingBlocked) && 'bg-indigo-50 ring-indigo-300',
-                  value === 'Following' && followingBlocked && 'cursor-not-allowed opacity-50')}>
-                  <input type="radio" name="scope" className="mt-1" disabled={value === 'Following' && followingBlocked}
-                    checked={value === 'Day' ? scope === 'Day' || followingBlocked : scope === 'Following' && !followingBlocked}
-                    onChange={() => setScope(value)} />
-                  <span>
-                    <span className="block text-sm font-semibold text-slate-900">{value === 'Day' ? 'Only this day' : 'This and following weeks'}</span>
-                    <span className="block text-xs text-slate-600">
-                      {value === 'Day' ? 'The weekly pattern stays the same.' : followingBlocked ? 'Backup Staff are not in the weekly pattern.' : 'Changes the weekly pattern.'}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-
             <Label className="grid gap-1">Note (optional)
-              <Input maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Shown in the shift history" />
+              <Input maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Sick, called in a backup" />
             </Label>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={submit} disabled={choice == null || save.isPending}>{save.isPending && <Spinner />}Save</Button>
+              <Button variant={scope === 'Day' ? 'destructive' : 'default'} onClick={submit} disabled={choice == null || save.isPending}>
+                {save.isPending && <Spinner />}{scope === 'Day' ? 'Replace now' : 'Save pattern'}
+              </Button>
               <Button variant="outline" onClick={onClose}>Cancel</Button>
             </div>
           </div>
         ) : (
           <p className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
-            {cell.isPast ? 'This shift is over.' : 'The Staff on this shift has already started it.'}
+            This shift is over.
           </p>
-        )}
-
-        {started && cell.employeeId && (
-          correcting
-            ? <AttendanceForm lotId={lotId} cell={cell} onDone={onClose} />
-            : <Button variant="outline" size="sm" className="justify-self-start" onClick={() => setCorrecting(true)}>Correct attendance</Button>
         )}
       </DialogContent>
     </Dialog>

@@ -48,9 +48,9 @@ interface DutyBoardProps {
 
 function AttendanceBadge({ cell }: { cell: DutyCell }) {
   if (cell.attendanceStatus === 'Absent') return <Badge tone="rose">Absent</Badge>
-  if (cell.attendanceStatus === 'Working') return <Badge tone="emerald">On shift · {clock(cell.checkInAt)}</Badge>
-  if (cell.attendanceStatus === 'Completed')
-    return <Badge tone={cell.isAutoEnded ? 'amber' : 'neutral'}>{cell.isAutoEnded ? 'Auto-ended' : `${clock(cell.checkInAt)}–${clock(cell.checkOutAt)}`}</Badge>
+  const late = cell.isLate ? <Badge tone="amber">Late · {clock(cell.checkInAt)}</Badge> : null
+  if (cell.attendanceStatus === 'Working') return <>{late ?? <Badge tone="emerald">On shift · {clock(cell.checkInAt)}</Badge>}</>
+  if (cell.attendanceStatus === 'Completed') return <>{late}<Badge tone="neutral">{clock(cell.checkInAt)}–{clock(cell.checkOutAt)}</Badge></>
   return null
 }
 
