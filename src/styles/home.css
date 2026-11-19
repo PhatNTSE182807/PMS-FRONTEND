@@ -265,7 +265,13 @@
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--home-primary);
+  /* Gold, like the crest; fixed so the light theme (where --home-gold turns black) keeps it */
+  color: #e9c349;
+}
+
+html[data-theme='light'] .home-nav__brand-mark {
+  /* Deeper gold so it stays readable on the light header */
+  color: #b8901f;
 }
 
 /* "XXIV PARKING" on one line, both words the same size */

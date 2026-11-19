@@ -30,8 +30,9 @@
   padding: 0 20px 0 5px;
   border: 0;
   border-radius: 32px;
-  background: var(--ast-primary);
-  color: var(--ast-on-primary);
+  /* Black with white text in both themes */
+  background: #000000;
+  color: #ffffff;
   font: 600 14px/1 var(--ast-font);
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
@@ -74,7 +75,7 @@
 .ast-avatar img { width: 100%; height: 100%; object-fit: cover; }
 /* Optimus Prime's portrait is shown large so the face reads at a glance */
 .ast-panel__avatar { width: 56px; height: 56px; }
-.ast-launcher__avatar { width: 54px; height: 54px; border-color: rgba(0, 53, 72, 0.35); }
+.ast-launcher__avatar { width: 54px; height: 54px; border-color: rgba(255, 255, 255, 0.35); }
 .ast-msg__avatar { width: 40px; height: 40px; grid-row: 1 / span 2; align-self: start; }
 .ast-panel__title { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .ast-panel__title strong { font-size: 14px; }
