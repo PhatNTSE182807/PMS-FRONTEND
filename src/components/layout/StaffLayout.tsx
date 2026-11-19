@@ -19,6 +19,9 @@ import { session } from '@/lib/session'
 import { STAFF_NAV } from './adminNav'
 import { ShiftBanner } from '@/components/features/duty/ShiftStatus'
 
+/** A Staff who cancels their own cash request already gets a popup: the alert only refreshes the drawers. */
+const STAFF_QUIET_CASH_ALERTS = ['CASH_TOPUP_CANCELLED']
+
 function PageSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Loading page">
@@ -37,7 +40,7 @@ export function StaffLayout() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const { lots, lot, setLotId } = useStaffLot()
-  useCashAlerts(lot?.id)
+  useCashAlerts(lot?.id, STAFF_QUIET_CASH_ALERTS)
   const { pathname } = useLocation()
 
   // On a phone the tabs scroll sideways: bring the open one into view

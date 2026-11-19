@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { parkingService } from '@/api/parking.service'
+import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
+import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 import { useAuth } from './useAuth'
 
 /** Near real-time polling interval for occupancy (to be replaced by a SignalR push). */
@@ -26,13 +28,31 @@ export function useMyStaffLots() {
   })
 }
 
-/** Live occupancy of one lot for its Manager; refreshed every 10 s. */
+/** Occupancy polling without SignalR (demo mode, hub down). */
+const OCCUPANCY_REFRESH_MS = 10_000
+/** Safety net while the zone counter pushes refresh the occupancy. */
+const OCCUPANCY_PUSHED_MS = 60_000
+/** A busy gate moves the counters many times a minute: re-read the occupancy at most this often. */
+const OCCUPANCY_PUSH_WINDOW_MS = 3_000
+
+/** Live occupancy of one lot for its Manager: every zone counter push of the lot refreshes it. */
 export function useLotOccupancy(lotId: string | undefined) {
+  const queryClient = useQueryClient()
+  const live = parkingOpsRealtime.isAvailable('gate')
+
+  useEffect(() => {
+    if (!live || !lotId) return
+    return parkingOpsRealtime.subscribe((event) => {
+      if (event.type === 'ZoneCounterChanged' || event.type === 'ConnectionRestored')
+        invalidateFromPush(queryClient, queryKeys.parking.occupancy(lotId), { windowMs: OCCUPANCY_PUSH_WINDOW_MS })
+    }, lotId)
+  }, [live, lotId, queryClient])
+
   return useQuery({
     queryKey: queryKeys.parking.occupancy(lotId ?? ''),
     queryFn: () => parkingService.getLotOccupancy(lotId!),
     enabled: Boolean(lotId),
-    refetchInterval: 10_000,
+    refetchInterval: live ? OCCUPANCY_PUSHED_MS : OCCUPANCY_REFRESH_MS,
     refetchIntervalInBackground: false,
   })
 }

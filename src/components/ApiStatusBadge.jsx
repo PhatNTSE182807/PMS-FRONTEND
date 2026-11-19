@@ -4,6 +4,7 @@ import { getApiBaseUrl, setApiBaseUrlOverride } from '../config/env';
 
 // The runtime URL override is a development aid; production builds use VITE_API_BASE_URL.
 const canConfigureUrl = import.meta.env.DEV;
+const PING_INTERVAL_MS = import.meta.env.DEV ? 60_000 : 5 * 60_000;
 
 export default function ApiStatusBadge() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,8 +28,21 @@ export default function ApiStatusBadge() {
 
   useEffect(() => {
     checkStatus();
-    const interval = setInterval(checkStatus, 60000);
-    return () => clearInterval(interval);
+    // Developers watch the badge while switching backends; elsewhere a check every 5 minutes is plenty.
+    // A hidden tab skips the check, and coming back to it or getting the network back checks at once.
+    const interval = setInterval(() => {
+      if (!document.hidden) checkStatus();
+    }, PING_INTERVAL_MS);
+    const onVisible = () => {
+      if (!document.hidden) checkStatus();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', checkStatus);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', checkStatus);
+    };
   }, []);
 
   const handleSaveUrl = () => {

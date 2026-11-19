@@ -181,14 +181,19 @@ export function usePayDeposit() {
 
 /**
  * Expected state of the lot's bays during the window the customer is about to book (null window: none yet). Kept
- * fresh while the map is open, since vehicles arrive and leave all the time.
+ * fresh while the map is open, since vehicles arrive and leave all the time. While the lot's push channel is live
+ * (`pushed`) the bays on the map are already current, so the forecast is re-read once a minute instead of every 15 s.
  */
-export function useBayForecast(lotId: string | undefined, window: { arrivalTime: string; departureTime: string | null } | null) {
+export function useBayForecast(
+  lotId: string | undefined,
+  window: { arrivalTime: string; departureTime: string | null } | null,
+  pushed = false,
+) {
   return useQuery({
     queryKey: queryKeys.reservations.forecast(lotId ?? '', window?.arrivalTime ?? '', window?.departureTime ?? null),
     queryFn: () => reservationService.getForecast(lotId!, window!.arrivalTime, window!.departureTime),
     enabled: Boolean(lotId && window),
-    refetchInterval: RESERVATIONS_REFRESH_MS,
+    refetchInterval: pushed ? 60_000 : RESERVATIONS_REFRESH_MS,
     placeholderData: (previous) => previous,
   })
 }

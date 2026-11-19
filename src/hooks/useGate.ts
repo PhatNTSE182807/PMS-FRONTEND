@@ -11,6 +11,9 @@ import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 /** Polling fallback for the lane console when SignalR is not connected (demo, hub down). */
 const GATE_REFRESH_MS = 5_000
 
+/** While SignalR is live the session and payment pushes refresh the gate lists; this only covers a missed push. */
+const GATE_PUSHED_SAFETY_NET_MS = 60_000
+
 /** A burst of session pushes (a busy lane, the Admin simulation) refreshes the gate lists at most this often. */
 const SESSION_PUSH_WINDOW_MS = 3_000
 
@@ -139,7 +142,41 @@ export function useGateExits(lotId: string | undefined) {
     queryKey: queryKeys.gate.exits(lotId ?? ''),
     queryFn: () => gateService.getHistory(lotId!, 1, undefined, 20, 'exit'),
     enabled: Boolean(lotId),
-    refetchInterval: live ? 15_000 : GATE_REFRESH_MS,
+    // Every exit is a session push, so the list is refreshed by the push; the timer is only a safety net
+    refetchInterval: live ? GATE_PUSHED_SAFETY_NET_MS : GATE_REFRESH_MS,
+  })
+}
+
+/**
+ * Lost tickets of the lot waiting for the Staff's decision. Reporting or deciding one is a session push, so the
+ * list follows the pushes (it used to be re-read every 10 s whether or not anything changed).
+ */
+export function useLostTicketSessions(lotId: string | undefined) {
+  const live = useGateRealtime(lotId)
+  return useQuery({
+    queryKey: queryKeys.gate.lostTickets(lotId ?? ''),
+    queryFn: () => gateService.getSessions(lotId!, 'LostTicketPending'),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? GATE_PUSHED_SAFETY_NET_MS : GATE_REFRESH_MS * 2,
+  })
+}
+
+export interface GatePaymentFilter {
+  page: number
+  plate: string
+  method: string
+}
+
+/**
+ * One page of the payments taken at the lot. A payment push refreshes it; without a hub it is re-read every 10 s.
+ */
+export function useGatePayments(lotId: string | undefined, filter: GatePaymentFilter) {
+  const live = useGateRealtime(lotId)
+  return useQuery({
+    queryKey: queryKeys.gate.payments(lotId ?? '', filter),
+    queryFn: () => gateService.getPayments(lotId!, { page: filter.page, plate: filter.plate, method: filter.method || undefined }),
+    enabled: Boolean(lotId),
+    refetchInterval: live ? false : GATE_REFRESH_MS * 2,
   })
 }
 

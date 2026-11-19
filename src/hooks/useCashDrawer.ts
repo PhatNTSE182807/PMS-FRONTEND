@@ -55,13 +55,19 @@ export function useCloseCashDrawer() {
   })
 }
 
+/**
+ * The Manager's queues follow the lot's cash alerts (a drawer closed, cash requested, cancelled or decided:
+ * useCashAlerts in the console layout refreshes them); the timer is a safety net, 15 s in demo mode.
+ */
+const CASH_QUEUE_PUSHED_MS = 2 * 60_000
+
 /** Manager: the lot's closed drawers waiting for confirmation. */
 export function useCashCloses(lotId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.cashDrawer.closes(lotId ?? ''),
     queryFn: () => cashDrawerService.forLot(lotId!),
     enabled: Boolean(lotId),
-    refetchInterval: 15_000,
+    refetchInterval: parkingOpsRealtime.isAvailable('gate') ? CASH_QUEUE_PUSHED_MS : 15_000,
   })
 }
 
@@ -108,7 +114,7 @@ export function useCashTopUps(lotId: string | undefined) {
     queryKey: queryKeys.cashDrawer.topUps(lotId ?? ''),
     queryFn: () => cashDrawerService.topUpsForLot(lotId!),
     enabled: Boolean(lotId),
-    refetchInterval: 15_000,
+    refetchInterval: parkingOpsRealtime.isAvailable('gate') ? CASH_QUEUE_PUSHED_MS : 15_000,
   })
 }
 
