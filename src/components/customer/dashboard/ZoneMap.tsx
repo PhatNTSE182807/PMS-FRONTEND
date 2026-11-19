@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bike, Car, CircleCheck, Info, MapPin, MousePointerClick, Navigation, Rotate3d, Wrench, X } from 'lucide-react'
+import { Bike, CalendarClock, Car, CircleAlert, CircleCheck, Info, MapPin, MousePointerClick, Navigation, Rotate3d, Wrench, X } from 'lucide-react'
 import { isMockService } from '@/config/env'
 import { LotDirectionsDialog } from '@/components/customer/LotDirectionsDialog'
 import { usePublicLots } from '@/hooks/usePublicLots'
 import { useLotPlan2D } from '@/hooks/useLotLayout'
+import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { usePublicPrices } from '@/hooks/usePricing'
-import { useVehicles } from '@/hooks/useProfile'
-import { useBookableLots, useMyReservations } from '@/hooks/useReservations'
+import { useBayForecast, useBookableLots, useMyReservations } from '@/hooks/useReservations'
+import { useNow } from '@/hooks/useNow'
+import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
+import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
+import type { BayForecastDTO } from '@/types/operations.dto'
 import { formatNumber } from '@/lib/format'
+import { FILL_LABEL, fillLevel, fillLevelOf, type FillLevel } from '@/lib/fillLevel'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 import type { PublicLotPriceDTO } from '@/types/pricing.dto'
 import { vehicleKind } from '../customerFormat'
@@ -18,7 +23,7 @@ import type { CurrentSessionDTO } from '@/types/operations.dto'
 import { BayVehicleCard } from '../garage/BayVehicleCard'
 import { formatStay, useStayMinutes, vndOrDash } from '../garage/bayVehicleFormat'
 import { GarageView } from '../garage/GarageView'
-import { buildGarage, type Bay, type BayStatus } from '../garage/garageModel'
+import { buildGarage, standardBays, type Bay, type BayStatus, type GarageFloor } from '../garage/garageModel'
 import { ParkMotorbikePanel } from './ParkMotorbikePanel'
 import { ReserveBayPanel } from './ReserveBayPanel'
 
@@ -35,6 +40,26 @@ const STATUS_LABEL: Record<BayStatus, string> = {
   AVAILABLE: 'Available',
   RESERVED: 'Booked by another driver',
   OCCUPIED: 'Occupied',
+}
+
+const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+
+/** The selected car bay's state during the picked window. */
+function forecastLabel(f: BayForecastDTO): string {
+  switch (f.state) {
+    case 'Free':
+      return 'Free at your time'
+    case 'FreeingUp':
+      return f.freeFrom ? `Free from ${clock.format(Date.parse(f.freeFrom))} • vehicle leaving` : 'Free at your time • vehicle leaving'
+    case 'Booked':
+      return 'Booked by another driver at your time'
+    case 'Occupied':
+      return f.bookable ? 'Occupied now • may be free by your time' : 'Still occupied at your time'
+    case 'OutOfService':
+      return 'Out of service'
+    default:
+      return 'Penalty bay'
+  }
 }
 
 /** "20,000 VND / 1h", "35,000 VND first 2h", "5,000 VND / day", or day and night prices, from the lot's public price. */
@@ -61,18 +86,63 @@ function MyVehicleCard({ current, bayCode, onClose }: { current: CurrentSessionD
         { label: 'Plate', value: session.hasPlate ? session.plateNumber : 'No plate' },
         { label: 'Entered', value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
         { label: 'Parked for', value: formatStay(stay ?? current.elapsedMinutes) },
-        { label: 'Fee so far', value: vndOrDash(current.feeSoFar), emphasis: true },
-        ...(current.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(current.depositApplied)}` }] : []),
-        ...(current.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(current.alreadyPaid)}` }] : []),
-        { label: 'Due now', value: vndOrDash(current.amountDue) },
+        // A lost-ticket case waiting for the Staff decision has no fee yet
+        ...(current.lostTicketPending
+          ? [{ label: 'Fee', value: 'Lost ticket • Staff checking the papers', emphasis: true }]
+          : [
+              { label: 'Fee so far', value: vndOrDash(current.feeSoFar), emphasis: true },
+              ...(current.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(current.depositApplied)}` }] : []),
+              ...(current.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(current.alreadyPaid)}` }] : []),
+              { label: 'Due now', value: vndOrDash(current.amountDue) },
+            ]),
       ]}
       footer={
-        <>
-          The fee refreshes every minute. <Link to="/me" className="cx-link">Pay or show the exit pass</Link>
-        </>
+        current.lostTicketPending ? (
+          <>
+            The fee and fine are settled at the exit lane once the case is decided. <Link to="/me" className="cx-link">See the details</Link>
+          </>
+        ) : (
+          <>
+            The fee refreshes every minute. <Link to="/me" className="cx-link">Pay or show the exit pass</Link>
+          </>
+        )
       }
       onClose={onClose}
     />
+  )
+}
+
+/** The live status a forecast state is drawn with in the 3D model. */
+const FORECAST_STATUS: Partial<Record<BayForecastDTO['state'], BayStatus>> = {
+  Free: 'AVAILABLE',
+  FreeingUp: 'AVAILABLE',
+  Booked: 'RESERVED',
+  Occupied: 'OCCUPIED',
+}
+
+/**
+ * The car floors as they are expected to be during the picked window: a bay whose vehicle leaves in time is drawn
+ * empty, a bay booked then is drawn booked. Motorbike floors, penalty bays and bays without a forecast stay live.
+ */
+function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastDTO>): GarageFloor[] {
+  if (forecast.size === 0) return floors
+  return floors.map((floor) =>
+    floor.kind !== 'car'
+      ? floor
+      : {
+          ...floor,
+          bays: floor.bays.map((bay) => {
+            const f = bay.penalty ? undefined : forecast.get(bay.id)
+            const status = f ? FORECAST_STATUS[f.state] : undefined
+            if (!f || !status) return bay
+            // A vehicle parked now that is still there at the picked time keeps the car the model draws for it (its
+            // colour and 4- or 7-seat body), even when a booking also covers that time
+            if (bay.status === 'OCCUPIED' && status !== 'AVAILABLE' && f.parkedThen !== false) return bay
+            if (status === bay.status) return bay
+            // A vehicle expected to be gone is not drawn; a bay expected to fill gets the model's own car
+            return { ...bay, status, vehicleColor: null, vehicleKind: null, countedWalkIn: false, walkInSessionId: null }
+          }),
+        },
   )
 }
 
@@ -108,17 +178,40 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const publicLots = usePublicLots()
   const directionsLot = publicLots.data?.find((l) => String(l.id) === lot?.id)
   const capacityLot = capacityLots.find((l) => l.id === lot?.id)
+  // How full each lot is right now, from the public list (live counters); the selected lot falls back to its floors
+  const fillOfLot = (id: string): FillLevel | null => {
+    const publicLot = publicLots.data?.find((l) => String(l.id) === id)
+    return publicLot ? fillLevelOf(publicLot) : null
+  }
 
   // The published layout gives the real slot ids a reservation needs; the template model is the fallback
-  const plan = useLotPlan2D(lot?.id, 'slots', false)
+  // Bay changes arrive on the lot's public SignalR channel; while it is up the plan is only re-read on a push (and
+  // once a minute as a safety net) instead of every 2 seconds
+  const realtime = useLotRealtime(lot?.id)
+  const plan = useLotPlan2D(lot?.id, 'slots', realtime.connected)
   const planFloors = plan.data?.floors
-  const floors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
+  const liveFloors = useMemo(() => planFloors ?? (capacityLot ? buildGarage(capacityLot) : []), [planFloors, capacityLot])
   const bookableBays = Boolean(planFloors)
+
+  // Team rule (2026-11-17): the customer picks the time first and the car floors show what each bay is expected to be
+  // then, e.g. a bay booked until 15:00 is free from 15:30, a simulated walk-in's bay is free once its stay is over
+  const now = useNow(30_000)
+  const [times, setTimes] = useState(() => defaultBookingTimes(Date.now()))
+  const checkedTimes = checkBookingTimes(times, now)
+  const bookingWindow = checkedTimes.ok ? { arrivalTime: checkedTimes.arrivalTime, departureTime: checkedTimes.departureTime } : null
+  const hasCarFloor = liveFloors.some((f) => f.kind === 'car')
+  const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow)
+  const forecastBySlot = useMemo(() => new Map((forecast.data ?? []).map((f) => [String(f.slotId), f])), [forecast.data])
+  const floors = useMemo(() => projectFloors(liveFloors, forecastBySlot), [liveFloors, forecastBySlot])
+  const forecastOn = forecastBySlot.size > 0
+  // Car bays only: motorbikes claim a bay on arrival and are not part of the picked window
+  const projectedFree = floors
+    .filter((f) => f.kind === 'car')
+    .reduce((sum, f) => sum + standardBays(f).filter((b) => forecastBySlot.get(b.id)?.bookable).length, 0)
   const [focusFloor, setFocusFloor] = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const myReservations = useMyReservations()
-  const vehicles = useVehicles()
   const myActive = (myReservations.data ?? []).filter(
     (r) => (r.status === 'PendingDeposit' || r.status === 'Confirmed') && lot && (String(r.parkingLotId) === lot.id || r.parkingLotName === lot.name),
   )
@@ -136,15 +229,29 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const allBays = floors.flatMap((f) => f.bays)
   const selected = allBays.find((b) => b.id === selectedId) ?? null
   const selectedFloor = selected ? floors[selected.floorIndex] : null
+  // Car bays follow the forecast of the picked window; motorbikes claim a bay now, so they follow the live state
+  const selectedForecast = selected && selectedFloor?.kind === 'car' ? forecastBySlot.get(selected.id) : undefined
+  const selectedBookable = selectedForecast ? selectedForecast.bookable : selected?.status === 'AVAILABLE'
   // Highlighted in the model as "your booking", or else your parked vehicle
   const myBayId = myActive[0] ? String(myActive[0].slotId) : myParked[0] ? String(myParked[0].session.slotId) : null
-  const myVehicle = vehicles.data?.find((v) => v.vehicleId === myActive[0]?.vehicleId)
-  const myVehicleKind = myVehicle && vehicleKind({ name: myVehicle.vehicleType }) === 'suv' ? 'suv' : 'car'
+  // Only a vehicle that checked in is drawn, so the colour and body the model may fall back on are those of the
+  // customer's parked vehicle, never of a booked one (its bay may still hold someone else's car)
+  const myParkedHere = myActive[0] ? undefined : myParked[0]
+  const myVehicleColor = myParkedHere?.session.paintColor ?? null
+  const myVehicleKind = myParkedHere && vehicleKind({ name: myParkedHere.session.vehicleTypeName ?? '' }) === 'suv' ? 'suv' : 'car'
   // The lot's real prices (the same rule the exit gate uses): motorbike floors show the motorbike price, car floors the 4-seat car price
   const prices = usePublicPrices(lot?.id)
   const price = prices.data?.find((p) => p.vehicleTypeCode === (selectedFloor?.kind === 'motorbike' ? 'MOTORBIKE' : 'CAR_4'))
   const isLoadingLots = liveBooking ? bookable.isPending : isLoading
   const underMaintenance = lot?.isBookable === false
+  const lotFill =
+    (lot && fillOfLot(lot.id)) ??
+    fillLevel(
+      floors.reduce((sum, f) => sum + f.liveTotal, 0),
+      floors.reduce((sum, f) => sum + f.liveFree, 0),
+    )
+  // A motorbike claims its bay right now, so a full motorbike floor cannot take one more
+  const floorFull = (floor: { liveTotal: number; liveFree: number }) => fillLevel(floor.liveTotal, floor.liveFree) === 'Full'
 
   const changeLot = (id: string) => {
     onLotChange(id)
@@ -181,7 +288,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               onClick={() => changeLot(l.id)}
             >
               {l.name}
-              {l.isBookable === false && ' • Maintenance'}
+              {l.isBookable === false
+                ? ' • Maintenance'
+                : FILL_LABEL[fillOfLot(l.id) ?? 'Available'] && ` • ${FILL_LABEL[fillOfLot(l.id) ?? 'Available']}`}
             </button>
           ))}
         </div>
@@ -225,7 +334,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                 focusFloor={focusFloor}
                 selectedBayId={selectedId}
                 myBayId={myBayId}
-                myVehicleColor={myVehicle?.color}
+                myVehicleColor={myVehicleColor}
                 myVehicleKind={myVehicleKind}
                 onSelectBay={selectBay}
                 bayHint={(bay) => (myParkedByBay.has(bay.id) ? 'Your vehicle · click for details' : null)}
@@ -264,6 +373,34 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               </p>
             )}
 
+            {!underMaintenance && lotFill === 'Full' && (
+              <p className="cx-map__mine cx-map__full" role="status">
+                <CircleAlert size={15} aria-hidden /> This lot is full right now. Pick your time: bays whose vehicle leaves
+                before you arrive turn green, or pick another lot.
+              </p>
+            )}
+            {!underMaintenance && lotFill === 'AlmostFull' && (
+              <p className="cx-map__mine" role="status">
+                <CircleAlert size={15} aria-hidden /> This lot is almost full: book soon to keep a bay.
+              </p>
+            )}
+
+            {bookableBays && hasCarFloor && !underMaintenance && (
+              <div className="cx-map__when">
+                <span className="cx-label">
+                  <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> When will you park your car?
+                </span>
+                <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`map-${lot.id}`} />
+                <p className="cx-field__hint" role="status">
+                  {!checkedTimes.ok
+                    ? checkedTimes.error
+                    : forecastOn
+                      ? `${describeWindow(checkedTimes.arrivalTime, checkedTimes.departureTime, now)}: ${projectedFree} car bays free. A bay whose vehicle leaves before you arrive shows as free.`
+                      : 'Loading the bays for your time…'}
+                </p>
+              </div>
+            )}
+
             {selected && selectedFloor ? (
               <>
                 <div className="cx-map__stall">
@@ -281,8 +418,16 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                 <div className="cx-map__cells">
                   <div className="cx-map__cell">
                     <span className="cx-label">Status</span>
-                    <strong className={selected.status === 'AVAILABLE' ? 'is-gold' : undefined}>
-                      {myBayIds.has(selected.id) ? 'Your booking' : myParkedByBay.has(selected.id) ? 'Your vehicle is parked here' : STATUS_LABEL[selected.status]}
+                    <strong className={selectedBookable ? 'is-gold' : undefined}>
+                      {myBayIds.has(selected.id)
+                        ? 'Your booking'
+                        : myParkedByBay.has(selected.id)
+                          ? 'Your vehicle is parked here'
+                          : selected.penalty
+                            ? selected.status === 'OCCUPIED' ? 'Penalty bay • towed vehicle' : 'Penalty bay'
+                            : selectedForecast
+                              ? forecastLabel(selectedForecast)
+                              : STATUS_LABEL[selected.status]}
                     </strong>
                   </div>
                   <div className="cx-map__cell">
@@ -307,10 +452,16 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                         ? 'Booked for you • show my QR'
                         : 'Held for you • Staff checks you in at the gate'}
                   </Link>
-                ) : selected.status === 'AVAILABLE' && bookableBays && !underMaintenance ? (
+                ) : selectedBookable && !selected.penalty && bookableBays && !underMaintenance && !(selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)) ? (
                   // Cars book ahead with a time and an optional deposit; motorbikes claim the bay now
                   selectedFloor.kind === 'car' ? (
-                    <ReserveBayPanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
+                    <ReserveBayPanel
+                      key={`${lot.id}-${selected.id}`}
+                      lotKey={lot.id}
+                      slotId={selected.id}
+                      slotCode={selected.code}
+                      times={times}
+                    />
                   ) : (
                     <ParkMotorbikePanel key={`${lot.id}-${selected.id}`} lotKey={lot.id} slotId={selected.id} slotCode={selected.code} />
                   )
@@ -319,10 +470,14 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                     <CircleCheck aria-hidden />
                     {myBayIds.has(selected.id)
                       ? 'Booked for you'
-                      : underMaintenance
+                      : selected.penalty
+                        ? 'Penalty bay • only for towed vehicles'
+                        : underMaintenance
                         ? 'Under maintenance • view only'
-                        : selected.status !== 'AVAILABLE'
-                        ? 'Not available'
+                        : !selectedBookable
+                        ? selectedForecast ? 'Not available at your time • pick another time or bay' : 'Not available'
+                        : selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)
+                        ? 'The motorbike floor is full • try again soon'
                         : 'This lot has no published layout yet'}
                   </button>
                 )}
@@ -340,15 +495,17 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
 
             <div className="cx-map__floors">
               {floors.map((f) => {
-                const free = f.bays.filter((b) => b.status === 'AVAILABLE').length
+                const free = standardBays(f).filter((b) => b.status === 'AVAILABLE').length
                 const percent = f.liveTotal ? ((f.liveTotal - f.liveFree) / f.liveTotal) * 100 : 0
+                const fill = fillLevel(f.liveTotal, f.liveFree)
                 return (
                   <button key={f.level} type="button" className="cx-map__floor" onClick={() => setFocusFloor(f.index)}>
                     <span className="cx-map__floor-name">
                       {f.level} • {f.kind === 'car' ? 'Cars' : 'Motorbikes'}
+                      {FILL_LABEL[fill] && <strong className={fill === 'Full' ? 'cx-map__fill cx-map__fill--full' : 'cx-map__fill'}> • {FILL_LABEL[fill]}</strong>}
                     </span>
                     <span className="cx-map__floor-meta">{f.zoneLabel}</span>
-                    <span className={`cx-meter ${percent >= 90 ? 'cx-meter--full' : percent >= 75 ? 'cx-meter--busy' : ''}`}>
+                    <span className={`cx-meter ${fill === 'Full' ? 'cx-meter--full' : fill === 'AlmostFull' ? 'cx-meter--busy' : ''}`}>
                       <span style={{ width: `${Math.min(100, percent)}%` }} />
                     </span>
                     <span className="cx-map__floor-meta">

@@ -1,3 +1,4 @@
+import type { EmploymentType } from './duty.dto'
 import type { EntityRef, PageQuery } from './common.dto'
 
 /* ------------------------------------------------------------------ */
@@ -120,12 +121,24 @@ export interface UserDTO {
   /** Staff only: the shift they are rostered on. */
   shift?: WorkShift
   status: UserStatus
+  /** Staff only: full-time (monthly salary) or backup (paid by the hour). */
+  employmentType?: EmploymentType
   createdAt: string
 }
 
+/** PMS.Application.Models.User.AccountDeletionRequestModel: a customer asked for their account to be deleted. */
+export interface AccountDeletionRequestDTO {
+  id: number
+  reason: string | null
+  /** Pending, Completed (an Admin locked the account) or Cancelled (the customer withdrew it). */
+  status: 'Pending' | 'Completed' | 'Cancelled'
+  requestedAt: string
+  closedAt: string | null
+}
+
 /**
- * Customer (driver) account as returned by GET /Users
- * (PMS.Application.Models.User.UserResponseModel).
+ * Customer (driver) account as returned by GET /admin/customers
+ * (PMS.Application.Models.User.CustomerAccountModel).
  */
 export interface CustomerAccountDTO {
   id: string
@@ -135,6 +148,8 @@ export interface CustomerAccountDTO {
   phoneNumber: string
   role: string
   isActive?: boolean
+  /** The pending deletion request, if the customer asked for their account to be deleted. */
+  deletionRequest?: AccountDeletionRequestDTO | null
 }
 
 /** PMS.Application.Models.User.UserResponseModel, as returned by GET /admin/users. */
@@ -208,6 +223,8 @@ export interface EmployeeAccountResponseDTO {
   /** Active, Inactive or Terminated. */
   status: string
   createdAt: string | null
+  /** Staff only: FullTime or Backup. */
+  employmentType?: EmploymentType | null
   parkingLots: { id: number; code: string; name: string }[]
 }
 
@@ -219,6 +236,7 @@ export interface CreateManagedStaffCommand {
   password: string
   confirmPassword: string
   parkingLotId: string
+  employmentType?: EmploymentType
 }
 
 /** PUT /manager/staff/{id} and PUT /admin/managers/{id} — UpdateEmployeeAccountModel. */
@@ -226,6 +244,8 @@ export interface UpdateEmployeeCommand {
   fullName: string
   email: string
   phoneNumber: string
+  /** Staff only. */
+  employmentType?: EmploymentType
 }
 
 export interface ManagedStaffQuery {

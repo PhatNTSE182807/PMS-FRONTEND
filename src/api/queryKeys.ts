@@ -8,6 +8,7 @@ export const queryKeys = {
     all: ['profile'] as const,
     me: () => [...queryKeys.profile.all, 'me'] as const,
     vehicles: () => [...queryKeys.profile.all, 'vehicles'] as const,
+    deletionRequest: () => [...queryKeys.profile.all, 'deletion-request'] as const,
     vehicleTypes: () => [...queryKeys.profile.all, 'vehicle-types'] as const,
     checkPlate: (plate: string) => [...queryKeys.profile.all, 'check-plate', plate] as const,
     checkUnique: (phone?: string, citizenId?: string) =>
@@ -60,8 +61,9 @@ export const queryKeys = {
   pricing: {
     all: ['pricing'] as const,
     rules: (lotId: string) => ['pricing', 'rules', lotId] as const,
+    drafts: (lotId: string) => ['pricing', 'drafts', lotId] as const,
+    history: (lotId: string, ruleId: number | null, take: number) => ['pricing', 'history', lotId, ruleId, take] as const,
     publicPrices: (lotId: string) => ['pricing', 'public', lotId] as const,
-    simulation: (lotId: string, request: object) => ['pricing', 'simulation', lotId, request] as const,
   },
   /** Admin dashboard: network overview and per-hub performance. */
   adminDashboard: {
@@ -91,6 +93,8 @@ export const queryKeys = {
     upcoming: () => [...queryKeys.reservations.all, 'upcoming'] as const,
     qr: (id: number) => [...queryKeys.reservations.all, 'qr', id] as const,
     lots: () => [...queryKeys.reservations.all, 'lots'] as const,
+    forecast: (lotId: string, arrival: string, departure: string | null) =>
+      [...queryKeys.reservations.all, 'forecast', lotId, arrival, departure] as const,
     forLot: (lotId: string, from: string, to: string) => [...queryKeys.reservations.all, 'lot', lotId, from, to] as const,
   },
   /** The customer's vehicles parked right now (running fee, exit pass). */
@@ -107,7 +111,6 @@ export const queryKeys = {
   notifications: {
     all: ['notifications'] as const,
     list: () => [...queryKeys.notifications.all, 'list'] as const,
-    unreadCount: () => [...queryKeys.notifications.all, 'unread-count'] as const,
   },
   /** Check-in / check-out requests from the customer app. */
   gateRequests: {
@@ -124,18 +127,13 @@ export const queryKeys = {
     baySession: (lotId: string, slotId: string) => [...queryKeys.gate.all, 'bay-session', lotId, slotId] as const,
     parkedSession: (lotId: string, sessionId: number) => [...queryKeys.gate.all, 'parked-session', lotId, sessionId] as const,
     bookedBayCases: (lotId: string) => [...queryKeys.gate.all, 'booked-bay-cases', lotId] as const,
-    history: (lotId: string, page = 1) => [...queryKeys.gate.all, 'history', lotId, page] as const,
     exits: (lotId: string) => [...queryKeys.gate.all, 'exits', lotId] as const,
-    payments: (lotId: string, method?: string) => [...queryKeys.gate.all, 'payments', lotId, method ?? ''] as const,
     reservation: (lotId: string, entry: string) => [...queryKeys.gate.all, 'reservation', lotId, entry] as const,
     anprHealth: () => [...queryKeys.gate.all, 'anpr-health'] as const,
   },
   /** Manager sign-off queues of a lot. */
   layout: {
     all: ['layout'] as const,
-    templates: () => [...queryKeys.layout.all, 'templates'] as const,
-    lot: (lotId: string) => [...queryKeys.layout.all, 'lot', lotId] as const,
-    status: (lotId: string) => [...queryKeys.layout.all, 'status', lotId] as const,
     plan2D: (lotId: string, detail: string) => [...queryKeys.layout.all, '2d', lotId, detail] as const,
   },
   reports: {

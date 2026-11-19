@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { CalendarDays, Clock, Moon, Sun } from 'lucide-react'
+import { CalendarDays, Clock, FileClock, Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Checkbox, FieldError, Input, Label } from '@/components/ui/form-controls'
@@ -9,6 +9,7 @@ import type { PricingChargeModel, PricingRuleDTO, PricingRuleInput } from '@/typ
 /** Form values as typed text, so empty fields can be told apart from zeros. */
 interface Draft {
   bookedBayCompensation: string
+  penaltyFee: string
   name: string
   chargeModel: PricingChargeModel
   hasFirstBlock: boolean
@@ -52,6 +53,7 @@ function toDraft(rule: PricingRuleDTO): Draft {
     maxDailyFee: rule.maxDailyFee == null ? '' : String(rule.maxDailyFee),
     lostTicketFee: String(rule.lostTicketFee),
     bookedBayCompensation: String(rule.bookedBayCompensation ?? 0),
+    penaltyFee: String(rule.penaltyFee ?? 0),
   }
 }
 
@@ -83,6 +85,8 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
   const bookedBayCompensation = whole('bookedBayCompensation', 0, 'Booked bay compensation')
   if (!errors.bookedBayCompensation && bookedBayCompensation > 10_000_000)
     errors.bookedBayCompensation = 'Booked bay compensation can be at most 10,000,000 VND.'
+  const penaltyFee = whole('penaltyFee', 0, 'Towing penalty')
+  if (!errors.penaltyFee && penaltyFee > 10_000_000) errors.penaltyFee = 'Towing penalty can be at most 10,000,000 VND.'
   if (Object.keys(errors).length) return { errors }
 
   return {
@@ -105,6 +109,7 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
       maxDailyFee,
       lostTicketFee,
       bookedBayCompensation,
+      penaltyFee,
     },
   }
 }
@@ -120,10 +125,15 @@ function Field({ id, label, hint, error, children }: { id: string; label: string
   )
 }
 
+export type PricingEditorValues = Omit<PricingRuleInput, 'vehicleTypeId'>
+
 /**
  * Edits the prices of one rule: an optional first block, then either one price per block all day or
  * different block prices by the hour (day / night); or one flat fee per calendar day. Only fields the
  * gate's fee calculator uses.
+ *
+ * The prices can be applied at once (onSave) or kept as a draft for later (onSaveDraft). With
+ * `draftValues` the form opens on a saved draft instead of the live prices.
  */
 export function PricingRuleEditor({
   rule,
@@ -131,22 +141,40 @@ export function PricingRuleEditor({
   saving,
   onOpenChange,
   onSave,
+  onSaveDraft,
+  savingDraft = false,
+  draftValues,
+  draftNote,
 }: {
   rule: PricingRuleDTO
   open: boolean
   saving: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (input: Omit<PricingRuleInput, 'vehicleTypeId'>) => void
+  onSave: (input: PricingEditorValues, note: string) => void
+  onSaveDraft?: (input: PricingEditorValues, note: string) => void
+  savingDraft?: boolean
+  /** The values of the draft being edited; left out, the form starts from the live prices. */
+  draftValues?: PricingRuleInput
+  draftNote?: string | null
 }) {
-  const [draft, setDraft] = useState<Draft>(() => toDraft(rule))
+  // A draft's values sit on top of the rule: the fields the form shows have the same names
+  const [draft, setDraft] = useState<Draft>(() => toDraft(draftValues ? ({ ...rule, ...draftValues } as PricingRuleDTO) : rule))
+  const [note, setNote] = useState(draftNote ?? '')
   const [errors, setErrors] = useState<Errors>({})
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }))
+  const editingDraft = draftValues != null
+  const busy = saving || savingDraft
+
+  /** Runs the same checks for both buttons: a draft must be a price the gates could apply. */
+  const run = (then: (input: PricingEditorValues, note: string) => void) => {
+    const result = validate(draft)
+    setErrors(result.errors)
+    if (result.input) then(result.input, note.trim())
+  }
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    const result = validate(draft)
-    setErrors(result.errors)
-    if (result.input) onSave(result.input)
+    run(onSave)
   }
 
   const modelButton = (value: PricingChargeModel, icon: typeof Clock, title: string, text: string) => {
@@ -176,10 +204,13 @@ export function PricingRuleEditor({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit prices • {rule.vehicleTypeName}</DialogTitle>
+          <DialogTitle>
+            {editingDraft ? 'Edit draft' : 'Edit prices'} • {rule.vehicleTypeName}
+          </DialogTitle>
           <DialogDescription>
-            A new price applies at once to every vehicle entering from now on, booked or not, and customers are told. Vehicles already inside keep
+            Applied prices go live at once for every vehicle entering from now on, booked or not, and customers are told. Vehicles already inside keep
             the price they entered with. Each save keeps the previous version in the pricing history.
+            {onSaveDraft && ' Save as a draft to keep the change for later: nothing changes at the gates until you apply it.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -278,14 +309,33 @@ export function PricingRuleEditor({
                 onChange={(e) => set('bookedBayCompensation', e.target.value)}
               />
             </Field>
+            <Field
+              id="rule-penalty"
+              label="Towing penalty (VND)"
+              hint="Added to the fee of a vehicle Staff towed out of a booked bay into a penalty bay: a walk-in in the wrong bay, or a booking that stayed past its time."
+              error={errors.penaltyFee}
+            >
+              <Input id="rule-penalty" inputMode="numeric" value={draft.penaltyFee} onChange={(e) => set('penaltyFee', e.target.value)} />
+            </Field>
           </div>
+
+          {onSaveDraft && (
+            <Field id="rule-draft-note" label="Draft note (optional)" hint="Kept with the draft, e.g. why or when to apply it." error={note.length > 500 ? 'The note can be at most 500 characters.' : undefined}>
+              <Input id="rule-draft-note" maxLength={500} value={note} placeholder="e.g. Weekend prices for December" onChange={(e) => setNote(e.target.value)} />
+            </Field>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="gold" disabled={saving}>
-              {saving ? 'Saving…' : 'Save prices'}
+            {onSaveDraft && (
+              <Button type="button" variant="outline" disabled={busy} onClick={() => run(onSaveDraft)}>
+                <FileClock /> {savingDraft ? 'Saving draft…' : editingDraft ? 'Save draft' : 'Save as draft'}
+              </Button>
+            )}
+            <Button type="submit" variant="gold" disabled={busy}>
+              {saving ? 'Saving…' : editingDraft ? 'Apply prices now' : 'Save prices'}
             </Button>
           </DialogFooter>
         </form>

@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { Bike, Car, Rotate3d } from 'lucide-react'
 import { GarageFloorsView } from '@/components/customer/garage/GaragePreview'
-import { buildTemplateGarage, findTemplate, liveFloorStats, templateForLot, type Bay } from '@/components/customer/garage/garageModel'
+import { buildTemplateGarage, findTemplate, liveFloorStats, standardBays, templateForLot, type Bay } from '@/components/customer/garage/garageModel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/hooks/useAuth'
 import type { AccountRole } from '@/types/identity.dto'
@@ -53,11 +53,13 @@ export function LiveLotModel({
   const lot = lots.find((l) => l.id === lotId) ?? lots[0]
   const { user } = useAuth()
   const canInspect = user !== null && INSPECTING_ROLES.includes(user.role)
-  const capacity = useParkingCapacity()
+  // The overview is an Admin / Manager endpoint: Staff were refused (403) every 15 seconds
+  const readsCapacity = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  const capacity = useParkingCapacity({ enabled: readsCapacity })
   const live = capacity.data?.find((c) => c.id === lot?.id)
   // Answered once (data or error). Not `!isPending`: a query that failed (Staff get 403 here) goes back to
   // pending on every refetch, which unmounted the model and dropped the SignalR channel every few seconds.
-  const capacitySettled = capacity.data !== undefined || capacity.errorUpdateCount > 0
+  const capacitySettled = !readsCapacity || capacity.data !== undefined || capacity.errorUpdateCount > 0
   // The real bays always come first. The counts-only occupancy (Admin and Manager can read it) used to win here,
   // which drew vehicles and reserved bays in made-up places.
   const planLotId = lot?.id
@@ -128,7 +130,7 @@ export function LiveLotModel({
                     <strong className="text-slate-950">{f.level}</strong> <span className="text-slate-600">{f.zoneLabel || (f.kind === 'car' ? 'Cars' : 'Motorbikes')}</span>
                   </span>
                   <span className="font-mono font-bold text-slate-950 tabular-nums">
-                    {f.liveTotal ? `${formatNumber(f.liveFree)}/${formatNumber(f.liveTotal)}` : `${f.bays.length} bays`}
+                    {f.liveTotal ? `${formatNumber(f.liveFree)}/${formatNumber(f.liveTotal)}` : `${standardBays(f).length} bays`}
                   </span>
                 </li>
               )

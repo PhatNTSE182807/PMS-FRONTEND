@@ -1,10 +1,11 @@
 import type {
   PublicLotPriceDTO,
+  PricingHistoryEntryDTO,
+  PricingRuleDraftDTO,
   PricingRuleDTO,
   PricingRuleInput,
   PricingRuleStatus,
-  PricingSimulationRequest,
-  PricingSimulationResult,
+  SavePricingRuleDraftInput,
 } from '@/types/pricing.dto'
 import { mockFail, mockResponse } from './mockApi'
 
@@ -20,12 +21,58 @@ const TYPES = [
   { id: 3, code: 'MOTORBIKE', name: 'Motorbike' },
 ]
 
-/** Fees are rounded up to 1,000 VND, like the gates. */
-const ROUNDING_STEP = 1_000
-
-
 const stores = new Map<string, PricingRuleDTO[]>()
 let nextId = 100
+
+/** Demo price drafts per lot; like the API, applied or discarded drafts are kept but no longer listed. */
+const draftStores = new Map<string, PricingRuleDraftDTO[]>()
+let nextDraftId = 1
+const drafts = (lotId: string) => {
+  if (!draftStores.has(lotId)) draftStores.set(lotId, [])
+  return draftStores.get(lotId)!
+}
+
+/** Demo pricing history per lot, newest first, written like the API does on every change. */
+const historyStores = new Map<string, PricingHistoryEntryDTO[]>()
+let nextHistoryId = 1
+const HISTORY_FIELDS = [
+  'name', 'chargeModel', 'entryFee', 'firstBlockMinutes', 'firstBlockPrice', 'blockMinutes', 'blockPrice', 'dayStartTime',
+  'nightStartTime', 'dayPrice', 'nightPrice', 'maxDailyFee', 'lostTicketFee', 'bookedBayCompensation', 'penaltyFee', 'status',
+] as const
+
+function log(lotId: string, rule: PricingRuleDTO, changeType: string, before: object | null, after: object | null, reason: string, draftId: number | null = null) {
+  const b = (before ?? {}) as Record<string, string | number | null>
+  const a = (after ?? {}) as Record<string, string | number | null>
+  const changes = HISTORY_FIELDS.flatMap((field) => {
+    if (changeType === 'Create') return a[field] != null && field !== 'status' ? [{ field, oldValue: null, newValue: a[field] }] : []
+    if (!(field in b) || !(field in a) || b[field] === a[field]) return []
+    return [{ field, oldValue: b[field] ?? null, newValue: a[field] ?? null }]
+  })
+  if (!historyStores.has(lotId)) historyStores.set(lotId, [])
+  historyStores.get(lotId)!.unshift({
+    id: nextHistoryId++,
+    pricingRuleId: rule.id,
+    ruleName: (a.name as string) ?? rule.name,
+    vehicleTypeCode: rule.vehicleTypeCode,
+    vehicleTypeName: rule.vehicleTypeName,
+    changeType,
+    versionNo: changeType === 'Update' || changeType === 'Create' ? rule.versionNo : null,
+    draftId,
+    changedBy: null,
+    changedByName: 'Demo Manager',
+    changedByRole: 'Manager',
+    changedAt: new Date().toISOString(),
+    reason,
+    changes,
+  })
+}
+
+function openDraft(lotId: string, ruleId: number, draftId: number) {
+  const draft = drafts(lotId).find((d) => d.id === draftId && d.pricingRuleId === ruleId)
+  if (!draft) mockFail(404, 'Price draft not found.')
+  if (draft.status !== 'Open') mockFail(400, draft.status === 'Applied' ? 'This draft has already been applied.' : 'This draft has been discarded.')
+  return draft
+}
 
 function seed(lotId: string): PricingRuleDTO[] {
   const now = new Date().toISOString()
@@ -84,98 +131,11 @@ function apply(rule: PricingRuleDTO, input: PricingRuleInput) {
   })
 }
 
-/** Minutes since midnight of an "HH:mm(:ss)" time. */
-const toMinutes = (hhmm: string) => {
-  const [h, m] = hhmm.split(':').map(Number)
-  return h * 60 + m
-}
-
-/** Price of one block starting at `start` (local time), like FeeCalculator.BlockPrice. */
-function blockPrice(rule: PricingRuleDTO, start: Date): number {
-  const fallback = rule.blockPrice ?? 0
-  if (rule.chargeModel !== 'DayNight' || !rule.dayStartTime || !rule.nightStartTime) return fallback
-  const t = start.getHours() * 60 + start.getMinutes()
-  const day = toMinutes(rule.dayStartTime)
-  const night = toMinutes(rule.nightStartTime)
-  const isDay = day <= night ? t >= day && t < night : t >= day || t < night
-  return (isDay ? rule.dayPrice : rule.nightPrice) ?? fallback
-}
-
 /** The rule the gate would use for a vehicle type: the Active one (latest version first). */
 function activeFor(lotId: string, vehicleTypeId: number | undefined) {
   return store(lotId)
     .filter((r) => r.status === 'Active' && r.vehicleTypeId === vehicleTypeId)
     .sort((a, b) => b.priority - a.priority || b.versionNo - a.versionNo)[0]
-}
-
-/** Mirror of the backend FeeCalculator.Calculate + Settle for one stay. */
-function simulate(rule: PricingRuleDTO, request: PricingSimulationRequest): PricingSimulationResult {
-  const entry = new Date(request.entryTime)
-  const exit = new Date(request.exitTime)
-  const duration = Math.max(0, Math.ceil((exit.getTime() - entry.getTime()) / 60_000))
-  const days: PricingSimulationResult['days'] = []
-  let gross = 0
-  // No free period: the first block is owed from entry, even for a stay of one minute
-  const withinGrace = false
-  const end = exit > entry ? exit : new Date(entry.getTime() + 60_000)
-  {
-    // Split the stay at local midnights; the daily cap applies per calendar day
-    let dayStart = entry
-    let first = true
-    while (dayStart < end) {
-      const midnight = new Date(dayStart)
-      midnight.setHours(24, 0, 0, 0)
-      const dayEnd = end < midnight ? end : midnight
-      let remaining = Math.ceil((dayEnd.getTime() - dayStart.getTime()) / 60_000)
-      const minutes = remaining
-      let cursor = new Date(dayStart)
-      let blocks = 0
-      let amount = 0
-      if (rule.chargeModel === 'PerEntry') {
-        blocks = 1
-        amount = rule.entryFee
-        remaining = 0
-      } else if (first && rule.firstBlockMinutes && rule.firstBlockPrice != null) {
-        blocks++
-        amount += rule.firstBlockPrice
-        remaining -= rule.firstBlockMinutes
-        cursor = new Date(cursor.getTime() + rule.firstBlockMinutes * 60_000)
-      }
-      const size = rule.blockMinutes && rule.blockMinutes > 0 ? rule.blockMinutes : 60
-      while (remaining > 0) {
-        blocks++
-        amount += blockPrice(rule, cursor)
-        remaining -= size
-        cursor = new Date(cursor.getTime() + size * 60_000)
-      }
-      const capped = rule.maxDailyFee != null && amount > rule.maxDailyFee
-      if (capped) amount = rule.maxDailyFee!
-      days.push({ date: dayStart.toISOString().slice(0, 10), minutes, blocks, amount, capped })
-      gross += amount
-      dayStart = dayEnd
-      first = false
-    }
-    if (rule.chargeModel !== 'PerEntry') gross += rule.entryFee
-  }
-  const fee = gross <= 0 ? 0 : Math.ceil(gross / ROUNDING_STEP) * ROUNDING_STEP
-  const lost = request.isLostTicket ? rule.lostTicketFee : 0
-  const total = fee + lost
-  const depositApplied = Math.min(request.depositAmount, total)
-  return {
-    durationMinutes: duration,
-    withinGrace,
-    grossFee: fee,
-    lostTicketFee: lost,
-    // The calculator never misses the exit window
-    exitWindowLateFee: 0,
-    depositApplied,
-    depositRefund: request.depositAmount - depositApplied,
-    amountDue: Math.max(0, total - request.depositAmount),
-    days,
-    ruleId: rule.id,
-    ruleVersion: rule.versionNo,
-    ruleName: rule.name,
-  }
 }
 
 export const pricingMock = {
@@ -189,21 +149,25 @@ export const pricingMock = {
       const rule = { ...seed(lotId)[0], id: nextId++, code, status: input.status ?? 'Draft', versionNo: 1, createdAt: new Date().toISOString() } as PricingRuleDTO
       apply(rule, input)
       store(lotId).push(rule)
+      log(lotId, rule, 'Create', null, { ...rule }, 'Created initial pricing rule')
       return rule
     }),
 
   update: (lotId: string, id: number, input: PricingRuleInput) =>
     mockResponse(() => {
       const rule = find(lotId, id)
+      const before = { ...rule }
       apply(rule, input)
       rule.versionNo++
       rule.updatedAt = new Date().toISOString()
+      log(lotId, rule, 'Update', before, { ...rule }, 'Updated pricing rule parameters')
       return rule
     }),
 
   setStatus: (lotId: string, id: number, status: PricingRuleStatus) =>
     mockResponse(() => {
       const rule = find(lotId, id)
+      log(lotId, rule, 'StatusChange', { status: rule.status }, { status }, `Status changed from ${rule.status} to ${status}`)
       rule.status = status
       rule.updatedAt = new Date().toISOString()
       return rule
@@ -212,7 +176,73 @@ export const pricingMock = {
   remove: (lotId: string, id: number) =>
     mockResponse(() => {
       // Like the API: archived, never deleted (pricing history is kept)
-      find(lotId, id).status = 'Archived'
+      const rule = find(lotId, id)
+      log(lotId, rule, 'Delete', { status: rule.status }, { status: 'Archived' }, 'Pricing rule archived')
+      rule.status = 'Archived'
+      return true
+    }),
+
+  history: (lotId: string, ruleId: number | null, take: number) =>
+    mockResponse(() => (historyStores.get(lotId) ?? []).filter((h) => ruleId == null || h.pricingRuleId === ruleId).slice(0, take)),
+
+  drafts: (lotId: string) =>
+    mockResponse(() =>
+      drafts(lotId)
+        .filter((d) => d.status === 'Open' && store(lotId).some((r) => r.id === d.pricingRuleId && r.status !== 'Archived'))
+        .map((d) => ({ ...d, currentVersionNo: find(lotId, d.pricingRuleId).versionNo })),
+    ),
+
+  createDraft: (lotId: string, ruleId: number, input: SavePricingRuleDraftInput) =>
+    mockResponse(() => {
+      const rule = find(lotId, ruleId)
+      const draft: PricingRuleDraftDTO = {
+        id: nextDraftId++,
+        pricingRuleId: ruleId,
+        values: input.values,
+        note: input.note?.trim() || null,
+        baseVersionNo: rule.versionNo,
+        currentVersionNo: rule.versionNo,
+        status: 'Open',
+        createdBy: null,
+        createdByName: 'Demo Manager',
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+      }
+      drafts(lotId).unshift(draft)
+      log(lotId, rule, 'DraftSaved', { ...rule }, { ...input.values }, `Saved price draft #${draft.id}`, draft.id)
+      return draft
+    }),
+
+  updateDraft: (lotId: string, ruleId: number, draftId: number, input: SavePricingRuleDraftInput) =>
+    mockResponse(() => {
+      const draft = openDraft(lotId, ruleId, draftId)
+      draft.values = input.values
+      draft.note = input.note?.trim() || null
+      draft.baseVersionNo = find(lotId, ruleId).versionNo
+      draft.updatedAt = new Date().toISOString()
+      log(lotId, find(lotId, ruleId), 'DraftUpdated', { ...find(lotId, ruleId) }, { ...input.values }, `Edited price draft #${draft.id}`, draft.id)
+      return { ...draft, currentVersionNo: draft.baseVersionNo }
+    }),
+
+  /** Like the API: only the prices and name come from the draft, the rule keeps its status. */
+  applyDraft: (lotId: string, ruleId: number, draftId: number) =>
+    mockResponse(() => {
+      const draft = openDraft(lotId, ruleId, draftId)
+      const rule = find(lotId, ruleId)
+      const before = { ...rule }
+      apply(rule, { ...draft.values, vehicleTypeId: rule.vehicleTypeId, status: rule.status })
+      rule.versionNo++
+      rule.updatedAt = new Date().toISOString()
+      draft.status = 'Applied'
+      log(lotId, rule, 'Update', before, { ...rule }, `Applied price draft #${draft.id}`, draft.id)
+      return rule
+    }),
+
+  discardDraft: (lotId: string, ruleId: number, draftId: number) =>
+    mockResponse(() => {
+      const draft = openDraft(lotId, ruleId, draftId)
+      draft.status = 'Discarded'
+      log(lotId, find(lotId, ruleId), 'DraftDiscarded', null, null, `Discarded price draft #${draft.id}`, draft.id)
       return true
     }),
 
@@ -242,12 +272,4 @@ export const pricingMock = {
         } satisfies PublicLotPriceDTO]
       }),
     ),
-
-  simulate: (lotId: string, request: PricingSimulationRequest) =>
-    mockResponse(() => {
-      if (new Date(request.exitTime) < new Date(request.entryTime)) mockFail(400, 'Exit time must be after the entry time.')
-      const rule = request.ruleId ? find(lotId, request.ruleId) : activeFor(lotId, request.vehicleTypeId)
-      if (!rule) mockFail(404, 'No active pricing rule for this vehicle type.')
-      return simulate(rule, request)
-    }),
 }

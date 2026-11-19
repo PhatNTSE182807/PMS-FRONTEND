@@ -24,8 +24,27 @@ export interface NotificationModel {
     | 'DepartureOverdue'
     /** The booked bay was still in use when the hold started, so the booking moved to another bay. */
     | 'BookingBayMoved'
-    /** Manager bell: a Staff closed their cash drawer (data: closedAt, countedTotal, expectedTotal, difference, reason). */
+    /** Manager bell: a Staff closed their cash drawer (data: closedAt, floatTotal, cashTotal). */
     | 'CashDrawerClosed'
+    /** Staff towed the vehicle out of a booked bay: the customer keeps the bay; the towed vehicle's owner owes a penalty. */
+    | 'VehicleTowed'
+    /** Staff and Manager bell: a zone of their lot is almost full, full, or has free bays again (data: zoneName, totalBays, freeBays, occupancyPercent). */
+    | 'LotAlmostFull'
+    | 'LotFull'
+    | 'LotSpaceAvailable'
+    /** Admin bell: a customer asked for their account to be deleted (data: userId, email, customerName, reason, openSessions, upcomingBookings, walletBalance). */
+    | 'AccountDeletionRequested'
+    /** Admin bell: a Manager changed a lot's prices (data: lotId, lotName, vehicleType, changedBy, oldPrices, newPrices). */
+    | 'LotPricingChanged'
+    /** Duty board: a shift of the person changed, they were absent, their attendance was corrected; leave asked or decided. */
+    | 'DutyShiftChanged'
+    | 'DutyAbsent'
+    | 'DutyAttendanceChanged'
+    | 'DutyLeaveRequested'
+    | 'DutyLeaveDecided'
+    /** Pay: the person's salary was paid; Admin bell: last month's payroll is ready to pay. */
+    | 'PayrollPaid'
+    | 'PayrollReady'
   title: string
   message: string
   refType: string | null
@@ -52,9 +71,6 @@ export const notificationApi = {
   /** Newest notifications (default 30) and the unread count. */
   getMine: (unreadOnly = false, take = 30) =>
     http.get<NotificationListModel>(`${BASE}?unreadOnly=${unreadOnly}&take=${take}`),
-
-  /** Just the unread count (for the badge). */
-  getUnreadCount: () => http.get<number>(`${BASE}/unread-count`),
 
   /** Marks one notification as read. */
   markRead: (id: number) => http.post<NotificationModel>(`${BASE}/${id}/read`),

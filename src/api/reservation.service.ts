@@ -3,6 +3,7 @@ import { MOCK_PARKING_LOTS } from '@/mocks/parkingLots.mock'
 import { mockResponse } from '@/mocks/mockApi'
 import { reservationMock } from '@/mocks/operations.mock'
 import type {
+  BayForecastDTO,
   BookableLotDTO,
   CreateReservationRequest,
   PaymentDTO,
@@ -30,6 +31,17 @@ export const reservationService = {
     }
     const lots = await http.get<BookableLotDTO[]>(`${SERVICE_PATHS.parking}/public/lots`)
     return lots.map((l) => ({ ...l, key: String(l.id) }))
+  },
+
+  /**
+   * Expected state of every bay of the lot during the window to book (arrival, and departure when Scheduled), so the
+   * 3D model can show a bay booked until 15:00 as free from 15:30. Demo mode has no forecast: the live state is used.
+   */
+  getForecast(lotId: string, arrivalTime: string, departureTime: string | null): Promise<BayForecastDTO[]> {
+    if (mocked()) return mockResponse(() => [])
+    return http.get<BayForecastDTO[]>(`${base}/forecast`, {
+      params: { lotId: Number(lotId), arrivalTime, ...(departureTime ? { departureTime } : {}) },
+    })
   },
 
   getMine(): Promise<ReservationDTO[]> {

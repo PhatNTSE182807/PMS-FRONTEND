@@ -1,3 +1,5 @@
+import type { FillLevel } from '@/lib/fillLevel'
+
 /**
  * Public parking lot list (PMS.API LotsController, GET /public/lots, anonymous and rate limited).
  * Mirrors PublicParkingLotResponseModel. Counts only: public endpoints never send plates.
@@ -11,6 +13,8 @@ export interface PublicLotBaysDTO {
   vehicleType: PublicBayVehicleType
   totalBays: number
   freeBays: number
+  /** Available, AlmostFull (80 % taken) or Full (no free bay), from the live counts. */
+  availability?: FillLevel
 }
 
 /** PublicParkingLotResponseModel */
@@ -35,5 +39,7 @@ export interface PublicLotDTO {
   totalBays: number
   /** Bays free right now (live zone counters). */
   freeBays: number
+  /** Available, AlmostFull (80 % taken) or Full (no free bay), from the live counts. */
+  availability?: FillLevel
   baysByVehicle: PublicLotBaysDTO[]
 }

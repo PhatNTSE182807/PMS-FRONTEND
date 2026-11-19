@@ -24,12 +24,6 @@ export function formatDate(iso: string | null | undefined): string {
 
 export const formatTime = (value: string | number | Date) => timeFormatter.format(new Date(value))
 
-/** "dd/MM" label for a yyyy-MM-dd date, used on chart axes. */
-export function formatDayMonth(isoDate: string): string {
-  const [, month, day] = isoDate.slice(0, 10).split('-')
-  return `${day}/${month}`
-}
-
 /** Local yyyy-MM-dd (not UTC, so "today" matches the user's calendar). */
 export function toIsoDate(date: Date): string {
   const y = date.getFullYear()
@@ -74,4 +68,3 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
   const apiRoot = (import.meta.env.VITE_API_BASE_URL || 'https://localhost:44391/api').replace(/\/api\/?$/, '')
   return `${apiRoot}${url.startsWith('/') ? '' : '/'}${url}`
 }
-

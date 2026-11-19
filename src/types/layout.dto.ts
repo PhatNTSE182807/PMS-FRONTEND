@@ -5,61 +5,10 @@
  */
 
 export type SlotStatus = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance'
+/** Standard bays are booked or used by walk-ins; penalty bays only take vehicles Staff towed out of a booked bay. */
+export type SlotKind = 'Standard' | 'Penalty'
 export type FloorKind = 'car' | 'motorbike' | 'mixed'
 
-/** LayoutFloorModel */
-export interface LayoutFloorDTO {
-  floorNo: number
-  name: string
-  kind: FloorKind
-  rows: number
-  cols: number
-}
-
-/** GET /api/lot-templates: LotTemplateResponseModel */
-export interface LotTemplateDTO {
-  id: string
-  name: string
-  summary: string
-  slotsPerFloor: number
-  carSlots: number
-  motorbikeSlots: number
-  totalSlots: number
-  floors: LayoutFloorDTO[]
-}
-
-/** GET /api/public/lots/{lotId}/layout: LayoutResponseModel. Cache it by version. */
-export interface LotLayoutDTO {
-  parkingLotId: number
-  parkingLotName: string
-  lotStatus: string
-  version: number
-  templateId: string | null
-  publishedAt: string | null
-  updatedAt: string
-  floors: LayoutFloorDTO[]
-  zones: { zoneId: number; code: string; name: string; zoneType: string; floorNo: number | null }[]
-  slots: {
-    slotId: number
-    code: string
-    zoneId: number
-    vehicleTypeCode: string | null
-    floorNo: number
-    row: number
-    col: number
-    rotation: number
-    modelUrl: string | null
-  }[]
-}
-
-/** GET /api/public/lots/{lotId}/layout/status: statuses and free spaces, never plates (FR-3D-08). */
-export interface LotLayoutStatusDTO {
-  parkingLotId: number
-  version: number
-  generatedAt: string
-  slots: { slotId: number; status: SlotStatus }[]
-  zones: { zoneId: number; total: number; free: number }[]
-}
 
 /** "slots": every bay as a cell. "zones": one block per zone and level (Level of Detail). */
 export type Layout2DDetail = 'slots' | 'zones'
@@ -90,8 +39,11 @@ export interface LotPlan2DDTO {
     kind: FloorKind
     rows: number
     cols: number
+    /** Normal bays only: penalty bays are counted on their own. */
     total: number
     free: number
+    penaltyTotal?: number
+    penaltyFree?: number
     cells: {
       slotId: number
       code: string
@@ -107,6 +59,7 @@ export interface LotPlan2DDTO {
       parkedVehicleTypeCode?: string | null
       /** Free now but booked for later: counted walk-ins are drawn in bays without a booking first. */
       bookedLater?: boolean
+      kind?: SlotKind
     }[]
     zoneBlocks: {
       zoneId: number

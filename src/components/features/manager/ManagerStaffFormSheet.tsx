@@ -25,6 +25,7 @@ function createSchema(mode: 'create' | 'edit') {
       email: z.string().trim().min(1, 'Please enter an email.').pipe(z.email({ error: 'Email is not valid.' })),
       phoneNumber: z.string().trim().regex(PHONE_REGEX, 'Phone number must have 10 digits and start with 0.'),
       parkingLotId: z.string().min(1, 'Select a parking lot.'),
+      employmentType: z.enum(['FullTime', 'Backup']),
       password: z.string(),
       confirmPassword: z.string(),
     })
@@ -96,6 +97,7 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
       email: user?.email ?? '',
       phoneNumber: user?.phoneNumber ?? '',
       parkingLotId: currentLotId ?? defaultLotId ?? lots[0]?.id ?? '',
+      employmentType: user?.employmentType ?? 'FullTime',
       password: '',
       confirmPassword: '',
     },
@@ -110,7 +112,7 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null)
-    const details = { fullName: values.fullName, email: values.email, phoneNumber: values.phoneNumber }
+    const details = { fullName: values.fullName, email: values.email, phoneNumber: values.phoneNumber, employmentType: values.employmentType }
     try {
       if (user) {
         const updated = await updateStaff.mutateAsync({
@@ -170,6 +172,17 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
                 {lot.name}
               </option>
             ))}
+          </NativeSelect>
+        </Field>
+
+        <Field
+          label="Employment"
+          htmlFor="team-employment"
+          hint="Full-time Staff get a monthly salary and a weekly shift pattern; backup Staff are paid by the hour and fill empty shifts."
+        >
+          <NativeSelect id="team-employment" {...register('employmentType')}>
+            <option value="FullTime">Full-time</option>
+            <option value="Backup">Backup</option>
           </NativeSelect>
         </Field>
 

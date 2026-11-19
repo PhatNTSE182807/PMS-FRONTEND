@@ -1,4 +1,3 @@
-import type { BanknoteCounts } from '@/types/cashDrawer.dto'
 import { SERVICE_PATHS } from '@/config/env'
 import type {
   BaySessionDTO,
@@ -6,11 +5,8 @@ import type {
   CheckInRequest,
   CheckInResultDTO,
   CheckoutQuoteDTO,
-  CheckoutRequest,
-  CheckoutResultDTO,
   GateDTO,
   GateReservationLookupDTO,
-  LostTicketRequest,
   ParkingSessionDTO,
   PaymentDTO,
   PaymentProvider,
@@ -49,6 +45,14 @@ export const gateService = {
   /** Booked bays a walk-in took, open ones first; openOnly drops the resolved ones. */
   getBookedBayCases(lotId: string, openOnly = false): Promise<BookedBayCaseDTO[]> {
     return http.get<BookedBayCaseDTO[]>(`${lotPath(lotId)}/booked-bay-cases`, { params: { openOnly } })
+  },
+
+  /**
+   * Tows the vehicle out of the booked bay to a free penalty bay (or a walk-in bay when every penalty bay is taken);
+   * without a bay the first one is used. The vehicle owes the penalty at check-out; the booking keeps its bay.
+   */
+  towFromBookedBay(caseId: number, slotId?: number, note?: string): Promise<BookedBayCaseDTO> {
+    return http.post<BookedBayCaseDTO>(`${base}/booked-bay-cases/${caseId}/tow`, { slotId, note })
   },
 
   /** Moves the booking to a free bay of its type; the customer is told and gets the first hour free. */
@@ -106,11 +110,6 @@ export const gateService = {
     return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/entry-confirm`)
   },
 
-  /** The vehicle turned around before the sensor. */
-  cancelEntry(sessionId: number): Promise<ParkingSessionDTO> {
-    return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/entry-cancel`)
-  },
-
   /** Fee request at the exit lane: deposit deducted, Exit Window checked. */
   quote(sessionId: number, plateNumber?: string): Promise<CheckoutQuoteDTO> {
     return http.post<CheckoutQuoteDTO>(`${sessionPath(sessionId)}/quote`, { plateNumber })
@@ -120,9 +119,9 @@ export const gateService = {
     return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/cancel-payment`)
   },
 
-  /** Cash: `received` / `change` (banknote counts) are optional and feed the Staff's cash drawer. */
-  payCash(sessionId: number, amount: number, prepaid = false, received?: BanknoteCounts, change?: BanknoteCounts): Promise<PaymentDTO> {
-    return http.post<PaymentDTO>(`${sessionPath(sessionId)}/payments/cash`, { amount, prepaid, received, change })
+  /** Cash: `amount` is the money received; only the fee is recorded and it adds to the Staff's drawer total. */
+  payCash(sessionId: number, amount: number, prepaid = false): Promise<PaymentDTO> {
+    return http.post<PaymentDTO>(`${sessionPath(sessionId)}/payments/cash`, { amount, prepaid })
   },
 
   /** Dynamic QR (VNPay / MoMo) for a Guest: show `payUrl` as a QR code. */
@@ -154,16 +153,4 @@ export const gateService = {
     }
   },
 
-  /**
-   * Lost ticket / card: adds the lost-ticket fine. With `conditionsMet` the session moves straight to
-   * PendingPayment; otherwise it waits in LostTicketPending for a Manager's approval.
-   */
-  reportLostTicket(sessionId: number, request: LostTicketRequest): Promise<ParkingSessionDTO> {
-    return http.post<ParkingSessionDTO>(`${sessionPath(sessionId)}/lost-ticket`, request)
-  },
-
-  /** The vehicle passes the exit barrier. */
-  checkout(sessionId: number, request: CheckoutRequest): Promise<CheckoutResultDTO> {
-    return http.post<CheckoutResultDTO>(`${sessionPath(sessionId)}/check-out`, request)
-  },
 }

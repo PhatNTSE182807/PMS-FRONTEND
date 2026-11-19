@@ -1,18 +1,18 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CircleCheck, CreditCard, FlaskConical, ShieldCheck, Timer, Wallet, Zap } from 'lucide-react'
-import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
+import { CalendarClock, CircleCheck, CreditCard, FlaskConical, ShieldCheck, Timer, Wallet, Zap } from 'lucide-react'
 import { useNow } from '@/hooks/useNow'
 import { useVehicles } from '@/hooks/useProfile'
 import { usePaymentSimulation } from '@/hooks/usePaymentSimulation'
 import { useCreateReservation, useMyReservations, usePayDeposit, useSimulateDeposit } from '@/hooks/useReservations'
 import { bookingAllowance } from '@/lib/bookingLimits'
-import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
+import { checkBookingTimes, describeWindow, type BookingTimes } from '@/lib/bookingTime'
 import { formatNumber } from '@/lib/format'
 import { USER_TOAST, toastBookingError } from '@/lib/userToasts'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
 import { holdDuration } from '../customerFormat'
+import { VnpayButton } from '@/components/payment/VnpayButton'
 
 /** Deposit choices: the hold after arrival is longer when a deposit is paid. */
 const DEPOSIT_OPTIONS = [
@@ -26,16 +26,18 @@ interface ReserveBayPanelProps {
   lotKey: string
   slotId: string
   slotCode: string
+  /** The window picked above the map; the bays are drawn for it. */
+  times: BookingTimes
 }
 
 /**
- * Books the selected bay (SRS FR-RSV-02): pick the car, the booking type and the date and time
- * (Scheduled: arrival and departure; pay as you go: arrival only), and whether to pay a deposit.
+ * Books the selected bay (SRS FR-RSV-02) for the window picked above the map (booking type and date and time,
+ * Scheduled: arrival and departure; pay as you go: arrival only): pick the car and whether to pay a deposit.
  * With a deposit (paid with the wallet, VNPay or MoMo before the deadline) the bay is held 30 minutes
  * after arrival; without one the booking is confirmed at once and held only 15 minutes.
  * Overlapping bookings of one bay: the first one wins.
  */
-export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelProps) {
+export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayPanelProps) {
   const now = useNow(1000)
   const { data: vehicles = [] } = useVehicles()
   const allCars = useMemo(() => vehicles.filter((v) => v.isActive !== false && !/motor/i.test(v.vehicleType)), [vehicles])
@@ -48,7 +50,6 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   const cars = useMemo(() => approvedCars.filter((v) => !allowance.bookedVehicleIds.has(String(v.vehicleId))), [approvedCars, allowance])
   const bookedCars = approvedCars.length - cars.length
   const [vehicleId, setVehicleId] = useState('')
-  const [times, setTimes] = useState(() => defaultBookingTimes(Date.now()))
   const [held, setHeld] = useState<ReservationDTO | null>(null)
   // Deposit option: true = pay 30,000 VND and keep the bay 30 min after arrival; false = no deposit, 15 min
   const [payDeposit, setPayDeposit] = useState(true)
@@ -58,6 +59,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
   const canSimulate = usePaymentSimulation()
   const simulate = useSimulateDeposit()
 
+  const checkedNow = checkBookingTimes(times, now)
   const chosenVehicle = vehicleId || cars.find((v) => v.isDefault)?.vehicleId || cars[0]?.vehicleId || ''
   const heldHere = held && String(held.slotId) === slotId ? held : null
 
@@ -128,9 +130,7 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
             <CreditCard aria-hidden /> Pay with XXIV Wallet
           </button>
-          <button type="button" className="cx-btn cx-btn--gold" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')}>
-            <Wallet aria-hidden /> VNPay
-          </button>
+          <VnpayButton className="cx-btn" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')} />
           <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
             <Wallet aria-hidden /> MoMo
           </button>
@@ -183,14 +183,11 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode }: ReserveBayPanelPro
           </span>
         )}
       </label>
-      <BookingTimeFields
-        value={times}
-        onChange={setTimes}
-        now={now}
-        idPrefix={`reserve-${slotId}`}
-        disabled={create.isPending}
-        holdMinutes={payDeposit ? 30 : 15}
-      />
+      {/* The time is picked above the map, so the bays are drawn for it; here it is only shown back */}
+      <p className="cx-reserve__meta">
+        <CalendarClock aria-hidden />{' '}
+        {checkedNow.ok ? describeWindow(checkedNow.arrivalTime, checkedNow.departureTime, now) : checkedNow.error} • check-in opens 15 min before arrival and closes {payDeposit ? 30 : 15} min after
+      </p>
       <div className="cx-mode" role="radiogroup" aria-label="Deposit">
         {DEPOSIT_OPTIONS.map((option) => {
           const Icon = option.icon

@@ -16,6 +16,7 @@ import CustomerDashboardPage from '@/pages/customer/CustomerDashboardPage'
 import CustomerProfilePage from '@/pages/customer/CustomerProfilePage'
 import RegisterVehiclePage from '@/pages/customer/RegisterVehiclePage'
 import CustomerBookingsPage from '@/pages/customer/CustomerBookingsPage'
+import { OffDutyPanel, PosShiftGate, StaffHome } from '@/components/features/duty/ShiftStatus'
 import CustomerActiveSessionsPage from '@/pages/customer/CustomerActiveSessionsPage'
 
 // Admin pages are code-split: drivers never download the dashboard (or its chart library).
@@ -26,12 +27,16 @@ const CustomerAccountsPage = lazy(() => import('@/pages/admin/CustomerAccountsPa
 const RevenueReportPage = lazy(() => import('@/pages/admin/RevenueReportPage'))
 const ParkingCapacityPage = lazy(() => import('@/pages/admin/ParkingCapacityPage'))
 const ParkingSimulationPage = lazy(() => import('@/pages/admin/ParkingSimulationPage'))
+const PricingHistoryPage = lazy(() => import('@/pages/admin/PricingHistoryPage'))
 const AnprDatasetPage = lazy(() => import('@/pages/admin/AnprDatasetPage'))
 const ManagerConsolePage = lazy(() => import('@/pages/management/ManagerConsolePage'))
 const ManagerReservationsPage = lazy(() => import('@/pages/management/ManagerReservationsPage'))
 const ManagerApprovalsPage = lazy(() => import('@/pages/management/ManagerApprovalsPage'))
 const ManagerPricingPage = lazy(() => import('@/pages/management/ManagerPricingPage'))
 const ManagerStaffPage = lazy(() => import('@/pages/management/ManagerStaffPage'))
+const ManagerWorkSchedulingPage = lazy(() => import('@/pages/management/ManagerWorkSchedulingPage'))
+const StaffWorkSchedulePage = lazy(() => import('@/pages/staff/StaffWorkSchedulePage'))
+const PayrollPage = lazy(() => import('@/pages/PayrollPage'))
 const PaymentReturnPage = lazy(() => import('@/pages/PaymentReturnPage'))
 const StaffGatePage = lazy(() => import('@/pages/staff/StaffGatePage'))
 const StaffCheckoutPage = lazy(() => import('@/pages/staff/StaffCheckoutPage'))
@@ -89,11 +94,13 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'staff', element: <StaffAccountsPage /> },
+      { path: 'payroll', element: <PayrollPage /> },
       { path: 'customers', element: <CustomerAccountsPage /> },
       { path: 'lots', element: <ParkingLotsPage /> },
       { path: 'revenue', element: <RevenueReportPage /> },
       { path: 'capacity', element: <ParkingCapacityPage /> },
       { path: 'simulation', element: <ParkingSimulationPage /> },
+      { path: 'pricing-history', element: <PricingHistoryPage /> },
       // Development only: training images for the plate reader
       ...(import.meta.env.DEV ? [{ path: 'anpr-dataset', element: <AnprDatasetPage /> }] : []),
     ],
@@ -108,6 +115,8 @@ export const router = createBrowserRouter([
       { path: 'approvals', element: <ManagerApprovalsPage /> },
       { path: 'pricing', element: <ManagerPricingPage /> },
       { path: 'staff', element: <ManagerStaffPage /> },
+      { path: 'work-schedules', element: <ManagerWorkSchedulingPage /> },
+      { path: 'payroll', element: <PayrollPage /> },
       // The Manager no longer has a zones and bays page: old links land on the console
       { path: 'lots', element: <Navigate to="/management/console" replace /> },
     ],
@@ -116,12 +125,17 @@ export const router = createBrowserRouter([
     path: '/staff',
     element: <RequireAuth roles={['STAFF']}><StaffLayout /></RequireAuth>,
     children: [
-      { index: true, element: <Navigate to="gate" replace /> },
-      { path: 'gate', element: <StaffGatePage /> },
-      { path: 'checkout', element: <StaffCheckoutPage /> },
-      { path: 'exceptions', element: <StaffExceptionsPage /> },
-      { path: 'cash-tally', element: <StaffCashTallyPage /> },
-      { path: 'verifications', element: <StaffVehicleVerificationPage /> },
+      // On shift (or about to start): the POS; otherwise Off duty
+      { index: true, element: <StaffHome /> },
+      { path: 'off-duty', element: <OffDutyPanel /> },
+      { path: 'work-schedule', element: <StaffWorkSchedulePage /> },
+      { path: 'payroll', element: <PayrollPage /> },
+      // POS pages open only during the Staff's shift
+      { path: 'gate', element: <PosShiftGate><StaffGatePage /></PosShiftGate> },
+      { path: 'checkout', element: <PosShiftGate><StaffCheckoutPage /></PosShiftGate> },
+      { path: 'exceptions', element: <PosShiftGate><StaffExceptionsPage /></PosShiftGate> },
+      { path: 'cash-tally', element: <PosShiftGate><StaffCashTallyPage /></PosShiftGate> },
+      { path: 'verifications', element: <PosShiftGate><StaffVehicleVerificationPage /></PosShiftGate> },
     ],
   },
   { path: '*', element: <HomeRedirect /> },

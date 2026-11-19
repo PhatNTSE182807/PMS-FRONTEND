@@ -5,7 +5,6 @@ import type {
   DeployWalkInToBayCommand,
   DeployWalkInsResultDTO,
   ParkingSimulationDTO,
-  SimulatedWalkInDTO,
   UpdateParkingSimulationCommand,
   WalkInCheckOutResultDTO,
   WalkInSimulationOverviewDTO,
@@ -49,22 +48,12 @@ export const walkInSimulationService = {
     return http.post<DeployWalkInsResultDTO>(walkIns, command, { timeout: BATCH_TIMEOUT_MS })
   },
 
-  /** One vehicle pays cash at the exit lane and leaves now. */
-  checkOut(sessionId: number): Promise<SimulatedWalkInDTO | null> {
-    return http.post<SimulatedWalkInDTO | null>(`${walkIns}/${sessionId}/check-out`)
-  },
-
   /** Every simulated vehicle (of one lot, or all) pays and leaves now. */
   checkOutAll(lotId?: number): Promise<WalkInCheckOutResultDTO> {
     return http.post<WalkInCheckOutResultDTO>(`${walkIns}/check-out-all`, undefined, {
       params: lotId ? { lotId } : undefined,
       timeout: BATCH_TIMEOUT_MS,
     })
-  },
-
-  /** The driver reports a lost ticket: approved on the spot (conditions met) or sent to the lot's Manager. */
-  reportLostTicket(sessionId: number, conditionsMet: boolean): Promise<SimulatedWalkInDTO | null> {
-    return http.post<SimulatedWalkInDTO | null>(`${walkIns}/${sessionId}/lost-ticket`, { conditionsMet })
   },
 
   /** A walk-in parks in the bay of the lot's next confirmed booking, or of the booking in `slotId`. */

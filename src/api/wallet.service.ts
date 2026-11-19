@@ -9,7 +9,7 @@ export const walletService = {
     return http.get<WalletDTO>('/wallet')
   },
 
-  /** Fetch all wallet transactions for the current user from past to present. */
+  /** Every wallet transaction of the current user, newest first (at most 500), for the history view. */
   getTransactions(): Promise<WalletTransactionDTO[]> {
     return http.get<WalletTransactionDTO[]>('/wallet/transactions')
   },

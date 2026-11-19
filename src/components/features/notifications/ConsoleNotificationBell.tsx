@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDeleteNotification, useMarkAllRead, useMarkRead, useNotifications, useTimeAgo } from '@/hooks/useNotifications'
@@ -13,9 +14,34 @@ const TONE: Record<string, string> = {
   DepositRefunded: 'bg-emerald-500',
   DepartureOverdue: 'bg-amber-500',
   CashDrawerClosed: 'bg-amber-500',
+  VehicleTowed: 'bg-orange-500',
+  LotAlmostFull: 'bg-amber-500',
+  LotFull: 'bg-rose-500',
+  LotSpaceAvailable: 'bg-emerald-500',
+  AccountDeletionRequested: 'bg-rose-500',
+  LotPricingChanged: 'bg-indigo-500',
+  DutyAbsent: 'bg-rose-500',
+  DutyLeaveRequested: 'bg-amber-500',
+  DutyShiftChanged: 'bg-indigo-500',
+  PayrollPaid: 'bg-emerald-500',
+  PayrollReady: 'bg-amber-500',
 }
 
-/** A cash drawer closed off the expected cash stands out from one that balances. */
+/** Admin notices open the page where the Admin acts on them. */
+const linkOf = (n: NotificationModel): string | null => {
+  if (n.type === 'AccountDeletionRequested')
+    return `/admin/customers${n.data?.email ? `?q=${encodeURIComponent(n.data.email)}` : ''}`
+  if (n.type === 'LotPricingChanged') return '/admin/pricing-history'
+  if (n.type === 'PayrollReady') return '/admin/payroll'
+  // Duty and pay notices go to the console the person is in (Manager or Staff)
+  const manager = window.location.pathname.startsWith('/management')
+  if (n.type === 'DutyLeaveRequested') return '/management/work-schedules?tab=leave'
+  if (n.type.startsWith('Duty')) return manager ? '/management/work-schedules' : '/staff/work-schedule'
+  if (n.type === 'PayrollPaid') return manager ? '/management/payroll' : '/staff/payroll'
+  return null
+}
+
+/** An older drawer close that was counted off the expected cash stands out (new closes are not counted, so carry no difference). */
 const toneOf = (n: NotificationModel) =>
   n.type === 'CashDrawerClosed' && Number(n.data?.difference ?? 0) !== 0 ? 'bg-rose-500' : TONE[n.type] ?? 'bg-slate-400'
 
@@ -24,6 +50,8 @@ const toneOf = (n: NotificationModel) =>
  * Staff: booked bays a walk-in took, bookings moved to another bay, the compensation sent to customers, and booked
  * vehicles that stayed past their time.
  * Manager: cash drawers their Staff closed, and how each taken booked bay was handled (moved, or compensated).
+ * Both: a zone of their lot that is almost full, full, or has free bays again.
+ * Admin: customers who asked for their account to be deleted, and every price change a Manager made.
  */
 export function ConsoleNotificationBell() {
   const [open, setOpen] = useState(false)
@@ -33,6 +61,16 @@ export function ConsoleNotificationBell() {
   const markAllRead = useMarkAllRead()
   const remove = useDeleteNotification()
   const timeAgo = useTimeAgo()
+  const navigate = useNavigate()
+
+  const openItem = (n: NotificationModel) => {
+    if (!n.isRead) markRead.mutate(n.id)
+    const link = linkOf(n)
+    if (link) {
+      setOpen(false)
+      navigate(link)
+    }
+  }
   const items = data?.items ?? []
   const unread = data?.unreadCount ?? 0
 
@@ -95,7 +133,7 @@ export function ConsoleNotificationBell() {
             {items.map((n) => (
               <li key={n.id} className={cn('group flex gap-3 px-4 py-3', !n.isRead && 'bg-slate-50')}>
                 <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', toneOf(n), n.isRead && 'opacity-40')} aria-hidden />
-                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => !n.isRead && markRead.mutate(n.id)}>
+                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openItem(n)}>
                   <p className={cn('text-sm text-slate-950', !n.isRead && 'font-semibold')}>{n.title}</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{n.message}</p>
                   <p className="mt-1 text-[11px] text-slate-500">{timeAgo(n.createdAt)}</p>

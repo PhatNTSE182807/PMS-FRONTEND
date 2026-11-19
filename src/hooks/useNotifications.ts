@@ -6,6 +6,8 @@ import { parkingOpsRealtime, type ParkingOpsEvent } from '@/api/parkingOpsRealti
 import { queryKeys } from '@/api/queryKeys'
 import { useAuth } from '@/hooks/useAuth'
 import { USER_TOAST } from '@/lib/userToasts'
+import { DUTY_NOTIFICATION_TYPES, dutyKeys } from './useDuty'
+import { payrollKeys } from './usePayroll'
 
 const BOOKED_BAY_TYPES = new Set<string>([
   'BookedBayTaken',
@@ -14,7 +16,11 @@ const BOOKED_BAY_TYPES = new Set<string>([
   'BookingCancelledByLot',
   'DepositRefunded',
   'CompensationPaid',
+  'VehicleTowed',
 ])
+
+/** Staff and Manager notices about how full a zone of their lot is. */
+const FILL_TYPES = new Set<string>(['LotAlmostFull', 'LotFull', 'LotSpaceAvailable'])
 
 /** Loads the bell's notifications and keeps them up-to-date through SignalR. */
 export function useNotifications(take = 30) {
@@ -28,6 +34,7 @@ export function useNotifications(take = 30) {
     enabled: isLoggedIn,
     staleTime: 60_000,
     refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
   })
 
   // Real-time: a new notification arrives through the parking-ops hub
@@ -60,9 +67,21 @@ export function useNotifications(take = 30) {
 
       // A closed cash drawer waits in the Manager's Approval Queue
       if (notification.type === 'CashDrawerClosed') void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
+      // Duty board, shift card and leave lists; a paid salary shows in My payslips
+      if (DUTY_NOTIFICATION_TYPES.has(notification.type)) void queryClient.invalidateQueries({ queryKey: dutyKeys })
+      if (notification.type === 'PayrollPaid' || notification.type === 'PayrollReady')
+        void queryClient.invalidateQueries({ queryKey: payrollKeys })
+
+      // Admin: a customer asked for their account to be deleted, so the customer list shows the request
+      if (notification.type === 'AccountDeletionRequested') void queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
+      if (notification.type === 'LotPricingChanged') void queryClient.invalidateQueries({ queryKey: queryKeys.pricing.all })
+
+      // A zone of the lot filled up or has space again: the capacity numbers on screen are stale
+      if (FILL_TYPES.has(notification.type)) void queryClient.invalidateQueries({ queryKey: queryKeys.parking.all })
 
       const id = `notification-${notification.id}`
-      if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
+      if (notification.type === 'LotFull') toast.warning(notification.title, { id, description: notification.message, duration: 8000 })
+      else if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
       else if (notification.type === 'CheckOut' && !notification.data?.note) toast.success(USER_TOAST.checkedOut, { id })
       else toast.info(notification.title, { id, description: notification.message, duration: 5000 })
     })
@@ -73,51 +92,11 @@ export function useNotifications(take = 30) {
   return query
 }
 
-/** Test notifications live only in this browser: their negative ids never reach the API. */
-let lastLocalId = 0
-
-/** Adds a test notification to the bell and shows its popup; a reload or refetch of the list removes it. */
-export function useAddNotification() {
-  const queryClient = useQueryClient()
-  return useCallback(
-    (title: string, message: string) => {
-      const notification: NotificationModel = {
-        id: --lastLocalId,
-        type: 'PriceChanged',
-        title,
-        message,
-        refType: null,
-        refId: null,
-        eventAt: null,
-        data: {},
-        createdAt: new Date().toISOString(),
-        readAt: null,
-        isRead: false,
-      }
-      queryClient.setQueryData<NotificationListModel>(queryKeys.notifications.list(), (prev) => ({
-        items: [notification, ...(prev?.items ?? [])],
-        unreadCount: (prev?.unreadCount ?? 0) + 1,
-      }))
-      toast.info(title, { description: message, duration: 4000 })
-    },
-    [queryClient],
-  )
-}
-
-/** Returns the unread count from the notification list (avoids a separate query). */
-export function useUnreadCount(): number {
-  return useNotifications().data?.unreadCount ?? 0
-}
-
 /** Mark one notification as read. */
 export function useMarkRead() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: number): Promise<NotificationModel> => {
-      if (id >= 0) return notificationApi.markRead(id)
-      const local = queryClient.getQueryData<NotificationListModel>(queryKeys.notifications.list())?.items.find((n) => n.id === id)
-      return { ...local!, readAt: new Date().toISOString(), isRead: true }
-    },
+    mutationFn: (id: number): Promise<NotificationModel> => notificationApi.markRead(id),
     onSuccess: (updated) => {
       queryClient.setQueryData<NotificationListModel>(queryKeys.notifications.list(), (prev) => {
         if (!prev) return prev
@@ -151,9 +130,7 @@ export function useMarkAllRead() {
 export function useDeleteNotification() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: number) => {
-      if (id >= 0) await notificationApi.delete(id)
-    },
+    mutationFn: (id: number) => notificationApi.delete(id),
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.notifications.list() })
       const prev = queryClient.getQueryData<NotificationListModel>(queryKeys.notifications.list())

@@ -29,7 +29,15 @@ export interface Bay {
   bayTypeCode?: string | null
   /** A free bay with a booking still to come: walk-ins are kept off it. */
   bookedLater?: boolean
+  /**
+   * A penalty bay: kept for vehicles Staff towed out of a booked bay. Never booked, never given to a walk-in and
+   * outside the zone counter; the model draws it in its own colour in a block at the end of the level.
+   */
+  penalty?: boolean
 }
+
+/** The bays a level offers to bookings and walk-ins: every bay but the penalty ones. */
+export const standardBays = (floor: Pick<GarageFloor, 'bays'>) => floor.bays.filter((b) => !b.penalty)
 
 export interface GarageFloor {
   index: number
@@ -59,12 +67,18 @@ export interface GarageTemplate {
   /** Kind of each level, ground first. Motorbikes always park on the ground level. */
   floors: FloorKind[]
   slotsPerFloor: number
+  /**
+   * Penalty bays added to every level, outside its capacity (kept in sync with the backend LotTemplates). A multiple of
+   * the level's rows, so the penalty block is a full rectangle.
+   */
+  penaltySlotsPerFloor: number
 }
 
 export const GARAGE_TEMPLATES: GarageTemplate[] = [
-  { id: 'L3S20', name: 'Compact deck', summary: '3 levels × 20 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 20 },
-  { id: 'L3S50', name: 'Wide deck', summary: '3 levels × 50 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 50 },
-  { id: 'L4S30', name: 'Tower', summary: '4 levels × 30 bays · 3 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car', 'car'], slotsPerFloor: 30 },
+  { id: 'L3S20', name: 'Compact deck', summary: '3 levels × 20 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 20, penaltySlotsPerFloor: 6 },
+  // 52 bays: four full rows of 13; the id stays for lots built when it had 50
+  { id: 'L3S50', name: 'Wide deck', summary: '3 levels × 52 bays · 2 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car'], slotsPerFloor: 52, penaltySlotsPerFloor: 12 },
+  { id: 'L4S30', name: 'Tower', summary: '4 levels × 30 bays · 3 car levels, motorbikes on the ground', floors: ['motorbike', 'car', 'car', 'car'], slotsPerFloor: 30, penaltySlotsPerFloor: 6 },
 ]
 
 export const findTemplate = (id: string | null | undefined) => GARAGE_TEMPLATES.find((t) => t.id === id)
@@ -123,7 +137,13 @@ const stats = (zones: ZoneCapacityDTO[], label?: string): ZoneStats => ({
   occupied: zones.reduce((s, z) => s + z.occupiedSlots, 0),
 })
 
-function buildFloor(index: number, kind: FloorKind, slots: number, zone: ZoneStats, seed: string): GarageFloor {
+/**
+ * Penalty bays stand in their own block at the end of a level: one empty column after the last normal bay, then
+ * filling the rows top to bottom and the next column (the backend LotTemplates.PenaltyCell places them the same way).
+ */
+export const penaltyCell = (index: number, rows: number, cols: number) => ({ row: index % rows, col: cols + 1 + Math.floor(index / rows) })
+
+function buildFloor(index: number, kind: FloorKind, slots: number, zone: ZoneStats, seed: string, penaltySlots = 0): GarageFloor {
   const level = `L${index + 1}`
   const rows = rowsFor(slots)
   const cols = Math.ceil(slots / rows)
@@ -150,13 +170,27 @@ function buildFloor(index: number, kind: FloorKind, slots: number, zone: ZoneSta
     col: i % cols,
     status: statusOf.get(i) ?? 'AVAILABLE',
   }))
+  // A template preview shows the penalty bays free: only Staff tow vehicles there
+  for (let i = 0; i < penaltySlots; i++) {
+    bays.push({
+      id: `${seed}-${level}-X${i}`,
+      code: `${level}-X${String(i + 1).padStart(2, '0')}`,
+      floorIndex: index,
+      ...penaltyCell(i, rows, cols),
+      status: 'AVAILABLE',
+      penalty: true,
+    })
+  }
+  const width = penaltySlots > 0 ? cols + 1 + Math.ceil(penaltySlots / rows) : cols
 
-  return { index, level, kind, zoneLabel: zone.label, rows, cols, bays, liveFree: Math.max(0, zone.total - zone.occupied), liveTotal: zone.total }
+  return { index, level, kind, zoneLabel: zone.label, rows, cols: width, bays, liveFree: Math.max(0, zone.total - zone.occupied), liveTotal: zone.total }
 }
 
 /** Levels of a template, each mirroring the given stats (index-aligned with `template.floors`). */
 export function buildTemplateGarage(template: GarageTemplate, floorStats: ZoneStats[], seed: string): GarageFloor[] {
-  return template.floors.map((kind, i) => buildFloor(i, kind, template.slotsPerFloor, floorStats[i] ?? { label: '', total: 0, occupied: 0 }, seed))
+  return template.floors.map((kind, i) =>
+    buildFloor(i, kind, template.slotsPerFloor, floorStats[i] ?? { label: '', total: 0, occupied: 0 }, seed, template.penaltySlotsPerFloor),
+  )
 }
 
 /** The lot's own template, or a stable pick from its id until the backend stores one. */

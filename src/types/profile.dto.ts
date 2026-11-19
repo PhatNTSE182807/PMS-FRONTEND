@@ -69,10 +69,6 @@ export interface CreateVehicleCommand {
   isDefault: boolean
 }
 
-export interface UpdateVehicleCommand extends CreateVehicleCommand {
-  isActive: boolean
-}
-
 export interface ChangePasswordCommand {
   currentPassword: string
   newPassword: string
@@ -91,5 +87,3 @@ export interface ProfileFieldAvailabilityDTO {
   isCitizenIdAvailable: boolean
   citizenIdReason?: string | null
 }
-
-

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Bike, Car } from 'lucide-react'
 import { formatNumber } from '@/lib/format'
+import { FILL_LABEL, fillLevelOf } from '@/lib/fillLevel'
 import type { PublicBayVehicleType, PublicLotDTO } from '@/types/publicLot.dto'
 import { LEVEL_LABEL, occupancyLevel } from './capacityStats'
 import { useCountUp, useReveal } from './useHomeEffects'
@@ -23,10 +24,14 @@ function FreeCount({ value }: { value: number }) {
 
 function TerminalCard({ lot, reserveTo }: { lot: PublicLotDTO; reserveTo: string }) {
   const occupancy = occupancyOf(lot)
-  const level = occupancyLevel(occupancy)
+  // Almost full and full use the same thresholds as the Staff / Manager alerts; below that, the meter's own levels
+  const fill = fillLevelOf(lot)
+  const level = fill === 'Available' ? occupancyLevel(occupancy) : 'high'
   const available = isAvailable(lot)
   const tone = available ? level : 'offline'
-  const statusLabel = available ? LEVEL_LABEL[level] : lot.status === 'Maintenance' ? 'Maintenance' : 'Unavailable'
+  const statusLabel = available
+    ? FILL_LABEL[fill] ?? (level === 'high' ? 'Filling up' : LEVEL_LABEL[level])
+    : lot.status === 'Maintenance' ? 'Maintenance' : 'Unavailable'
 
   return (
     <article className={`home-terminal home-terminal--${tone}`}>

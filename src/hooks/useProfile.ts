@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { profileService } from '@/api/profile.service'
 import { queryKeys } from '@/api/queryKeys'
 import { session } from '@/lib/session'
-import type { UpdateVehicleCommand } from '@/types/profile.dto'
 
 export function useProfile() {
   return useQuery({ queryKey: queryKeys.profile.me(), queryFn: profileService.getProfile })
@@ -85,15 +84,25 @@ function useVehicleMutation<TVariables, TData>(mutationFn: (variables: TVariable
 
 export const useAddVehicle = () => useVehicleMutation(profileService.addVehicle)
 
-export const useUpdateVehicle = () =>
-  useVehicleMutation(({ vehicleId, command }: { vehicleId: string; command: UpdateVehicleCommand }) =>
-    profileService.updateVehicle(vehicleId, command),
-  )
-
 export const useDeleteVehicle = () => useVehicleMutation(profileService.deleteVehicle)
 
 export const useSetDefaultVehicle = () => useVehicleMutation(profileService.setDefaultVehicle)
 
 export function useChangePassword() {
   return useMutation({ mutationFn: profileService.changePassword })
+}
+
+/** The signed-in customer's pending account deletion request (null when there is none). */
+export function useDeletionRequest() {
+  return useQuery({ queryKey: queryKeys.profile.deletionRequest(), queryFn: profileService.getDeletionRequest })
+}
+
+/** Asks the Admins to delete the account, or withdraws the request. */
+export function useDeletionRequestActions() {
+  const queryClient = useQueryClient()
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.profile.deletionRequest() })
+  return {
+    request: useMutation({ mutationFn: (reason?: string) => profileService.requestDeletion(reason), onSuccess: refresh }),
+    cancel: useMutation({ mutationFn: () => profileService.cancelDeletion(), onSuccess: refresh }),
+  }
 }

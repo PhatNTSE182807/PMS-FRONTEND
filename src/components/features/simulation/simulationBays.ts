@@ -5,12 +5,15 @@ export const isBooked = (bay: Bay) => bay.status === 'RESERVED' || Boolean(bay.b
 
 /** Bays the Admin can act on in the simulation: parked vehicles (details), free bays and booked bays. */
 export function canSimulateInBay(bay: Bay) {
+  // A free penalty bay only takes a vehicle Staff tow there
+  if (bay.penalty) return bay.status === 'OCCUPIED'
   return bay.status === 'OCCUPIED' || bay.status === 'RESERVED' || bay.status === 'AVAILABLE'
 }
 
 /** What a click on a bay of the simulation's 3D model does, in a few words (shown on hover). */
 export function simulationBayHint(bay: Bay) {
   if (bay.status === 'OCCUPIED') return 'Click for vehicle details'
+  if (bay.penalty) return 'Penalty bay: only for towed vehicles'
   if (isBooked(bay)) return 'Click to park a walk-in here by mistake'
   return 'Click to send a walk-in to this bay'
 }

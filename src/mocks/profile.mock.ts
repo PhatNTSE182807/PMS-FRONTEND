@@ -5,7 +5,6 @@ import type {
   CreateVehicleCommand,
   ProfileFieldAvailabilityDTO,
   UpdateProfileCommand,
-  UpdateVehicleCommand,
   UserProfileDTO,
   VehicleDTO,
   VehicleTypeDTO,
@@ -231,14 +230,6 @@ export const profileMock = {
       vehicles = [...vehicles, vehicle]
       if (command.isDefault || vehicles.length === 1) applyDefault(vehicle.vehicleId)
       return findVehicle(vehicle.vehicleId)
-    }),
-
-  updateVehicle: (vehicleId: string, command: UpdateVehicleCommand) =>
-    mockResponse(() => {
-      const updated = toVehicle(command, findVehicle(vehicleId))
-      vehicles = vehicles.map((v) => (v.vehicleId === vehicleId ? updated : v))
-      if (command.isDefault) applyDefault(vehicleId)
-      return findVehicle(vehicleId)
     }),
 
   deleteVehicle: (vehicleId: string) =>

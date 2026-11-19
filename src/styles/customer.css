@@ -378,6 +378,10 @@
 
 .cx-btn--block {
   width: 100%;
+  /* Full-width buttons can carry long status text (e.g. "Not available at your time..."): wrap it inside the button instead of overflowing */
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
 }
 
 .cx-btn--sm {
@@ -2946,6 +2950,21 @@
   margin-left: auto;
 }
 
+/* The selected lot has no free bay: stands out from the gold "your booking" notes */
+.cx-map__full {
+  background: color-mix(in srgb, var(--cx-crimson) 14%, transparent);
+  color: var(--cx-crimson);
+}
+
+/* "• Almost full" / "• Full" after a floor's name */
+.cx-map__fill {
+  color: var(--cx-gold);
+}
+
+.cx-map__fill--full {
+  color: var(--cx-crimson);
+}
+
 /* ---- Bay reservation and deposit payment (ReserveBayPanel, CustomerBookingsPage) ---- */
 .cx-reserve {
   display: flex;
@@ -3524,4 +3543,13 @@
     max-width: none;
     max-height: calc(100dvh - 5rem);
   }
+}
+
+/* Booking time picked above the bays: the car floors of the 3D model are drawn for it */
+.cx-map__when {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cx-border, rgba(255, 255, 255, 0.1));
+  border-radius: 0.75rem;
 }

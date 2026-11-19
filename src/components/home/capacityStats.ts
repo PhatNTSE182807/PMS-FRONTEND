@@ -1,8 +1,4 @@
 import { CRITICAL_OCCUPANCY_THRESHOLD, HIGH_OCCUPANCY_THRESHOLD } from '@/lib/occupancy'
-import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
-
-/** Lots that are taking vehicles (a full lot is still operating). */
-export const isOperating = (lot: ParkingLotCapacityDTO) => lot.status === 'OPEN' || lot.status === 'FULL'
 
 export type OccupancyLevel = 'low' | 'medium' | 'high'
 

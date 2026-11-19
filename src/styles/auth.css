@@ -861,11 +861,6 @@ html[data-theme='light'] .auth-shell__dialog {
   box-shadow: 0 24px 48px rgba(17, 17, 17, 0.2);
 }
 
-html[data-theme='light'] .auth-shell :is(.auth-shell__input, .auth-shell__submit, .auth-shell__alert, .auth-shell__dialog,
-    .auth-shell__demo button, .auth-shell__ghost) {
-  border-radius: 2px;
-}
-
 @media (max-width: 1023px) {
   html[data-theme='light'] .auth-shell__fade {
     background: none;
