@@ -378,6 +378,10 @@
 
 .cx-btn--block {
   width: 100%;
+  /* Full-width buttons can carry long status text (e.g. "Not available at your time..."): wrap it inside the button instead of overflowing */
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
 }
 
 .cx-btn--sm {
