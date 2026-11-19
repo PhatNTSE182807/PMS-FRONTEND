@@ -1,20 +1,17 @@
 import { http } from './axiosClient'
-import type { PayrollAdjustment, PayrollAudit, PayrollDetail, PayrollDirectory, PayrollFrozenSource, PayrollCarry, PayrollPreview, PayrollRole, PayrollSlip, SalaryProfile } from '@/types/payroll.dto'
-const base = '/payroll'
+import type { PayAdjustmentInput, PayAllResult, PayrollFilter, PayrollReport, PaySlip, SimulatePayInput } from '@/types/payroll.dto'
+
+/** Payslips (backend PayrollController and AdminPayrollController). */
 export const payrollApi = {
-  directory: () => http.get<PayrollDirectory>(`${base}/directory`),
-  profiles: (lotId?: string) => http.get<SalaryProfile[]>(`${base}/profiles`, { params: { lotId } }),
-  saveProfile: (value: Partial<SalaryProfile>, id?: number) => id ? http.put<SalaryProfile>(`${base}/profiles/${id}`, value) : http.post<SalaryProfile>(`${base}/profiles`, value),
-  carries: (lotId: string) => http.get<PayrollCarry[]>(`${base}/carries`, { params: { lotId } }),
-  preview: (value: { parkingLotId: number; payMonth: string; role?: PayrollRole; userId?: string }) => http.post<PayrollPreview[]>(`${base}/preview`, value),
-  generate: (value: { parkingLotId: number; payMonth: string; role?: PayrollRole; userId?: string; reason: string }) => http.post<PayrollSlip[]>(`${base}/generate`, value),
-  slips: (lotId?: string, month?: string, mine = false) => http.get<PayrollSlip[]>(`${base}/slips`, { params: { lotId, month, mine } }),
-  detail: (id: number) => http.get<PayrollDetail>(`${base}/slips/${id}`),
-  source: (id: number, lineId: number) => http.get<PayrollFrozenSource>(`${base}/slips/${id}/lines/${lineId}/source`),
-  action: (id: number, action: 'approve' | 'paid', value: { revision: number; reason: string; paidAt?: string; transactionReference?: string }) => http.post<PayrollDetail>(`${base}/slips/${id}/${action}`, value),
-  adjustments: (lotId: string, month: string) => http.get<PayrollAdjustment[]>(`${base}/adjustments`, { params: { lotId, month } }),
-  addAdjustment: (value: Omit<PayrollAdjustment, 'id'>) => http.post<PayrollAdjustment>(`${base}/adjustments`, value),
-  complain: (id: number, reason: string) => http.post(`${base}/slips/${id}/complaints`, { reason }),
-  resolve: (id: number, value: { revision: number; action: 'Accept' | 'Reject'; reason: string; adjustment?: { payMonth: string; quantity: number; unitRate: number; reason: string } }) => http.post(`${base}/complaints/${id}/resolve`, value),
-  audit: (lotId?: string) => http.get<PayrollAudit[]>(`${base}/audit`, { params: { lotId } }),
+  // Staff and Managers
+  mine: () => http.get<PaySlip[]>('/payroll/mine'),
+  simulation: () => http.get<{ enabled: boolean }>('/payroll/simulation'),
+  simulate: (input: SimulatePayInput) => http.post<PaySlip>('/payroll/simulate', input),
+  mySlip: (id: number) => http.get<PaySlip>(`/payroll/slips/${id}`),
+
+  // Admin
+  report: (filter: PayrollFilter) => http.get<PayrollReport>('/admin/payroll', { params: filter }),
+  payAll: (month: string) => http.post<PayAllResult>('/admin/payroll/pay-all', { month }),
+  slip: (id: number) => http.get<PaySlip>(`/admin/payroll/slips/${id}`),
+  adjust: (input: PayAdjustmentInput) => http.post<PayrollReport>('/admin/payroll/adjustments', input),
 }

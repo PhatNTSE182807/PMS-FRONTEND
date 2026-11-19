@@ -1,3 +1,4 @@
+import type { EmploymentType } from './duty.dto'
 import type { EntityRef, PageQuery } from './common.dto'
 
 /* ------------------------------------------------------------------ */
@@ -120,6 +121,8 @@ export interface UserDTO {
   /** Staff only: the shift they are rostered on. */
   shift?: WorkShift
   status: UserStatus
+  /** Staff only: full-time (monthly salary) or backup (paid by the hour). */
+  employmentType?: EmploymentType
   createdAt: string
 }
 
@@ -220,6 +223,8 @@ export interface EmployeeAccountResponseDTO {
   /** Active, Inactive or Terminated. */
   status: string
   createdAt: string | null
+  /** Staff only: FullTime or Backup. */
+  employmentType?: EmploymentType | null
   parkingLots: { id: number; code: string; name: string }[]
 }
 
@@ -231,6 +236,7 @@ export interface CreateManagedStaffCommand {
   password: string
   confirmPassword: string
   parkingLotId: string
+  employmentType?: EmploymentType
 }
 
 /** PUT /manager/staff/{id} and PUT /admin/managers/{id} — UpdateEmployeeAccountModel. */
@@ -238,6 +244,8 @@ export interface UpdateEmployeeCommand {
   fullName: string
   email: string
   phoneNumber: string
+  /** Staff only. */
+  employmentType?: EmploymentType
 }
 
 export interface ManagedStaffQuery {

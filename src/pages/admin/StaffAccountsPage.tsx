@@ -5,8 +5,7 @@ import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/apiError'
 import { StaffFormSheet } from '@/components/features/staff/StaffFormSheet'
 import { StaffOverview } from '@/components/features/staff/StaffOverview'
-import AdminLeaveBalances from '@/components/features/manager/AdminLeaveBalances'
-import AdminAttendancePeriods from '@/components/features/manager/AdminAttendancePeriods'
+import AdminLeaveBalances from '@/components/features/duty/AdminLeaveBalances'
 import { ROLE_OPTIONS, STATUS_OPTIONS } from '@/components/features/staff/staffLabels'
 import { StaffTable } from '@/components/features/staff/StaffTable'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -142,7 +141,6 @@ export default function StaffAccountsPage() {
 
       <StaffOverview />
       <AdminLeaveBalances />
-      <AdminAttendancePeriods />
 
       <Card>
         {/* Filter bar */}

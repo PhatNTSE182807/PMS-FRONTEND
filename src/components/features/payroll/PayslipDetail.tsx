@@ -1,0 +1,53 @@
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { EMPLOYMENT_LABEL, monthLabel } from '@/lib/duty'
+import { formatDate, formatVnd } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import type { PaySlip } from '@/types/payroll.dto'
+import type { ReactNode } from 'react'
+
+
+export function SlipStatus({ slip }: { slip: PaySlip }) {
+  if (slip.isSimulated) return <Badge tone="violet">Simulated</Badge>
+  if (slip.status === 'Paid') return <Badge tone="emerald">Paid</Badge>
+  if (slip.status === 'Estimate') return <Badge tone="sky">Estimate</Badge>
+  return <Badge tone="amber">Unpaid</Badge>
+}
+
+/** One payslip line by line: base salary, deductions with their dates, extra hours with their shifts. */
+export function PayslipDetail({ slip, onClose, children }: { slip: PaySlip; onClose: () => void; children?: ReactNode }) {
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-xl">
+        <div>
+          <p className="text-xs font-bold tracking-wide text-indigo-700 uppercase">{monthLabel(slip.month)}</p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-950">{slip.employeeName}</h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+            <SlipStatus slip={slip} />
+            <span>{EMPLOYMENT_LABEL[slip.kind]}{slip.lotName ? ` · ${slip.lotName}` : ''}</span>
+            {slip.paidAt && <span>· Received {formatDate(slip.paidAt)}</span>}
+          </div>
+        </div>
+        <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+          {slip.lines.map((line, i) => (
+            <li key={i} className="px-3 py-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-sm text-slate-800">{line.label}</span>
+                <span className={cn('text-sm font-semibold whitespace-nowrap tabular-nums', line.amount < 0 ? 'text-rose-700' : 'text-slate-950')}>
+                  {line.amount > 0 && line.kind !== 'Base' ? '+' : ''}{formatVnd(line.amount)}
+                </span>
+              </div>
+              {line.details.length > 0 && <p className="mt-1 text-xs text-slate-500">{line.details.join(' · ')}</p>}
+            </li>
+          ))}
+          {slip.lines.length === 0 && <li className="px-3 py-2.5 text-sm text-slate-600">Nothing earned this month.</li>}
+        </ul>
+        <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-3 ring-1 ring-slate-200">
+          <span className="font-semibold text-slate-800">Net pay</span>
+          <span className="text-lg font-bold text-slate-950 tabular-nums">{formatVnd(slip.netAmount)}</span>
+        </div>
+        {children}
+      </DialogContent>
+    </Dialog>
+  )
+}

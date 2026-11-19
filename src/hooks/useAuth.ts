@@ -75,7 +75,8 @@ export function useRegister() {
 export function homePathFor(role: AccountRole | undefined): string {
   if (role === 'ADMIN') return '/admin'
   if (role === 'MANAGER') return '/management/console'
-  if (role === 'STAFF') return '/staff/gate'
+  // Staff start on the POS when on shift, otherwise on Off duty (decided by the Staff start page)
+  if (role === 'STAFF') return '/staff'
   return '/me'
 }
 

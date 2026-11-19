@@ -296,6 +296,7 @@ function employeeToUserDTO(account: EmployeeAccountResponseDTO): UserDTO {
     role: normalizeRole(account.role) === 'MANAGER' ? 'MANAGER' : 'STAFF',
     assignedParkingLots: account.parkingLots.map(({ id, name }) => ({ id: String(id), name })),
     status: account.isActive ? 'ACTIVE' : 'INACTIVE',
+    employmentType: account.employmentType ?? undefined,
     createdAt: account.createdAt ?? '',
   }
 }

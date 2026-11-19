@@ -9,7 +9,7 @@ import { session } from '@/lib/session'
  */
 export type ParkingOpsEvent =
   | { type: 'ConnectionRestored' }
-  | { type: 'WorkAttendanceChanged'; lotId: number }
+  | { type: 'DutyScheduleChanged'; lotId: number }
   | { type: 'ReservationChanged'; reservationId: number; lotId: number; status: string; slotId: number | null }
   | { type: 'ReservationReminder'; reservationId: number; kind: 'Arrival' | 'HoldEnding'; at: string }
   | { type: 'PaymentChanged'; paymentId: number; status: string; purpose: string; reservationId: number | null; sessionId: number | null }
@@ -21,7 +21,7 @@ export type ParkingOpsEvent =
 
 type Listener = (event: ParkingOpsEvent) => void
 
-const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert', 'GateRequestChanged', 'NotificationCreated', 'WorkAttendanceChanged']
+const EVENTS: ParkingOpsEvent['type'][] = ['ReservationChanged', 'ReservationReminder', 'PaymentChanged', 'SessionChanged', 'ZoneCounterChanged', 'OpsAlert', 'GateRequestChanged', 'NotificationCreated', 'DutyScheduleChanged']
 
 const listeners = new Set<Listener>()
 const joinedLots = new Map<string, number>()

@@ -1,34 +1,45 @@
 import { useState } from 'react'
 import { CalendarDays } from 'lucide-react'
-import { useMyWorkSchedule } from '@/hooks/useWorkScheduling'
-import { useStaffLot } from '@/hooks/useStaffLot'
 import { getErrorMessage } from '@/api/apiError'
+import { DutyBoard, DutyWeekNav } from '@/components/features/duty/DutyBoard'
+import { StaffLeave } from '@/components/features/duty/StaffLeave'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/card'
+import { Checkbox, Label } from '@/components/ui/form-controls'
 import { ErrorState, Spinner } from '@/components/ui/states'
-import WorkScheduleCalendar, { ScheduleToolbar } from '@/components/features/manager/WorkScheduleCalendar'
-import { calendarRange, type CalendarView } from '@/lib/workScheduleCalendar'
+import { useStaffDutyWeek } from '@/hooks/useDuty'
+import { addDays, mondayOf } from '@/lib/duty'
 import { toIsoDate } from '@/lib/format'
-import WorkRequestsBoard from '@/components/features/manager/WorkRequestsBoard'
 
+/** Staff: the lot's duty board (who works which shift), read only, plus their leave. */
 export default function StaffWorkSchedulePage() {
-  const today = toIsoDate(new Date())
-  const [anchor, setAnchor] = useState(today)
-  const [view, setView] = useState<CalendarView>('week')
-  const [search, setSearch] = useState('')
-  const { lots, lot, setLotId } = useStaffLot()
-  const range = calendarRange(anchor, view)
-  const schedule = useMyWorkSchedule(range.from, range.to)
-  const rosters = (schedule.data ?? []).filter(r => r.status === 'Published' && r.parkingLotId.toString() === lot?.id)
-  return <div className="space-y-6">
-    <PageHeader title="My work schedule" description="Your published assignments, grouped by shift and start date. All times use the parking lot's local time." actions={<CalendarDays className="size-9 text-indigo-700" />} />
-    {lot && <WorkRequestsBoard key={lot.id} lotId={lot.id} />}
-    <Card className="min-w-0 overflow-hidden">
-      <ScheduleToolbar anchor={anchor} view={view} search={search} today={today} onAnchor={setAnchor} onView={setView} onSearch={setSearch}
-        lots={lots.data ?? []} lotId={lot?.id ?? ''} onLot={setLotId} />
-      {lots.isPending || schedule.isPending ? <div className="p-8"><Spinner /></div>
-        : (lots.isError && !lots.data) || (schedule.isError && !schedule.data) ? <ErrorState message={getErrorMessage(lots.error ?? schedule.error)} onRetry={() => { void lots.refetch(); void schedule.refetch() }} />
-          : <WorkScheduleCalendar rosters={rosters} range={range} search={search} today={today} />}
-    </Card>
-  </div>
+  const thisWeek = mondayOf(toIsoDate(new Date()))
+  const [weekStart, setWeekStart] = useState(thisWeek)
+  const [onlyMine, setOnlyMine] = useState(false)
+  const week = useStaffDutyWeek(weekStart)
+  const myShifts = week.data?.cells.filter((c) => c.isMine).length ?? 0
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Duty board" eyebrow={week.data?.lotName}
+        description="Who works each shift at your lot. Your shifts are highlighted."
+        actions={<CalendarDays className="size-9 text-indigo-700" />} />
+      <Card className="space-y-4 p-4 sm:p-5">
+        {week.isPending ? <Spinner /> : week.isError ? (
+          <ErrorState message={getErrorMessage(week.error)} onRetry={() => week.refetch()} />
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <DutyWeekNav weekStart={week.data.weekStart} today={week.data.today} onChange={setWeekStart} maxWeekStart={addDays(thisWeek, 28)} />
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-slate-600">{myShifts} shift(s) for you this week</span>
+                <Label className="flex items-center gap-2"><Checkbox checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} />Only my shifts</Label>
+              </div>
+            </div>
+            <DutyBoard week={week.data} onlyMine={onlyMine} />
+          </>
+        )}
+      </Card>
+      <StaffLeave />
+    </div>
+  )
 }

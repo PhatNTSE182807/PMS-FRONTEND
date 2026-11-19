@@ -6,7 +6,8 @@ import { parkingOpsRealtime, type ParkingOpsEvent } from '@/api/parkingOpsRealti
 import { queryKeys } from '@/api/queryKeys'
 import { useAuth } from '@/hooks/useAuth'
 import { USER_TOAST } from '@/lib/userToasts'
-import { workSchedulingKeys } from './useWorkScheduling'
+import { DUTY_NOTIFICATION_TYPES, dutyKeys } from './useDuty'
+import { payrollKeys } from './usePayroll'
 
 const BOOKED_BAY_TYPES = new Set<string>([
   'BookedBayTaken',
@@ -66,8 +67,10 @@ export function useNotifications(take = 30) {
 
       // A closed cash drawer waits in the Manager's Approval Queue
       if (notification.type === 'CashDrawerClosed') void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
-      if (['RosterPublished', 'RosterChanged', 'AttendanceChanged'].includes(notification.type))
-        void queryClient.invalidateQueries({ queryKey: workSchedulingKeys })
+      // Duty board, shift card and leave lists; a paid salary shows in My payslips
+      if (DUTY_NOTIFICATION_TYPES.has(notification.type)) void queryClient.invalidateQueries({ queryKey: dutyKeys })
+      if (notification.type === 'PayrollPaid' || notification.type === 'PayrollReady')
+        void queryClient.invalidateQueries({ queryKey: payrollKeys })
 
       // Admin: a customer asked for their account to be deleted, so the customer list shows the request
       if (notification.type === 'AccountDeletionRequested') void queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
