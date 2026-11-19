@@ -545,4 +545,6 @@ export interface BayForecastDTO {
   bookable: boolean
   /** FreeingUp: when the vehicle in the bay now is expected to be gone (UTC ISO). */
   freeFrom?: string | null
+  /** A vehicle parked in the bay now is still expected there then; false for a bay only booked, so no car is drawn. */
+  parkedThen?: boolean
 }
