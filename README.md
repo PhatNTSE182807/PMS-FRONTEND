@@ -1,35 +1,26 @@
 <div align="center">
 
-# 🅿️ XXIV Parking — Web App
+# XXIV Parking — Web App
 
 **One React app for every seat in the parking lot: the driver, the gate, the manager and the head office.**
 
 Live 3D lot map · bookings & deposits · gate POS · approvals · revenue dashboards · AI assistant
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
-![three.js](https://img.shields.io/badge/three.js-3D-000000?logo=threedotjs&logoColor=white)
-![React Query](https://img.shields.io/badge/TanStack%20Query-5-FF4154?logo=reactquery&logoColor=white)
-![SignalR](https://img.shields.io/badge/SignalR-real--time-0078D4)
-![Vercel](https://img.shields.io/badge/Vercel-ready-000000?logo=vercel&logoColor=white)
-
-[Backend repo](https://github.com/PhatNTSE182807/PMS-BACKEND) · [API used by the UI](document/API_DOCUMENT.md) · [Requirements (SRS v1.6)](document/SRS_v1.6.md)
+[Backend repo](https://github.com/PhatNTSE182807/PMS-BACKEND) · [Requirements (SRS v1.7)](document/SRS_v1.7.docx)
 
 </div>
 
 ---
 
-## ✨ Four apps in one
+## Four apps in one
 
 | Area | Route | Who | Screens |
 | --- | --- | --- | --- |
-| 🏠 **Public** | `/` | Everyone | Home with live lots and prices · sign in / register (form or Google) · password reset · AI chat assistant |
-| 🚗 **Customer** | `/me` | User | Dashboard with the 3D lot map · book a bay or park a motorbike now · bookings · active sessions with in-app payment · wallet · vehicles & registration papers · profile · directions to the lot |
-| 🧑‍✈️ **Staff** | `/staff` | Staff | Gate dashboard (check-in / check-out lanes, camera plate reads, barrier) · checkout POS · cash drawer · exceptions & lost tickets · vehicle verification · work schedule · payroll |
-| 🧑‍💼 **Management** | `/management` | Manager | Lot console · reservations & booked-bay cases · approval queue · pricing rules, drafts and history · Staff accounts · work schedules · payroll |
-| 🛡️ **Admin** | `/admin` | Admin | Dashboard · lots & 3D building templates · Manager and customer accounts · revenue report · live capacity · pricing history · payroll · parking simulation |
+| **Public** | `/` | Everyone | Home with live lots and prices · sign in / register (form or Google) · password reset · AI chat assistant |
+| **Customer** | `/me` | User | Dashboard with the 3D lot map · book a bay or park a motorbike now · bookings · active sessions with in-app payment · wallet · vehicles & registration papers · profile · directions to the lot |
+| **Staff** | `/staff` | Staff | Gate dashboard (check-in / check-out lanes, camera plate reads, barrier) · checkout POS · cash drawer · exceptions & lost tickets · vehicle verification · work schedule · payroll |
+| **Management** | `/management` | Manager | Lot console · reservations & booked-bay cases · approval queue · pricing rules, drafts and history · Staff accounts · work schedules · payroll |
+| **Admin** | `/admin` | Admin | Dashboard · lots & 3D building templates · Manager and customer accounts · revenue report · live capacity · pricing history · payroll · parking simulation |
 
 ### Highlights
 
@@ -42,7 +33,7 @@ Live 3D lot map · bookings & deposits · gate POS · approvals · revenue dashb
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -68,7 +59,7 @@ flowchart LR
 
 ---
 
-## 🧰 Tech stack
+## Tech stack
 
 | Area | Choice |
 | --- | --- |
@@ -82,7 +73,7 @@ flowchart LR
 
 ---
 
-## 🚀 Quick start
+## Quick start
 
 **Requirements:** Node.js 20.19+ or 22.12+, npm. The [backend](https://github.com/PhatNTSE182807/PMS-BACKEND) running locally, or mock mode.
 
@@ -118,25 +109,24 @@ Demo accounts come from the backend seed: see the backend's `docs/DEMO_DATA.md`.
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
 A single-page app with browser-history routes: the host must fall back to `index.html` for unknown
 paths. `vercel.json` already does this for Vercel. CI (GitLab and GitHub Actions) lints and builds every push.
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Document | Content |
 | --- | --- |
-| [SRS v1.6](document/SRS_v1.6.md) | Requirements, business rules and use cases — the source of truth |
-| [API_DOCUMENT.md](document/API_DOCUMENT.md) | Backend endpoints the UI calls |
+| [SRS v1.7](document/SRS_v1.7.docx) | Requirements, business rules and use cases — the source of truth |
 | [PARKING_LOT_MANAGEMENT.md](docs/PARKING_LOT_MANAGEMENT.md) | Lot management review notes |
 | [GITHUB-ACTIONS.md](document/GITHUB-ACTIONS.md) | CI on the GitHub mirror |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 - Branch from `develop` as `features/<feature-name>`; use the same name in the backend repo when a feature touches both.
 - Keep `src/types/*.dto.ts` in step with the backend on the same branch.
