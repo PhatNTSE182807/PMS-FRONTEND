@@ -36,7 +36,7 @@ export default function CustomerActiveSessionsPage() {
     <>
       <header className="cx-page-head">
         <div>
-          <span className="cx-eyebrow cx-eyebrow--brand"><span className="cx-eyebrow__gold">XXIV</span> Parking</span>
+          <span className="cx-eyebrow cx-eyebrow--brand"><span className="brand-gold">XXIV</span> Parking</span>
           <h1 className="cx-page-title">Active Sessions</h1>
         </div>
         {allowance.atLimit ? (

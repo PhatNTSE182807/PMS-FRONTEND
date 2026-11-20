@@ -22,3 +22,16 @@
 
 @import "./admin.css";
 @import "./map-theme.css";
+
+/*
+ * "XXIV" of the XXIV PARKING wordmark: brand gold in every area (admin, manager, staff, driver, sign-in).
+ * A fixed color, because the light themes turn the gold/amber tokens black; the light value is deeper so it
+ * stays readable on white. Unlayered so it wins over the area stylesheets.
+ */
+.brand-gold {
+  color: #e9c349;
+}
+
+html[data-theme='light'] .brand-gold {
+  color: #b8901f;
+}

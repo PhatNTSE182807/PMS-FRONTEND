@@ -75,7 +75,7 @@ export function StaffLayout() {
           <img src={LOGO_SRC} alt="" className="h-10 w-auto shrink-0 drop-shadow" />
           <div className="leading-tight">
             <p className="font-display text-lg font-bold tracking-wide text-slate-950 uppercase">
-              XXIV <span className="text-amber-500">Parking</span>
+              <span className="brand-gold">XXIV</span> Parking
             </p>
             <p className="text-[11px] font-bold tracking-[0.14em] text-amber-500 uppercase">POS terminal console</p>
           </div>

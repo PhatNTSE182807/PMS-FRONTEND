@@ -9,7 +9,7 @@ interface PageHeaderProps {
 export function BrandEyebrow({ className = '' }: { className?: string }) {
   return (
     <p className={`text-xs font-bold tracking-[0.12em] text-slate-700 uppercase ${className}`}>
-      <span className="text-amber-500">XXIV</span> Parking
+      <span className="brand-gold">XXIV</span> Parking
     </p>
   )
 }

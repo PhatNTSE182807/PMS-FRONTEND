@@ -1015,10 +1015,6 @@ html[data-theme='light'] .home-nav__brand-mark {
   letter-spacing: 0.03em;
 }
 
-.home-footer__brand span {
-  color: var(--home-primary);
-}
-
 .home-footer__about {
   margin-top: 1.25rem;
   font-size: 0.875rem;
