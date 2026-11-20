@@ -320,7 +320,6 @@ export default function CustomerBookingsPage() {
     <>
       <header className="cx-page-head">
         <div>
-          <span className="cx-eyebrow cx-eyebrow--brand"><span className="brand-gold">XXIV</span> Parking</span>
           <h1 className="cx-page-title">My Bookings &amp; Reservations</h1>
         </div>
         <Link to="/me#map" className="cx-btn cx-btn--teal" style={{ padding: '0.9rem 1.4rem' }}>

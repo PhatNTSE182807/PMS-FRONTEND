@@ -124,7 +124,6 @@
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: var(--cx-on-variant);
 }
 
 .cx-nav__links {
@@ -632,14 +631,6 @@
 
 .cx-eyebrow--teal {
   color: var(--cx-primary);
-}
-
-/* "XXIV PARKING" brand line above each page title: "XXIV" in gold, "PARKING" in muted text */
-.cx-eyebrow--brand {
-  gap: 0.3rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  color: var(--cx-on-variant);
 }
 
 .cx-label {

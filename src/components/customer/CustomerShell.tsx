@@ -70,7 +70,7 @@ export function CustomerShell() {
             <img src={LOGO_SRC} alt="" className="cx-nav__logo" />
             <span className="cx-nav__brand-text">
               <span className="cx-nav__brand-name brand-gold">XXIV</span>
-              <span className="cx-nav__brand-sub">PARKING</span>
+              <span className="cx-nav__brand-sub brand-gold">PARKING</span>
             </span>
           </Link>
 

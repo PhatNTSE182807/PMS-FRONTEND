@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Banknote, CircleCheck, HandCoins, Lock, LockKeyhole, PiggyBank, RotateCcw, UserCheck, Wallet } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { Metric, Panel, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
-import { BrandEyebrow } from '@/components/layout/PageHeader'
 import { CashTopUpPanel } from '@/components/features/staff/CashTopUp'
 import { vnd } from '@/components/features/manager/managerFormat'
 import { Button } from '@/components/ui/button'
@@ -179,7 +178,6 @@ export default function StaffCashTallyPage() {
   return (
     <div className="space-y-6">
       <Panel>
-        <BrandEyebrow className="mb-2" />
         <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">Cash Tally</h1>
       </Panel>
 

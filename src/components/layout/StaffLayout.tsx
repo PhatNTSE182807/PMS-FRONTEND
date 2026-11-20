@@ -77,7 +77,7 @@ export function StaffLayout() {
             <p className="font-display text-lg font-bold tracking-wide text-slate-950 uppercase">
               <span className="brand-gold">XXIV</span> Parking
             </p>
-            <p className="text-[11px] font-bold tracking-[0.14em] text-amber-500 uppercase">POS terminal console</p>
+            <p className="text-[11px] font-bold tracking-[0.14em] uppercase brand-gold">POS terminal console</p>
           </div>
 
           <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 whitespace-nowrap 2xl:flex ring-1 ring-slate-200">
