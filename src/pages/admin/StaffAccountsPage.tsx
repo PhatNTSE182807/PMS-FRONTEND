@@ -21,6 +21,7 @@ import { useParkingLots } from '@/hooks/useParking'
 import { useResetStaffPassword, useSetStaffStatus, useStaffList } from '@/hooks/useStaff'
 import { ADMIN_TOAST, toastAdminError } from '@/lib/adminToasts'
 import type { StaffListQuery, UserDTO, UserRole, UserStatus } from '@/types/identity.dto'
+import { t, tMaybe } from '@/i18n'
 
 const PAGE_SIZE = 10
 
@@ -108,7 +109,7 @@ export default function StaffAccountsPage() {
         setPendingAction(null)
         setTemporaryPassword({ user, password })
       },
-      onError: (error) => toast.error('Could not reset the password', { description: getErrorMessage(error) }),
+      onError: (error) => toast.error(t('Could not reset the password'), { description: getErrorMessage(error) }),
     })
   }
 
@@ -120,12 +121,12 @@ export default function StaffAccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Facility Managers Directory & Hub Allocation"
+        title={t('Facility Managers Directory & Hub Allocation')}
        
         actions={
           <Button size="lg" onClick={() => setFormState({ open: true })}>
             <UserPlus />
-            Add manager
+            {t('Add manager')}
           </Button>
         }
       />
@@ -142,61 +143,61 @@ export default function StaffAccountsPage() {
               type="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search by name, email, employee code or phone…"
-              aria-label="Search staff"
+              placeholder={t('Search by name, email, employee code or phone…')}
+              aria-label={t('Search staff')}
               className="pl-9"
             />
           </div>
-          <NativeSelect aria-label="Filter by role" value={filters.role ?? ''} onChange={(e) => update({ role: e.target.value })}>
-            <option value="">All roles</option>
+          <NativeSelect aria-label={t('Filter by role')} value={filters.role ?? ''} onChange={(e) => update({ role: e.target.value })}>
+            <option value="">{t('All roles')}</option>
             {ROLE_OPTIONS.map((role) => (
               <option key={role.value} value={role.value}>
-                {role.label}
+                {tMaybe(role.label)}
               </option>
             ))}
           </NativeSelect>
-          <NativeSelect aria-label="Filter by parking lot" value={filters.parkingLotId ?? ''} onChange={(e) => update({ lot: e.target.value })}>
-            <option value="">All parking lots</option>
+          <NativeSelect aria-label={t('Filter by parking lot')} value={filters.parkingLotId ?? ''} onChange={(e) => update({ lot: e.target.value })}>
+            <option value="">{t('All parking lots')}</option>
             {parkingLots.data?.map((lot) => (
               <option key={lot.id} value={lot.id}>
-                {lot.name}
+                {tMaybe(lot.name)}
               </option>
             ))}
           </NativeSelect>
-          <NativeSelect aria-label="Filter by status" value={filters.status ?? ''} onChange={(e) => update({ status: e.target.value })}>
-            <option value="">All statuses</option>
+          <NativeSelect aria-label={t('Filter by status')} value={filters.status ?? ''} onChange={(e) => update({ status: e.target.value })}>
+            <option value="">{t('All statuses')}</option>
             {STATUS_OPTIONS.map((status) => (
               <option key={status.value} value={status.value}>
-                {status.label}
+                {tMaybe(status.label)}
               </option>
             ))}
           </NativeSelect>
           <Button variant="ghost" onClick={clearFilters} disabled={!hasFilters && !searchInput}>
             <X />
-            Clear
+            {t('Clear')}
           </Button>
         </div>
 
         {staff.isError ? (
-          <ErrorState message={getErrorMessage(staff.error)} onRetry={() => staff.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(staff.error))} onRetry={() => staff.refetch()} />
         ) : !staff.isPending && staff.data.items.length === 0 ? (
           <EmptyState
             icon={UserX}
-            title={hasFilters ? 'No matching staff accounts' : 'No staff accounts yet'}
+            title={hasFilters ? t('No matching staff accounts') : t('No staff accounts yet')}
             description={
               hasFilters
-                ? 'Try another search term or remove some filters.'
-                : 'Create the first account for a parking lot Manager or gate Staff.'
+                ? t('Try another search term or remove some filters.')
+                : t('Create the first account for a parking lot Manager or gate Staff.')
             }
             action={
               hasFilters ? (
                 <Button variant="outline" onClick={clearFilters}>
-                  Clear filters
+                  {t('Clear filters')}
                 </Button>
               ) : (
                 <Button onClick={() => setFormState({ open: true })}>
                   <Plus />
-                  New staff account
+                  {t('New staff account')}
                 </Button>
               )
             }
@@ -235,20 +236,19 @@ export default function StaffAccountsPage() {
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setPendingAction(null)}
-          title={pendingAction.user.status === 'ACTIVE' ? 'Deactivate account?' : 'Activate account?'}
+          title={pendingAction.user.status === 'ACTIVE' ? t('Deactivate account?') : t('Activate account?')}
           description={
             pendingAction.user.status === 'ACTIVE' ? (
               <>
-                <strong className="text-slate-900">{pendingAction.user.fullName}</strong> will not be able to sign in until the account is
-                activated again.
+                <strong className="text-slate-900">{pendingAction.user.fullName}</strong>{' '}{t('will not be able to sign in until the account is activated again.')}
               </>
             ) : (
               <>
-                <strong className="text-slate-900">{pendingAction.user.fullName}</strong> will be able to sign in again right away.
+                <strong className="text-slate-900">{pendingAction.user.fullName}</strong>{' '}{t('will be able to sign in again right away.')}
               </>
             )
           }
-          confirmLabel={pendingAction.user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+          confirmLabel={pendingAction.user.status === 'ACTIVE' ? t('Deactivate') : t('Activate')}
           tone={pendingAction.user.status === 'ACTIVE' ? 'destructive' : 'default'}
           pending={setStatus.isPending}
           onConfirm={() => confirmLockToggle(pendingAction.user)}
@@ -259,14 +259,13 @@ export default function StaffAccountsPage() {
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setPendingAction(null)}
-          title="Reset password?"
+          title={t('Reset password?')}
           description={
             <>
-              The current password of <strong className="text-slate-900">{pendingAction.user.fullName}</strong> will stop working and be
-              replaced with a temporary password.
+              {t('The current password of')}{' '}<strong className="text-slate-900">{pendingAction.user.fullName}</strong>{' '}{t('will stop working and be replaced with a temporary password.')}
             </>
           }
-          confirmLabel="Reset password"
+          confirmLabel={t('Reset password')}
           pending={resetPassword.isPending}
           onConfirm={() => confirmResetPassword(pendingAction.user)}
         />
@@ -275,15 +274,14 @@ export default function StaffAccountsPage() {
       <Dialog open={temporaryPassword !== null} onOpenChange={(open) => !open && setTemporaryPassword(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Temporary password</DialogTitle>
+            <DialogTitle>{t('Temporary password')}</DialogTitle>
             <DialogDescription>
-              Send this password to {temporaryPassword?.user.fullName} through a secure channel. They should change it the first time they
-              sign in. It will not be shown again.
+              {t('Send this password to {fullName} through a secure channel. They should change it the first time they sign in. It will not be shown again.', { fullName: temporaryPassword?.user.fullName })}
             </DialogDescription>
           </DialogHeader>
-          {temporaryPassword && <CopyField value={temporaryPassword.password} label="temporary password" />}
+          {temporaryPassword && <CopyField value={temporaryPassword.password} label={t('temporary password')} />}
           <DialogFooter>
-            <Button onClick={() => setTemporaryPassword(null)}>I've saved the password</Button>
+            <Button onClick={() => setTemporaryPassword(null)}>{t('I\'ve saved the password')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

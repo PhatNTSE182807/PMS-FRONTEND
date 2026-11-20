@@ -3,6 +3,7 @@ import { Mail, X } from 'lucide-react'
 import { AuthAlert, AuthField } from './AuthFields'
 import { getErrorMessage } from '@/api/apiError'
 import { useForgotPassword } from '@/hooks/useAuth'
+import { t, tMaybe } from '@/i18n'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -52,23 +53,22 @@ export default function ForgotPasswordDialog({ initialEmail = '', onClose, onSen
         noValidate
       >
         <div className="auth-shell__dialog-header">
-          <h2 id="forgot-title" className="auth-shell__dialog-title">Reset password</h2>
-          <button type="button" className="auth-shell__toggle" onClick={onClose} aria-label="Close">
+          <h2 id="forgot-title" className="auth-shell__dialog-title">{t('Reset password')}</h2>
+          <button type="button" className="auth-shell__toggle" onClick={onClose} aria-label={t('Close')}>
             <X size={18} />
           </button>
         </div>
         <div className="auth-shell__dialog-body">
           <p>
-            Enter the email of your account. We will send you a link to choose a new password. The link is valid
-            for 30 minutes and works once.
+            {t('Enter the email of your account. We will send you a link to choose a new password. The link is valid for 30 minutes and works once.')}
           </p>
-          {error && <AuthAlert tone="error">{error}</AuthAlert>}
+          {error && <AuthAlert tone="error">{tMaybe(error)}</AuthAlert>}
           <AuthField
             id="forgot-email"
-            label="Email"
+            label={t('Email')}
             icon={Mail}
             type="email"
-            placeholder="name@domain.com"
+            placeholder={t('name@domain.com')}
             value={email}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
             autoComplete="email"
@@ -77,10 +77,10 @@ export default function ForgotPasswordDialog({ initialEmail = '', onClose, onSen
         </div>
         <div className="auth-shell__dialog-footer">
           <button type="button" className="auth-shell__ghost" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="submit" className="auth-shell__submit" disabled={forgotPassword.isPending}>
-            {forgotPassword.isPending ? 'Sending...' : 'Send reset link'}
+            {forgotPassword.isPending ? t('Sending...') : t('Send reset link')}
           </button>
         </div>
       </form>

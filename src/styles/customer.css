@@ -26,7 +26,7 @@
   --cx-error: #ffb4ab;
   --cx-success: #6fdba8;
   --cx-body-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --cx-headline-font: 'Plus Jakarta Sans', var(--cx-body-font);
+  --cx-headline-font: 'Be Vietnam Pro', var(--cx-body-font);
   --cx-mono-font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   display: flex;

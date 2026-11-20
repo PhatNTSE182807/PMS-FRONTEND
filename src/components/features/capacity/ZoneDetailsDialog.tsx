@@ -9,6 +9,7 @@ import { occupancyLevel, occupancyRate } from '@/lib/occupancy'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 import { OccupancyBar } from './OccupancyGauge'
 import { LEVEL_STYLES } from './occupancyStyles'
+import { t, tMaybe } from '@/i18n'
 
 const FLOW_SERIES = [
   { key: 'checkIns', label: 'Check-ins', color: SERIES_COLORS.blue },
@@ -30,13 +31,13 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
         {lot && (
           <>
             <DialogHeader>
-              <DialogTitle>{lot.name}</DialogTitle>
-              <DialogDescription>Zone details · {lot.code}</DialogDescription>
+              <DialogTitle>{tMaybe(lot.name)}</DialogTitle>
+              <DialogDescription>{t('Zone details · {code}', { code: lot.code })}</DialogDescription>
             </DialogHeader>
 
             <section aria-labelledby="zones-heading" className="space-y-3">
               <h3 id="zones-heading" className="text-sm font-semibold text-slate-900">
-                Zones ({lot.zones.length})
+                {t('Zones ({length})', { length: lot.zones.length })}
               </h3>
               <ul className="space-y-3">
                 {lot.zones.map((zone) => {
@@ -46,14 +47,14 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
                   return (
                     <li key={zone.zoneId} className="rounded-lg p-3 ring-1 ring-slate-200">
                       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-slate-900">{zone.zoneName}</p>
+                        <p className="text-sm font-medium text-slate-900">{tMaybe(zone.zoneName)}</p>
                         <div className="flex items-center gap-2 text-xs text-slate-500">
                           <span className="tabular-nums">
-                            {formatNumber(zone.occupiedSlots)} / {formatNumber(zone.totalSlots)} slots
+                            {t('{occupiedSlots} / {totalSlots} slots', { occupiedSlots: formatNumber(zone.occupiedSlots), totalSlots: formatNumber(zone.totalSlots) })}
                           </span>
                           <Badge tone={style.tone}>
                             <Icon aria-hidden />
-                            {rate.toFixed(0)}% · {style.label}
+                            {rate.toFixed(0)}% · {tMaybe(style.label)}
                           </Badge>
                         </div>
                       </div>
@@ -68,16 +69,16 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <h3 id="flow-heading" className="text-sm font-semibold text-slate-900">
-                    Hourly traffic
+                    {t('Hourly traffic')}
                   </h3>
                   {lastHour && (
                     <p className="mt-0.5 flex items-center gap-3 text-xs text-slate-500">
-                      Last hour ({lastHour.hour}):
+                      {t('Last hour ({hour}):', { hour: lastHour.hour })}
                       <span className="flex items-center gap-1">
-                        <ArrowDownLeft className="size-3.5" aria-hidden /> {formatNumber(lastHour.checkIns)} in
+                        <ArrowDownLeft className="size-3.5" aria-hidden />{' '}{t('{checkIns} in', { checkIns: formatNumber(lastHour.checkIns) })}
                       </span>
                       <span className="flex items-center gap-1">
-                        <ArrowUpRight className="size-3.5" aria-hidden /> {formatNumber(lastHour.checkOuts)} out
+                        <ArrowUpRight className="size-3.5" aria-hidden />{' '}{t('{checkOuts} out', { checkOuts: formatNumber(lastHour.checkOuts) })}
                       </span>
                     </p>
                   )}
@@ -96,7 +97,7 @@ export function ZoneDetailsDialog({ lot, onOpenChange }: ZoneDetailsDialogProps)
                         <ChartTooltip
                           active={props.active}
                           payload={props.payload}
-                          label={props.label}
+                          label={tMaybe(props.label)}
                           formatLabel={(hour) => `Hour ${hour}`}
                           formatValue={(value) => `${formatNumber(value)} vehicles`}
                         />

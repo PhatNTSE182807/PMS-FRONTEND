@@ -1,3 +1,4 @@
+import { t, tMaybe } from '@/i18n'
 /**
  * XXIV Parking social media links shown in the customer footer and the homepage footer.
  * lucide-react no longer ships brand logos, so the icons are inline SVG paths (Simple Icons, CC0).
@@ -27,15 +28,15 @@ const SOCIAL_LINKS = [
  */
 export function SocialLinks({ blockClass = 'cx-footer' }: { blockClass?: string }) {
   return (
-    <nav className={`${blockClass}__social`} aria-label="XXIV Parking on social media">
+    <nav className={`${blockClass}__social`} aria-label={t('XXIV Parking on social media')}>
       {SOCIAL_LINKS.map((link) => (
         <a
           key={link.label}
           href={link.href}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`XXIV Parking on ${link.label}`}
-          title={link.label}
+          aria-label={t('XXIV Parking on {label}', { label: link.label })}
+          title={tMaybe(link.label)}
           className={`${blockClass}__social-link ${blockClass}__social-link--${link.label.toLowerCase()}`}
         >
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

@@ -15,6 +15,7 @@ import { useParkingLots } from '@/hooks/useParking'
 import { useAdminRevenue, useAdminRevenueTimeSeries } from '@/hooks/useRevenueReport'
 import { previousRange } from '@/lib/revenuePeriods'
 import type { AdminRevenueQuery } from '@/types/report.dto'
+import { t, tMaybe } from '@/i18n'
 
 const BREAKDOWN_PAGE_SIZE = 10
 
@@ -49,7 +50,7 @@ export default function RevenueReportPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Revenue Report"
+        title={t('Revenue Report')}
        
       />
 
@@ -64,7 +65,7 @@ export default function RevenueReportPage() {
       {firstError ? (
         <Card>
           <ErrorState
-            message={getErrorMessage(firstError)}
+            message={tMaybe(getErrorMessage(firstError))}
             onRetry={() => {
               if (report.isError) void report.refetch()
               if (timeSeries.isError) void timeSeries.refetch()

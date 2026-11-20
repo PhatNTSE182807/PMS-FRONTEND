@@ -9,6 +9,7 @@ import { TerminalNetwork } from '@/components/home/TerminalNetwork'
 import { homePathFor, useAuth } from '@/hooks/useAuth'
 import { usePublicLots } from '@/hooks/usePublicLots'
 import '@/styles/home.css'
+import { t } from '@/i18n'
 
 /** Public landing page at "/". The terminal cards list the system's parking lots with live free bays. */
 export default function HomePage() {
@@ -21,7 +22,7 @@ export default function HomePage() {
   return (
     <div className="home">
       <a href="#terminals" className="home-skip">
-        Skip to live terminals
+        {t('Skip to live terminals')}
       </a>
       <HomeNav />
       <main>

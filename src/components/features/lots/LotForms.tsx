@@ -17,6 +17,7 @@ import { findTemplate, GARAGE_TEMPLATES, templateCapacity } from '@/components/c
 import { cn } from '@/lib/utils'
 import { coordinateError } from '@/lib/lotCoordinates'
 import { LotLocationPicker } from './LotLocationPicker'
+import { t as tr, tMaybe } from '@/i18n'
 
 export function Field({
   label,
@@ -27,7 +28,7 @@ export function Field({
 }) {
   return (
     <label className="grid gap-1.5 text-sm font-medium text-slate-700">
-      {label}
+      {tMaybe(label)}
       {children}
     </label>
   )
@@ -58,8 +59,8 @@ export function Editor({
     >
       <DialogContent className={wide ? 'max-w-4xl' : 'max-w-2xl'}>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>{tMaybe(title)}</DialogTitle>
+          <DialogDescription>{tMaybe(description)}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={async (e) => {
@@ -87,15 +88,15 @@ export function Editor({
               role="alert"
               className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700"
             >
-              {error}
+              {tMaybe(error)}
             </p>
           )}
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" disabled={busy} onClick={onClose}>
-              Cancel
+              {tr('Cancel')}
             </Button>
             <Button type="submit" disabled={busy}>
-              {busy ? 'Saving…' : 'Save changes'}
+              {busy ? tr('Saving…') : tr('Save changes')}
             </Button>
           </div>
         </form>
@@ -157,8 +158,8 @@ export function LotForm({
   const modelLocked = Boolean(lot?.zones.length)
   return (
     <Editor
-      title={lot ? 'Edit parking lot' : 'Create parking lot'}
-      description="Pick one of the ready-made parking models: its levels, zones, bays and 3D layout are created for you. Assign the lot's Manager here."
+      title={lot ? tr('Edit parking lot') : tr('Create parking lot')}
+      description={tr('Pick one of the ready-made parking models: its levels, zones, bays and 3D layout are created for you. Assign the lot\'s Manager here.')}
       wide
       onClose={onClose}
       onSave={async () => {
@@ -168,7 +169,7 @@ export function LotForm({
         await onSaved()
       }}
     >
-      <Field label="Lot code *">
+      <Field label={tr('Lot code *')}>
         <Input
           required
           maxLength={30}
@@ -176,7 +177,7 @@ export function LotForm({
           onChange={(e) => patch({ code: e.target.value })}
         />
       </Field>
-      <Field label="Lot name *">
+      <Field label={tr('Lot name *')}>
         <Input
           required
           maxLength={200}
@@ -185,7 +186,7 @@ export function LotForm({
         />
       </Field>
       <div className="sm:col-span-2">
-        <Field label="Address *">
+        <Field label={tr('Address *')}>
           <Input
             required
             maxLength={500}
@@ -194,13 +195,13 @@ export function LotForm({
           />
         </Field>
       </div>
-      <Field label="District">
-        <Input maxLength={100} placeholder="e.g. Tan Binh District" value={v.district} onChange={(e) => patch({ district: e.target.value })} />
+      <Field label={tr('District')}>
+        <Input maxLength={100} placeholder={tr('e.g. Tan Binh District')} value={v.district} onChange={(e) => patch({ district: e.target.value })} />
       </Field>
-      <Field label="City">
-        <Input maxLength={100} placeholder="e.g. Ho Chi Minh City" value={v.city} onChange={(e) => patch({ city: e.target.value })} />
+      <Field label={tr('City')}>
+        <Input maxLength={100} placeholder={tr('e.g. Ho Chi Minh City')} value={v.city} onChange={(e) => patch({ city: e.target.value })} />
       </Field>
-      <Field label="Lot phone">
+      <Field label={tr('Lot phone')}>
         <Input type="tel" maxLength={30} placeholder="e.g. 028 3812 3456" value={v.phone} onChange={(e) => patch({ phone: e.target.value })} />
       </Field>
       <div className="hidden sm:block" aria-hidden />
@@ -211,8 +212,8 @@ export function LotForm({
         onChange={(latitude, longitude) => set((current) => ({ ...current, latitude, longitude }))}
       />
       <fieldset className="grid gap-2 sm:col-span-2" disabled={modelLocked}>
-        <legend className="mb-1.5 text-sm font-medium text-slate-700">Parking lot model *</legend>
-        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Parking lot model">
+        <legend className="mb-1.5 text-sm font-medium text-slate-700">{tr('Parking lot model *')}</legend>
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={tr('Parking lot model')}>
           {GARAGE_TEMPLATES.map((t) => {
             const active = v.layoutTemplate === t.id
             const mix = templateCapacity(t)
@@ -234,11 +235,11 @@ export function LotForm({
                     checked={active}
                     onChange={() => patch({ layoutTemplate: t.id, capacity: mix.total })}
                   />
-                  {t.name}
+                  {tMaybe(t.name)}
                 </span>
-                <span className="text-xs text-slate-600">{t.summary}</span>
+                <span className="text-xs text-slate-600">{tMaybe(t.summary)}</span>
                 <span className="text-xs font-semibold text-slate-700">
-                  {mix.car} car + {mix.motorbike} motorbike = {mix.total} bays
+                  {tr('{car} car + {motorbike} motorbike = {total} bays', { car: mix.car, motorbike: mix.motorbike, total: mix.total })}
                 </span>
               </label>
             )
@@ -246,17 +247,17 @@ export function LotForm({
         </div>
         <p className="text-xs text-slate-500">
           {modelLocked
-            ? 'This lot is built from its model; the model cannot be changed once zones and bays exist.'
-            : `Capacity ${template ? templateCapacity(template).total : 0} bays, set by the model. Zones and bays cannot be added by hand.`}
+            ? tr('This lot is built from its model; the model cannot be changed once zones and bays exist.')
+            : tr('Capacity {v} bays, set by the model. Zones and bays cannot be added by hand.', { v: template ? templateCapacity(template).total : 0 })}
         </p>
         {template && <GaragePreview key={template.id} template={template} seed="lot-form" className="h-[18rem] sm:h-[22rem]" />}
       </fieldset>
-      <Field label="Assigned Manager">
+      <Field label={tr('Assigned Manager')}>
         <NativeSelect
           value={v.managerUserId}
           onChange={(e) => patch({ managerUserId: e.target.value })}
         >
-          <option value="">Unassigned</option>
+          <option value="">{tr('Unassigned')}</option>
           {managers.map((m) => (
             <option key={m.id} value={m.id}>
               {m.fullName}
@@ -269,11 +270,11 @@ export function LotForm({
           checked={v.is24Hours}
           onChange={(e) => patch({ is24Hours: e.target.checked })}
         />
-        Open 24 hours
+        {tr('Open 24 hours')}
       </label>
       {!v.is24Hours && (
         <>
-          <Field label="Opening time">
+          <Field label={tr('Opening time')}>
             <Input
               type="time"
               required
@@ -281,7 +282,7 @@ export function LotForm({
               onChange={(e) => patch({ openTime: e.target.value })}
             />
           </Field>
-          <Field label="Closing time">
+          <Field label={tr('Closing time')}>
             <Input
               type="time"
               required
@@ -290,12 +291,12 @@ export function LotForm({
             />
           </Field>
           <p className="text-xs text-slate-500 sm:col-span-2">
-            A closing time before the opening time means the lot is open overnight.
+            {tr('A closing time before the opening time means the lot is open overnight.')}
           </p>
         </>
       )}
       <div className="sm:col-span-2">
-        <Field label="Image URL">
+        <Field label={tr('Image URL')}>
           <Input
             type="url"
             maxLength={500}
@@ -305,7 +306,7 @@ export function LotForm({
         </Field>
       </div>
       <div className="sm:col-span-2">
-        <Field label="Description">
+        <Field label={tr('Description')}>
           <Input
             maxLength={1000}
             value={v.description}
@@ -344,15 +345,15 @@ export function OperationForm({
   })
   return (
     <Editor
-      title="Operating status"
-      description="Active: customers can book and park. Maintenance: no new bookings while the lot is repaired. Temporarily closed: the lot is shut until the reopening time. Closed: shut for good with no reopening time, the step before deleting a lot. A lot cannot close while any of its slots is reserved or occupied."
+      title={tr('Operating status')}
+      description={tr('Active: customers can book and park. Maintenance: no new bookings while the lot is repaired. Temporarily closed: the lot is shut until the reopening time. Closed: shut for good with no reopening time, the step before deleting a lot. A lot cannot close while any of its slots is reserved or occupied.')}
       onClose={onClose}
       onSave={async () => {
         await service.setOperation(lot.id, v)
         await onSaved()
       }}
     >
-      <Field label="Status">
+      <Field label={tr('Status')}>
         <NativeSelect
           value={v.status}
           onChange={(e) => {
@@ -365,12 +366,12 @@ export function OperationForm({
           {/* Inactive is only the state of a lot that never opened, so it is listed only while the lot is in it. */}
           {STATUS_CHOICES.filter((k) => k !== 'Inactive' || lot.status === 'Inactive').map((k) => (
             <option key={k} value={k}>
-              {LOT_STATES[k]}
+              {tMaybe(LOT_STATES[k])}
             </option>
           ))}
         </NativeSelect>
       </Field>
-      <Field label="Closure or maintenance reason">
+      <Field label={tr('Closure or maintenance reason')}>
         <Input
           maxLength={500}
           required={['TemporarilyClosed', 'Maintenance'].includes(v.status)}
@@ -380,7 +381,7 @@ export function OperationForm({
       </Field>
       {v.status === 'TemporarilyClosed' && (
         <>
-          <Field label="Closed from">
+          <Field label={tr('Closed from')}>
             <Input
               required
               type="datetime-local"
@@ -388,7 +389,7 @@ export function OperationForm({
               onChange={(e) => set({ ...v, closedFrom: e.target.value })}
             />
           </Field>
-          <Field label="Reopens at">
+          <Field label={tr('Reopens at')}>
             <Input
               required
               type="datetime-local"
@@ -399,7 +400,7 @@ export function OperationForm({
         </>
       )}
       <div className="sm:col-span-2">
-        <Field label="Maintenance notice">
+        <Field label={tr('Maintenance notice')}>
           <Input
             maxLength={1000}
             value={v.maintenanceNotice}

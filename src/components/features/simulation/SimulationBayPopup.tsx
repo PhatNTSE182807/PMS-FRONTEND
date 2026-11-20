@@ -5,6 +5,7 @@ import { BaySessionPopup } from '@/components/features/lots/BaySessionPopup'
 import { useDeployWalkInToBay, useOccupyBookedBayAt } from '@/hooks/useParkingSimulation'
 import { WALK_IN_MAX_STAY_HOURS } from '@/types/simulation.dto'
 import { isBooked } from './simulationBays'
+import { t, tMaybe } from '@/i18n'
 
 const TITLE = 'Simulate in this bay'
 
@@ -27,15 +28,13 @@ export function SimulationBayPopup({ lotId, bay, onClose }: { lotId: string; bay
     return (
       <BayVehicleCard
         bayCode={bay.code}
-        title={TITLE}
+        title={tMaybe(TITLE)}
         badge={{ text: bay.status === 'RESERVED' ? 'Held for a booking' : 'Booked for later', tone: 'mine' }}
-        rows={[{ label: 'Walk-ins', value: 'Not sent here on their own' }]}
+        rows={[{ label: t('Walk-ins'), value: 'Not sent here on their own' }]}
         footer={
           <div style={styles.form}>
             <p style={styles.note}>
-              A walk-in ignores the signs and parks here. When the customer checks in, the entry lane moves the booking to
-              another bay with the first hour free, or refunds and compensates them. Staff get the case in Exceptions &amp;
-              Alerts.
+              {t('A walk-in ignores the signs and parks here. When the customer checks in, the entry lane moves the booking to another bay with the first hour free, or refunds and compensates them. Staff get the case in Exceptions & Alerts.')}
             </p>
             <button
               type="button"
@@ -43,7 +42,7 @@ export function SimulationBayPopup({ lotId, bay, onClose }: { lotId: string; bay
               disabled={occupy.isPending}
               onClick={() => occupy.mutate({ lotId: Number(lotId), slotId: Number(bay.id) }, { onSuccess: onClose })}
             >
-              {occupy.isPending ? 'Parking…' : 'Park a walk-in here by mistake'}
+              {occupy.isPending ? t('Parking…') : t('Park a walk-in here by mistake')}
             </button>
           </div>
         }
@@ -55,8 +54,8 @@ export function SimulationBayPopup({ lotId, bay, onClose }: { lotId: string; bay
     return (
       <BayVehicleNotice
         bayCode={bay.code}
-        title={TITLE}
-        message="The model draws a walk-in without a bay of its own here, so this bay stays free for it."
+        title={tMaybe(TITLE)}
+        message={t('The model draws a walk-in without a bay of its own here, so this bay stays free for it.')}
         onClose={onClose}
       />
     )
@@ -71,8 +70,8 @@ export function SimulationBayPopup({ lotId, bay, onClose }: { lotId: string; bay
   return (
     <BayVehicleCard
       bayCode={bay.code}
-      title={TITLE}
-      badge={{ text: 'Free bay', tone: 'member' }}
+      title={tMaybe(TITLE)}
+      badge={{ text: t('Free bay'), tone: 'member' }}
       rows={[]}
       footer={
         <form
@@ -87,35 +86,34 @@ export function SimulationBayPopup({ lotId, bay, onClose }: { lotId: string; bay
           }}
         >
           <label style={styles.field}>
-            <span style={styles.label}>Vehicle</span>
+            <span style={styles.label}>{t('Vehicle')}</span>
             <select value={type} onChange={(e) => setType(e.target.value)} style={styles.input}>
               {carBay ? (
                 <>
-                  <option value="CAR_4">4-seat car</option>
-                  <option value="CAR_7">7-seat car</option>
+                  <option value="CAR_4">{t('4-seat car')}</option>
+                  <option value="CAR_7">{t('7-seat car')}</option>
                 </>
               ) : (
-                <option value="MOTORBIKE">Motorbike</option>
+                <option value="MOTORBIKE">{t('Motorbike')}</option>
               )}
             </select>
           </label>
           <div style={styles.pair}>
             <label style={styles.field}>
-              <span style={styles.label}>Shortest stay (h)</span>
+              <span style={styles.label}>{t('Shortest stay (h)')}</span>
               <input inputMode="decimal" value={minStay} onChange={(e) => setMinStay(e.target.value)} style={styles.input} />
             </label>
             <label style={styles.field}>
-              <span style={styles.label}>Longest stay (h)</span>
+              <span style={styles.label}>{t('Longest stay (h)')}</span>
               <input inputMode="decimal" value={maxStay} onChange={(e) => setMaxStay(e.target.value)} style={styles.input} />
             </label>
           </div>
-          {stayError && <p style={styles.error}>{stayError}</p>}
+          {stayError && <p style={styles.error}>{tMaybe(stayError)}</p>}
           <button type="submit" style={styles.primary} disabled={Boolean(stayError) || deploy.isPending}>
-            {deploy.isPending ? 'Sending…' : 'Send a walk-in to this bay'}
+            {deploy.isPending ? t('Sending…') : t('Send a walk-in to this bay')}
           </button>
           <p style={styles.note}>
-            A random plate drives up to the entry lane and waits there: check it in on the Staff gate screen and it parks in
-            this bay. It pays cash and leaves by itself after its stay, unless the Staff takes its fee first.
+            {t('A random plate drives up to the entry lane and waits there: check it in on the Staff gate screen and it parks in this bay. It pays cash and leaves by itself after its stay, unless the Staff takes its fee first.')}
           </p>
         </form>
       }

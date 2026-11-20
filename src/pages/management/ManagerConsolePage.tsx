@@ -27,6 +27,7 @@ import { formatNumber, toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ManagedLot } from '@/types/lot-management.dto'
 import type { CapacityVehicleType } from '@/types/parking.dto'
+import { t, tMaybe } from '@/i18n'
 
 const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
 const VEHICLE_LABEL: Record<CapacityVehicleType, string> = { CAR: 'Cars', MOTORBIKE: 'Bikes' }
@@ -80,14 +81,14 @@ function Console({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={lot.name}
+        title={tMaybe(lot.name)}
        
         actions={
           <div className="flex flex-col gap-2 sm:items-end">
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" asChild>
                 <Link to="/management/staff">
-                  <UserPlus /> Staff &amp; POS
+                  <UserPlus />{' '}{t('Staff & POS')}
                 </Link>
               </Button>
             </div>
@@ -95,20 +96,20 @@ function Console({ lot }: { lot: ManagedLot }) {
         }
       />
       <p className="-mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-sm text-slate-700">
-        <span className="flex items-center gap-1.5"><MapPin className="size-4 text-indigo-700" aria-hidden /> {lot.address}</span>
-        <span>{lot.is24Hours ? 'Open 24/7' : `Open ${lot.openTime} – ${lot.closeTime}`}</span>
-        <span>{lot.zones.length} configured zones</span>
+        <span className="flex items-center gap-1.5"><MapPin className="size-4 text-indigo-700" aria-hidden /> {tMaybe(lot.address)}</span>
+        <span>{lot.is24Hours ? t('Open 24/7') : t('Open {openTime} – {closeTime}', { openTime: lot.openTime, closeTime: lot.closeTime })}</span>
+        <span>{t('{length} configured zones', { length: lot.zones.length })}</span>
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Kpi label="Current occupancy" icon={<CarFront />}>
+        <Kpi label={t('Current occupancy')} icon={<CarFront />}>
           {occupancyQuery.isPending ? (
             <Skeleton className="mt-3 h-10 w-32" />
           ) : (
             <p className="mt-3 font-display text-4xl font-bold text-slate-950 tabular-nums">
               {occupancy.toFixed(1)}%{' '}
               <span className="text-sm font-semibold text-indigo-700">
-                {formatNumber(occupied)} / {formatNumber(totals.total)} bays
+                {t('{occupied} / {total} bays', { occupied: formatNumber(occupied), total: formatNumber(totals.total) })}
               </span>
             </p>
           )}
@@ -127,14 +128,14 @@ function Console({ lot }: { lot: ManagedLot }) {
               return (
                 <span key={d.vehicleType} className="flex items-center gap-1">
                   <Icon className="size-3.5" aria-hidden />
-                  {VEHICLE_LABEL[d.vehicleType]}: <strong className="text-slate-950">{formatNumber(d.totalBays - d.freeBays)} / {formatNumber(d.totalBays)}</strong>
+                  {tMaybe(VEHICLE_LABEL[d.vehicleType])}: <strong className="text-slate-950">{formatNumber(d.totalBays - d.freeBays)} / {formatNumber(d.totalBays)}</strong>
                 </span>
               )
             })}
           </p>
         </Kpi>
 
-        <Kpi label="Today's revenue">
+        <Kpi label={t('Today\'s revenue')}>
           {todayRevenue.isPending ? (
             <Skeleton className="mt-3 h-10 w-48" />
           ) : (
@@ -143,20 +144,20 @@ function Console({ lot }: { lot: ManagedLot }) {
           <p className={cn('mt-1 flex items-center gap-1 text-sm', change >= 0 ? 'text-emerald-700' : 'text-rose-700')}>
             {change >= 0 ? <TrendingUp className="size-4" aria-hidden /> : <TrendingDown className="size-4" aria-hidden />}
             {change >= 0 ? '+' : ''}
-            {change.toFixed(1)}% <span className="text-slate-700">vs yesterday</span>
+            {change.toFixed(1)}% <span className="text-slate-700">{t('vs yesterday')}</span>
           </p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-700">
-            <span>Cash<strong className="block font-mono text-sm text-slate-950">{vnd(cash)}</strong></span>
-            <span>VNPay / MoMo<strong className="block font-mono text-sm text-slate-950">{vnd(qr)}</strong></span>
-            <span>Wallet<strong className="block font-mono text-sm text-slate-950">{vnd(wallet)}</strong></span>
+            <span>{t('Cash')}<strong className="block font-mono text-sm text-slate-950">{vnd(cash)}</strong></span>
+            <span>{t('VNPay / MoMo')}<strong className="block font-mono text-sm text-slate-950">{vnd(qr)}</strong></span>
+            <span>{t('Wallet')}<strong className="block font-mono text-sm text-slate-950">{vnd(wallet)}</strong></span>
           </div>
           {todayRevenue.data && (
-            <p className="mt-2 text-xs text-slate-700">{formatNumber(todayRevenue.data.totalSessions)} paid sessions today</p>
+            <p className="mt-2 text-xs text-slate-700">{t('{totalSessions} paid sessions today', { totalSessions: formatNumber(todayRevenue.data.totalSessions) })}</p>
           )}
-          {todayRevenue.isError && <p className="mt-2 text-xs text-rose-700">Revenue could not be loaded.</p>}
+          {todayRevenue.isError && <p className="mt-2 text-xs text-rose-700">{t('Revenue could not be loaded.')}</p>}
         </Kpi>
 
-        <Kpi label="All-time revenue" icon={<Landmark />} className="sm:col-span-2 xl:col-span-1">
+        <Kpi label={t('All-time revenue')} icon={<Landmark />} className="sm:col-span-2 xl:col-span-1">
           {allTime.isPending ? (
             <Skeleton className="mt-3 h-10 w-48" />
           ) : (
@@ -164,16 +165,16 @@ function Console({ lot }: { lot: ManagedLot }) {
           )}
           {allTime.data && (
             <p className="mt-1 text-sm text-slate-700">
-              {formatNumber(allTime.data.totalSessions)} paid sessions since {allTime.data.startDate}
-              {(allTime.data.totalCompensation ?? 0) > 0 && ` · after ${vnd(allTime.data.totalCompensation ?? 0)} booked bay compensation`}
+              {t('{totalSessions} paid sessions since {startDate}', { totalSessions: formatNumber(allTime.data.totalSessions), startDate: allTime.data.startDate })}
+              {(allTime.data.totalCompensation ?? 0) > 0 && t(' · after {v} booked bay compensation', { v: vnd(allTime.data.totalCompensation ?? 0) })}
             </p>
           )}
           <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-700">
-            <span>Cash<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('CASH'))}</strong></span>
-            <span>VNPay / MoMo<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('QR_BANKING'))}</strong></span>
-            <span>Wallet<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('RFID_WALLET'))}</strong></span>
+            <span>{t('Cash')}<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('CASH'))}</strong></span>
+            <span>{t('VNPay / MoMo')}<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('QR_BANKING'))}</strong></span>
+            <span>{t('Wallet')}<strong className="block font-mono text-sm text-slate-950">{vnd(allTimeOf('RFID_WALLET'))}</strong></span>
           </div>
-          {allTime.isError && <p className="mt-2 text-xs text-rose-700">Revenue could not be loaded.</p>}
+          {allTime.isError && <p className="mt-2 text-xs text-rose-700">{t('Revenue could not be loaded.')}</p>}
         </Kpi>
       </div>
 
@@ -183,15 +184,15 @@ function Console({ lot }: { lot: ManagedLot }) {
         <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="font-display text-xl font-semibold text-slate-950">Live Bay &amp; Zone Capacity</h2>
-              <p className="mt-0.5 text-sm text-slate-700">Real-time occupancy per zone from the gate and sensor feed.</p>
+              <h2 className="font-display text-xl font-semibold text-slate-950">{t('Live Bay & Zone Capacity')}</h2>
+              <p className="mt-0.5 text-sm text-slate-700">{t('Real-time occupancy per zone from the gate and sensor feed.')}</p>
             </div>
           </div>
 
           <ul className="mt-5 space-y-3">
             {occupancyQuery.isPending && Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
             {!occupancyQuery.isPending && !live?.zones.length && (
-              <li className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600">No live zone data for this lot yet.</li>
+              <li className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600">{t('No live zone data for this lot yet.')}</li>
             )}
             {live?.zones.map((zone) => {
               const percent = zone.totalBays ? (zone.occupiedBays / zone.totalBays) * 100 : 0
@@ -199,7 +200,7 @@ function Console({ lot }: { lot: ManagedLot }) {
               return (
                 <li key={zone.zoneId} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-slate-950">{zone.zoneName}</p>
+                    <p className="font-semibold text-slate-950">{tMaybe(zone.zoneName)}</p>
                     <div className="flex items-center gap-3">
                       <span
                         className={cn(
@@ -207,7 +208,7 @@ function Console({ lot }: { lot: ManagedLot }) {
                           tone === 'rose' ? 'bg-rose-100 text-rose-700' : tone === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700',
                         )}
                       >
-                        {Math.round(percent)}% {tone === 'rose' ? 'Occupied' : tone === 'amber' ? 'Busy' : 'Normal'}
+                        {Math.round(percent)}% {tone === 'rose' ? t('Occupied') : tone === 'amber' ? t('Busy') : t('Normal')}
                       </span>
                       <span className="font-mono text-sm font-bold text-slate-950">
                         {formatNumber(zone.occupiedBays)} / {formatNumber(zone.totalBays)}
@@ -220,7 +221,7 @@ function Console({ lot }: { lot: ManagedLot }) {
                       style={{ width: `${Math.min(100, percent)}%` }}
                     />
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-600">{formatNumber(zone.freeBays)} bays free</p>
+                  <p className="mt-1.5 text-xs text-slate-600">{t('{freeBays} bays free', { freeBays: formatNumber(zone.freeBays) })}</p>
                 </li>
               )
             })}
@@ -230,8 +231,8 @@ function Console({ lot }: { lot: ManagedLot }) {
         <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-display text-xl font-semibold text-slate-950">Reservations Today</h2>
-              <p className="mt-0.5 text-sm text-slate-700">Scheduled pre-booked parking bays.</p>
+              <h2 className="font-display text-xl font-semibold text-slate-950">{t('Reservations Today')}</h2>
+              <p className="mt-0.5 text-sm text-slate-700">{t('Scheduled pre-booked parking bays.')}</p>
             </div>
             {reservationsQuery.isPending ? (
               <Skeleton className="h-7 w-24" />
@@ -245,22 +246,22 @@ function Console({ lot }: { lot: ManagedLot }) {
             <Skeleton className="mt-4 h-16 rounded-xl" />
           ) : (
             <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 rounded-xl bg-slate-50 py-3 text-center text-xs text-slate-700">
-              <span><strong className="block text-lg text-slate-950">{checkedIn}</strong>Checked in</span>
-              <span><strong className="block text-lg text-amber-500">{withinHour}</strong>Within 1 hour</span>
-              <span><strong className="block text-lg text-slate-950">{upcoming.length}</strong>Upcoming</span>
+              <span><strong className="block text-lg text-slate-950">{tMaybe(checkedIn)}</strong>{t('Checked in')}</span>
+              <span><strong className="block text-lg text-amber-500">{tMaybe(withinHour)}</strong>{t('Within 1 hour')}</span>
+              <span><strong className="block text-lg text-slate-950">{upcoming.length}</strong>{t('Upcoming')}</span>
             </div>
           )}
-          {reservationsQuery.isError && <p className="mt-3 text-sm text-rose-700">Reservations could not be loaded.</p>}
-          {reservationsQuery.isSuccess && !next && <p className="mt-4 text-sm text-slate-600">No more arrivals expected today.</p>}
+          {reservationsQuery.isError && <p className="mt-3 text-sm text-rose-700">{t('Reservations could not be loaded.')}</p>}
+          {reservationsQuery.isSuccess && !next && <p className="mt-4 text-sm text-slate-600">{t('No more arrivals expected today.')}</p>}
           {next && (
             <div className="mt-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
               <p className="flex items-center justify-between text-xs font-bold tracking-wider text-amber-500 uppercase">
-                Next incoming arrival
+                {t('Next incoming arrival')}
                 <span className="font-mono text-slate-700 normal-case">{formatClock(Date.parse(next.arrivalTime))}</span>
               </p>
               <p className="mt-2 flex items-center gap-2 font-mono text-lg font-bold text-slate-950">
-                {next.plateNumber ?? 'No plate'}
-                {next.slotCode && <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">Bay {next.slotCode}</span>}
+                {tMaybe(next.plateNumber) ?? t('No plate')}
+                {next.slotCode && <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">{t('Bay {slotCode}', { slotCode: next.slotCode })}</span>}
               </p>
               <p className="text-sm text-slate-700">{[next.vehicleLabel, next.code].filter(Boolean).join(' • ')}</p>
             </div>
@@ -269,15 +270,15 @@ function Console({ lot }: { lot: ManagedLot }) {
             {upcoming.slice(1, 4).map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 text-slate-700">
                 <span>
-                  <strong className="font-mono text-slate-950">{r.plateNumber ?? 'No plate'}</strong>
-                  {r.slotCode && ` • Bay ${r.slotCode}`}
+                  <strong className="font-mono text-slate-950">{tMaybe(r.plateNumber) ?? t('No plate')}</strong>
+                  {r.slotCode && t(' • Bay {slotCode}', { slotCode: r.slotCode })}
                 </span>
                 <span className="font-mono text-xs">{formatClock(Date.parse(r.arrivalTime))}</span>
               </li>
             ))}
           </ul>
           <Link to="/management/reservations" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:underline">
-            All reservations <ArrowRight className="size-4" aria-hidden />
+            {t('All reservations')}{' '}<ArrowRight className="size-4" aria-hidden />
           </Link>
         </section>
       </div>

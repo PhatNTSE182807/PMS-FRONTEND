@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/form-controls'
 import { useCancelCashTopUp, useRequestCashTopUp } from '@/hooks/useCashDrawer'
 import { formatNumber } from '@/lib/format'
 import type { CashDrawerDTO, CashTopUpDTO } from '@/types/cashDrawer.dto'
+import { t, currentLocale, tMaybe } from '@/i18n'
 
 const vnd = (amount: number) => `${formatNumber(amount)} VND`
-const clock = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '')
+const clock = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' }) : '')
 
 /** Quick amounts for a cash request (VND). */
 const QUICK_AMOUNTS = [200_000, 500_000, 1_000_000, 2_000_000] as const
@@ -48,11 +49,11 @@ export function CashTopUpDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Ask your Manager for cash</DialogTitle>
-          <DialogDescription>Enter how much cash you need. Once your Manager approves, it is added to your drawer total.</DialogDescription>
+          <DialogTitle>{t('Ask your Manager for cash')}</DialogTitle>
+          <DialogDescription>{t('Enter how much cash you need. Once your Manager approves, it is added to your drawer total.')}</DialogDescription>
         </DialogHeader>
 
-        <label htmlFor="top-up-amount" className="text-xs font-bold tracking-wider text-slate-700 uppercase">Amount (VND)</label>
+        <label htmlFor="top-up-amount" className="text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Amount (VND)')}</label>
         <input
           id="top-up-amount"
           inputMode="numeric"
@@ -68,13 +69,13 @@ export function CashTopUpDialog({
             </Button>
           ))}
         </div>
-        <Input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder="What you need (optional), e.g. small notes for change" />
-        {error && <p className="text-sm text-rose-700" role="alert">{error}</p>}
+        <Input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder={t('What you need (optional), e.g. small notes for change')} />
+        {error && <p className="text-sm text-rose-700" role="alert">{tMaybe(error)}</p>}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('Cancel')}</Button>
           <Button disabled={amount === 0 || request.isPending} onClick={send}>
-            <HandCoins /> Send to Manager
+            <HandCoins />{' '}{t('Send to Manager')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -90,10 +91,10 @@ export function CashTopUpStatusLine({ lotId, request }: { lotId: string; request
       <div className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200" role="status">
         <Hourglass className="size-4 shrink-0" aria-hidden />
         <span className="min-w-0 flex-1">
-          Waiting for your Manager since {clock(request.createdAt)}: {vnd(request.total)}
+          {t('Waiting for your Manager since')}{' '}{clock(request.createdAt)}: {vnd(request.total)}
         </span>
         <Button size="sm" variant="outline" disabled={cancel.isPending} onClick={() => cancel.mutate({ lotId, id: request.id })}>
-          <Undo2 /> Cancel
+          <Undo2 />{' '}{t('Cancel')}
         </Button>
       </div>
     )
@@ -103,7 +104,7 @@ export function CashTopUpStatusLine({ lotId, request }: { lotId: string; request
       <p className="flex items-start gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
         <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
         <span>
-          {request.decidedByName ?? 'Your Manager'} approved {vnd(request.total)} at {clock(request.decidedAt)}: it is added to your drawer.
+          {t('{v} approved', { v: request.decidedByName ?? 'Your Manager' })}{' '}{vnd(request.total)}{' '}{t('at')}{' '}{clock(request.decidedAt)}{t(': it is added to your drawer.')}
         </span>
       </p>
     )
@@ -113,7 +114,7 @@ export function CashTopUpStatusLine({ lotId, request }: { lotId: string; request
       <p className="flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
         <CircleX className="mt-0.5 size-4 shrink-0" aria-hidden />
         <span>
-          {request.decidedByName ?? 'Your Manager'} rejected your cash request{request.decisionNote ? `: ${request.decisionNote}` : '.'}
+          {t('{v} rejected your cash request', { v: request.decidedByName ?? 'Your Manager' })}{request.decisionNote ? `: ${request.decisionNote}` : '.'}
         </span>
       </p>
     )
@@ -131,14 +132,14 @@ export function CashTopUpPanel({ lotId, drawer }: { lotId: string; drawer: CashD
     <div className="space-y-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Running out of cash?</p>
+          <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Running out of cash?')}</p>
           <p className="text-sm text-slate-700">
-            Ask your Manager for cash; an approved amount is added to this drawer.
-            {drawer.topUpTotal > 0 && ` ${vnd(drawer.topUpTotal)} added so far.`}
+            {t('Ask your Manager for cash; an approved amount is added to this drawer.')}
+            {drawer.topUpTotal > 0 && t(' {v} added so far.', { v: vnd(drawer.topUpTotal) })}
           </p>
         </div>
         <Button variant="secondary" disabled={pending} onClick={() => setAsking(true)}>
-          <HandCoins /> Request cash
+          <HandCoins />{' '}{t('Request cash')}
         </Button>
       </div>
       {latest && latest.status !== 'Cancelled' && <CashTopUpStatusLine lotId={lotId} request={latest} />}

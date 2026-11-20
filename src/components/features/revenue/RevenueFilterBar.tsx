@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import type { ParkingLotSummaryDTO } from '@/types/parking.dto'
 import type { AdminRevenueQuery, ReportVehicleType } from '@/types/report.dto'
 import { DATE_PRESETS, presetRange, VEHICLE_TYPE_OPTIONS, type DatePreset } from './revenueFilters'
+import { t, tMaybe } from '@/i18n'
 
 export interface RevenueFilterState extends AdminRevenueQuery {
   preset: DatePreset
@@ -39,7 +40,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
   return (
     <Card className="space-y-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="Quick date range" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+        <div role="group" aria-label={t('Quick date range')} className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
           {DATE_PRESETS.map((preset) => (
             <button
               key={preset.value}
@@ -53,7 +54,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
                   : 'text-slate-600 hover:text-slate-900',
               )}
             >
-              {preset.label}
+              {tMaybe(preset.label)}
             </button>
           ))}
         </div>
@@ -63,7 +64,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
           <CalendarRange className="size-4 shrink-0 text-slate-400" aria-hidden />
           <Input
             type="date"
-            aria-label="From date"
+            aria-label={t('From date')}
             value={value.startDate}
             max={today}
             onChange={(e) => setCustomDate('startDate', e.target.value)}
@@ -72,7 +73,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
           <span className="text-slate-400">–</span>
           <Input
             type="date"
-            aria-label="To date"
+            aria-label={t('To date')}
             value={value.endDate}
             max={today}
             onChange={(e) => setCustomDate('endDate', e.target.value)}
@@ -84,27 +85,27 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-full sm:w-64">
           <NativeSelect
-            aria-label="Parking lot"
+            aria-label={t('Parking lot')}
             value={value.parkingLotId ?? ''}
             onChange={(e) => onChange({ ...value, parkingLotId: e.target.value || undefined })}
           >
-            <option value="">All parking lots</option>
+            <option value="">{t('All parking lots')}</option>
             {parkingLots.map((lot) => (
               <option key={lot.id} value={lot.id}>
-                {lot.name}
+                {tMaybe(lot.name)}
               </option>
             ))}
           </NativeSelect>
         </div>
         <div className="w-full sm:w-52">
           <NativeSelect
-            aria-label="Vehicle type"
+            aria-label={t('Vehicle type')}
             value={value.vehicleType ?? 'ALL'}
             onChange={(e) => onChange({ ...value, vehicleType: e.target.value as ReportVehicleType })}
           >
             {VEHICLE_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {tMaybe(option.label)}
               </option>
             ))}
           </NativeSelect>
@@ -113,7 +114,7 @@ export function RevenueFilterBar({ value, onChange, parkingLots, onExport, canEx
         <div className="flex gap-2 sm:ml-auto">
           <Button variant="outline" onClick={onExport} disabled={!canExport}>
             <FileSpreadsheet className="text-emerald-600" />
-            Export CSV
+            {t('Export CSV')}
           </Button>
         </div>
       </div>

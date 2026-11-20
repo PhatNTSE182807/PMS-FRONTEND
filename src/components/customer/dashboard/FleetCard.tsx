@@ -5,6 +5,7 @@ import { getErrorMessage } from '@/api/apiError'
 import { useSetDefaultVehicle } from '@/hooks/useProfile'
 import type { VehicleDTO } from '@/types/profile.dto'
 import { vehicleTitle } from '../customerFormat'
+import { t, tMaybe } from '@/i18n'
 
 /**
  * Status chip of a vehicle: only a vehicle Staff approved is "Active". Anything still waiting
@@ -12,11 +13,11 @@ import { vehicleTitle } from '../customerFormat'
  * AutoVerified is a legacy approved status the API may still return.
  */
 function vehicleChip(vehicle: VehicleDTO): { label: string; className: string } {
-  if (vehicle.isActive === false) return { label: 'Inactive', className: 'cx-chip--muted' }
+  if (vehicle.isActive === false) return { label: t('Inactive'), className: 'cx-chip--muted' }
   const status: string | null | undefined = vehicle.verificationStatus
-  if (status === 'Approved' || status === 'AutoVerified') return { label: 'Active', className: '' }
-  if (status === 'Rejected') return { label: 'Rejected', className: 'cx-chip--red' }
-  return { label: 'Pending', className: 'cx-chip--gold' }
+  if (status === 'Approved' || status === 'AutoVerified') return { label: t('Active'), className: '' }
+  if (status === 'Rejected') return { label: t('Rejected'), className: 'cx-chip--red' }
+  return { label: t('Pending'), className: 'cx-chip--gold' }
 }
 
 interface FleetCardProps {
@@ -32,7 +33,7 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
 
   const makeDefault = (vehicle: VehicleDTO) =>
     setDefault.mutate(vehicle.vehicleId, {
-      onSuccess: () => toast.success(`${vehicle.licensePlate} is now your default vehicle.`),
+      onSuccess: () => toast.success(t('{licensePlate} is now your default vehicle.', { licensePlate: vehicle.licensePlate })),
       onError: (error) => toast.error(getErrorMessage(error, 'Could not change the default vehicle.')),
     })
 
@@ -42,19 +43,19 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
         <div className="cx-card__title-row">
           <span className="cx-card__icon"><IdCard aria-hidden /></span>
           <div>
-            <h2 className="cx-card__title" id="fleet-title">Registered Fleet</h2>
-            <p className="cx-card__subtitle">Active vehicles for automatic barrier clearance and ticketing</p>
+            <h2 className="cx-card__title" id="fleet-title">{t('Registered Fleet')}</h2>
+            <p className="cx-card__subtitle">{t('Active vehicles for automatic barrier clearance and ticketing')}</p>
           </div>
         </div>
         <Link to="/me/vehicles" className="cx-btn cx-btn--sm">
-          <Plus aria-hidden /> Register vehicle
+          <Plus aria-hidden />{' '}{t('Register vehicle')}
         </Link>
       </div>
 
       {isLoading && <div className="cx-skeleton" style={{ height: '7.5rem' }} />}
       {!isLoading && sorted.length === 0 && (
         <p className="cx-empty">
-          No vehicles yet. <Link to="/me/vehicles" className="cx-link">Register your first vehicle</Link> to enable plate recognition at the gates.
+          {t('No vehicles yet.')}{' '}<Link to="/me/vehicles" className="cx-link">{t('Register your first vehicle')}</Link>{' '}{t('to enable plate recognition at the gates.')}
         </p>
       )}
 
@@ -65,20 +66,20 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
             return (
             <article key={vehicle.vehicleId} className={`cx-vehicle ${vehicle.isDefault ? 'cx-vehicle--default' : ''}`}>
               <div className="cx-vehicle__top">
-                <span className="cx-label">{vehicle.isDefault ? 'Default vehicle' : 'Secondary'}</span>
-                <span className={`cx-chip ${chip.className}`} title={vehicle.verificationNote ?? undefined}>
-                  {chip.label}
+                <span className="cx-label">{vehicle.isDefault ? t('Default vehicle') : t('Secondary')}</span>
+                <span className={`cx-chip ${chip.className}`} title={tMaybe(vehicle.verificationNote) ?? undefined}>
+                  {tMaybe(chip.label)}
                 </span>
               </div>
-              <h3 className="cx-vehicle__name">{vehicleTitle(vehicle)}</h3>
+              <h3 className="cx-vehicle__name">{tMaybe(vehicleTitle(vehicle))}</h3>
               <p className="cx-vehicle__meta">
-                {vehicle.vehicleType}
+                {tMaybe(vehicle.vehicleType)}
                 {vehicle.color ? ` • ${vehicle.color}` : ''}
               </p>
               <div className="cx-vehicle__bottom">
                 <span className="cx-plate">{vehicle.licensePlate}</span>
                 {vehicle.isDefault ? (
-                  <Star size={16} aria-label="Default vehicle" style={{ color: 'var(--cx-gold)' }} fill="currentColor" />
+                  <Star size={16} aria-label={t('Default vehicle')} style={{ color: 'var(--cx-gold)' }} fill="currentColor" />
                 ) : (
                   <button
                     type="button"
@@ -87,7 +88,7 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
                     disabled={setDefault.isPending}
                     onClick={() => makeDefault(vehicle)}
                   >
-                    Set default
+                    {t('Set default')}
                   </button>
                 )}
               </div>
@@ -98,7 +99,7 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
       )}
 
       <p className="cx-footnote">
-        <Info aria-hidden /> Cameras recognise your plates automatically at every gate. Parking records attach to the default vehicle.
+        <Info aria-hidden />{' '}{t('Cameras recognise your plates automatically at every gate. Parking records attach to the default vehicle.')}
       </p>
     </section>
   )

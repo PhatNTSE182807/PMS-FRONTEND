@@ -27,6 +27,7 @@ import {
   type VehicleVerificationDTO,
 } from '@/types/vehicleDocument.dto'
 import '@/styles/vehicle-documents.css'
+import { t, tMaybe, localDateFormat } from '@/i18n'
 
 /** The papers asked for: one photo of each. */
 const PAPERS: { type: VehicleDocumentType; title: string; hint: string }[] = [
@@ -40,7 +41,7 @@ const formatSize = (bytes: number) =>
   bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
 
 const formatDate = (iso: string | null | undefined) =>
-  iso ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : '—'
+  iso ? localDateFormat({ day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : '—'
 
 /** One side of one paper: pick or drop a file, see its preview and upload progress. */
 function DocumentSlot({
@@ -84,7 +85,7 @@ function DocumentSlot({
         accept={DOCUMENT_ACCEPT}
         className="vd-slot__input"
         disabled={disabled}
-        aria-label={`Upload ${label}`}
+        aria-label={t('Upload {label}', { label })}
         onChange={(e) => {
           onChoose(e.target.files?.[0] ?? null)
           e.target.value = ''
@@ -94,15 +95,15 @@ function DocumentSlot({
       {state.file ? (
         <>
           <div className="vd-slot__preview">
-            {state.previewUrl ? <img src={state.previewUrl} alt={`${label} preview`} /> : <FileText aria-hidden />}
-            {state.uploaded && <span className="vd-slot__badge" title="Uploaded"><CircleCheck aria-hidden /></span>}
+            {state.previewUrl ? <img src={state.previewUrl} alt={t('{label} preview', { label })} /> : <FileText aria-hidden />}
+            {state.uploaded && <span className="vd-slot__badge" title={t('Uploaded')}><CircleCheck aria-hidden /></span>}
           </div>
           <div className="vd-slot__meta">
-            <span className="vd-slot__name" title={state.file.name}>{state.file.name}</span>
+            <span className="vd-slot__name" title={tMaybe(state.file.name)}>{tMaybe(state.file.name)}</span>
             <span className="vd-slot__size">{formatSize(state.file.size)}</span>
           </div>
           {!disabled && !state.uploaded && (
-            <button type="button" className="vd-slot__remove" aria-label={`Remove ${label}`} onClick={() => onChoose(null)}>
+            <button type="button" className="vd-slot__remove" aria-label={t('Remove {label}', { label })} onClick={() => onChoose(null)}>
               <X aria-hidden />
             </button>
           )}
@@ -115,11 +116,11 @@ function DocumentSlot({
       ) : (
         <label htmlFor={id} className="vd-slot__empty">
           <CloudUpload aria-hidden />
-          <strong>Drop a photo here or click to choose</strong>
-          <small>JPEG, PNG or PDF, up to 10 MB</small>
+          <strong>{t('Drop a photo here or click to choose')}</strong>
+          <small>{t('JPEG, PNG or PDF, up to 10 MB')}</small>
         </label>
       )}
-      {state.error && <p className="vd-slot__error" role="alert">{state.error}</p>}
+      {state.error && <p className="vd-slot__error" role="alert">{tMaybe(state.error)}</p>}
     </div>
   )
 }
@@ -128,10 +129,10 @@ type Tone = 'ok' | 'warn' | 'bad' | 'muted'
 
 /** Banner of a registration's status, as the customer sees it. */
 function statusView(status: VehicleVerificationDTO['status']): { title: string; tone: Tone; icon: typeof ShieldCheck } {
-  if (isApproved(status)) return { title: 'Approved by Staff', tone: 'ok', icon: ShieldCheck }
-  if (isWaitingForStaff(status)) return { title: 'Waiting for Staff review', tone: 'warn', icon: Clock }
-  if (status === 'Rejected') return { title: 'Registration rejected', tone: 'bad', icon: CircleAlert }
-  return { title: 'Papers not submitted yet', tone: 'muted', icon: CircleHelp }
+  if (isApproved(status)) return { title: t('Approved by Staff'), tone: 'ok', icon: ShieldCheck }
+  if (isWaitingForStaff(status)) return { title: t('Waiting for Staff review'), tone: 'warn', icon: Clock }
+  if (status === 'Rejected') return { title: t('Registration rejected'), tone: 'bad', icon: CircleAlert }
+  return { title: t('Papers not submitted yet'), tone: 'muted', icon: CircleHelp }
 }
 
 /** The registration status of a vehicle: the decision, the Staff note and the uploaded files. */
@@ -155,9 +156,9 @@ export function RegistrationStatus({ verification }: { verification: VehicleVeri
       <div className="vd-result__head">
         <Icon aria-hidden />
         <div>
-          <strong>{view.title}</strong>
-          {verification.statusReason && <p>{verification.statusReason}</p>}
-          {verification.reviewNote && <p>Staff note: {verification.reviewNote}</p>}
+          <strong>{tMaybe(view.title)}</strong>
+          {verification.statusReason && <p>{tMaybe(verification.statusReason)}</p>}
+          {verification.reviewNote && <p>{t('Staff note: {reviewNote}', { reviewNote: verification.reviewNote })}</p>}
         </div>
       </div>
 
@@ -170,9 +171,9 @@ export function RegistrationStatus({ verification }: { verification: VehicleVeri
               className="vd-file"
               disabled={!d.isAvailable}
               onClick={() => void openFile(d.documentId)}
-              title={d.isAvailable ? 'Open the uploaded file' : 'Deleted 30 days after the decision'}
+              title={d.isAvailable ? t('Open the uploaded file') : t('Deleted 30 days after the decision')}
             >
-              <Eye aria-hidden /> {documentLabel(d.documentType, d.side)}
+              <Eye aria-hidden /> {tMaybe(documentLabel(d.documentType, d.side))}
             </button>
           ))}
         </div>
@@ -181,8 +182,8 @@ export function RegistrationStatus({ verification }: { verification: VehicleVeri
       {verification.filesDeleteAt && (
         <p className="vd-fine">
           {verification.filesDeletedAt
-            ? `Photos deleted on ${formatDate(verification.filesDeletedAt)}; the decision is kept.`
-            : `Photos are deleted on ${formatDate(verification.filesDeleteAt)}, 30 days after the decision.`}
+            ? t('Photos deleted on {v}; the decision is kept.', { v: formatDate(verification.filesDeletedAt) })
+            : t('Photos are deleted on {v}, 30 days after the decision.', { v: formatDate(verification.filesDeleteAt) })}
         </p>
       )}
     </div>
@@ -214,7 +215,7 @@ export function VehicleDocumentsPanel({
     if (!vehicleId) return
     try {
       await draft.uploadAndSubmit(vehicleId)
-      toast.success('Papers sent. Staff will review your vehicle shortly.')
+      toast.success(t('Papers sent. Staff will review your vehicle shortly.'))
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not upload the papers.'))
     }
@@ -224,10 +225,10 @@ export function VehicleDocumentsPanel({
     <div className="vd-panel">
       {vehicleId && vehicleLabel && (
         <div className="vd-target">
-          <span>Papers for <strong className="vd-mono">{vehicleLabel}</strong></span>
+          <span>{t('Papers for')}{' '}<strong className="vd-mono">{tMaybe(vehicleLabel)}</strong></span>
           {onClearVehicle && (
             <button type="button" className="vd-link" onClick={onClearVehicle} disabled={draft.busy}>
-              <RefreshCw aria-hidden /> New vehicle
+              <RefreshCw aria-hidden />{' '}{t('New vehicle')}
             </button>
           )}
         </div>
@@ -241,9 +242,9 @@ export function VehicleDocumentsPanel({
           return (
             <div key={paper.type} className="vd-paper">
               <div className="cx-doc-head">
-                <span>{paper.title}</span>
+                <span>{tMaybe(paper.title)}</span>
                 <span>
-                  {paper.hint} · {sides.filter((side) => draft.slots[slotKey(paper.type, side)].file).length}/{sides.length}
+                  {tMaybe(paper.hint)} · {sides.filter((side) => draft.slots[slotKey(paper.type, side)].file).length}/{sides.length}
                 </span>
               </div>
               <div className="vd-slots">
@@ -265,7 +266,7 @@ export function VehicleDocumentsPanel({
       {vehicleId && !settled && (
         <button type="button" className="cx-btn cx-btn--light vd-verify" disabled={!draft.complete || locked} onClick={() => void submitNow()}>
           <Send aria-hidden />{' '}
-          {draft.busy ? 'Uploading…' : draft.complete ? 'Send papers for review' : `Add all papers (${draft.chosen}/${DOCUMENT_SLOTS.length})`}
+          {draft.busy ? t('Uploading…') : draft.complete ? t('Send papers for review') : t('Add all papers ({chosen}/{length})', { chosen: draft.chosen, length: DOCUMENT_SLOTS.length })}
         </button>
       )}
     </div>

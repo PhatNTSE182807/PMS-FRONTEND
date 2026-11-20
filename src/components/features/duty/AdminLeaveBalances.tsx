@@ -10,25 +10,26 @@ import { ErrorState, Spinner } from '@/components/ui/states'
 import { dutyKeys } from '@/hooks/useDuty'
 import { EMPLOYMENT_LABEL } from '@/lib/duty'
 import type { LeaveBalanceRow } from '@/types/duty.dto'
+import { t, tMaybe } from '@/i18n'
 
 function Row({ row }: { row: LeaveBalanceRow }) {
   const client = useQueryClient()
   const [days, setDays] = useState(String(row.entitledDays))
   const save = useMutation({
     mutationFn: () => dutyApi.setLeaveBalance(row.employeeId, row.year, Number(days), row.revision),
-    onSuccess: () => { toast.success(`Paid leave of ${row.fullName} saved.`); void client.invalidateQueries({ queryKey: dutyKeys }) },
+    onSuccess: () => { toast.success(t('Paid leave of {fullName} saved.', { fullName: row.fullName })); void client.invalidateQueries({ queryKey: dutyKeys }) },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
   return (
     <tr>
-      <td className="px-4 py-2 font-medium text-slate-900">{row.fullName}<span className="block text-xs font-normal text-slate-500">{row.employeeCode}</span></td>
-      <td className="px-4 py-2 text-slate-700">{row.lotName ?? '—'}</td>
-      <td className="px-4 py-2 text-slate-700">{EMPLOYMENT_LABEL[row.employmentType]}</td>
-      <td className="px-4 py-2 text-slate-700 tabular-nums">{row.paidDaysUsed}</td>
+      <td className="px-4 py-2 font-medium text-slate-900">{row.fullName}<span className="block text-xs font-normal text-slate-500">{tMaybe(row.employeeCode)}</span></td>
+      <td className="px-4 py-2 text-slate-700">{tMaybe(row.lotName) ?? '—'}</td>
+      <td className="px-4 py-2 text-slate-700">{tMaybe(EMPLOYMENT_LABEL[row.employmentType])}</td>
+      <td className="px-4 py-2 text-slate-700 tabular-nums">{tMaybe(row.paidDaysUsed)}</td>
       <td className="px-4 py-2">
         <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
-          <Input type="number" min={row.paidDaysUsed} max={365} className="w-20" aria-label={`Paid leave days of ${row.fullName}`} value={days} onChange={(e) => setDays(e.target.value)} />
-          <Button type="submit" size="sm" variant="outline" disabled={save.isPending || Number(days) === row.entitledDays}>Save</Button>
+          <Input type="number" min={row.paidDaysUsed} max={365} className="w-20" aria-label={t('Paid leave days of {fullName}', { fullName: row.fullName })} value={days} onChange={(e) => setDays(e.target.value)} />
+          <Button type="submit" size="sm" variant="outline" disabled={save.isPending || Number(days) === row.entitledDays}>{t('Save')}</Button>
         </form>
       </td>
     </tr>
@@ -43,18 +44,18 @@ export default function AdminLeaveBalances() {
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
         <div>
-          <h2 className="text-lg font-semibold text-slate-950">Paid leave allowance</h2>
-          <p className="text-sm text-slate-600">Days of paid leave each Staff member gets this year. Leave beyond it is unpaid.</p>
+          <h2 className="text-lg font-semibold text-slate-950">{t('Paid leave allowance')}</h2>
+          <p className="text-sm text-slate-600">{t('Days of paid leave each Staff member gets this year. Leave beyond it is unpaid.')}</p>
         </div>
-        <Label className="grid gap-1">Year<Input type="number" className="w-28" value={year} onChange={(e) => setYear(Number(e.target.value) || year)} /></Label>
+        <Label className="grid gap-1">{t('Year')}<Input type="number" className="w-28" value={year} onChange={(e) => setYear(Number(e.target.value) || year)} /></Label>
       </div>
       {rows.isPending ? <div className="p-6"><Spinner /></div> : rows.isError ? (
-        <ErrorState message={getErrorMessage(rows.error)} onRetry={() => rows.refetch()} />
+        <ErrorState message={tMaybe(getErrorMessage(rows.error))} onRetry={() => rows.refetch()} />
       ) : (
         <div className="max-h-[28rem] overflow-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="sticky top-0 bg-slate-50 text-xs font-semibold text-slate-600 uppercase">
-              <tr><th className="px-4 py-2">Staff</th><th className="px-4 py-2">Lot</th><th className="px-4 py-2">Type</th><th className="px-4 py-2">Paid days used</th><th className="px-4 py-2">Allowance</th></tr>
+              <tr><th className="px-4 py-2">{t('Staff')}</th><th className="px-4 py-2">{t('Lot')}</th><th className="px-4 py-2">{t('Type')}</th><th className="px-4 py-2">{t('Paid days used')}</th><th className="px-4 py-2">{t('Allowance')}</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {rows.data.map((r) => <Row key={`${r.employeeId}-${r.revision}-${r.entitledDays}`} row={r} />)}

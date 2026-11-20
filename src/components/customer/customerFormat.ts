@@ -2,6 +2,7 @@ import { Bike, Car, CarFront, type LucideIcon } from 'lucide-react'
 import { PASSWORD_RULES } from '@/lib/password'
 import { resolveMediaUrl } from '@/lib/format'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
+import { localDateFormat } from '@/i18n'
 
 export { resolveMediaUrl }
 
@@ -12,7 +13,7 @@ export function initials(name: string): string {
   return (parts.length === 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-const monthYear = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' })
+const monthYear = localDateFormat({ month: 'long', year: 'numeric' })
 
 /** "October 2024", or "—" when the date is missing. */
 export function formatMonthYear(iso: string | null | undefined): string {

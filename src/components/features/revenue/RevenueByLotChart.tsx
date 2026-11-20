@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useElementWidth } from '@/hooks/useElementWidth'
 import { formatVnd, formatVndCompact } from '@/lib/format'
 import type { ParkingLotRevenueDTO } from '@/types/report.dto'
+import { t, tMaybe } from '@/i18n'
 
 const BAR_SIZE = 18
 const ROW_HEIGHT = 44
@@ -24,8 +25,8 @@ export function RevenueByLotChart({ data, isLoading }: { data?: ParkingLotRevenu
     <Card>
       <CardHeader>
         <div>
-          <CardTitle>Revenue by parking lot</CardTitle>
-          <CardDescription>Compared across lots for the selected period</CardDescription>
+          <CardTitle>{t('Revenue by parking lot')}</CardTitle>
+          <CardDescription>{t('Compared across lots for the selected period')}</CardDescription>
         </div>
       </CardHeader>
       <div ref={containerRef} className="px-2 pt-2 pb-4">
@@ -53,7 +54,7 @@ export function RevenueByLotChart({ data, isLoading }: { data?: ParkingLotRevenu
                   <ChartTooltip
                     active={props.active}
                     payload={props.payload?.map((p) => ({ ...p, name: 'Revenue' }))}
-                    label={props.label}
+                    label={tMaybe(props.label)}
                     formatValue={formatVnd}
                   />
                 )}

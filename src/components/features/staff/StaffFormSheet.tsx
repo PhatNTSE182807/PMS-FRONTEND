@@ -18,6 +18,7 @@ import type { UserDTO, UserRole } from '@/types/identity.dto'
 import type { ParkingLotSummaryDTO } from '@/types/parking.dto'
 import { ROLE_OPTIONS, SHIFT_OPTIONS } from './staffLabels'
 import { createStaffFormSchema, type StaffFormValues } from './staffForm.schema'
+import { t, tMaybe } from '@/i18n'
 
 interface StaffFormSheetProps {
   open: boolean
@@ -48,10 +49,10 @@ function Field({ label, htmlFor, error, hint, children }: {
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor}>{tMaybe(label)}</Label>
       {children}
-      {hint && !error && <p className="text-xs text-slate-500">{hint}</p>}
-      <FieldError message={error} />
+      {hint && !error && <p className="text-xs text-slate-500">{tMaybe(hint)}</p>}
+      <FieldError message={tMaybe(error)} />
     </div>
   )
 }
@@ -120,7 +121,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
     try {
       if (user) {
         const updated = await updateStaff.mutateAsync({ id: user.id, command: assignment })
-        toast.success('Account updated', { description: `${updated.fullName} (${updated.employeeCode})` })
+        toast.success(t('Account updated'), { description: `${updated.fullName} (${updated.employeeCode})` })
       } else {
         await createStaff.mutateAsync({
           ...assignment,
@@ -145,27 +146,27 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
     <form onSubmit={onSubmit} noValidate className="flex h-full flex-col">
       <div className="border-b border-slate-200 px-6 py-5 pr-12">
         <DialogTitle className="text-lg font-semibold text-slate-900">
-          {user ? 'Edit account' : 'New manager account'}
+          {user ? t('Edit account') : t('New manager account')}
         </DialogTitle>
         <DialogDescription className="mt-1 text-sm text-slate-500">
           {user
             ? `${user.employeeCode} · ${user.email}`
-            : 'Create a parking lot Manager. Gate Staff are created by the Manager of their lot.'}
+            : t('Create a parking lot Manager. Gate Staff are created by the Manager of their lot.')}
         </DialogDescription>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-        <Field label="Full name" htmlFor="staff-fullName" error={errors.fullName?.message}>
-          <Input id="staff-fullName" autoComplete="off" placeholder="e.g. Nguyen Van An" aria-invalid={!!errors.fullName} {...register('fullName')} />
+        <Field label={t('Full name')} htmlFor="staff-fullName" error={tMaybe(errors.fullName?.message)}>
+          <Input id="staff-fullName" autoComplete="off" placeholder={t('e.g. Nguyen Van An')} aria-invalid={!!errors.fullName} {...register('fullName')} />
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Email" htmlFor="staff-email" error={errors.email?.message}>
+          <Field label={t('Email')} htmlFor="staff-email" error={tMaybe(errors.email?.message)}>
             <Input
               id="staff-email"
               type="email"
               autoComplete="off"
-              placeholder="ten.ho@xxivparking.vn"
+              placeholder={t('ten.ho@xxivparking.vn')}
               // readOnly, not disabled: react-hook-form drops the values of disabled inputs.
               readOnly={mode === 'edit'}
               className={mode === 'edit' ? 'bg-slate-50 text-slate-500' : undefined}
@@ -173,7 +174,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
               {...register('email')}
             />
           </Field>
-          <Field label="Phone number" htmlFor="staff-phone" error={errors.phoneNumber?.message}>
+          <Field label={t('Phone number')} htmlFor="staff-phone" error={tMaybe(errors.phoneNumber?.message)}>
             <Input id="staff-phone" type="tel" inputMode="tel" placeholder="0901234567" aria-invalid={!!errors.phoneNumber} {...register('phoneNumber')} />
           </Field>
         </div>
@@ -184,7 +185,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
           render={({ field: lotsField }) => (
             <>
               <fieldset className="space-y-1.5">
-                <legend className="text-sm font-medium text-slate-700">Role</legend>
+                <legend className="text-sm font-medium text-slate-700">{t('Role')}</legend>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {(mode === 'create' ? ROLE_OPTIONS.filter((o) => o.value === 'MANAGER') : ROLE_OPTIONS).map((option) => (
                     <label
@@ -198,8 +199,8 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                         {...register('role', { onChange: (e) => handleRoleChange(e.target.value, lotsField.value) })}
                       />
                       <span>
-                        <span className="block text-sm font-medium text-slate-900">{option.label}</span>
-                        <span className="block text-xs text-slate-500">{option.description}</span>
+                        <span className="block text-sm font-medium text-slate-900">{tMaybe(option.label)}</span>
+                        <span className="block text-xs text-slate-500">{tMaybe(option.description)}</span>
                       </span>
                     </label>
                   ))}
@@ -208,7 +209,7 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
 
               {role === 'MANAGER' ? (
                 <fieldset className="space-y-1.5">
-                  <legend className="text-sm font-medium text-slate-700">Assigned parking lots</legend>
+                  <legend className="text-sm font-medium text-slate-700">{t('Assigned parking lots')}</legend>
                   <div
                     className={cn(
                       'max-h-56 divide-y divide-slate-100 overflow-y-auto rounded-lg border',
@@ -236,9 +237,9 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                             }
                           />
                           <span className="min-w-0">
-                            <span className="block text-sm text-slate-900">{lot.name}</span>
+                            <span className="block text-sm text-slate-900">{tMaybe(lot.name)}</span>
                             <span className="block truncate text-xs text-slate-500">
-                              {takenBy ? `Managed by ${takenBy}` : lot.address}
+                              {takenBy ? t('Managed by {takenBy}', { takenBy }) : tMaybe(lot.address)}
                             </span>
                           </span>
                         </label>
@@ -246,38 +247,37 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                     })}
                   </div>
                   <p className="text-xs text-slate-500">
-                    A Manager can run several lots, but each lot has only one Manager. Lots with another Manager are locked until that
-                    Manager is removed from them.
+                    {t('A Manager can run several lots, but each lot has only one Manager. Lots with another Manager are locked until that Manager is removed from them.')}
                   </p>
-                  <FieldError message={errors.assignedParkingLotIds?.message} />
+                  <FieldError message={tMaybe(errors.assignedParkingLotIds?.message)} />
                 </fieldset>
               ) : (
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Assigned parking lot" htmlFor="staff-lot" error={errors.assignedParkingLotIds?.message}>
+                  <Field label={t('Assigned parking lot')} htmlFor="staff-lot" error={tMaybe(errors.assignedParkingLotIds?.message)}>
                     <NativeSelect
                       id="staff-lot"
                       value={lotsField.value[0] ?? ''}
                       aria-invalid={!!errors.assignedParkingLotIds}
                       onChange={(e) => lotsField.onChange(e.target.value ? [e.target.value] : [])}
                     >
-                      <option value="">Select a lot…</option>
+                      <option value="">{t('Select a lot…')}</option>
                       {parkingLots.map((lot) => (
                         <option key={lot.id} value={lot.id}>
-                          {lot.name}
+                          {tMaybe(lot.name)}
                         </option>
                       ))}
                     </NativeSelect>
                   </Field>
-                  <Field label="Shift" htmlFor="staff-shift" error={errors.shift?.message}>
+                  <Field label={t('Shift')} htmlFor="staff-shift" error={tMaybe(errors.shift?.message)}>
                     <NativeSelect
                       id="staff-shift"
                       aria-invalid={!!errors.shift}
                       {...register('shift', { setValueAs: (v) => v || undefined })}
                     >
-                      <option value="">Select a shift…</option>
+                      <option value="">{t('Select a shift…')}</option>
                       {SHIFT_OPTIONS.map((shift) => (
                         <option key={shift.value} value={shift.value}>
-                          {shift.label}
+                          {tMaybe(shift.label)}
                         </option>
                       ))}
                     </NativeSelect>
@@ -290,28 +290,28 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
 
         {mode === 'create' && (
           <fieldset className="space-y-3 rounded-lg border border-slate-200 p-4">
-            <legend className="px-1 text-sm font-medium text-slate-700">Sign-in password</legend>
+            <legend className="px-1 text-sm font-medium text-slate-700">{t('Sign-in password')}</legend>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <input type="radio" value="auto" className="accent-indigo-600" {...register('passwordMode')} />
-                Generate automatically
+                {t('Generate automatically')}
               </label>
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <input type="radio" value="manual" className="accent-indigo-600" {...register('passwordMode')} />
-                Enter manually
+                {t('Enter manually')}
               </label>
             </div>
 
             {passwordMode === 'auto' ? (
               <CopyField
                 value={generatedPassword}
-                label="password"
+                label={t('password')}
                 actions={
                   <Button
                     variant="ghost"
                     size="icon"
-                    title="Generate another password"
-                    aria-label="Generate another password"
+                    title={t('Generate another password')}
+                    aria-label={t('Generate another password')}
                     onClick={() => setGeneratedPassword(generatePassword())}
                   >
                     <RefreshCw />
@@ -324,8 +324,8 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="6+ characters, A–Z and a symbol"
-                    aria-label="Password"
+                    placeholder={t('6+ characters, A–Z and a symbol')}
+                    aria-label={t('Password')}
                     aria-invalid={!!errors.password}
                     className="pr-10"
                     {...register('password')}
@@ -334,19 +334,19 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-700"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? t('Hide password') : t('Show password')}
                   >
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
-                <FieldError message={errors.password?.message} />
+                <FieldError message={tMaybe(errors.password?.message)} />
               </div>
             )}
 
             {sendsWelcomeEmail && (
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <Checkbox {...register('sendWelcomeEmail')} />
-                Send a welcome email with the sign-in details
+                {t('Send a welcome email with the sign-in details')}
               </label>
             )}
           </fieldset>
@@ -357,16 +357,16 @@ function StaffForm({ user, parkingLots, onDone }: { user?: UserDTO; parkingLots:
         {formError && (
           <div role="alert" className="flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200">
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            {formError}
+            {tMaybe(formError)}
           </div>
         )}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t('Cancel')}</Button>
           </DialogClose>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Spinner className="size-3.5" />}
-            {user ? 'Save changes' : 'Create account'}
+            {user ? t('Save changes') : t('Create account')}
           </Button>
         </div>
       </div>

@@ -16,8 +16,9 @@ import { gateLaneSignals, useActiveLane, useLaneSignal } from '@/lib/gateLaneSig
 import { useNow } from '@/hooks/useNow'
 import { cn } from '@/lib/utils'
 import type { ParkingSessionDTO } from '@/types/operations.dto'
+import { t, tMaybe, localDateFormat } from '@/i18n'
 
-const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+const clock = localDateFormat({ hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
 /** Frames go to the plate reader at the camera's resolution, the size it was trained on. */
 const CAMERA_FRAME = { width: 1280, height: 720 }
@@ -42,17 +43,17 @@ const plainPlate = (plate: string) => plate.toUpperCase().replace(/[^0-9A-Z]/g, 
 /** "AI read" line: green when it matches with confidence, amber when the Staff must confirm, red when it differs. */
 function ReadChip({ read }: { read: PlateRead }) {
   if (read.state === 'reading') {
-    return <span className="rounded-md bg-black/75 px-2 py-0.5 font-mono text-xs font-bold text-slate-900">AI reading…</span>
+    return <span className="rounded-md bg-black/75 px-2 py-0.5 font-mono text-xs font-bold text-slate-900">{t('AI reading…')}</span>
   }
   if (read.state === 'failed') {
-    return <span className="rounded-md bg-black/75 px-2 py-0.5 font-mono text-xs font-bold text-rose-500">AI read failed: {read.message}</span>
+    return <span className="rounded-md bg-black/75 px-2 py-0.5 font-mono text-xs font-bold text-rose-500">{t('AI read failed: {message}', { message: read.message })}</span>
   }
   const confident = read.confidence >= ANPR_CONFIDENCE_THRESHOLD
   const tone = !read.plate ? 'text-rose-500' : !confident ? 'text-amber-500' : read.matches ? 'text-emerald-500' : 'text-rose-500'
   const verdict = !read.plate ? 'No plate read' : !confident ? 'Staff check' : read.matches ? 'Match' : 'Mismatch'
   return (
     <span className={cn('rounded-md bg-black/75 px-2 py-0.5 font-mono text-xs font-bold', tone)}>
-      AI read {read.plate || '—'} • {Math.round(read.confidence * 100)}% • {verdict}
+      {t('AI read')}{' '}{read.plate || '—'} • {Math.round(read.confidence * 100)}% • {tMaybe(verdict)}
     </span>
   )
 }
@@ -151,7 +152,7 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
         if (!replay) setScore((s) => ({ reads: s.reads + 1, matches: s.matches + (matches ? 1 : 0) }))
       } catch (e) {
         if (controller.signal.aborted) return
-        setRead({ key, state: 'failed', message: e instanceof Error ? e.message : 'unknown error' })
+        setRead({ key, state: 'failed', message: e instanceof Error ? tMaybe(e.message) : 'unknown error' })
       }
     }, READ_DELAY_MS)
     return () => {
@@ -170,7 +171,7 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
   const snapshot = async (view: LaneView) => {
     const frame = await (view === 'rear' ? scene : frontScene).current?.captureFrame()
     if (!frame) {
-      toast.error('The camera frame could not be captured.')
+      toast.error(t('The camera frame could not be captured.'))
       return
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -190,16 +191,16 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
       )}
       <figcaption className="pointer-events-none absolute inset-x-2.5 top-2.5 flex items-start justify-between gap-2 font-mono text-[11px] font-bold tracking-wider uppercase">
         <span className="rounded bg-black/60 px-1.5 py-0.5 text-slate-950">
-          {ids[view]} · {VIEW_TEXT[view]}
+          {tMaybe(ids[view])} · {tMaybe(VIEW_TEXT[view])}
         </span>
         {view === 'rear' && (
-          <span className={cn('rounded bg-black/60 px-1.5 py-0.5', anpr === 'ready' ? 'text-emerald-500' : 'text-amber-500')}>{ANPR_STATUS_TEXT[anpr]}</span>
+          <span className={cn('rounded bg-black/60 px-1.5 py-0.5', anpr === 'ready' ? 'text-emerald-500' : 'text-amber-500')}>{tMaybe(ANPR_STATUS_TEXT[anpr])}</span>
         )}
       </figcaption>
       {view === 'rear' && showPlate && (
         <div className="pointer-events-none absolute inset-x-0 top-10 flex flex-col items-center gap-1.5">
           <span className="rounded bg-indigo-300 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-950 uppercase">
-            {replay ? 'Plate at check-in' : 'Recorded plate'}
+            {replay ? t('Plate at check-in') : t('Recorded plate')}
           </span>
           <span className="rounded-md bg-black/75 px-3 py-1 font-mono text-base font-bold tracking-[0.15em] text-slate-950 ring-1 ring-slate-300">
             {vehicle.plate}
@@ -210,18 +211,18 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
       <div className="absolute inset-x-2.5 bottom-2.5 flex items-end justify-between gap-2 font-mono text-[11px] font-bold tracking-wider text-slate-900 uppercase">
         {replay ? (
           <span className="pointer-events-none flex items-center gap-1.5 rounded bg-black/60 px-1.5 py-0.5 text-amber-500">
-            <History className="size-3" aria-hidden /> Replay · Check-in
+            <History className="size-3" aria-hidden />{' '}{t('Replay · Check-in')}
           </span>
         ) : (
           <span className="pointer-events-none flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-rose-500" aria-hidden /> Live · {clock.format(now)}
+            <span className="size-2 rounded-full bg-rose-500" aria-hidden />{' '}{t('Live · {now}', { now: clock.format(now) })}
           </span>
         )}
         <button
           type="button"
           className="rounded bg-black/50 p-1 text-slate-900 hover:bg-black/70 hover:text-slate-950"
-          title="Save this camera frame"
-          aria-label={`Save the ${label.toLowerCase()} ${VIEW_TEXT[view].toLowerCase()} frame`}
+          title={t('Save this camera frame')}
+          aria-label={t('Save the {v} {v2} frame', { v: label.toLowerCase(), v2: VIEW_TEXT[view].toLowerCase() })}
           onClick={() => void snapshot(view)}
         >
           <Camera className="size-3.5" aria-hidden />
@@ -231,27 +232,27 @@ function LaneCamera({ ids, direction, vehicle, open, onDone, waiting, replay, no
   )
 
   return (
-    <section aria-label={label} className="space-y-2">
+    <section aria-label={tMaybe(label)} className="space-y-2">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs font-bold tracking-wider uppercase">
         <span className="flex items-center gap-2 text-slate-950">
           {direction === 'entry' ? <LogIn className="size-4 text-emerald-500" aria-hidden /> : <LogOut className="size-4 text-rose-500" aria-hidden />}
-          {label}
+          {tMaybe(label)}
         </span>
         <span
           className={cn('flex items-center gap-2', replay ? 'text-amber-500' : phase === 'passing' ? 'text-indigo-700' : phase === 'idle' ? 'text-slate-700' : 'text-amber-500')}
           aria-live="polite"
         >
-          <PhaseIcon className="size-4" aria-hidden /> {phaseText}
+          <PhaseIcon className="size-4" aria-hidden /> {tMaybe(phaseText)}
         </span>
         <span className="flex items-center gap-3 font-mono text-slate-700">
           {(vehicle || waiting > 0) && (
             <span>
-              {vehicle ? (vehicle.kind === 'motorbike' ? 'Motorbike' : vehicle.kind === 'suv' ? '7-seat car' : 'Car') : ''}
+              {vehicle ? (vehicle.kind === 'motorbike' ? t('Motorbike') : vehicle.kind === 'suv' ? '7-seat car' : t('Car')) : ''}
               {vehicle && waiting > 0 ? ' • ' : ''}
-              {waiting > 0 ? `${waiting} waiting` : ''}
+              {waiting > 0 ? t('{waiting} waiting', { waiting }) : ''}
             </span>
           )}
-          {score.reads > 0 && <span title="Plates the AI read the same as the recorded plate, since this screen was opened">AI {score.matches}/{score.reads}</span>}
+          {score.reads > 0 && <span title={t('Plates the AI read the same as the recorded plate, since this screen was opened')}>{t('AI {matches}/{reads}', { matches: score.matches, reads: score.reads })}</span>}
         </span>
       </header>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -314,10 +315,10 @@ export function GateLaneCameras({ sessions, history }: { sessions: ParkingSessio
 
   return (
     <>
-      <div hidden={showExit} aria-label="Check-in cameras">
+      <div hidden={showExit} aria-label={t('Check-in cameras')}>
         <CheckInBoard entry={entry} exit={exit} now={now} anpr={anpr} />
       </div>
-      <div hidden={!showExit} aria-label="Check-out cameras">
+      <div hidden={!showExit} aria-label={t('Check-out cameras')}>
         <CheckOutBoard entry={entry} exit={exit} now={now} anpr={anpr} />
       </div>
     </>

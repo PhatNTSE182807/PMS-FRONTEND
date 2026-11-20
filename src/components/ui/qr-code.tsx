@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { cn } from '@/lib/utils'
+import { tMaybe } from '@/i18n'
 
 interface QrCodeProps {
   /** Text to encode: a signed reservation QR, a ticket, or a gateway payment URL. */
@@ -31,7 +32,7 @@ export function QrCode({ value, label, className }: QrCodeProps) {
   return (
     <div
       role="img"
-      aria-label={label}
+      aria-label={tMaybe(label)}
       className={cn('aspect-square overflow-hidden rounded-lg bg-white [&>svg]:size-full', className)}
       // The markup comes from the qrcode library, not from user input
       dangerouslySetInnerHTML={svg ? { __html: svg } : undefined}

@@ -5,6 +5,7 @@ import { FILL_LABEL, fillLevelOf } from '@/lib/fillLevel'
 import type { PublicBayVehicleType, PublicLotDTO } from '@/types/publicLot.dto'
 import { LEVEL_LABEL, occupancyLevel } from './capacityStats'
 import { useCountUp, useReveal } from './useHomeEffects'
+import { t, tMaybe } from '@/i18n'
 
 const VEHICLE_ICON: Record<PublicBayVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
 const VEHICLE_SHORT: Record<PublicBayVehicleType, string> = { CAR: 'Car', MOTORBIKE: 'Motorbike' }
@@ -37,20 +38,20 @@ function TerminalCard({ lot, reserveTo }: { lot: PublicLotDTO; reserveTo: string
     <article className={`home-terminal home-terminal--${tone}`}>
       <div className="home-terminal__tags">
         <span className="home-terminal__city">{lot.code}</span>
-        <span className={`home-terminal__level home-terminal__level--${tone}`}>{statusLabel}</span>
+        <span className={`home-terminal__level home-terminal__level--${tone}`}>{tMaybe(statusLabel)}</span>
       </div>
 
-      <h3 className="home-terminal__name">{lot.name}</h3>
-      <p className="home-terminal__address">{lot.address}</p>
+      <h3 className="home-terminal__name">{tMaybe(lot.name)}</h3>
+      <p className="home-terminal__address">{tMaybe(lot.address)}</p>
 
       <div className="home-terminal__free">
         <FreeCount value={lot.freeBays} />
-        <span className="home-terminal__free-label">bays free of {formatNumber(lot.totalBays)}</span>
+        <span className="home-terminal__free-label">{t('bays free of {totalBays}', { totalBays: formatNumber(lot.totalBays) })}</span>
       </div>
       <div
         className="home-terminal__meter"
         role="meter"
-        aria-label={`${lot.name} occupancy`}
+        aria-label={t('{name} occupancy', { name: lot.name })}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(occupancy)}
@@ -65,7 +66,7 @@ function TerminalCard({ lot, reserveTo }: { lot: PublicLotDTO; reserveTo: string
           return (
             <li key={type}>
               <Icon aria-hidden />
-              {VEHICLE_SHORT[type]} <strong>{formatNumber(bays?.freeBays ?? 0)}</strong>
+              {tMaybe(VEHICLE_SHORT[type])} <strong>{formatNumber(bays?.freeBays ?? 0)}</strong>
             </li>
           )
         })}
@@ -73,11 +74,11 @@ function TerminalCard({ lot, reserveTo }: { lot: PublicLotDTO; reserveTo: string
 
       {available ? (
         <Link to={reserveTo} className="home-btn">
-          Reserve bay
+          {t('Reserve bay')}
         </Link>
       ) : (
-        <span className="home-btn" aria-disabled="true" title={lot.maintenanceNotice ?? undefined}>
-          Temporarily unavailable
+        <span className="home-btn" aria-disabled="true" title={tMaybe(lot.maintenanceNotice) ?? undefined}>
+          {t('Temporarily unavailable')}
         </span>
       )}
     </article>
@@ -106,12 +107,12 @@ export function TerminalNetwork({ lots, isLoading, isError, onRetry, reserveTo }
       <div ref={ref} className="home-container home-reveal">
         <div className="home-section__head">
           <div>
-            <span className="home-eyebrow">Premier hubs</span>
-            <h2 className="home-heading">Metropolitan terminal network</h2>
+            <span className="home-eyebrow">{t('Premier hubs')}</span>
+            <h2 className="home-heading">{t('Metropolitan terminal network')}</h2>
           </div>
           <span className="home-pill">
             <span className={`home-dot ${isError ? 'home-dot--off' : 'home-dot--live'}`} aria-hidden="true" />
-            {isError ? 'Live feed unavailable' : 'Instant booking active'}
+            {isError ? t('Live feed unavailable') : t('Instant booking active')}
           </span>
         </div>
 
@@ -121,14 +122,14 @@ export function TerminalNetwork({ lots, isLoading, isError, onRetry, reserveTo }
           {!isLoading && sorted.map((lot) => <TerminalCard key={lot.id} lot={lot} reserveTo={reserveTo} />)}
           {!isLoading && failed && (
             <div className="home-terminals__empty" role="alert">
-              <p>We could not reach the parking network. Please try again shortly.</p>
+              <p>{t('We could not reach the parking network. Please try again shortly.')}</p>
               <button type="button" className="home-btn" onClick={onRetry}>
-                Try again
+                {t('Try again')}
               </button>
             </div>
           )}
           {!isLoading && !isError && sorted.length === 0 && (
-            <p className="home-terminals__empty">No parking lots are listed yet.</p>
+            <p className="home-terminals__empty">{t('No parking lots are listed yet.')}</p>
           )}
         </div>
       </div>

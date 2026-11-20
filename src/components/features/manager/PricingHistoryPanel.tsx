@@ -11,6 +11,7 @@ import { usePricingHistory } from '@/hooks/usePricing'
 import { formatDate, formatTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { PricingFieldChangeDTO, PricingHistoryEntryDTO } from '@/types/pricing.dto'
+import { t as tr, tMaybe } from '@/i18n'
 
 const PAGE = 20
 
@@ -73,20 +74,20 @@ function Entry({ entry, showRule }: { entry: PricingHistoryEntryDTO; showRule: b
     <li className="relative border-l-2 border-slate-200 pb-4 pl-4 last:pb-0">
       <span className="absolute top-1.5 -left-[5px] size-2 rounded-full bg-slate-400" aria-hidden />
       <div className="flex flex-wrap items-center gap-2">
-        <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase', kind.style)}>{kind.label}</span>
-        {fromDraft && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-700 uppercase">From a draft</span>}
+        <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase', kind.style)}>{tMaybe(kind.label)}</span>
+        {fromDraft && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-700 uppercase">{tr('From a draft')}</span>}
         {showRule && (
           <span className="text-sm font-semibold text-slate-950">
-            {entry.vehicleTypeName ?? 'Rule'} • {entry.ruleName}
+            {tMaybe(entry.vehicleTypeName) ?? tr('Rule')} • {tMaybe(entry.ruleName)}
           </span>
         )}
-        {entry.versionNo != null && <span className="text-xs text-slate-600">version {entry.versionNo}</span>}
+        {entry.versionNo != null && <span className="text-xs text-slate-600">{tr('version {versionNo}', { versionNo: entry.versionNo })}</span>}
       </div>
       <p className="mt-1 text-xs text-slate-600">
-        {formatDate(entry.changedAt)} {formatTime(entry.changedAt)} • {who}
+        {formatDate(entry.changedAt)} {formatTime(entry.changedAt)} • {tMaybe(who)}
         {entry.changedByRole && entry.changedByRole !== 'User' ? ` (${entry.changedByRole})` : ''}
       </p>
-      {entry.reason && <p className="mt-1 text-sm break-words text-slate-700">{entry.reason}</p>}
+      {entry.reason && <p className="mt-1 text-sm break-words text-slate-700">{tMaybe(entry.reason)}</p>}
       {entry.changes.length > 0 && (
         <ul className="mt-1.5 space-y-0.5">
           {entry.changes.map((change) => (
@@ -123,11 +124,11 @@ export function PricingHistoryPanel({
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-slate-950">
-          <History className="size-5 text-indigo-700" aria-hidden /> {title}
+          <History className="size-5 text-indigo-700" aria-hidden /> {tMaybe(title)}
         </h2>
         {rules.length > 0 && (
           <NativeSelect
-            aria-label="Filter the history by rule"
+            aria-label={tr('Filter the history by rule')}
             className="w-auto"
             value={ruleId ?? ''}
             onChange={(e) => {
@@ -135,21 +136,21 @@ export function PricingHistoryPanel({
               setTake(PAGE)
             }}
           >
-            <option value="">All rules</option>
+            <option value="">{tr('All rules')}</option>
             {rules.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.label}
+                {tMaybe(r.label)}
               </option>
             ))}
           </NativeSelect>
         )}
       </div>
-      <p className="mt-1 text-sm text-slate-700">Every saved price, status change and draft is kept here; nothing is ever removed.</p>
+      <p className="mt-1 text-sm text-slate-700">{tr('Every saved price, status change and draft is kept here; nothing is ever removed.')}</p>
 
       <div className="mt-4">
         {history.isPending && <Skeleton className="h-40 rounded-xl" />}
-        {history.isError && <ErrorState message={getErrorMessage(history.error)} onRetry={() => history.refetch()} />}
-        {history.isSuccess && entries.length === 0 && <EmptyState icon={History} title="No price changes yet" description="Changes appear here as soon as they are saved." />}
+        {history.isError && <ErrorState message={tMaybe(getErrorMessage(history.error))} onRetry={() => history.refetch()} />}
+        {history.isSuccess && entries.length === 0 && <EmptyState icon={History} title={tr('No price changes yet')} description={tr('Changes appear here as soon as they are saved.')} />}
         {entries.length > 0 && (
           <ul className="ml-1">
             {entries.map((entry) => (
@@ -159,7 +160,7 @@ export function PricingHistoryPanel({
         )}
         {entries.length >= take && (
           <Button variant="outline" size="sm" className="mt-4" disabled={history.isFetching} onClick={() => setTake((t) => t + PAGE)}>
-            {history.isFetching ? 'Loading…' : 'Show older changes'}
+            {history.isFetching ? tr('Loading…') : tr('Show older changes')}
           </Button>
         )}
       </div>

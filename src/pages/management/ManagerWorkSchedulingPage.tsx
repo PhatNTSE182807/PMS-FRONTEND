@@ -16,26 +16,27 @@ import { toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { DutyCell } from '@/types/duty.dto'
 import type { ManagedLot } from '@/types/lot-management.dto'
+import { t, tMaybe } from '@/i18n'
 
 function Board({ lot }: { lot: ManagedLot }) {
   const [weekStart, setWeekStart] = useState(() => mondayOf(toIsoDate(new Date())))
   const [cell, setCell] = useState<DutyCell | null>(null)
   const week = useManagerDutyWeek(lot.id, weekStart)
   if (week.isPending) return <Card className="p-6"><Spinner /></Card>
-  if (week.isError) return <Card><ErrorState message={getErrorMessage(week.error)} onRetry={() => week.refetch()} /></Card>
+  if (week.isError) return <Card><ErrorState message={tMaybe(getErrorMessage(week.error))} onRetry={() => week.refetch()} /></Card>
   const data = week.data
   const empty = data.cells.filter((c) => !c.employeeId && !c.isPast)
   return (
     <Card className="space-y-4 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <DutyWeekNav weekStart={data.weekStart} today={data.today} onChange={setWeekStart} />
-        <p className="text-sm text-slate-600">{data.staff.filter((s) => s.isActive).length} Staff · click a shift to change it</p>
+        <p className="text-sm text-slate-600">{t('{length} Staff · click a shift to change it', { length: data.staff.filter((s) => s.isActive).length })}</p>
       </div>
       {empty.length > 0 && (
         <button type="button" onClick={() => setCell(empty[0])}
           className="flex w-full items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-800 ring-1 ring-rose-200 hover:bg-rose-100">
           <AlertTriangle className="size-4 shrink-0" />
-          {empty.length} empty shift{empty.length === 1 ? '' : 's'} this week. Fill the first one
+          {t('{length} empty shift', { length: empty.length })}{empty.length === 1 ? '' : 's'}{' '}{t('this week. Fill the first one')}
         </button>
       )}
       <DutyBoard week={data} onCell={setCell} />
@@ -51,15 +52,15 @@ function Scheduling({ lot }: { lot: ManagedLot }) {
   const pending = week.data?.pendingLeaveRequests ?? 0
   return (
     <div className="space-y-6">
-      <PageHeader title="Work schedule"
+      <PageHeader title={t('Work schedule')}
         actions={<CalendarDays className="size-9 text-indigo-700" />} />
       <div className="flex flex-wrap gap-2" role="tablist">
         {(['board', 'leave'] as const).map((value) => (
           <Button key={value} role="tab" aria-selected={tab === value} variant={tab === value ? 'default' : 'outline'}
             onClick={() => setParams(value === 'leave' ? { tab: 'leave' } : {}, { replace: true })}>
-            {value === 'board' ? 'Duty board' : 'Leave requests'}
+            {value === 'board' ? t('Duty board') : t('Leave requests')}
             {value === 'leave' && pending > 0 && (
-              <span className={cn('rounded-full px-1.5 text-xs font-bold', tab === 'leave' ? 'bg-white/25' : 'bg-amber-100 text-amber-800')}>{pending}</span>
+              <span className={cn('rounded-full px-1.5 text-xs font-bold', tab === 'leave' ? 'bg-white/25' : 'bg-amber-100 text-amber-800')}>{tMaybe(pending)}</span>
             )}
           </Button>
         ))}

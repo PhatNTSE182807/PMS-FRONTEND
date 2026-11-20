@@ -5,6 +5,7 @@ import { getErrorMessage } from '@/api/apiError'
 import { formatVnd } from '@/lib/format'
 import { useAuth } from './useAuth'
 import type { PayrollFilter, SimulatePayInput } from '@/types/payroll.dto'
+import { t } from '@/i18n'
 
 export const payrollKeys = ['payroll'] as const
 
@@ -23,7 +24,7 @@ export function useSimulatePayday() {
   return useMutation({
     mutationFn: (input: SimulatePayInput) => payrollApi.simulate(input),
     onSuccess: (slip) => {
-      toast.success(`Simulated salary received: ${formatVnd(slip.netAmount)}`)
+      toast.success(t('Simulated salary received: {netAmount}', { netAmount: formatVnd(slip.netAmount) }))
       void client.invalidateQueries({ queryKey: payrollKeys })
     },
     onError: (error) => toast.error(getErrorMessage(error)),
@@ -50,7 +51,7 @@ export function usePayAll() {
   return useMutation({
     mutationFn: (month: string) => payrollApi.payAll(month),
     onSuccess: (result) => {
-      toast.success(`Paid ${result.paidCount} people: ${formatVnd(result.total)}`)
+      toast.success(t('Paid {paidCount} people: {total}', { paidCount: result.paidCount, total: formatVnd(result.total) }))
       void client.invalidateQueries({ queryKey: payrollKeys })
     },
     onError: (error) => toast.error(getErrorMessage(error)),
@@ -62,7 +63,7 @@ export function usePayAdjustment() {
   return useMutation({
     mutationFn: payrollApi.adjust,
     onSuccess: () => {
-      toast.success('Adjustment added.')
+      toast.success(t('Adjustment added.'))
       void client.invalidateQueries({ queryKey: payrollKeys })
     },
     onError: (error) => toast.error(getErrorMessage(error)),

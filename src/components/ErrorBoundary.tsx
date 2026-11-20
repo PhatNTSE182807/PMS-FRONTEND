@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { t, tMaybe } from '@/i18n'
 
 interface Props {
   children: ReactNode
@@ -33,12 +34,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: '#3B3632', minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <h2 style={{ color: '#E85A4F', marginBottom: '0.75rem' }}>An error occurred</h2>
+        <h2 style={{ color: '#E85A4F', marginBottom: '0.75rem' }}>{t('An error occurred')}</h2>
         <p style={{ color: '#6F6A64', maxWidth: '500px', marginBottom: '1.5rem' }}>
-          {error.message || 'Something went wrong.'}
+          {tMaybe(error.message) || t('Something went wrong.')}
         </p>
         <button type="button" className="btn btn-primary-cyan" onClick={this.reset}>
-          Reload Application
+          {t('Reload Application')}
         </button>
       </div>
     )

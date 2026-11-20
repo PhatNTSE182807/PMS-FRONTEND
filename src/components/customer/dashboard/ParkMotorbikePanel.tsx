@@ -7,8 +7,9 @@ import { useRequestCheckIn } from '@/hooks/useGateRequests'
 import { useCreateReservation } from '@/hooks/useReservations'
 import { toastBookingError } from '@/lib/userToasts'
 import type { ReservationDTO } from '@/types/operations.dto'
+import { t, localDateFormat, tMaybe } from '@/i18n'
 
-const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const clock = localDateFormat({ hour: '2-digit', minute: '2-digit' })
 
 interface ParkMotorbikePanelProps {
   lotKey: string
@@ -51,8 +52,8 @@ export function ParkMotorbikePanel({ lotKey, slotId, slotCode }: ParkMotorbikePa
           setClaimed(reservation)
           // Put the plate in front of Staff at the entry lane right away
           checkIn.mutate(reservation.id, {
-            onSuccess: () => toast.success(`Bay ${reservation.slotCode} is yours. Ride to the gate: Staff will check you in.`),
-            onError: () => toast.success(`Bay ${reservation.slotCode} is yours. Press check-in on your booking when you reach the gate.`),
+            onSuccess: () => toast.success(t('Bay {slotCode} is yours. Ride to the gate: Staff will check you in.', { slotCode: reservation.slotCode })),
+            onError: () => toast.success(t('Bay {slotCode} is yours. Press check-in on your booking when you reach the gate.', { slotCode: reservation.slotCode })),
           })
         },
         onError: toastBookingError,
@@ -63,13 +64,13 @@ export function ParkMotorbikePanel({ lotKey, slotId, slotCode }: ParkMotorbikePa
     return (
       <div className="cx-reserve" aria-live="polite">
         <p className="cx-reserve__title">
-          <CircleCheck aria-hidden /> Bay <strong>{claimedHere.slotCode}</strong> is yours • #{claimedHere.code}
+          <CircleCheck aria-hidden />{' '}{t('Bay')}{' '}<strong>{tMaybe(claimedHere.slotCode)}</strong>{' '}{t('is yours • #{code}', { code: claimedHere.code })}
         </p>
         <p className="cx-reserve__meta">
-          <Timer aria-hidden /> Ride to the gate before <strong>{clock.format(Date.parse(claimedHere.checkInUntil))}</strong>: Staff sees your plate and checks you in.
+          <Timer aria-hidden />{' '}{t('Ride to the gate before')}{' '}<strong>{clock.format(Date.parse(claimedHere.checkInUntil))}</strong>{t(': Staff sees your plate and checks you in.')}
         </p>
-        <p className="cx-reserve__meta">No deposit: you pay the parking fee when you leave.</p>
-        <Link to="/me/bookings" className="cx-link">Open My Bookings</Link>
+        <p className="cx-reserve__meta">{t('No deposit: you pay the parking fee when you leave.')}</p>
+        <Link to="/me/bookings" className="cx-link">{t('Open My Bookings')}</Link>
       </div>
     )
   }
@@ -77,27 +78,27 @@ export function ParkMotorbikePanel({ lotKey, slotId, slotCode }: ParkMotorbikePa
   return (
     <div className="cx-reserve">
       <label className="cx-field">
-        <span className="cx-field__label">Motorbike</span>
+        <span className="cx-field__label">{t('Motorbike')}</span>
         <select className="cx-input" value={chosenVehicle} onChange={(e) => setVehicleId(e.target.value)} disabled={bikes.length === 0}>
-          {bikes.length === 0 && <option value="">{allBikes.length ? 'No approved motorbike yet' : 'No motorbike in your profile yet'}</option>}
+          {bikes.length === 0 && <option value="">{allBikes.length ? t('No approved motorbike yet') : t('No motorbike in your profile yet')}</option>}
           {bikes.map((v) => (
             <option key={v.vehicleId} value={v.vehicleId}>
-              {v.licensePlate} • {v.brand} {v.model}
+              {v.licensePlate} • {tMaybe(v.brand)} {tMaybe(v.model)}
             </option>
           ))}
         </select>
         {waitingBikes > 0 && (
           <span className="cx-field__hint">
-            {waitingBikes} {waitingBikes === 1 ? 'motorbike is' : 'motorbikes are'} not listed: waiting for Staff to approve the papers.
+            {tMaybe(waitingBikes)} {waitingBikes === 1 ? 'motorbike is' : 'motorbikes are'}{' '}{t('not listed: waiting for Staff to approve the papers.')}
           </span>
         )}
       </label>
-      <p className="cx-reserve__meta">No booking time and no deposit: the bay is held for you now and you pay when you leave.</p>
+      <p className="cx-reserve__meta">{t('No booking time and no deposit: the bay is held for you now and you pay when you leave.')}</p>
       <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled={!chosenVehicle || create.isPending} onClick={park}>
-        <Bike aria-hidden /> {create.isPending ? 'Claiming the bay…' : `Park in bay ${slotCode} now`}
+        <Bike aria-hidden /> {create.isPending ? t('Claiming the bay…') : t('Park in bay {slotCode} now', { slotCode })}
       </button>
       {bikes.length === 0 && (
-        <Link to="/me/vehicles" className="cx-link">{allBikes.length ? 'Check your vehicle papers' : 'Register a motorbike to park'}</Link>
+        <Link to="/me/vehicles" className="cx-link">{allBikes.length ? t('Check your vehicle papers') : t('Register a motorbike to park')}</Link>
       )}
     </div>
   )

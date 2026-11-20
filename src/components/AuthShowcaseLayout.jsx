@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { LOGO_SRC } from './ParkingLogo';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 import '../styles/auth.css';
+import { tMaybe } from '@/i18n'
 
 function Brand({ className = '' }) {
   return (
@@ -9,7 +11,7 @@ function Brand({ className = '' }) {
       <span className="auth-shell__logo-box">
         <img src={LOGO_SRC} alt="" />
       </span>
-      <span className="auth-shell__brand-name"><span className="brand-gold">XXIV</span> Parking</span>
+      <span className="auth-shell__brand-name"><span className="brand-gold">XXIV</span>{' '}Parking</span>
     </Link>
   );
 }
@@ -38,12 +40,13 @@ export default function AuthShowcaseLayout({ title, subtitle, photo, wide = fals
 
       <section className="auth-shell__panel">
         <ThemeToggle className="auth-shell__theme" />
+        <LanguageToggle className="auth-shell__theme auth-shell__lang" />
         <div className="auth-shell__panel-inner">
           <Brand className="auth-shell__mobile-brand" />
 
           <header className="auth-shell__heading">
-            <h1 className="auth-shell__title">{title}</h1>
-            <p className="auth-shell__subtitle">{subtitle}</p>
+            <h1 className="auth-shell__title">{tMaybe(title)}</h1>
+            <p className="auth-shell__subtitle">{tMaybe(subtitle)}</p>
           </header>
 
           {children}

@@ -1,4 +1,5 @@
 import type { ParkingLotCapacityDTO, ZoneCapacityDTO } from '@/types/parking.dto'
+import { t as tr } from '@/i18n'
 
 export type BayStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED'
 export type FloorKind = 'car' | 'motorbike'
@@ -219,9 +220,9 @@ export function liveFloorStats(lot: ParkingLotCapacityDTO, template: GarageTempl
     if (carZones.length) return stats(carZones, `${carZones.map((z) => z.zoneName).join(' + ')} (deck ${i + 1})`)
     const car = lot.capacityByVehicle.find((d) => d.vehicleType === 'CAR')
     const total = Math.round((car?.totalSlots ?? 0) / carLevels)
-    return { label: `Car deck ${i + 1}`, total, occupied: Math.round(total - (car?.availableSlots ?? 0) / carLevels) }
+    return { label: tr('Car deck {v}', { v: i + 1 }), total, occupied: Math.round(total - (car?.availableSlots ?? 0) / carLevels) }
   })
-  const bikeStats = bikeZones.length ? stats(bikeZones) : { label: 'Motorbike deck', total: 0, occupied: 0 }
+  const bikeStats = bikeZones.length ? stats(bikeZones) : { label: tr('Motorbike deck'), total: 0, occupied: 0 }
 
   let car = 0
   return template.floors.map((kind) => (kind === 'car' ? carStats[car++] : bikeStats))

@@ -1,6 +1,7 @@
 import { CalendarClock, Clock3, Infinity as InfinityIcon } from 'lucide-react'
 import { BOOKING_RULES, toLocalInput, type BookingTimes } from '@/lib/bookingTime'
 import type { BookingMode } from '@/types/operations.dto'
+import { t, tMaybe } from '@/i18n'
 
 const MODES: { value: BookingMode; title: string; text: string; icon: typeof Clock3 }[] = [
   { value: 'Scheduled', title: 'Scheduled', text: 'Pick arrival and departure', icon: Clock3 },
@@ -33,7 +34,7 @@ export function BookingTimeFields({
 
   return (
     <div className="cx-booking-time">
-      <div className="cx-mode" role="radiogroup" aria-label="Booking type">
+      <div className="cx-mode" role="radiogroup" aria-label={t('Booking type')}>
         {MODES.map((mode) => {
           const Icon = mode.icon
           const active = value.mode === mode.value
@@ -49,8 +50,8 @@ export function BookingTimeFields({
             >
               <Icon aria-hidden />
               <span>
-                <strong>{mode.title}</strong>
-                <small>{mode.text}</small>
+                <strong>{tMaybe(mode.title)}</strong>
+                <small>{tMaybe(mode.text)}</small>
               </span>
             </button>
           )
@@ -59,7 +60,7 @@ export function BookingTimeFields({
 
       <label className="cx-field" htmlFor={`${idPrefix}-arrival`}>
         <span className="cx-field__label">
-          <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Arrival date &amp; time
+          <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}{t('Arrival date & time')}
         </span>
         <input
           id={`${idPrefix}-arrival`}
@@ -76,7 +77,7 @@ export function BookingTimeFields({
       {value.mode === 'Scheduled' && (
         <label className="cx-field" htmlFor={`${idPrefix}-departure`}>
           <span className="cx-field__label">
-            <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> Departure date &amp; time
+            <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}{t('Departure date & time')}
           </span>
           <input
             id={`${idPrefix}-departure`}
@@ -92,9 +93,8 @@ export function BookingTimeFields({
 
       <span className="cx-field__hint">
         {value.mode === 'Scheduled'
-          ? `The bay is yours for this window (${BOOKING_RULES.minStayMinutes} min to ${BOOKING_RULES.maxStayHours} h). You pay for the time you actually park.`
-          : 'The bay is yours from arrival until you leave. You pay for the time you actually park.'}{' '}
-        Check-in opens 15 minutes before arrival and closes {holdMinutes} minutes after.
+          ? t('The bay is yours for this window ({minStayMinutes} min to {maxStayHours} h). You pay for the time you actually park.', { minStayMinutes: BOOKING_RULES.minStayMinutes, maxStayHours: BOOKING_RULES.maxStayHours })
+          : t('The bay is yours from arrival until you leave. You pay for the time you actually park.')}{t('Check-in opens 15 minutes before arrival and closes {holdMinutes} minutes after.', { holdMinutes })}
       </span>
     </div>
   )

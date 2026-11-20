@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { useWallet, formatVndBalance, formatVndQuick, type WalletTransaction, type UseWalletReturn } from '@/hooks/useWallet'
 import '@/styles/wallet.css'
 import { VnpayMark, VnpayWordmark } from '@/components/payment/VnpayButton'
+import { t as tr, tMaybe, localNumberFormat } from '@/i18n'
 
 interface UserWalletModalProps {
   isOpen: boolean
@@ -127,7 +128,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
   const handleCopyRef = (refId: string) => {
     navigator.clipboard?.writeText(refId)
     setCopiedId(refId)
-    toast.success(`Copied transaction ID: ${refId}`)
+    toast.success(tr('Copied transaction ID: {refId}', { refId }))
     setTimeout(() => setCopiedId(null), 2000)
   }
 
@@ -180,27 +181,27 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
   const renderTxIcon = (tx: WalletTransaction) => {
     if (tx.type === 'refund') {
       return (
-        <div className="cx-wallet-history__icon cx-wallet-history__icon--refund" title="Refund or compensation">
+        <div className="cx-wallet-history__icon cx-wallet-history__icon--refund" title={tr('Refund or compensation')}>
           <RotateCcw size={16} strokeWidth={2.4} />
         </div>
       )
     }
     if (tx.type === 'payment' || tx.type === 'parking') {
       return (
-        <div className="cx-wallet-history__icon cx-wallet-history__icon--payment" title="Parking / Fee Payment">
+        <div className="cx-wallet-history__icon cx-wallet-history__icon--payment" title={tr('Parking / Fee Payment')}>
           <Car size={16} strokeWidth={2.4} />
         </div>
       )
     }
     if (tx.type === 'withdraw' || tx.amount < 0) {
       return (
-        <div className="cx-wallet-history__icon cx-wallet-history__icon--deduct" title="Withdrawal">
+        <div className="cx-wallet-history__icon cx-wallet-history__icon--deduct" title={tr('Withdrawal')}>
           <Minus size={16} strokeWidth={2.8} />
         </div>
       )
     }
     return (
-      <div className="cx-wallet-history__icon cx-wallet-history__icon--deposit" title="Deposit / Top-up">
+      <div className="cx-wallet-history__icon cx-wallet-history__icon--deposit" title={tr('Deposit / Top-up')}>
         <Plus size={16} strokeWidth={2.8} />
       </div>
     )
@@ -230,10 +231,10 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                 </div>
                 <div className="cx-wallet-header__text">
                   <h2 className="cx-wallet-header__title" id="wallet-modal-title">
-                    XXIV E-Wallet <span className="cx-wallet-header__title-sub">(User XXIV Wallet)</span>
+                    {tr('XXIV E-Wallet')}{' '}<span className="cx-wallet-header__title-sub">{tr('(User XXIV Wallet)')}</span>
                   </h2>
                   <span className="cx-wallet-header__desc">
-                    Non-stop parking fee auto-deduction & slot reservation
+                    {tr('Non-stop parking fee auto-deduction & slot reservation')}
                   </span>
                 </div>
               </div>
@@ -241,7 +242,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                 type="button"
                 className="cx-wallet-header__close"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={tr('Close')}
               >
                 <X size={20} />
               </button>
@@ -250,23 +251,23 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
             {/* Balance overview */}
             <div className="cx-wallet-summary">
               <div className="cx-wallet-summary__left">
-                <span className="cx-wallet-summary__label">CURRENT AVAILABLE BALANCE</span>
+                <span className="cx-wallet-summary__label">{tr('CURRENT AVAILABLE BALANCE')}</span>
                 <div className="cx-wallet-summary__amount">
-                  {new Intl.NumberFormat('en-US').format(balance)}{' '}
+                  {localNumberFormat().format(balance)}{' '}
                   <span className="cx-wallet-summary__symbol">₫</span>
                 </div>
                 <div className="cx-wallet-summary__status">
                   <span className="cx-wallet-summary__dot" />
-                  <span>Connected: Automatic license plate barrier recognition</span>
+                  <span>{tr('Connected: Automatic license plate barrier recognition')}</span>
                 </div>
               </div>
 
               <div className="cx-wallet-summary__right">
-                <span className="cx-wallet-summary__label">PENDING EXIT HOLD</span>
+                <span className="cx-wallet-summary__label">{tr('PENDING EXIT HOLD')}</span>
                 <span className="cx-wallet-summary__hold-amount">
-                  {new Intl.NumberFormat('en-US').format(holdAmount)} ₫
+                  {localNumberFormat().format(holdAmount)} ₫
                 </span>
-                <span className="cx-wallet-summary__limit">Parking limit: Unlimited</span>
+                <span className="cx-wallet-summary__limit">{tr('Parking limit: Unlimited')}</span>
               </div>
             </div>
 
@@ -277,14 +278,14 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                 className={`cx-wallet-tab-btn ${activeTab === 'deposit' ? 'cx-wallet-tab-btn--active' : ''}`}
                 onClick={() => setActiveTab('deposit')}
               >
-                Deposit
+                {tr('Deposit')}
               </button>
               <button
                 type="button"
                 className={`cx-wallet-tab-btn ${activeTab === 'withdraw' ? 'cx-wallet-tab-btn--active' : ''}`}
                 onClick={() => setActiveTab('withdraw')}
               >
-                Withdraw
+                {tr('Withdraw')}
               </button>
             </div>
 
@@ -293,7 +294,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
               <form onSubmit={handleDepositSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {/* Quick Presets */}
                 <div className="cx-wallet-section">
-                  <label className="cx-wallet-section__title">Quick amount select</label>
+                  <label className="cx-wallet-section__title">{tr('Quick amount select')}</label>
                   <div className="cx-wallet-presets">
                     {PRESET_AMOUNTS.map((amt) => (
                       <button
@@ -311,7 +312,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                 {/* Custom Amount Input */}
                 <div className="cx-wallet-section">
                   <label className="cx-wallet-section__title" htmlFor="deposit-custom-amount">
-                    Or enter custom amount (VND)
+                    {tr('Or enter custom amount (VND)')}
                   </label>
                   <div className="cx-wallet-input-container">
                     <input
@@ -323,22 +324,22 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       onChange={(e) => handleCustomAmountChange(e.target.value)}
                       placeholder="200000"
                     />
-                    <span className="cx-wallet-input-suffix">VND</span>
+                    <span className="cx-wallet-input-suffix">{tr('VND')}</span>
                   </div>
                   <p className="cx-wallet-limit">
-                    Daily top-up limit {formatVndBalance(dailyTopUpLimit)} • left today{' '}
+                    {tr('Daily top-up limit {dailyTopUpLimit} • left today', { dailyTopUpLimit: formatVndBalance(dailyTopUpLimit) })}
                     <strong>{formatVndBalance(topUpRemainingToday)}</strong>
                   </p>
                   {depositProblem && (
                     <p className="cx-wallet-limit cx-wallet-limit--error" role="alert">
-                      {depositProblem}
+                      {tMaybe(depositProblem)}
                     </p>
                   )}
                 </div>
 
                 {/* Payment Methods */}
                 <div className="cx-wallet-section">
-                  <label className="cx-wallet-section__title">Payment Method</label>
+                  <label className="cx-wallet-section__title">{tr('Payment Method')}</label>
                   <div className="cx-wallet-methods">
                     {/* VNPay */}
                     <div
@@ -352,7 +353,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                         <VnpayMark />
                       </div>
                       <span className="cx-wallet-method__name">
-                        <VnpayWordmark /> Gateway
+                        <VnpayWordmark />{' '}{tr('Gateway')}
                       </span>
                     </div>
 
@@ -368,11 +369,11 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                         <svg viewBox="0 0 100 100" width="100%" height="100%">
                           <rect width="100" height="100" fill="#a50064" />
                           <text x="50" y="62" fill="#ffffff" fontSize="28" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">
-                            MoMo
+                            {tr('MoMo')}
                           </text>
                         </svg>
                       </div>
-                      <span className="cx-wallet-method__name">MoMo Wallet</span>
+                      <span className="cx-wallet-method__name">{tr('MoMo Wallet')}</span>
                     </div>
                   </div>
                 </div>
@@ -381,11 +382,11 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                 <button type="submit" className="cx-wallet-submit" disabled={loading || depositProblem !== null || !depositAmount}>
                   {loading ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" /> Connecting to Gateway...
+                      <Loader2 size={18} className="animate-spin" />{' '}{tr('Connecting to Gateway...')}
                     </>
                   ) : (
                     <>
-                      <Plus size={18} strokeWidth={2.8} /> Confirm
+                      <Plus size={18} strokeWidth={2.8} />{' '}{tr('Confirm')}
                     </>
                   )}
                 </button>
@@ -397,7 +398,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
               <form onSubmit={handleWithdrawSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="cx-wallet-section">
                   <label className="cx-wallet-section__title" htmlFor="withdraw-amount">
-                    Enter amount to withdraw (VND)
+                    {tr('Enter amount to withdraw (VND)')}
                   </label>
                   <div className="cx-wallet-input-container">
                     <input
@@ -409,7 +410,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       onChange={(e) => setWithdrawAmountStr(e.target.value.replace(/\D/g, ''))}
                       placeholder="100000"
                     />
-                    <span className="cx-wallet-input-suffix">VND</span>
+                    <span className="cx-wallet-input-suffix">{tr('VND')}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem' }}>
                     {[100000, 200000, 500000, balance].map((amt, idx) => (
@@ -420,14 +421,14 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                         style={{ flex: 1 }}
                         onClick={() => setWithdrawAmountStr(String(amt))}
                       >
-                        {idx === 3 ? 'All' : formatVndQuick(amt)}
+                        {idx === 3 ? tr('All') : formatVndQuick(amt)}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="cx-wallet-section">
-                  <label className="cx-wallet-section__title">Withdrawal Method</label>
+                  <label className="cx-wallet-section__title">{tr('Withdrawal Method')}</label>
                   <div className="cx-wallet-methods">
                     <div
                       className={`cx-wallet-method ${withdrawMethod === 'bank' ? 'cx-wallet-method--active' : ''}`}
@@ -436,7 +437,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       <div className="cx-wallet-radio">
                         {withdrawMethod === 'bank' && <div className="cx-wallet-radio__dot" />}
                       </div>
-                      <span className="cx-wallet-method__name">Bank Account</span>
+                      <span className="cx-wallet-method__name">{tr('Bank Account')}</span>
                     </div>
 
                     <div
@@ -446,7 +447,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                       <div className="cx-wallet-radio">
                         {withdrawMethod === 'momo' && <div className="cx-wallet-radio__dot" />}
                       </div>
-                      <span className="cx-wallet-method__name">MoMo Wallet</span>
+                      <span className="cx-wallet-method__name">{tr('MoMo Wallet')}</span>
                     </div>
                   </div>
 
@@ -458,7 +459,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                         style={{ flex: 1, minWidth: 0, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
-                        placeholder="Bank Name (e.g. Techcombank)"
+                        placeholder={tr('Bank Name (e.g. Techcombank)')}
                       />
                       <input
                         type="text"
@@ -466,7 +467,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                         style={{ flex: 1.5, minWidth: 0, padding: '0.55rem 0.8rem', color: 'var(--cx-on-surface)', fontSize: '0.85rem' }}
                         value={bankAccount}
                         onChange={(e) => setBankAccount(e.target.value)}
-                        placeholder="Account Number"
+                        placeholder={tr('Account Number')}
                       />
                     </div>
                   )}
@@ -475,10 +476,10 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                 <button type="submit" className="cx-wallet-submit" disabled={loading}>
                   {loading ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" /> Processing...
+                      <Loader2 size={18} className="animate-spin" />{' '}{tr('Processing...')}
                     </>
                   ) : (
-                    'CONFIRM WITHDRAWAL'
+                    tr('CONFIRM WITHDRAWAL')
                   )}
                 </button>
               </form>
@@ -487,21 +488,21 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
             {/* Recent Transaction History */}
             <div className="cx-wallet-history">
               <div className="cx-wallet-history__head">
-                <span className="cx-wallet-history__title">RECENT WALLET TRANSACTIONS</span>
+                <span className="cx-wallet-history__title">{tr('RECENT WALLET TRANSACTIONS')}</span>
                 <button
                   type="button"
                   className="cx-wallet-history__more"
                   onClick={handleOpenHistory}
-                  title="View complete transaction history"
+                  title={tr('View complete transaction history')}
                 >
-                  View all
+                  {tr('View all')}
                 </button>
               </div>
 
               <div className="cx-wallet-history__list">
                 {transactions.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '1.25rem', color: 'var(--cx-muted)', fontSize: '0.85rem' }}>
-                    No recent transactions yet. Top up your wallet to get started.
+                    {tr('No recent transactions yet. Top up your wallet to get started.')}
                   </div>
                 ) : (
                   transactions.slice(0, 3).map((tx) => {
@@ -512,8 +513,8 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                         {renderTxIcon(tx)}
 
                         <div className="cx-wallet-history__details">
-                          <span className="cx-wallet-history__item-title">{tx.title}</span>
-                          <span className="cx-wallet-history__item-sub">{tx.subtitle}</span>
+                          <span className="cx-wallet-history__item-title">{tMaybe(tx.title)}</span>
+                          <span className="cx-wallet-history__item-sub">{tMaybe(tx.subtitle)}</span>
                         </div>
 
                         <div className="cx-wallet-history__values">
@@ -528,7 +529,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                           >
                             {isCredit ? `+${formatVndBalance(Math.abs(tx.amount))}` : `-${formatVndBalance(Math.abs(tx.amount))}`}
                           </span>
-                          <span className="cx-wallet-history__status">{tx.status}</span>
+                          <span className="cx-wallet-history__status">{tMaybe(tx.status)}</span>
                         </div>
                       </div>
                     )
@@ -539,7 +540,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
 
             {/* Security Reassurance Footer */}
             <div className="cx-wallet-footer">
-              Transactions are secured under PCI-DSS Level 1 & State Bank of Vietnam standards.
+              {tr('Transactions are secured under PCI-DSS Level 1 & State Bank of Vietnam standards.')}
             </div>
           </>
         )}
@@ -557,17 +558,17 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                   className="cx-wallet-back-btn"
                   onClick={() => setViewMode('wallet')}
                 >
-                  <ArrowLeft size={16} /> Back to Wallet
+                  <ArrowLeft size={16} />{' '}{tr('Back to Wallet')}
                 </button>
                 <h2 className="cx-wallet-header__title" id="wallet-modal-title" style={{ margin: 0 }}>
-                  Transaction History
+                  {tr('Transaction History')}
                 </h2>
               </div>
               <button
                 type="button"
                 className="cx-wallet-header__close"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={tr('Close')}
               >
                 <X size={20} />
               </button>
@@ -576,25 +577,25 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
             {/* Overview stats */}
             <div className="cx-wallet-stats-grid">
               <div className="cx-wallet-stat-card">
-                <span className="cx-wallet-stat-card__label">Current Balance</span>
+                <span className="cx-wallet-stat-card__label">{tr('Current Balance')}</span>
                 <span className="cx-wallet-stat-card__val" style={{ color: 'var(--cx-gold)' }}>
                   {formatVndBalance(balance)}
                 </span>
               </div>
               <div className="cx-wallet-stat-card">
-                <span className="cx-wallet-stat-card__label">Total Deposited</span>
+                <span className="cx-wallet-stat-card__label">{tr('Total Deposited')}</span>
                 <span className="cx-wallet-stat-card__val" style={{ color: 'var(--cx-emerald)' }}>
                   +{formatVndBalance(totalDeposited)}
                 </span>
               </div>
               <div className="cx-wallet-stat-card">
-                <span className="cx-wallet-stat-card__label">Total Withdrawn</span>
+                <span className="cx-wallet-stat-card__label">{tr('Total Withdrawn')}</span>
                 <span className="cx-wallet-stat-card__val" style={{ color: 'var(--cx-amber)' }}>
                   -{formatVndBalance(totalWithdrawn)}
                 </span>
               </div>
               <div className="cx-wallet-stat-card">
-                <span className="cx-wallet-stat-card__label">Total Refunded</span>
+                <span className="cx-wallet-stat-card__label">{tr('Total Refunded')}</span>
                 <span className="cx-wallet-stat-card__val" style={{ color: 'var(--cx-refund, #38bdf8)' }}>
                   +{formatVndBalance(totalRefunded)}
                 </span>
@@ -609,7 +610,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by transaction ID, description, method..."
+                  placeholder={tr('Search by transaction ID, description, method...')}
                 />
                 {searchQuery && (
                   <button
@@ -625,11 +626,11 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
               <div className="cx-wallet-filter-tabs">
                 {(
                   [
-                    { id: 'all', label: 'All Transactions' },
-                    { id: 'deposit', label: 'Top-up / Deposit' },
-                    { id: 'withdraw', label: 'Withdrawal' },
-                    { id: 'refund', label: 'Refunds' },
-                    { id: 'payment', label: 'Parking & Booking Fees' },
+                    { id: 'all', label: tr('All Transactions') },
+                    { id: 'deposit', label: tr('Top-up / Deposit') },
+                    { id: 'withdraw', label: tr('Withdrawal') },
+                    { id: 'refund', label: tr('Refunds') },
+                    { id: 'payment', label: tr('Parking & Booking Fees') },
                   ] as const
                 ).map((tab) => (
                   <button
@@ -638,7 +639,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                     className={`cx-wallet-filter-pill ${historyFilter === tab.id ? 'cx-wallet-filter-pill--active' : ''}`}
                     onClick={() => setHistoryFilter(tab.id)}
                   >
-                    {tab.label}
+                    {tMaybe(tab.label)}
                   </button>
                 ))}
               </div>
@@ -648,11 +649,11 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', maxHeight: '52vh', overflowY: 'auto' }}>
               {loadingAllTxs ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '2.5rem', color: 'var(--cx-muted)' }}>
-                  <Loader2 size={20} className="animate-spin" /> Loading transactions from server...
+                  <Loader2 size={20} className="animate-spin" />{' '}{tr('Loading transactions from server...')}
                 </div>
               ) : filteredTransactions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--cx-muted)', fontSize: '0.875rem' }}>
-                  No transactions found matching your filter criteria.
+                  {tr('No transactions found matching your filter criteria.')}
                 </div>
               ) : (
                 filteredTransactions.map((tx) => {
@@ -668,23 +669,23 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
 
                         <div className="cx-wallet-tx-card__info">
                           <div className="cx-wallet-tx-card__title-row">
-                            <span className="cx-wallet-tx-card__title">{tx.title}</span>
+                            <span className="cx-wallet-tx-card__title">{tMaybe(tx.title)}</span>
                             <div className="cx-wallet-tx-card__badges">
-                              {isRefund && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--refund">Refund</span>}
-                              {isWithdraw && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--withdraw">Withdraw</span>}
-                              {tx.type === 'deposit' && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--deposit">Top-up</span>}
-                              {isPayment && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--payment">Parking Fee</span>}
-                              {tx.method && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--method">{tx.method}</span>}
+                              {isRefund && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--refund">{tr('Refund')}</span>}
+                              {isWithdraw && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--withdraw">{tr('Withdraw')}</span>}
+                              {tx.type === 'deposit' && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--deposit">{tr('Top-up')}</span>}
+                              {isPayment && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--payment">{tr('Parking Fee')}</span>}
+                              {tx.method && <span className="cx-wallet-tx-badge cx-wallet-tx-badge--method">{tMaybe(tx.method)}</span>}
                             </div>
                           </div>
 
                           <div className="cx-wallet-tx-card__meta">
-                            <span>{tx.subtitle}</span>
+                            <span>{tMaybe(tx.subtitle)}</span>
                             <button
                               type="button"
                               className="cx-wallet-tx-card__ref"
                               onClick={() => handleCopyRef(tx.id)}
-                              title="Click to copy ID"
+                              title={tr('Click to copy ID')}
                             >
                               {copiedId === tx.id ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
                               <span>{tx.id}</span>
@@ -705,14 +706,14 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                           >
                             {isCredit ? `+${formatVndBalance(Math.abs(tx.amount))}` : `-${formatVndBalance(Math.abs(tx.amount))}`}
                           </span>
-                          <span className="cx-wallet-history__status">{tx.status}</span>
+                          <span className="cx-wallet-history__status">{tMaybe(tx.status)}</span>
                         </div>
                       </div>
 
                       {/* Balance Before & After Progression if available */}
                       {typeof tx.balanceBefore === 'number' && typeof tx.balanceAfter === 'number' && (
                         <div className="cx-wallet-tx-card__balance-flow">
-                          <span>Wallet Balance Flow:</span>
+                          <span>{tr('Wallet Balance Flow:')}</span>
                           <span>
                             {formatVndBalance(tx.balanceBefore)} → <strong>{formatVndBalance(tx.balanceAfter)}</strong>
                           </span>
@@ -726,7 +727,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
 
             {/* Footer summary */}
             <div className="cx-wallet-footer">
-              Displaying {filteredTransactions.length} of {txSource.length} total recorded transactions.
+              {tr('Displaying {length} of {length2} total recorded transactions.', { length: filteredTransactions.length, length2: txSource.length })}
             </div>
           </>
         )}

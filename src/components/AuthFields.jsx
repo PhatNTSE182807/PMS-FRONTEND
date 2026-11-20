@@ -1,4 +1,5 @@
 import { Check, CircleAlert, CircleCheck, Eye, EyeOff, Info } from 'lucide-react';
+import { t, tMaybe } from '@/i18n'
 
 const ALERT_ICONS = { error: CircleAlert, info: Info, success: CircleCheck };
 
@@ -33,8 +34,8 @@ export function AuthField({ id, label, icon, labelAside, visible, onToggleVisibl
   return (
     <div className="auth-shell__field">
       <div className="auth-shell__label-row">
-        <label className="auth-shell__label" htmlFor={id}>{label}</label>
-        {labelAside}
+        <label className="auth-shell__label" htmlFor={id}>{tMaybe(label)}</label>
+        {tMaybe(labelAside)}
       </div>
       <div className="auth-shell__control">
         <span className="auth-shell__control-icon" aria-hidden="true">
@@ -51,7 +52,7 @@ export function AuthField({ id, label, icon, labelAside, visible, onToggleVisibl
             type="button"
             className="auth-shell__toggle"
             onClick={onToggleVisible}
-            aria-label={visible ? 'Hide password' : 'Show password'}
+            aria-label={visible ? t('Hide password') : t('Show password')}
           >
             {visible ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
           </button>

@@ -17,6 +17,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { formatNumber, formatPhone, initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CustomerAccountDTO } from '@/types/identity.dto'
+import { t, tMaybe, currentLocale } from '@/i18n'
 
 const PAGE_SIZE = 10
 const COLUMNS = ['User profile', 'Username', 'Account status']
@@ -25,13 +26,13 @@ const AVATAR_TONES = ['bg-indigo-100 text-indigo-700', 'bg-amber-100 text-amber-
 const displayName = (c: CustomerAccountDTO) => c.fullName || c.userName
 
 const formatWhen = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
+  new Date(iso).toLocaleString(currentLocale(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
 
 /** Small pill shown on accounts whose owner asked for them to be deleted. */
 function DeletionBadge() {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">
-      <Trash2 className="size-3" aria-hidden /> Deletion requested
+      <Trash2 className="size-3" aria-hidden />{' '}{t('Deletion requested')}
     </span>
   )
 }
@@ -91,17 +92,17 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
     <Card className="p-5 lg:sticky lg:top-24">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-bold tracking-wider text-slate-950 uppercase">
-          <UserSearch className="size-4 text-amber-500" aria-hidden /> User account details
+          <UserSearch className="size-4 text-amber-500" aria-hidden />{' '}{t('User account details')}
         </h2>
         {customer && (
           <span className={cn('rounded-md px-2.5 py-1 text-xs font-bold tracking-wide uppercase', active ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700')}>
-            {active ? 'Active' : 'Locked'}
+            {active ? t('Active') : t('Locked')}
           </span>
         )}
       </div>
 
       {!customer ? (
-        <p className="mt-6 text-sm text-slate-600">Select an account to see its details.</p>
+        <p className="mt-6 text-sm text-slate-600">{t('Select an account to see its details.')}</p>
       ) : (
         <>
           <div className="mt-5 flex items-center gap-4 rounded-xl bg-slate-50 p-4">
@@ -115,17 +116,17 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
             </div>
           </div>
 
-          <h3 className="mt-6 text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">Account overview</h3>
+          <h3 className="mt-6 text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{t('Account overview')}</h3>
           <dl className="mt-2 divide-y divide-slate-200 rounded-xl bg-slate-50 px-4 text-sm">
             {[
-              ['Membership type', <span key="m" className="font-semibold text-amber-500">Driver</span>],
+              ['Membership type', <span key="m" className="font-semibold text-amber-500">{t('Driver')}</span>],
               ['Username', <span key="u" className="font-mono text-slate-900">{customer.userName}</span>],
               ['Email', <span key="e" className="truncate text-slate-900">{customer.email}</span>],
-              ['Sign-in access', <span key="s" className={active ? 'text-indigo-700' : 'text-rose-700'}>{active ? 'Allowed' : 'Blocked'}</span>],
+              ['Sign-in access', <span key="s" className={active ? 'text-indigo-700' : 'text-rose-700'}>{active ? t('Allowed') : t('Blocked')}</span>],
             ].map(([label, value]) => (
               <div key={label as string} className="flex items-center justify-between gap-4 py-2.5">
-                <dt className="text-slate-800">{label}</dt>
-                <dd className="min-w-0 text-right">{value}</dd>
+                <dt className="text-slate-800">{tMaybe(label)}</dt>
+                <dd className="min-w-0 text-right">{tMaybe(value)}</dd>
               </div>
             ))}
           </dl>
@@ -133,20 +134,19 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
           {request && (
             <div className="mt-5 rounded-xl bg-rose-50 p-4 text-sm text-rose-900 ring-1 ring-rose-200">
               <p className="flex items-center gap-2 font-semibold">
-                <Trash2 className="size-4 shrink-0" aria-hidden /> Asked to delete this account
+                <Trash2 className="size-4 shrink-0" aria-hidden />{' '}{t('Asked to delete this account')}
               </p>
-              <p className="mt-1">Requested {formatWhen(request.requestedAt)}.</p>
-              {request.reason && <p className="mt-1 italic">&ldquo;{request.reason}&rdquo;</p>}
+              <p className="mt-1">{t('Requested {requestedAt}.', { requestedAt: formatWhen(request.requestedAt) })}</p>
+              {request.reason && <p className="mt-1 italic">&ldquo;{tMaybe(request.reason)}&rdquo;</p>}
               <p className="mt-2 text-rose-800">
-                Check that the driver has no vehicle parked, no upcoming booking and no wallet money left, then lock the
-                account. Their parking history and payments are kept.
+                {t('Check that the driver has no vehicle parked, no upcoming booking and no wallet money left, then lock the account. Their parking history and payments are kept.')}
               </p>
             </div>
           )}
 
           <p className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-indigo-700" aria-hidden />
-            Drivers manage their own details and vehicles from the app. A locked account cannot sign in until it is unlocked.
+            {t('Drivers manage their own details and vehicles from the app. A locked account cannot sign in until it is unlocked.')}
           </p>
 
           <Button
@@ -157,21 +157,21 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
             disabled={setActive.isPending}
           >
             {active ? <Lock /> : <LockOpen />}
-            {active ? (request ? 'Lock account (complete deletion request)' : 'Lock account') : 'Unlock account'}
+            {active ? (request ? t('Lock account (complete deletion request)') : t('Lock account')) : t('Unlock account')}
           </Button>
 
           <ConfirmDialog
             open={confirming}
             onOpenChange={setConfirming}
-            title={active ? `Lock ${displayName(customer)}'s account?` : `Unlock ${displayName(customer)}'s account?`}
+            title={active ? t('Lock {v}\'s account?', { v: displayName(customer) }) : t('Unlock {v}\'s account?', { v: displayName(customer) })}
             description={
               active
                 ? request
-                  ? 'The driver can no longer sign in, and their deletion request is marked as done. You can unlock the account later.'
-                  : 'The driver can no longer sign in until you unlock the account.'
-                : 'The driver can sign in again.'
+                  ? t('The driver can no longer sign in, and their deletion request is marked as done. You can unlock the account later.')
+                  : t('The driver can no longer sign in until you unlock the account.')
+                : t('The driver can sign in again.')
             }
-            confirmLabel={active ? 'Lock account' : 'Unlock account'}
+            confirmLabel={active ? t('Lock account') : t('Unlock account')}
             tone={active ? 'destructive' : 'default'}
             pending={setActive.isPending}
             onConfirm={apply}
@@ -227,12 +227,12 @@ export default function CustomerAccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="User Accounts Directory"
+        title={t('User Accounts Directory')}
        
         actions={
           <Button variant="outline" size="lg" onClick={() => exportAccounts(items)} disabled={!items.length}>
             <Download />
-            Export page (CSV)
+            {t('Export page (CSV)')}
           </Button>
         }
       />
@@ -244,33 +244,33 @@ export default function CustomerAccountsPage() {
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by username, email or phone number…"
-            aria-label="Search customers"
+            placeholder={t('Search by username, email or phone number…')}
+            aria-label={t('Search customers')}
             className="h-10 pl-9"
           />
         </div>
         <span className="rounded-lg bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-950 ring-1 ring-slate-200">
-          All accounts ({formatNumber(customers.data?.totalCount ?? 0)})
+          {t('All accounts ({v})', { v: formatNumber(customers.data?.totalCount ?? 0) })}
         </span>
         <Button variant="ghost" onClick={clearSearch} disabled={!search && !searchInput}>
           <X />
-          Clear
+          {t('Clear')}
         </Button>
       </Card>
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Card className="overflow-hidden">
           {customers.isError ? (
-            <ErrorState message={getErrorMessage(customers.error)} onRetry={() => customers.refetch()} />
+            <ErrorState message={tMaybe(getErrorMessage(customers.error))} onRetry={() => customers.refetch()} />
           ) : !customers.isPending && items.length === 0 ? (
             <EmptyState
               icon={UserRound}
-              title={search ? 'No matching customers' : 'No customer accounts yet'}
-              description={search ? 'Try another username, email or phone number.' : 'Accounts appear here once drivers register.'}
+              title={search ? t('No matching customers') : t('No customer accounts yet')}
+              description={search ? t('Try another username, email or phone number.') : t('Accounts appear here once drivers register.')}
               action={
                 search ? (
                   <Button variant="outline" onClick={clearSearch}>
-                    Clear search
+                    {t('Clear search')}
                   </Button>
                 ) : undefined
               }
@@ -281,7 +281,7 @@ export default function CustomerAccountsPage() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     {COLUMNS.map((column) => (
-                      <TableHead key={column}>{column}</TableHead>
+                      <TableHead key={column}>{tMaybe(column)}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -312,7 +312,7 @@ export default function CustomerAccountsPage() {
                               <div className="min-w-0">
                                 <p className="flex items-center gap-1.5 font-semibold text-slate-950">
                                   {displayName(customer)}
-                                  {active && <BadgeCheck className="size-4 text-amber-500" aria-label="Active account" />}
+                                  {active && <BadgeCheck className="size-4 text-amber-500" aria-label={t('Active account')} />}
                                 </p>
                                 <p className="flex items-center gap-1 truncate text-sm text-slate-700">
                                   <Mail className="size-3 shrink-0" aria-hidden /> {customer.email}
@@ -328,7 +328,7 @@ export default function CustomerAccountsPage() {
                           <TableCell>
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700')}>
-                                {active ? 'Active' : 'Locked'}
+                                {active ? t('Active') : t('Locked')}
                               </span>
                               {customer.deletionRequest && <DeletionBadge />}
                             </div>
