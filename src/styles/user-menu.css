@@ -1,0 +1,335 @@
+/* =========================================================
+   ACCOUNT MENU of the top bar (components/UserMenu.tsx), shared by the customer area and the
+   admin, manager and staff consoles. Its own tokens: dark by default, light under html[data-theme='light'].
+========================================================= */
+
+.user-menu {
+  --um-panel: #1b1d22;
+  --um-border: rgba(255, 255, 255, 0.09);
+  --um-text: #f2f2ef;
+  --um-muted: #a3a3a0;
+  --um-hover: rgba(255, 255, 255, 0.06);
+  --um-active: rgba(233, 195, 73, 0.14);
+  --um-accent: #e9c349;
+  --um-danger: #f08a7e;
+  --um-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  position: relative;
+  flex-shrink: 0;
+}
+
+html[data-theme='light'] .user-menu {
+  --um-panel: #ffffff;
+  --um-border: #e2e2de;
+  --um-text: #111111;
+  --um-muted: #6b6b67;
+  --um-hover: rgba(17, 17, 17, 0.05);
+  --um-active: rgba(17, 17, 17, 0.07);
+  --um-accent: #111111;
+  --um-danger: #a3362d;
+  --um-shadow: 0 18px 40px rgba(17, 17, 17, 0.12);
+}
+
+.user-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: 15rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--um-text);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.user-menu__trigger:hover,
+.user-menu__trigger[aria-expanded='true'] {
+  background: var(--um-hover);
+  border-color: var(--um-border);
+}
+
+.user-menu__trigger:focus-visible {
+  outline: 2px solid var(--um-accent);
+  outline-offset: 2px;
+}
+
+.user-menu__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(233, 195, 73, 0.55);
+  border-radius: 50%;
+  background: var(--um-hover);
+  color: var(--um-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.user-menu__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-menu__trigger-name {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu__chevron {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: var(--um-muted);
+  transition: transform 0.15s ease;
+}
+
+.user-menu__trigger[aria-expanded='true'] .user-menu__chevron {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 768px) {
+  .user-menu__trigger-name,
+  .user-menu__chevron {
+    display: none;
+  }
+
+  .user-menu__trigger {
+    padding: 0.2rem;
+  }
+}
+
+.user-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 60;
+  width: 17.5rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.4rem;
+  border: 1px solid var(--um-border);
+  border-radius: 0.9rem;
+  background: var(--um-panel);
+  color: var(--um-text);
+  box-shadow: var(--um-shadow);
+  text-align: left;
+  animation: user-menu-in 0.14s ease-out;
+}
+
+@keyframes user-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.user-menu__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.6rem 0.7rem;
+}
+
+.user-menu__head .user-menu__avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.user-menu__head-text {
+  min-width: 0;
+}
+
+.user-menu__name,
+.user-menu__subtitle {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu__name {
+  font-size: 0.925rem;
+  font-weight: 700;
+}
+
+.user-menu__subtitle {
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  color: var(--um-muted);
+}
+
+.user-menu__extra {
+  margin: 0 0.2rem 0.4rem;
+}
+
+.user-menu__group {
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--um-border);
+}
+
+.user-menu__item,
+.user-menu__back {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: none;
+  border-radius: 0.55rem;
+  background: none;
+  color: var(--um-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.user-menu__item:hover,
+.user-menu__item:focus-visible,
+.user-menu__back:hover,
+.user-menu__back:focus-visible {
+  background: var(--um-hover);
+  outline: none;
+}
+
+.user-menu__item--active {
+  background: var(--um-active);
+  font-weight: 600;
+}
+
+.user-menu__item--danger {
+  color: var(--um-danger);
+}
+
+.user-menu__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+}
+
+.user-menu__trail {
+  width: 1rem;
+  height: 1rem;
+  margin-left: auto;
+  color: var(--um-muted);
+}
+
+.user-menu__back {
+  font-weight: 700;
+}
+
+.user-menu__setting {
+  padding: 0.6rem 0.6rem 0.4rem;
+  border-top: 1px solid var(--um-border);
+}
+
+.user-menu__setting:first-of-type {
+  margin-top: 0.3rem;
+}
+
+.user-menu__setting-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--um-muted);
+}
+
+.user-menu__setting-label svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.user-menu__segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--um-border);
+  border-radius: 0.6rem;
+}
+
+.user-menu__segment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: none;
+  color: var(--um-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.user-menu__segment-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.user-menu__segment-btn:hover {
+  color: var(--um-text);
+}
+
+.user-menu__segment-btn--on {
+  background: var(--um-active);
+  color: var(--um-text);
+  box-shadow: inset 0 0 0 1px var(--um-border);
+}
+
+/* Customer wallet block inside the menu */
+.user-menu__wallet {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--um-border);
+  border-radius: 0.65rem;
+  background: var(--um-hover);
+  color: var(--um-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-menu__wallet:hover {
+  border-color: var(--um-accent);
+}
+
+.user-menu__wallet-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.user-menu__wallet-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--um-muted);
+}
+
+.user-menu__wallet-amount {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
