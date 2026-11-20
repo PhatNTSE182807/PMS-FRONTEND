@@ -9,7 +9,7 @@ function Brand({ className = '' }) {
       <span className="auth-shell__logo-box">
         <img src={LOGO_SRC} alt="" />
       </span>
-      <span className="auth-shell__brand-name">XXIV Parking</span>
+      <span className="auth-shell__brand-name"><span className="brand-gold">XXIV</span> Parking</span>
     </Link>
   );
 }

@@ -69,7 +69,7 @@ export function CustomerShell() {
           <Link to="/" className="cx-nav__brand" aria-label="XXIV Parking home">
             <img src={LOGO_SRC} alt="" className="cx-nav__logo" />
             <span className="cx-nav__brand-text">
-              <span className="cx-nav__brand-name">XXIV</span>
+              <span className="cx-nav__brand-name brand-gold">XXIV</span>
               <span className="cx-nav__brand-sub">PARKING</span>
             </span>
           </Link>

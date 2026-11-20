@@ -201,7 +201,7 @@
 
 .auth-split__title-accent {
   display: block;
-  color: var(--palette-tan);
+  color: inherit;
 }
 
 .auth-split__tagline {

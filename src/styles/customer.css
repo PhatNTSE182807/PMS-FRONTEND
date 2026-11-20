@@ -124,7 +124,7 @@
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: var(--cx-gold);
+  color: var(--cx-on-variant);
 }
 
 .cx-nav__links {
@@ -640,10 +640,6 @@
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   color: var(--cx-on-variant);
-}
-
-.cx-eyebrow__gold {
-  color: var(--cx-gold);
 }
 
 .cx-label {

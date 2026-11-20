@@ -16,7 +16,7 @@ export default function AuthSplitLayout({ title, subtitle, children }) {
             <img src={LOGO_SRC} alt="XXIV Parking logo" className="auth-split__logo" />
 
             <h1 className="auth-split__title">
-              XXIV
+              <span className="brand-gold">XXIV</span>
               <span className="auth-split__title-accent">Parking</span>
             </h1>
           </div>
