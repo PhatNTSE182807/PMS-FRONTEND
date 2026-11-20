@@ -66,13 +66,8 @@ function Staff({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          <>
-            <span className="text-amber-500">Operations console</span> / <span>Team</span>
-          </>
-        }
         title="Staff Directory"
-        description={`${lot.name} • Gate staff working at this lot.`}
+       
         actions={
           <Button variant="gold" onClick={() => setForm({ open: true })}>
             <UserPlus aria-hidden /> Add staff

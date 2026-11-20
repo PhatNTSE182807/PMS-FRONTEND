@@ -27,7 +27,7 @@ export default function PricingHistoryPage() {
     <div className="space-y-6">
       <PageHeader
         title="Pricing History"
-        description="Every price change, status change and price draft of a parking lot, with who made it and when."
+       
         actions={
           lots.data && lots.data.length > 0 ? (
             <NativeSelect aria-label="Parking lot" className="w-auto" value={lotId ?? ''} onChange={(e) => setChosen(e.target.value)}>

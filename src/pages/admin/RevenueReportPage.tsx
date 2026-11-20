@@ -50,7 +50,7 @@ export default function RevenueReportPage() {
     <div className="space-y-6">
       <PageHeader
         title="Revenue Report"
-        description="Settled parking revenue over time, by parking lot, vehicle type and payment method."
+       
       />
 
       <RevenueFilterBar

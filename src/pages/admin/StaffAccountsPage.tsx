@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Search, ShieldCheck, UserPlus, UserX, X } from 'lucide-react'
+import { Plus, Search, UserPlus, UserX, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/apiError'
 import { StaffFormSheet } from '@/components/features/staff/StaffFormSheet'
@@ -120,17 +120,8 @@ export default function StaffAccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          <>
-            <span className="flex items-center gap-1.5 text-amber-500">
-              <ShieldCheck className="size-4" aria-hidden /> Autonomous hub governance
-            </span>
-            <span aria-hidden>•</span>
-            <span className="normal-case">Managers &amp; gate staff</span>
-          </>
-        }
         title="Facility Managers Directory & Hub Allocation"
-        description="Provision, assign and audit garage facility managers and gate staff across Saigon hubs. Deactivated accounts cannot sign in."
+       
         actions={
           <Button size="lg" onClick={() => setFormState({ open: true })}>
             <UserPlus />

@@ -320,9 +320,8 @@ export default function CustomerBookingsPage() {
     <>
       <header className="cx-page-head">
         <div>
-          <span className="cx-eyebrow"><span className="cx-dot cx-dot--gold" aria-hidden="true" /> Slot reservations • Deposits via XXIV Wallet / VNPay / MoMo</span>
+          <span className="cx-eyebrow cx-eyebrow--brand"><span className="cx-eyebrow__gold">XXIV</span> Parking</span>
           <h1 className="cx-page-title">My Bookings &amp; Reservations</h1>
-          <p className="cx-page-lead">Track reservations, pay deposits, show your check-in QR and review your history. Up to 2 active reservations per account.</p>
         </div>
         <Link to="/me#map" className="cx-btn cx-btn--teal" style={{ padding: '0.9rem 1.4rem' }}>
           <SquarePlus aria-hidden /> New reservation

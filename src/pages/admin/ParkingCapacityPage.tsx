@@ -80,7 +80,7 @@ export default function ParkingCapacityPage() {
     <div className="space-y-6">
       <PageHeader
         title="Parking Lot Performance"
-        description="Monitor the real-time occupancy of every lot and zone."
+       
         actions={
           <Button variant="outline" onClick={() => capacity.refetch()} disabled={capacity.isFetching}>
             <RefreshCw className={cn(capacity.isFetching && 'animate-spin')} />
