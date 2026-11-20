@@ -375,7 +375,7 @@ html[data-theme='light'] .home-nav__brand-mark {
   position: absolute;
   inset: 0;
   z-index: -3;
-  background: #0b141b url('/home/hero-garage.jpg') center / cover no-repeat;
+  background: #000000;
 }
 
 .home-hero__video {
@@ -389,8 +389,16 @@ html[data-theme='light'] .home-nav__brand-mark {
   transition: opacity 0.9s ease;
 }
 
-.home-hero__video.is-active {
+/* The new video fades in on top; the previous one stays fully visible underneath until the fade ends */
+.home-hero__video.is-shown {
+  z-index: 2;
   opacity: 1;
+}
+
+.home-hero__video.is-behind {
+  z-index: 1;
+  opacity: 1;
+  transition: none;
 }
 
 /* Title in the middle of the video, with the Discover button under it. No shade over the video, so the
