@@ -65,9 +65,11 @@ export function CustomerShell() {
         <div className="cx-container cx-nav__inner">
           <Link to="/" className="cx-nav__brand" aria-label={t('XXIV Parking home')}>
             <img src={LOGO_SRC} alt="" className="cx-nav__logo" />
+            {/* One line, as in the admin, manager and staff consoles */}
             <span className="cx-nav__brand-text">
-              <span className="cx-nav__brand-name brand-gold">XXIV</span>
-              <span className="cx-nav__brand-sub">PARKING</span>
+              <span className="cx-nav__brand-name">
+                <span className="brand-gold">XXIV</span>{' '}PARKING
+              </span>
             </span>
           </Link>
 
