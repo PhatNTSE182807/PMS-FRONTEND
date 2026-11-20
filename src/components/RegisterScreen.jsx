@@ -110,7 +110,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
       title="Create your account"
       subtitle="Register to manage vehicle passes and parking sessions in real time."
       photo="/register-car.jpg"
-      tagline="Smart parking management crafted for luxury vehicles. Join our automated mobility ecosystem."
     >
       {errorMsg && <AuthAlert tone="error">{errorMsg}</AuthAlert>}
       {successMsg && <AuthAlert tone="success">{successMsg}</AuthAlert>}
