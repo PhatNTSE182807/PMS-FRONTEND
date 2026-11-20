@@ -16,10 +16,28 @@ const SLIDE_DURATION_MS = 30_000
 
 /** Full-screen video hero: the title in the middle and a Discover button that scrolls to the facilities. */
 export function HeroSection() {
+  // `active` is the video that should play; `shown` is the one on screen, which changes only once the
+  // next video really plays, so the switch never uncovers an empty frame. The previous video stays
+  // under the new one (`behind`) until the cross-fade is over.
   const [active, setActive] = useState(0)
+  const [shown, setShown] = useState(-1)
+  const [behind, setBehind] = useState(-1)
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
-  // Users who ask the system for less motion see the poster frame only.
+  // Users who ask the system for less motion see the first frame of the first video only.
   const [reducedMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+
+  const show = (i: number) => {
+    if (i !== active || i === shown) return
+    setBehind(shown)
+    setShown(i)
+  }
+
+  // Drop the previous video once the new one has faded in over it (the fade takes 0.9 s).
+  useEffect(() => {
+    if (behind < 0) return
+    const id = window.setTimeout(() => setBehind(-1), 1000)
+    return () => window.clearTimeout(id)
+  }, [behind])
 
   // Move to the next video every 30 seconds.
   useEffect(() => {
@@ -28,21 +46,24 @@ export function HeroSection() {
     return () => window.clearTimeout(id)
   }, [active, reducedMotion])
 
-  // Only the visible video plays; the others are paused and rewound to their start for next time.
+  // Only the active video plays, from its start; the others pause where they are (the previous one is
+  // still fading out, so it is not rewound here but when its turn comes again).
   useEffect(() => {
     videoRefs.current.forEach((video, i) => {
       if (!video) return
       if (i === active && !reducedMotion) {
-        if (video.currentTime < HERO_VIDEOS[i].start) video.currentTime = HERO_VIDEOS[i].start
+        if (video.paused) video.currentTime = HERO_VIDEOS[i].start
         video.play().catch(() => {
-          /* autoplay blocked: the poster stays visible */
+          /* autoplay blocked: the previous frame stays on screen */
         })
       } else {
         video.pause()
-        if (i !== active) video.currentTime = HERO_VIDEOS[i].start
       }
     })
   }, [active, reducedMotion])
+
+  // Load the next video in full ahead of its turn so it can start at once.
+  const nextIndex = (active + 1) % HERO_VIDEOS.length
 
   // Phones can refuse to autoplay (iOS Low Power Mode, data saver): start the video on the first touch,
   // click or scroll instead of leaving the poster up.
@@ -85,16 +106,18 @@ export function HeroSection() {
                 el.setAttribute('muted', '')
               }
             }}
-            className={`home-hero__video${i === active ? ' is-active' : ''}`}
+            className={`home-hero__video${i === shown ? ' is-shown' : ''}${i === behind ? ' is-behind' : ''}`}
             // The media fragment makes the browser load and show the first frame at `start` already.
             src={start > 0 ? `${src}#t=${start}` : src}
-            poster="/home/hero-garage.jpg"
             muted
             playsInline
             autoPlay={i === active && !reducedMotion}
+            onPlaying={() => show(i)}
+            // With reduced motion nothing plays: show the first video's still frame once it is loaded.
+            onLoadedData={() => reducedMotion && show(i)}
             onEnded={() => restart(i)}
-            // Load the first video right away; the others only fetch metadata until their turn.
-            preload={i === active ? 'auto' : 'metadata'}
+            // The playing video and the next one load in full; the third only fetches its metadata.
+            preload={i === active || i === nextIndex ? 'auto' : 'metadata'}
           />
         ))}
       </div>
