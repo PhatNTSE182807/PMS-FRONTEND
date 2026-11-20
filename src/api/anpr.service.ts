@@ -24,9 +24,20 @@ export interface AnprReadDTO {
   plates: AnprPlateDTO[]
 }
 
+/** The service on Render (backend repo tools/anpr/Dockerfile, ONNX models), used by production builds. */
+const DEPLOYED_ANPR_SERVICE_URL = 'https://pms-backend-1-5xlz.onrender.com'
+/** The service started with `uvicorn service:app --port 8001` on this computer, used in development. */
+const LOCAL_ANPR_SERVICE_URL = 'http://127.0.0.1:8001'
+
 const configured = import.meta.env.VITE_ANPR_SERVICE_URL?.trim()
-/** Base URL of the service; null when the plate reader is turned off. */
-export const ANPR_SERVICE_URL: string | null = (configured || (import.meta.env.DEV ? 'http://127.0.0.1:8001' : '')).replace(/\/+$/, '') || null
+/**
+ * Base URL of the service; null when the plate reader is turned off.
+ * VITE_ANPR_SERVICE_URL wins; set it to "off" to turn the plate reader off.
+ */
+export const ANPR_SERVICE_URL: string | null =
+  configured?.toLowerCase() === 'off'
+    ? null
+    : (configured || (import.meta.env.DEV ? LOCAL_ANPR_SERVICE_URL : DEPLOYED_ANPR_SERVICE_URL)).replace(/\/+$/, '') || null
 
 async function failure(response: Response) {
   const body = (await response.json().catch(() => null)) as { detail?: string } | null

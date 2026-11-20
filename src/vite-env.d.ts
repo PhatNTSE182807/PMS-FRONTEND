@@ -8,7 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_CLIENT_ID?: string
   /** Mapbox public access token for the lot directions map; the map is hidden when empty. */
   readonly VITE_MAPBOX_ACCESS_TOKEN?: string
-  /** Plate reader service (backend repo tools/anpr/service.py); development defaults to http://127.0.0.1:8001. */
+  /** Plate reader service (backend repo tools/anpr/service.py); development defaults to http://127.0.0.1:8001, production builds to the Render service; "off" turns it off. */
   readonly VITE_ANPR_SERVICE_URL?: string
 }
 
