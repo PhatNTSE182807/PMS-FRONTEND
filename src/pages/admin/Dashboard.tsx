@@ -11,6 +11,7 @@ import { formatNumber } from '@/lib/format'
 import { occupancyLevel } from '@/lib/occupancy'
 import { cn } from '@/lib/utils'
 import type { DashboardOverviewDTO, HubPerformanceDTO } from '@/types/dashboard.dto'
+import { t, tMaybe } from '@/i18n'
 
 /** The six headline numbers; renders skeleton cards while `overview` is still on its way. */
 function OverviewStats({
@@ -39,11 +40,11 @@ function OverviewStats({
           size="lg"
           tone="gold"
           icon={Wallet}
-          label="Total gross revenue"
+          label={t('Total gross revenue')}
           isLoading={isLoading}
           value={formatNumber(Math.round(overview?.totalGrossRevenue ?? 0))}
-          unit="VND"
-          caption="Consolidated revenue across every hub"
+          unit={t('VND')}
+          caption={t('Consolidated revenue across every hub')}
           to="/admin/revenue"
           linkLabel="Open revenue report"
         />
@@ -51,32 +52,31 @@ function OverviewStats({
           size="lg"
           tone="gold"
           icon={Banknote}
-          label="Today's revenue"
+          label={t('Today\'s revenue')}
           isLoading={hubsLoading}
           value={formatNumber(Math.round(todayRevenue))}
-          unit="VND"
-          caption={`Collected today across the network${hubs ? ` • ${earningHubs} of ${hubs.length} hubs earning` : ''}`}
+          unit={t('VND')}
+          caption={t('Collected today across the network{v}', { v: hubs ? ` • ${earningHubs} of ${hubs.length} hubs earning` : '' })}
         />
         <StatCard
           size="lg"
           tone="teal"
           icon={Gauge}
-          label="Network load factor"
+          label={t('Network load factor')}
           isLoading={isLoading}
           value={`${loadFactor.toFixed(1)}%`}
           caption={
             <>
               <span className="font-mono font-bold text-slate-900">
                 {formatNumber(occupiedBays)} / {formatNumber(totalBays)}
-              </span>{' '}
-              bays occupied across the network
+              </span>{t('bays occupied across the network')}
             </>
           }
         >
           <div
             className={cn('mt-5 h-2 overflow-hidden rounded-full', load.track)}
             role="meter"
-            aria-label="Network occupancy"
+            aria-label={t('Network occupancy')}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(loadFactor)}
@@ -93,34 +93,34 @@ function OverviewStats({
         <StatCard
           tone="steel"
           icon={ParkingSquare}
-          label="Total bays"
+          label={t('Total bays')}
           isLoading={isLoading}
           value={formatNumber(totalBays)}
-          caption="Capacity of the whole network"
+          caption={t('Capacity of the whole network')}
         />
         <StatCard
           tone="teal"
           icon={CarFront}
-          label="Occupied bays"
+          label={t('Occupied bays')}
           isLoading={isLoading}
           value={formatNumber(occupiedBays)}
-          caption={`${formatNumber(totalBays - occupiedBays)} bays free right now`}
+          caption={t('{v} bays free right now', { v: formatNumber(totalBays - occupiedBays) })}
         />
         <StatCard
           tone="emerald"
           icon={Users}
-          label="Active users"
+          label={t('Active users')}
           isLoading={isLoading}
           value={formatNumber(overview?.activeUsers ?? 0)}
-          caption="Customer accounts in use"
+          caption={t('Customer accounts in use')}
         />
         <StatCard
           tone="gold"
           icon={UserCog}
-          label="Active staff"
+          label={t('Active staff')}
           isLoading={isLoading}
           value={formatNumber(overview?.activeStaff ?? 0)}
-          caption="Managers and staff on duty"
+          caption={t('Managers and staff on duty')}
         />
       </div>
     </>
@@ -135,13 +135,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Network overview"
+        title={t('Network overview')}
        
       />
 
       {overview.isError ? (
         <Card>
-          <ErrorState message={getErrorMessage(overview.error)} onRetry={() => void overview.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(overview.error))} onRetry={() => void overview.refetch()} />
         </Card>
       ) : (
         <OverviewStats overview={overview.data} isLoading={overview.isPending} hubs={hubs.data} hubsLoading={hubs.isPending} />
@@ -150,7 +150,7 @@ export default function Dashboard() {
       <HubPerformanceList
         hubs={hubs.data}
         isLoading={hubs.isPending}
-        error={hubs.isError ? getErrorMessage(hubs.error) : null}
+        error={hubs.isError ? tMaybe(getErrorMessage(hubs.error)) : null}
         onRetry={() => void hubs.refetch()}
       />
     </div>

@@ -6,6 +6,7 @@ import type { ClassicOutletContext } from '@/components/layout/ClassicLayout'
 import { getErrorMessage } from '@/api/apiError'
 import { homePathFor, useGoogleLogin } from '@/hooks/useAuth'
 import { finishGoogleSignIn } from '@/lib/google-identity'
+import { t, tMaybe } from '@/i18n'
 
 /**
  * /auth/google/callback: Google sends the browser back here with an ID token in the URL fragment.
@@ -50,16 +51,16 @@ export default function GoogleCallbackPage() {
   return (
     <div className="screens-auth-layout">
       <AuthShowcaseLayout
-        title="Signing in with Google"
-        subtitle={error ? 'Google sign-in did not finish.' : 'One moment while we sign you in...'}
+        title={t('Signing in with Google')}
+        subtitle={error ? t('Google sign-in did not finish.') : t('One moment while we sign you in...')}
         photo="/login-car.jpg"
       >
         {error && (
           <>
-            <AuthAlert tone="error">{error}</AuthAlert>
+            <AuthAlert tone="error">{tMaybe(error)}</AuthAlert>
             <p className="auth-shell__footer">
               <Link to="/login" className="auth-shell__link">
-                Back to sign in
+                {t('Back to sign in')}
               </Link>
             </p>
           </>

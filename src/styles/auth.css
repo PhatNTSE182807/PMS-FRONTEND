@@ -18,7 +18,7 @@
   --auth-error: #ffb4ab;
   --auth-success: #6fdba8;
   --auth-body-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --auth-headline-font: 'Plus Jakarta Sans', var(--auth-body-font);
+  --auth-headline-font: 'Be Vietnam Pro', var(--auth-body-font);
 
   display: flex;
   min-height: 100vh;
@@ -888,6 +888,18 @@ html[data-theme='light'] .auth-shell__dialog .auth-shell__input {
 @media (max-width: 1023px) {
   .auth-shell__theme {
     right: 1.25rem;
+    left: auto;
+  }
+}
+
+/* Language switch: right of the sun/moon button (left of it on phones, where both sit at the right) */
+.auth-shell__lang {
+  left: 3.4rem;
+}
+
+@media (max-width: 1023px) {
+  .auth-shell__lang {
+    right: 3.4rem;
     left: auto;
   }
 }

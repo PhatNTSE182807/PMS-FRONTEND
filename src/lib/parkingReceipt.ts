@@ -1,5 +1,6 @@
 import { formatNumber } from '@/lib/format'
 import type { ParkingReceiptDTO } from '@/types/parkingHistory.dto'
+import { localDateFormat } from '@/i18n'
 
 /** Escapes text placed into the receipt HTML. */
 const html = (value: string | number | null | undefined) =>
@@ -7,7 +8,7 @@ const html = (value: string | number | null | undefined) =>
 
 const stamp = (iso: string | null | undefined) =>
   iso
-    ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+    ? localDateFormat({ day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
     : '—'
 
 const vnd = (amount: number) => `${formatNumber(amount)} VND`

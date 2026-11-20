@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
+import { LanguageToggle } from '@/components/LanguageToggle'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { homePathFor, useAuth } from '@/hooks/useAuth'
+import { t, tMaybe } from '@/i18n'
 
 const LINKS = [
   { href: '#top', label: 'Home' },
@@ -36,10 +38,10 @@ export function HomeNav() {
           <span className="home-nav__brand-name">PARKING</span>
         </a>
 
-        <nav className="home-nav__links" aria-label="Homepage sections">
+        <nav className="home-nav__links" aria-label={t('Homepage sections')}>
           {LINKS.map((link, index) => (
             <a key={link.href} href={link.href} onClick={closeMenu} aria-current={index === 0 ? 'true' : undefined}>
-              {link.label}
+              {tMaybe(link.label)}
             </a>
           ))}
           {/* Phone menu only: the light/dark switch sits at the right of the Home row */}
@@ -47,25 +49,26 @@ export function HomeNav() {
         </nav>
 
         <div className="home-nav__actions">
+          <LanguageToggle className="home-lang-toggle" />
           <ThemeToggle className="home-theme-toggle" />
           {user ? (
             <Link to={homePathFor(user.role)} className="home-nav__signin">
-              Dashboard
+              {t('Dashboard')}
             </Link>
           ) : (
             <Link to="/login" className="home-nav__signin">
-              Sign in
+              {t('Sign in')}
             </Link>
           )}
           <Link to={bookTo} className="home-nav__signin">
-            Book a slot
+            {t('Book a slot')}
           </Link>
         </div>
 
         <button
           type="button"
           className="home-nav__toggle"
-          aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-label={isMenuOpen ? t('Close menu') : t('Open menu')}
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen((open) => !open)}
         >

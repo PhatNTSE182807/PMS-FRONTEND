@@ -9,21 +9,22 @@ import { Spinner } from '@/components/ui/states'
 import { useDutyMutation, useDutyRealtime, useDutyStatus } from '@/hooks/useDuty'
 import { clock, shiftLabel, slotHours, startsIn } from '@/lib/duty'
 import type { DutyShift, DutyStatus } from '@/types/duty.dto'
+import { t, tMaybe } from '@/i18n'
 
 function StartButton({ size = 'default' }: { size?: 'sm' | 'default' | 'lg' }) {
   const start = useDutyMutation('Shift started. The POS is open.')
   return (
     <Button variant="success" size={size} disabled={start.isPending} onClick={() => start.mutate(() => dutyApi.startShift())}>
-      {start.isPending ? <Spinner /> : <LogIn />}Start shift
+      {start.isPending ? <Spinner /> : <LogIn />}{t('Start shift')}
     </Button>
   )
 }
 
 function NextShift({ shift }: { shift: DutyShift | null }) {
-  if (!shift) return <p className="text-slate-700">No upcoming shifts.</p>
+  if (!shift) return <p className="text-slate-700">{t('No upcoming shifts.')}</p>
   return (
     <p className="text-slate-700">
-      Next shift: <strong className="text-slate-950">{shiftLabel(shift.date, shift.slot)}</strong>
+      {t('Next shift:')}{' '}<strong className="text-slate-950">{tMaybe(shiftLabel(shift.date, shift.slot))}</strong>
       <span className="text-slate-500"> · {startsIn(shift.startsAt)}</span>
     </p>
   )
@@ -43,8 +44,8 @@ export function ShiftBanner() {
       <div role="status" className="mx-auto mb-4 flex max-w-[1400px] flex-wrap items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
         <Clock className="size-5 text-emerald-700" />
         <p className="min-w-0 flex-1 text-sm font-semibold text-emerald-900">
-          Your shift {slotHours(s.current.slot)} {new Date(s.current.startsAt).getTime() <= Date.now() ? 'has started: you will be marked late' : `starts ${startsIn(s.current.startsAt)}`}.
-          {s.requireShiftForPos && ' Start it to use the POS.'}
+          {t('Your shift')}{' '}{slotHours(s.current.slot)} {new Date(s.current.startsAt).getTime() <= Date.now() ? 'has started: you will be marked late' : t('starts {v}', { v: startsIn(s.current.startsAt) })}.
+          {s.requireShiftForPos && t(' Start it to use the POS.')}
         </p>
         <StartButton size="sm" />
       </div>
@@ -54,9 +55,9 @@ export function ShiftBanner() {
       <div className="mx-auto mb-4 flex max-w-[1400px] flex-wrap items-center gap-3 rounded-xl bg-white px-4 py-2.5 ring-1 ring-slate-200">
         <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
         <p className="min-w-0 flex-1 text-sm text-slate-700">
-          On shift <strong className="text-slate-950">{slotHours(s.current.slot)}</strong> since {clock(s.current.checkInAt)}
-          {s.current.isLate && <span className="text-amber-700"> · late</span>}
-          <span className="text-slate-500"> · ends by itself at {clock(s.current.endsAt)}</span>
+          {t('On shift')}{' '}<strong className="text-slate-950">{slotHours(s.current.slot)}</strong>{' '}{t('since')}{' '}{clock(s.current.checkInAt)}
+          {s.current.isLate && <span className="text-amber-700">{' '}{t('· late')}</span>}
+          <span className="text-slate-500">{' '}{t('· ends by itself at')}{' '}{clock(s.current.endsAt)}</span>
         </p>
       </div>
     )
@@ -76,16 +77,16 @@ export function PosShiftGate({ children }: { children: ReactNode }) {
     <Card className="mx-auto max-w-xl space-y-4 p-6 text-center sm:p-8">
       <LockKeyhole className="mx-auto size-10 text-slate-400" />
       <div>
-        <h1 className="text-xl font-semibold text-slate-950">Available during your shift</h1>
-        <p className="mt-1 text-sm text-slate-600">Gate, checkout, exceptions, cash and verifications open once you start your shift.</p>
+        <h1 className="text-xl font-semibold text-slate-950">{t('Available during your shift')}</h1>
+        <p className="mt-1 text-sm text-slate-600">{t('Gate, checkout, exceptions, cash and verifications open once you start your shift.')}</p>
       </div>
       {s.canStart && s.current ? (
         <div className="space-y-3">
-          <p className="text-slate-700">Your shift <strong>{shiftLabel(s.current.date, s.current.slot)}</strong> is open.</p>
+          <p className="text-slate-700">{t('Your shift')}{' '}<strong>{tMaybe(shiftLabel(s.current.date, s.current.slot))}</strong>{' '}{t('is open.')}</p>
           <StartButton size="lg" />
         </div>
       ) : <NextShift shift={s.next} />}
-      <Button asChild variant="outline"><Link to="/staff/work-schedule"><CalendarDays />Duty board</Link></Button>
+      <Button asChild variant="outline"><Link to="/staff/work-schedule"><CalendarDays />{t('Duty board')}</Link></Button>
     </Card>
   )
 }
@@ -108,19 +109,19 @@ export function OffDutyPanel() {
     <div className="mx-auto max-w-2xl space-y-4">
       <Card className="space-y-4 p-6 sm:p-8">
         <div>
-          <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">{s?.employmentType === 'Backup' ? 'Backup Staff' : 'Gate staff'}</p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-950">You're off duty</h1>
+          <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">{s?.employmentType === 'Backup' ? t('Backup Staff') : t('Gate staff')}</p>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-950">{t('You\'re off duty')}</h1>
         </div>
         {s?.canStart && s.current ? (
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-slate-700">Your shift <strong>{shiftLabel(s.current.date, s.current.slot)}</strong> is open.</p>
+            <p className="text-slate-700">{t('Your shift')}{' '}<strong>{tMaybe(shiftLabel(s.current.date, s.current.slot))}</strong>{' '}{t('is open.')}</p>
             <StartButton />
           </div>
         ) : <NextShift shift={s?.next ?? null} />}
       </Card>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button asChild variant="outline" size="lg" className="justify-start"><Link to="/staff/work-schedule"><CalendarDays />Duty board & leave</Link></Button>
-        <Button asChild variant="outline" size="lg" className="justify-start"><Link to="/staff/payroll"><Wallet />My payslips</Link></Button>
+        <Button asChild variant="outline" size="lg" className="justify-start"><Link to="/staff/work-schedule"><CalendarDays />{t('Duty board & leave')}</Link></Button>
+        <Button asChild variant="outline" size="lg" className="justify-start"><Link to="/staff/payroll"><Wallet />{t('My payslips')}</Link></Button>
       </div>
     </div>
   )

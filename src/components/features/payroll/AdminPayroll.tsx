@@ -13,6 +13,7 @@ import { formatDate, formatVnd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { PayKind, PaySlip, PayStatus } from '@/types/payroll.dto'
 import { PayslipDetail, SlipStatus } from './PayslipDetail'
+import { t, tMaybe } from '@/i18n'
 
 function previousMonth(): string {
   const d = new Date()
@@ -46,11 +47,11 @@ function AdjustmentForm({ slip }: { slip: PaySlip }) {
       e.preventDefault()
       adjust.mutate({ employeeId: slip.employeeId, month: nextMonth, amount: Number(amount), reason }, { onSuccess: () => { setAmount(''); setReason('') } })
     }}>
-      <p className="text-sm font-semibold text-slate-800">Add an adjustment to {monthLabel(nextMonth)}</p>
+      <p className="text-sm font-semibold text-slate-800">{t('Add an adjustment to')}{' '}{tMaybe(monthLabel(nextMonth))}</p>
       <div className="grid gap-2 sm:grid-cols-[10rem_1fr_auto]">
-        <Input type="number" step={1000} placeholder="± amount" aria-label="Adjustment amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <Input maxLength={500} placeholder="Reason" aria-label="Adjustment reason" value={reason} onChange={(e) => setReason(e.target.value)} />
-        <Button type="submit" size="sm" className="h-9" disabled={adjust.isPending || !Number(amount) || !reason.trim()}>Add</Button>
+        <Input type="number" step={1000} placeholder={t('± amount')} aria-label={t('Adjustment amount')} value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <Input maxLength={500} placeholder={t('Reason')} aria-label={t('Adjustment reason')} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <Button type="submit" size="sm" className="h-9" disabled={adjust.isPending || !Number(amount) || !reason.trim()}>{t('Add')}</Button>
       </div>
     </form>
   )
@@ -74,69 +75,69 @@ export function AdminPayroll() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Payroll"
+      <PageHeader title={t('Payroll')}
         actions={<BadgeDollarSign className="size-9 text-indigo-700" />} />
 
       <Card className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-[10rem_1fr_10rem_10rem_auto] lg:items-end">
-        <Label className="grid gap-1">Month<Input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} /></Label>
-        <Label className="grid gap-1">Parking lot
+        <Label className="grid gap-1">{t('Month')}<Input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} /></Label>
+        <Label className="grid gap-1">{t('Parking lot')}
           <NativeSelect value={lotId} onChange={(e) => setLotId(e.target.value)}>
-            <option value="">All lots</option>
-            {(lots.data ?? []).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            <option value="">{t('All lots')}</option>
+            {(lots.data ?? []).map((l) => <option key={l.id} value={l.id}>{tMaybe(l.name)}</option>)}
           </NativeSelect>
         </Label>
-        <Label className="grid gap-1">Type
+        <Label className="grid gap-1">{t('Type')}
           <NativeSelect value={kind} onChange={(e) => setKind(e.target.value as PayKind | '')}>
-            <option value="">Everyone</option><option value="FullTime">Full-time Staff</option><option value="Backup">Backup Staff</option><option value="Manager">Managers</option>
+            <option value="">{t('Everyone')}</option><option value="FullTime">{t('Full-time Staff')}</option><option value="Backup">{t('Backup Staff')}</option><option value="Manager">{t('Managers')}</option>
           </NativeSelect>
         </Label>
-        <Label className="grid gap-1">Status
+        <Label className="grid gap-1">{t('Status')}
           <NativeSelect value={status} onChange={(e) => setStatus(e.target.value as PayStatus | '')}>
-            <option value="">Any</option><option value="Unpaid">Unpaid</option><option value="Paid">Paid</option>
+            <option value="">{t('Any')}</option><option value="Unpaid">{t('Unpaid')}</option><option value="Paid">{t('Paid')}</option>
           </NativeSelect>
         </Label>
-        <Label className="flex h-9 items-center gap-2"><Checkbox checked={includeSimulated} onChange={(e) => setIncludeSimulated(e.target.checked)} />Include simulated</Label>
+        <Label className="flex h-9 items-center gap-2"><Checkbox checked={includeSimulated} onChange={(e) => setIncludeSimulated(e.target.checked)} />{t('Include simulated')}</Label>
       </Card>
 
       {data && data.monthEnded && data.unpaidCount > 0 && (
         <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
           <p className="min-w-0 flex-1 text-sm font-semibold text-amber-900">
-            {monthLabel(data.month)} payroll is ready · {data.unpaidCount} people · {formatVnd(data.unpaidTotal)}
+            {tMaybe(monthLabel(data.month))}{' '}{t('payroll is ready · {unpaidCount} people · {unpaidTotal}', { unpaidCount: data.unpaidCount, unpaidTotal: formatVnd(data.unpaidTotal) })}
           </p>
-          <Button variant="success" disabled={payAll.isPending} onClick={() => payAll.mutate(`${month}-01`)}>{payAll.isPending && <Spinner />}Pay all</Button>
+          <Button variant="success" disabled={payAll.isPending} onClick={() => payAll.mutate(`${month}-01`)}>{payAll.isPending && <Spinner />}{t('Pay all')}</Button>
         </div>
       )}
       {data && !data.monthEnded && (
-        <p className="rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200">{monthLabel(data.month)} has not ended: amounts are estimates so far.</p>
+        <p className="rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200">{tMaybe(monthLabel(data.month))}{' '}{t('has not ended: amounts are estimates so far.')}</p>
       )}
 
       <Card className="overflow-hidden">
         {report.isPending ? <div className="p-6"><Spinner /></div> : report.isError ? (
-          <ErrorState message={getErrorMessage(report.error)} onRetry={() => report.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(report.error))} onRetry={() => report.refetch()} />
         ) : data!.slips.length === 0 ? (
-          <EmptyState icon={BadgeDollarSign} title="No payslips" description="Nobody matches these filters for this month." />
+          <EmptyState icon={BadgeDollarSign} title={t('No payslips')} description={t('Nobody matches these filters for this month.')} />
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
               <p className="text-sm text-slate-700">
-                Paid <strong>{formatVnd(data!.paidTotal)}</strong> · Unpaid <strong>{formatVnd(data!.unpaidTotal)}</strong>
-                {includeSimulated && <> · Simulated <strong>{formatVnd(data!.simulatedTotal)}</strong></>}
+                {t('Paid')}{' '}<strong>{formatVnd(data!.paidTotal)}</strong>{' '}{t('· Unpaid')}{' '}<strong>{formatVnd(data!.unpaidTotal)}</strong>
+                {includeSimulated && <>{' '}{t('· Simulated')}{' '}<strong>{formatVnd(data!.simulatedTotal)}</strong></>}
               </p>
-              <Button size="sm" variant="outline" onClick={() => downloadCsv(month, data!.slips)}><Download />Export CSV</Button>
+              <Button size="sm" variant="outline" onClick={() => downloadCsv(month, data!.slips)}><Download />{t('Export CSV')}</Button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-semibold text-slate-600 uppercase">
                   <tr>{['Name', 'Lot', 'Type', 'Base', 'Deductions', 'Extra', 'Adjust.', 'Net', 'Status', 'Paid on'].map((h) => (
-                    <th key={h} scope="col" className={cn('px-4 py-2', ['Base', 'Deductions', 'Extra', 'Adjust.', 'Net'].includes(h) && 'text-right')}>{h}</th>
+                    <th key={h} scope="col" className={cn('px-4 py-2', ['Base', 'Deductions', 'Extra', 'Adjust.', 'Net'].includes(h) && 'text-right')}>{tMaybe(h)}</th>
                   ))}</tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {data!.slips.map((s) => (
                     <tr key={`${s.isSimulated ? 's' : 'r'}${s.id || s.employeeId}`} className="cursor-pointer hover:bg-slate-50" onClick={() => setOpen(s)}>
-                      <td className="px-4 py-2.5 font-semibold whitespace-nowrap text-slate-900">{s.employeeName}<span className="block text-xs font-normal text-slate-500">{s.employeeCode}</span></td>
-                      <td className="px-4 py-2.5 text-slate-700">{s.lotName ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{EMPLOYMENT_LABEL[s.kind]}</td>
+                      <td className="px-4 py-2.5 font-semibold whitespace-nowrap text-slate-900">{tMaybe(s.employeeName)}<span className="block text-xs font-normal text-slate-500">{tMaybe(s.employeeCode)}</span></td>
+                      <td className="px-4 py-2.5 text-slate-700">{tMaybe(s.lotName) ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-slate-700">{tMaybe(EMPLOYMENT_LABEL[s.kind])}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{formatVnd(s.baseAmount)}</td>
                       <td className="px-4 py-2.5 text-right text-rose-700 tabular-nums">{s.deductions ? `−${formatVnd(s.deductions)}` : '—'}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{s.overtime ? formatVnd(s.overtime) : '—'}</td>

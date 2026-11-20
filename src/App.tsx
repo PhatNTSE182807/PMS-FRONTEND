@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import { ApiError } from '@/api/apiError'
+import { LanguageRoot } from '@/i18n/LanguageRoot'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { router } from '@/router'
 
@@ -22,7 +23,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <LanguageRoot>
+          <RouterProvider router={router} />
+        </LanguageRoot>
       </AuthProvider>
     </QueryClientProvider>
   )

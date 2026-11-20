@@ -7,6 +7,7 @@ import { getErrorMessage } from '../api/apiError';
 import { useRegister } from '../hooks/useAuth';
 import { GOOGLE_CLIENT_ID } from '../lib/google-identity';
 import { isValidPassword, PASSWORD_RULE_MESSAGE } from '../lib/password';
+import { t, tMaybe } from '@/i18n'
 
 // 0 = empty, 1 = weak ... 4 = strong; one point per rule met
 function passwordScore(pwd) {
@@ -107,32 +108,32 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
   return (
     <AuthShowcaseLayout
       wide
-      title="Create your account"
-      subtitle="Register to manage vehicle passes and parking sessions in real time."
+      title={t('Create your account')}
+      subtitle={t('Register to manage vehicle passes and parking sessions in real time.')}
       photo="/register-car.jpg"
     >
-      {errorMsg && <AuthAlert tone="error">{errorMsg}</AuthAlert>}
-      {successMsg && <AuthAlert tone="success">{successMsg}</AuthAlert>}
+      {errorMsg && <AuthAlert tone="error">{tMaybe(errorMsg)}</AuthAlert>}
+      {successMsg && <AuthAlert tone="success">{tMaybe(successMsg)}</AuthAlert>}
 
       {/* One click instead of the form: the first Google sign-in creates the account */}
-      <GoogleSignInButton text="signup_with" />
-      {GOOGLE_CLIENT_ID && <div className="auth-shell__divider">Or</div>}
+      <GoogleSignInButton text={t('signup_with')} />
+      {GOOGLE_CLIENT_ID && <div className="auth-shell__divider">{t('Or')}</div>}
 
       <form className="auth-shell__form" onSubmit={handleRegister} noValidate>
         <div className="auth-shell__row">
           <AuthField
             id="reg-fullname"
-            label="Full name"
+            label={t('Full name')}
             icon={User}
             type="text"
-            placeholder="Alexander Vance"
+            placeholder={t('Alexander Vance')}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
           />
           <AuthField
             id="reg-phone"
-            label="Phone number"
+            label={t('Phone number')}
             icon={Phone}
             type="tel"
             placeholder="0988 123 456"
@@ -144,10 +145,10 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
 
         <AuthField
           id="reg-email"
-          label="Email address"
+          label={t('Email address')}
           icon={Mail}
           type="email"
-          placeholder="name@domain.com"
+          placeholder={t('name@domain.com')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
@@ -155,12 +156,12 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
 
         <AuthField
           id="reg-citizen-id"
-          label="Citizen ID"
+          label={t('Citizen ID')}
           icon={IdCard}
           type="text"
           inputMode="numeric"
           maxLength={12}
-          placeholder="12-digit Citizen ID (CCCD)"
+          placeholder={t('12-digit Citizen ID (CCCD)')}
           value={citizenId}
           onChange={(e) => setCitizenId(e.target.value.replace(/\D/g, ''))}
           autoComplete="off"
@@ -170,7 +171,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
           <div className="auth-shell__field">
             <AuthField
               id="reg-password"
-              label="Password"
+              label={t('Password')}
               icon={Lock}
               placeholder="••••••••••••"
               value={password}
@@ -185,7 +186,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
           </div>
           <AuthField
             id="reg-confirm-password"
-            label="Confirm password"
+            label={t('Confirm password')}
             icon={RotateCcwKey}
             placeholder="••••••••••••"
             value={confirmPassword}
@@ -197,27 +198,26 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
         </div>
 
         <AuthCheckbox checked={agreeTerms} onChange={setAgreeTerms}>
-          I agree to the{' '}
+          {t('I agree to the')}
           <button type="button" className="auth-shell__link auth-shell__link--muted" onClick={openTerms}>
-            Terms of Service
-          </button>{' '}
-          and{' '}
+            {t('Terms of Service')}
+          </button>{t('and')}
           <button type="button" className="auth-shell__link auth-shell__link--muted" onClick={openTerms}>
-            Privacy Policy
+            {t('Privacy Policy')}
           </button>
           .
         </AuthCheckbox>
 
         <button type="submit" className="auth-shell__submit" disabled={isLoading}>
-          {isLoading ? 'Creating account...' : 'Create Account'}
+          {isLoading ? t('Creating account...') : t('Create Account')}
           {!isLoading && <ArrowRight size={20} aria-hidden="true" />}
         </button>
       </form>
 
       <p className="auth-shell__footer">
-        Already have an account?
+        {t('Already have an account?')}
         <button type="button" className="auth-shell__link auth-shell__link--underline" onClick={onNavigateToLogin}>
-          Sign in
+          {t('Sign in')}
         </button>
       </p>
 
@@ -226,21 +226,21 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
         <div className="auth-shell__backdrop" onClick={() => setIsTermsOpen(false)}>
           <div className="auth-shell__dialog" role="dialog" aria-modal="true" aria-labelledby="terms-title" onClick={(e) => e.stopPropagation()}>
             <div className="auth-shell__dialog-header">
-              <h2 id="terms-title" className="auth-shell__dialog-title">Terms of Service &amp; Privacy Policy</h2>
-              <button type="button" className="auth-shell__toggle" onClick={() => setIsTermsOpen(false)} aria-label="Close">
+              <h2 id="terms-title" className="auth-shell__dialog-title">{t('Terms of Service & Privacy Policy')}</h2>
+              <button type="button" className="auth-shell__toggle" onClick={() => setIsTermsOpen(false)} aria-label={t('Close')}>
                 <X size={18} />
               </button>
             </div>
             <div className="auth-shell__dialog-body">
-              <p>Welcome to <strong>XXIV Parking</strong>.</p>
+              <p>{t('Welcome to')}{' '}<strong>XXIV Parking</strong>.</p>
               <p>
-                1. <strong>Parking Access:</strong> Real-time reservation guarantees a reserved parking slot for your vehicle for up to 30 minutes after scheduled arrival.
+                1. <strong>{t('Parking Access:')}</strong>{' '}{t('Real-time reservation guarantees a reserved parking slot for your vehicle for up to 30 minutes after scheduled arrival.')}
               </p>
               <p>
-                2. <strong>Automated Billing:</strong> Rates are calculated dynamically per parking zone and level. QR check-in &amp; check-out logs timestamps automatically.
+                2. <strong>{t('Automated Billing:')}</strong>{' '}{t('Rates are calculated dynamically per parking zone and level. QR check-in & check-out logs timestamps automatically.')}
               </p>
               <p>
-                3. <strong>Data Privacy:</strong> Your license plate and payment credentials are encrypted using industry-standard TLS encryption.
+                3. <strong>{t('Data Privacy:')}</strong>{' '}{t('Your license plate and payment credentials are encrypted using industry-standard TLS encryption.')}
               </p>
             </div>
             <div className="auth-shell__dialog-footer">
@@ -252,7 +252,7 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
                   setIsTermsOpen(false);
                 }}
               >
-                I understand &amp; agree
+                {t('I understand & agree')}
               </button>
             </div>
           </div>

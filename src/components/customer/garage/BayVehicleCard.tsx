@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { t, tMaybe } from '@/i18n'
 
 export interface BayVehicleRow {
   label: string
@@ -29,30 +30,30 @@ export function BayVehicleCard({
 }) {
   const badgeColor = { member: 'var(--map-badge-member)', guest: 'var(--map-badge-guest)', mine: 'var(--map-badge-mine)' }[badge?.tone ?? 'member']
   return (
-    <div role="dialog" aria-label={`${title}, bay ${bayCode}`} style={styles.card}>
+    <div role="dialog" aria-label={t('{title}, bay {bayCode}', { title, bayCode })} style={styles.card}>
       <div style={styles.head}>
         <div style={{ minWidth: 0 }}>
-          <span style={styles.eyebrow}>{title}</span>
-          <span style={styles.code}>Bay {bayCode}</span>
+          <span style={styles.eyebrow}>{tMaybe(title)}</span>
+          <span style={styles.code}>{t('Bay {bayCode}', { bayCode })}</span>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close vehicle details" style={styles.close}>
+        <button type="button" onClick={onClose} aria-label={t('Close vehicle details')} style={styles.close}>
           <X size={15} aria-hidden />
         </button>
       </div>
       {badge && (
         <span style={{ ...styles.badge, color: badgeColor, borderColor: badgeColor }}>
-          {badge.text}
+          {tMaybe(badge.text)}
         </span>
       )}
       <dl style={styles.list}>
         {rows.map((row) => (
           <div key={row.label} style={styles.row}>
-            <dt style={styles.label}>{row.label}</dt>
-            <dd style={{ ...styles.value, ...(row.emphasis ? styles.emphasis : null) }}>{row.value}</dd>
+            <dt style={styles.label}>{tMaybe(row.label)}</dt>
+            <dd style={{ ...styles.value, ...(row.emphasis ? styles.emphasis : null) }}>{tMaybe(row.value)}</dd>
           </div>
         ))}
       </dl>
-      {footer && <div style={styles.footer}>{footer}</div>}
+      {footer && <div style={styles.footer}>{tMaybe(footer)}</div>}
     </div>
   )
 }
@@ -60,18 +61,18 @@ export function BayVehicleCard({
 /** Message variant of the card: loading, empty bay, error. */
 export function BayVehicleNotice({ bayCode, title, message, onClose }: { bayCode: string; title: string; message: string; onClose: () => void }) {
   return (
-    <div role="dialog" aria-label={`${title}, bay ${bayCode}`} style={styles.card}>
+    <div role="dialog" aria-label={t('{title}, bay {bayCode}', { title, bayCode })} style={styles.card}>
       <div style={styles.head}>
         <div>
-          <span style={styles.eyebrow}>{title}</span>
-          <span style={styles.code}>Bay {bayCode}</span>
+          <span style={styles.eyebrow}>{tMaybe(title)}</span>
+          <span style={styles.code}>{t('Bay {bayCode}', { bayCode })}</span>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close vehicle details" style={styles.close}>
+        <button type="button" onClick={onClose} aria-label={t('Close vehicle details')} style={styles.close}>
           <X size={15} aria-hidden />
         </button>
       </div>
       <p style={styles.notice} role="status">
-        {message}
+        {tMaybe(message)}
       </p>
     </div>
   )
@@ -97,7 +98,7 @@ const styles = {
   },
   head: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' },
   eyebrow: { display: 'block', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--map-muted)' },
-  code: { display: 'block', marginTop: '0.1rem', fontSize: '1.05rem', fontWeight: 700, color: 'var(--map-accent)', fontFamily: '"Plus Jakarta Sans", Inter, sans-serif' },
+  code: { display: 'block', marginTop: '0.1rem', fontSize: '1.05rem', fontWeight: 700, color: 'var(--map-accent)', fontFamily: '"Be Vietnam Pro", Inter, sans-serif' },
   close: {
     display: 'inline-grid',
     placeItems: 'center',

@@ -13,6 +13,7 @@ import { USER_TOAST, toastBookingError } from '@/lib/userToasts'
 import type { PaymentProvider, ReservationDTO } from '@/types/operations.dto'
 import { holdDuration } from '../customerFormat'
 import { VnpayButton } from '@/components/payment/VnpayButton'
+import { t, tMaybe, localDateFormat } from '@/i18n'
 
 /** Deposit choices: the hold after arrival is longer when a deposit is paid. */
 const DEPOSIT_OPTIONS = [
@@ -20,7 +21,7 @@ const DEPOSIT_OPTIONS = [
   { value: false, icon: Zap, title: 'No deposit', text: 'Confirmed at once • bay held only 15 min after arrival' },
 ] as const
 
-const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const clock = localDateFormat({ hour: '2-digit', minute: '2-digit' })
 
 interface ReserveBayPanelProps {
   lotKey: string
@@ -98,13 +99,13 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayP
     return (
       <div className="cx-reserve" aria-live="polite">
         <p className="cx-reserve__title">
-          <CircleCheck aria-hidden /> Bay <strong>{heldHere.slotCode}</strong> confirmed • #{heldHere.code}
+          <CircleCheck aria-hidden />{' '}{t('Bay')}{' '}<strong>{tMaybe(heldHere.slotCode)}</strong>{' '}{t('confirmed • #{code}', { code: heldHere.code })}
         </p>
         <p className="cx-reserve__meta">{describeWindow(heldHere.arrivalTime, heldHere.departureTime, now)}</p>
         <p className="cx-reserve__meta">
-          <Timer aria-hidden /> No deposit: the bay is held until <strong>{clock.format(Date.parse(heldHere.checkInUntil))}</strong> ({holdDuration(heldHere)} after arrival)
+          <Timer aria-hidden />{' '}{t('No deposit: the bay is held until')}{' '}<strong>{clock.format(Date.parse(heldHere.checkInUntil))}</strong> ({holdDuration(heldHere)}{' '}{t('after arrival)')}
         </p>
-        <Link to="/me/bookings" className="cx-link">Open My Bookings</Link>
+        <Link to="/me/bookings" className="cx-link">{t('Open My Bookings')}</Link>
       </div>
     )
   }
@@ -115,24 +116,24 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayP
     return (
       <div className="cx-reserve" aria-live="polite">
         <p className="cx-reserve__title">
-          <CircleCheck aria-hidden /> Bay <strong>{heldHere.slotCode}</strong> booked • #{heldHere.code}
+          <CircleCheck aria-hidden />{' '}{t('Bay')}{' '}<strong>{tMaybe(heldHere.slotCode)}</strong>{' '}{t('booked • #{code}', { code: heldHere.code })}
         </p>
         <p className="cx-reserve__meta">{describeWindow(heldHere.arrivalTime, heldHere.departureTime, now)}</p>
         <p className="cx-reserve__meta">
-          <ShieldCheck aria-hidden /> With the deposit the bay is held {holdDuration(heldHere)} after arrival
+          <ShieldCheck aria-hidden />{' '}{t('With the deposit the bay is held')}{' '}{holdDuration(heldHere)}{' '}{t('after arrival')}
         </p>
         <p className="cx-reserve__meta">
-          <Timer aria-hidden /> Pay the <strong>{formatNumber(heldHere.depositAmount)} VND</strong> deposit within{' '}
+          <Timer aria-hidden />{' '}{t('Pay the')}{' '}<strong>{t('{depositAmount} VND', { depositAmount: formatNumber(heldHere.depositAmount) })}</strong>{' '}{t('deposit within')}
           <span className="cx-mono">{Math.floor(left / 60_000)}:{String(Math.floor((left % 60_000) / 1000)).padStart(2, '0')}</span>
-          {left === 0 && ' (expired)'}
+          {left === 0 && t(' (expired)')}
         </p>
         <div className="cx-reserve__pay">
           <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
-            <CreditCard aria-hidden /> Pay with XXIV Wallet
+            <CreditCard aria-hidden />{' '}{t('Pay with XXIV Wallet')}
           </button>
           <VnpayButton className="cx-btn" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')} />
           <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
-            <Wallet aria-hidden /> MoMo
+            <Wallet aria-hidden />{' '}{t('MoMo')}
           </button>
           {canSimulate && (
             <button
@@ -141,11 +142,11 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayP
               disabled={simulate.isPending || left === 0}
               onClick={() => simulate.mutate(heldHere.id, { onSuccess: setHeld })}
             >
-              <FlaskConical aria-hidden /> {simulate.isPending ? 'Simulating…' : 'Simulate successful payment'}
+              <FlaskConical aria-hidden /> {simulate.isPending ? t('Simulating…') : t('Simulate successful payment')}
             </button>
           )}
         </div>
-        <Link to="/me/bookings" className="cx-link">Open My Bookings</Link>
+        <Link to="/me/bookings" className="cx-link">{t('Open My Bookings')}</Link>
       </div>
     )
   }
@@ -154,9 +155,9 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayP
     return (
       <div className="cx-reserve">
         <p className="cx-note" role="status">
-          You already have {allowance.activeCount} active bookings, the most an account can hold. Use or cancel one to book this bay.
+          {t('You already have {activeCount} active bookings, the most an account can hold. Use or cancel one to book this bay.', { activeCount: allowance.activeCount })}
         </p>
-        <Link to="/me/sessions" className="cx-btn cx-btn--teal cx-btn--block">Open Active Sessions</Link>
+        <Link to="/me/sessions" className="cx-btn cx-btn--teal cx-btn--block">{t('Open Active Sessions')}</Link>
       </div>
     )
   }
@@ -164,31 +165,31 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayP
   return (
     <div className="cx-reserve">
       <p className="cx-field__hint">
-        Active bookings: {allowance.activeCount} of {allowance.limit}
-        {bookedCars > 0 && ` • ${bookedCars} ${bookedCars === 1 ? 'car already has' : 'cars already have'} a booking and ${bookedCars === 1 ? 'is' : 'are'} not listed`}
+        {t('Active bookings: {activeCount} of {limit}', { activeCount: allowance.activeCount, limit: allowance.limit })}
+        {bookedCars > 0 && t(' • {bookedCars} {v} a booking and {v2} not listed', { bookedCars, v: bookedCars === 1 ? 'car already has' : 'cars already have', v2: bookedCars === 1 ? 'is' : 'are' })}
       </p>
       <label className="cx-field">
-        <span className="cx-field__label">Vehicle</span>
+        <span className="cx-field__label">{t('Vehicle')}</span>
         <select className="cx-input" value={chosenVehicle} onChange={(e) => setVehicleId(e.target.value)} disabled={cars.length === 0}>
-          {cars.length === 0 && <option value="">{bookedCars > 0 ? 'Every approved car already has a booking' : allCars.length ? 'No approved car yet' : 'No car in your profile yet'}</option>}
+          {cars.length === 0 && <option value="">{bookedCars > 0 ? t('Every approved car already has a booking') : allCars.length ? t('No approved car yet') : t('No car in your profile yet')}</option>}
           {cars.map((v) => (
             <option key={v.vehicleId} value={v.vehicleId}>
-              {v.licensePlate} • {v.brand} {v.model}
+              {v.licensePlate} • {tMaybe(v.brand)} {tMaybe(v.model)}
             </option>
           ))}
         </select>
         {waitingCars > 0 && (
           <span className="cx-field__hint">
-            {waitingCars} {waitingCars === 1 ? 'car is' : 'cars are'} not listed: waiting for Staff to approve the papers.
+            {tMaybe(waitingCars)} {waitingCars === 1 ? 'car is' : 'cars are'}{' '}{t('not listed: waiting for Staff to approve the papers.')}
           </span>
         )}
       </label>
       {/* The time is picked above the map, so the bays are drawn for it; here it is only shown back */}
       <p className="cx-reserve__meta">
         <CalendarClock aria-hidden />{' '}
-        {checkedNow.ok ? describeWindow(checkedNow.arrivalTime, checkedNow.departureTime, now) : checkedNow.error} • check-in opens 15 min before arrival and closes {payDeposit ? 30 : 15} min after
+        {checkedNow.ok ? describeWindow(checkedNow.arrivalTime, checkedNow.departureTime, now) : tMaybe(checkedNow.error)}{' '}{t('• check-in opens 15 min before arrival and closes')}{' '}{payDeposit ? 30 : 15}{' '}{t('min after')}
       </p>
-      <div className="cx-mode" role="radiogroup" aria-label="Deposit">
+      <div className="cx-mode" role="radiogroup" aria-label={t('Deposit')}>
         {DEPOSIT_OPTIONS.map((option) => {
           const Icon = option.icon
           const active = payDeposit === option.value
@@ -204,8 +205,8 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayP
             >
               <Icon aria-hidden />
               <span>
-                <strong>{option.title}</strong>
-                <small>{option.text}</small>
+                <strong>{tMaybe(option.title)}</strong>
+                <small>{tMaybe(option.text)}</small>
               </span>
             </button>
           )
@@ -213,10 +214,10 @@ export function ReserveBayPanel({ lotKey, slotId, slotCode, times }: ReserveBayP
       </div>
       <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled={!chosenVehicle || create.isPending} onClick={reserve}>
         <CircleCheck aria-hidden />{' '}
-        {create.isPending ? 'Booking the bay…' : payDeposit ? `Reserve bay ${slotCode} • 30,000 VND deposit` : `Reserve bay ${slotCode} • no deposit`}
+        {create.isPending ? t('Booking the bay…') : payDeposit ? t('Reserve bay {slotCode} • 30,000 VND deposit', { slotCode }) : t('Reserve bay {slotCode} • no deposit', { slotCode })}
       </button>
       {cars.length === 0 && (
-        <Link to="/me/vehicles" className="cx-link">{allCars.length ? 'Check your vehicle papers' : 'Register a car to book'}</Link>
+        <Link to="/me/vehicles" className="cx-link">{allCars.length ? t('Check your vehicle papers') : t('Register a car to book')}</Link>
       )}
     </div>
   )

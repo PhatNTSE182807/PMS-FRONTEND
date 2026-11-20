@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 /** What the user reads for any server failure (HTTP 5xx), word for word from the popup notification spec. */
 export const SYSTEM_ERROR_MESSAGE = 'System error. Please contact technical support or check server logs.'
 
@@ -26,12 +28,12 @@ export class ApiError extends Error {
 
   /** All messages joined, e.g. for a form-level alert. */
   get description(): string {
-    return this.errors.join('; ')
+    return this.errors.map((e) => t(e)).join('; ')
   }
 }
 
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong.'): string {
   if (error instanceof ApiError) return error.description
-  if (error instanceof Error && error.message) return error.message
-  return fallback
+  if (error instanceof Error && error.message) return t(error.message)
+  return t(fallback)
 }

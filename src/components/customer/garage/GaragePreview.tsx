@@ -3,6 +3,7 @@ import { Bike, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { buildTemplateGarage, type Bay, type GarageFloor, type GarageTemplate, type ZoneStats } from './garageModel'
 import { GarageView } from './GarageView'
+import { t, tMaybe } from '@/i18n'
 
 const STATUS_TEXT: Record<Bay['status'], string> = {
   AVAILABLE: 'available',
@@ -60,17 +61,17 @@ export function GarageFloorsView({
 
   return (
     <div className="space-y-2">
-      <div role="tablist" aria-label="Level" className="flex flex-wrap items-center gap-1">
+      <div role="tablist" aria-label={t('Level')} className="flex flex-wrap items-center gap-1">
         <button type="button" role="tab" aria-selected={focus === null} className={tab(focus === null)} onClick={() => setFocus(null)}>
-          All levels
+          {t('All levels')}
         </button>
         {floors.map((f) => (
           <button key={f.level} type="button" role="tab" aria-selected={focus === f.index} className={tab(focus === f.index)} onClick={() => setFocus(f.index)}>
-            {f.level} {f.kind === 'car' ? <Car className="size-3.5" aria-hidden /> : <Bike className="size-3.5" aria-hidden />}
+            {tMaybe(f.level)} {f.kind === 'car' ? <Car className="size-3.5" aria-hidden /> : <Bike className="size-3.5" aria-hidden />}
           </button>
         ))}
         <span className="ml-auto text-xs text-slate-500" aria-live="polite">
-          {selected ? `Bay ${selected.code} · ${STATUS_TEXT[selected.status]}` : renderBayPopup ? 'Point at a bay to see its code, click a parked vehicle for details' : 'Click a bay to see its status'}
+          {selected ? t('Bay {code} · {v}', { code: selected.code, v: STATUS_TEXT[selected.status] }) : renderBayPopup ? t('Point at a bay to see its code, click a parked vehicle for details') : t('Click a bay to see its status')}
         </span>
       </div>
       <div className="relative">

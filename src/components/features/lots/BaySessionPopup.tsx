@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useBaySession } from '@/hooks/useGate'
 import { formatDate, formatTime } from '@/lib/format'
+import { t, tMaybe } from '@/i18n'
 
 const TITLE = 'Vehicle in bay'
 
@@ -35,19 +36,19 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
     return (
       <BayVehicleNotice
         bayCode={bay.code}
-        title={TITLE}
-        message="The zone counter counts one more vehicle here than the lot has open sessions for, so there are no details to show. An inventory check corrects the counter."
+        title={tMaybe(TITLE)}
+        message={t('The zone counter counts one more vehicle here than the lot has open sessions for, so there are no details to show. An inventory check corrects the counter.')}
         onClose={onClose}
       />
     )
-  if (query.isPending) return <BayVehicleNotice bayCode={bay.code} title={TITLE} message="Loading the vehicle…" onClose={onClose} />
+  if (query.isPending) return <BayVehicleNotice bayCode={bay.code} title={tMaybe(TITLE)} message={t('Loading the vehicle…')} onClose={onClose} />
   if (query.isError)
     return (
       <BayVehicleNotice
         bayCode={bay.code}
-        title={TITLE}
+        title={tMaybe(TITLE)}
         // The API says why: an empty bay ("No vehicle is parked in this bay."), no access to the lot, or a failure
-        message={getErrorMessage(query.error, 'Could not load the vehicle in this bay.')}
+        message={tMaybe(getErrorMessage(query.error, 'Could not load the vehicle in this bay.'))}
         onClose={onClose}
       />
     )
@@ -67,28 +68,26 @@ export function BaySessionPopup({ lotId, bay, onClose }: { lotId: string; bay: B
   return (
     <BayVehicleCard
       bayCode={bay.code}
-      title={TITLE}
+      title={tMaybe(TITLE)}
       badge={{ text: member ? `Member${data.customerName ? ` · ${data.customerName}` : ''}` : 'Guest (walk-in)', tone: member ? 'member' : 'guest' }}
       rows={[
-        { label: 'Plate', value: session.hasPlate ? session.plateNumber : 'No plate' },
-        { label: 'Vehicle', value: session.vehicleTypeName ?? '—' },
-        { label: 'Status', value: STATUS_TEXT[session.status] ?? session.status },
-        { label: 'Entered', value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
-        { label: 'Parked for', value: formatStay(stay ?? data.elapsedMinutes) },
-        { label: 'Fee so far', value: data.feeSoFar == null ? 'Not priced yet' : vndOrDash(data.feeSoFar), emphasis: data.feeSoFar != null },
-        ...(data.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(data.depositApplied)}` }] : []),
-        ...(data.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(data.alreadyPaid)}` }] : []),
-        ...(data.amountDue != null ? [{ label: 'Due now', value: vndOrDash(data.amountDue) }] : []),
+        { label: t('Plate'), value: session.hasPlate ? session.plateNumber : 'No plate' },
+        { label: t('Vehicle'), value: session.vehicleTypeName ?? '—' },
+        { label: t('Status'), value: STATUS_TEXT[session.status] ?? session.status },
+        { label: t('Entered'), value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
+        { label: t('Parked for'), value: formatStay(stay ?? data.elapsedMinutes) },
+        { label: t('Fee so far'), value: data.feeSoFar == null ? 'Not priced yet' : vndOrDash(data.feeSoFar), emphasis: data.feeSoFar != null },
+        ...(data.depositApplied > 0 ? [{ label: t('Deposit'), value: `− ${vndOrDash(data.depositApplied)}` }] : []),
+        ...(data.alreadyPaid > 0 ? [{ label: t('Already paid'), value: `− ${vndOrDash(data.alreadyPaid)}` }] : []),
+        ...(data.amountDue != null ? [{ label: t('Due now'), value: vndOrDash(data.amountDue) }] : []),
       ]}
       footer={
         <>
-          {`Session ${session.code}${session.reservationCode ? ` · booking ${session.reservationCode}` : ''}.${
-            walkInSession != null ? ' A walk-in without a bay of its own: the model draws it in a free bay of its zone.' : ''
-          } The fee refreshes every 30 seconds.`}
+          {t('Session {code}{v}.{v2} The fee refreshes every 30 seconds.', { code: session.code, v: session.reservationCode ? ` · booking ${session.reservationCode}` : '', v2: walkInSession != null ? ' A walk-in without a bay of its own: the model draws it in a free bay of its zone.' : '' })}
           {canForceCheckOut && (
             <div style={styles.actions}>
               <button type="button" style={styles.primary} onClick={openPos}>
-                Force check-out
+                {t('Force check-out')}
               </button>
             </div>
           )}

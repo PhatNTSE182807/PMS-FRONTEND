@@ -7,6 +7,7 @@ import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 import { simulationService, walkInSimulationService } from '@/api/simulation.service'
 import { toastAdminError } from '@/lib/adminToasts'
 import type { UpdateParkingSimulationCommand } from '@/types/simulation.dto'
+import { t } from '@/i18n'
 
 /** The Admin's parking simulation and the normal values it replaces. */
 export function useParkingSimulation() {
@@ -75,22 +76,22 @@ function useWalkInMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>
 export function useDeployWalkIns() {
   return useWalkInMutation(walkInSimulationService.deploy, (r) =>
     r.stoppedReason
-      ? toast.warning(`${r.entered} of ${r.requested} vehicles entered. Stopped: ${r.stoppedReason}`)
-      : toast.success(`${r.entered} walk-in vehicles entered.`),
+      ? toast.warning(t('{entered} of {requested} vehicles entered. Stopped: {stoppedReason}', { entered: r.entered, requested: r.requested, stoppedReason: r.stoppedReason }))
+      : toast.success(t('{entered} walk-in vehicles entered.', { entered: r.entered })),
   )
 }
 
 export function useCheckOutAllWalkIns() {
   return useWalkInMutation(walkInSimulationService.checkOutAll, (r) =>
-    toast.success(`${r.checkedOut} vehicles paid and left${r.skipped ? `; ${r.skipped} could not leave yet` : ''}.`),
+    toast.success(t('{checkedOut} vehicles paid and left{v}.', { checkedOut: r.checkedOut, v: r.skipped ? `; ${r.skipped} could not leave yet` : '' })),
   )
 }
 
 /** One walk-in for a free bay picked on the 3D model: it queues at the entry lane for the Staff to check in. */
 export function useDeployWalkInToBay() {
   return useWalkInMutation(walkInSimulationService.deployToBay, (r) =>
-    toast.success(`${r.plateNumber ?? 'A walk-in'} is waiting at the entry lane for bay ${r.slotCode ?? ''}.`, {
-      description: 'Check it in on the Staff gate screen (Check-in lane). Several walk-ins queue one after another.',
+    toast.success(t('{v} is waiting at the entry lane for bay {v2}.', { v: r.plateNumber ?? 'A walk-in', v2: r.slotCode ?? '' }), {
+      description: t('Check it in on the Staff gate screen (Check-in lane). Several walk-ins queue one after another.'),
     }),
   )
 }

@@ -7,6 +7,7 @@ import { formatNumber, formatPercent, formatVnd, formatVndCompact } from '@/lib/
 import { percentChange } from '@/lib/revenuePeriods'
 import { cn } from '@/lib/utils'
 import type { AdminRevenueReportDTO } from '@/types/report.dto'
+import { t, tMaybe } from '@/i18n'
 
 /**
  * Signed change versus the previous period; arrow + text, so it never relies on colour alone.
@@ -14,7 +15,7 @@ import type { AdminRevenueReportDTO } from '@/types/report.dto'
  */
 function Delta({ value }: { value: number | null | undefined }) {
   if (value === undefined) return <Skeleton className="mt-2 h-5 w-36" />
-  if (value === null) return <p className="mt-2 text-xs text-slate-500">No figures for the previous period to compare</p>
+  if (value === null) return <p className="mt-2 text-xs text-slate-500">{t('No figures for the previous period to compare')}</p>
 
   const up = value >= 0
   const Icon = up ? ArrowUpRight : ArrowDownRight
@@ -29,7 +30,7 @@ function Delta({ value }: { value: number | null | undefined }) {
         <Icon className="size-3.5" aria-hidden />
         {formatPercent(value)}
       </span>
-      vs previous period
+      {t('vs previous period')}
     </p>
   )
 }
@@ -38,8 +39,8 @@ function KpiCard({ label, icon, children }: { label: string; icon: ReactNode; ch
   return (
     <Card className="p-5">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-slate-500">{label}</p>
-        <div className="rounded-lg bg-slate-100 p-2 text-slate-500 [&_svg]:size-4">{icon}</div>
+        <p className="text-sm font-medium text-slate-500">{tMaybe(label)}</p>
+        <div className="rounded-lg bg-slate-100 p-2 text-slate-500 [&_svg]:size-4">{tMaybe(icon)}</div>
       </div>
       {children}
     </Card>
@@ -65,7 +66,7 @@ function ShareBar({ part, total, label, caption }: { part: number; total: number
         <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: SERIES_COLORS.blue }} />
       </div>
       <p className="mt-2 truncate text-xs text-slate-500">
-        <span className="font-semibold text-slate-900 tabular-nums">{formatVnd(part)}</span> · {caption}
+        <span className="font-semibold text-slate-900 tabular-nums">{formatVnd(part)}</span> · {tMaybe(caption)}
       </p>
     </>
   )
@@ -78,21 +79,21 @@ function TopLotCard({ report }: { report: AdminRevenueReportDTO }) {
     undefined,
   )
   return (
-    <KpiCard label="Top parking lot" icon={<Trophy />}>
+    <KpiCard label={t('Top parking lot')} icon={<Trophy />}>
       {top && top.totalRevenue > 0 ? (
         <>
-          <p className="mt-3 truncate text-lg font-semibold tracking-tight text-slate-900" title={top.parkingLotName}>
-            {top.parkingLotName}
+          <p className="mt-3 truncate text-lg font-semibold tracking-tight text-slate-900" title={tMaybe(top.parkingLotName)}>
+            {tMaybe(top.parkingLotName)}
           </p>
           <ShareBar
             part={top.totalRevenue}
             total={report.systemTotalRevenue}
-            label="Share of revenue"
-            caption={`${((top.totalRevenue / report.systemTotalRevenue) * 100).toFixed(1)}% of revenue`}
+            label={t('Share of revenue')}
+            caption={t('{v}% of revenue', { v: ((top.totalRevenue / report.systemTotalRevenue) * 100).toFixed(1) })}
           />
         </>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">No lot earned revenue in this period.</p>
+        <p className="mt-3 text-sm text-slate-500">{t('No lot earned revenue in this period.')}</p>
       )}
     </KpiCard>
   )
@@ -103,7 +104,7 @@ function NetworkShareCard({ report, network }: { report: AdminRevenueReportDTO; 
   const lotRevenue = report.systemTotalRevenue
   const networkRevenue = network?.systemTotalRevenue ?? 0
   return (
-    <KpiCard label="Share of network revenue" icon={<Trophy />}>
+    <KpiCard label={t('Share of network revenue')} icon={<Trophy />}>
       {network === undefined ? (
         <>
           <Skeleton className="mt-4 h-7 w-24" />
@@ -117,8 +118,8 @@ function NetworkShareCard({ report, network }: { report: AdminRevenueReportDTO; 
           <ShareBar
             part={lotRevenue}
             total={networkRevenue}
-            label="Share of network revenue"
-            caption={`of ${formatVndCompact(networkRevenue)} in all lots`}
+            label={t('Share of network revenue')}
+            caption={t('of {v} in all lots', { v: formatVndCompact(networkRevenue) })}
           />
         </>
       )}
@@ -156,31 +157,31 @@ export function RevenueKpiCards({ report, previous, network, lotSelected, isLoad
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <KpiCard label="Total revenue" icon={<Banknote />}>
+      <KpiCard label={t('Total revenue')} icon={<Banknote />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(revenue)}</p>
         <Delta value={change(revenue, (r) => r.systemTotalRevenue)} />
         {(report.systemTotalCompensation ?? 0) > 0 && (
           <p className="mt-2 text-xs text-slate-500 tabular-nums">
-            After {formatVnd(report.systemTotalCompensation ?? 0)} paid to customers whose booked bay was taken
+            {t('After {v} paid to customers whose booked bay was taken', { v: formatVnd(report.systemTotalCompensation ?? 0) })}
           </p>
         )}
       </KpiCard>
 
-      <KpiCard label="Settled parking sessions" icon={<Car />}>
+      <KpiCard label={t('Settled parking sessions')} icon={<Car />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
-          {formatNumber(sessions)} <span className="text-base font-medium text-slate-500">sessions</span>
+          {formatNumber(sessions)} <span className="text-base font-medium text-slate-500">{t('sessions')}</span>
         </p>
         <Delta value={change(sessions, (r) => r.systemTotalSessions)} />
         <p className="mt-2 text-xs text-slate-500 tabular-nums">
-          {formatNumber(vehicleSessions('CAR'))} cars · {formatNumber(vehicleSessions('MOTORBIKE'))} motorbikes
+          {t('{v} cars · {v2} motorbikes', { v: formatNumber(vehicleSessions('CAR')), v2: formatNumber(vehicleSessions('MOTORBIKE')) })}
         </p>
       </KpiCard>
 
       {lotSelected ? <NetworkShareCard report={report} network={network} /> : <TopLotCard report={report} />}
 
-      <KpiCard label="Average per session" icon={<Receipt />}>
+      <KpiCard label={t('Average per session')} icon={<Receipt />}>
         <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{formatVnd(Math.round(average))}</p>
-        <p className="mt-2 text-xs text-slate-500">Total revenue ÷ settled sessions</p>
+        <p className="mt-2 text-xs text-slate-500">{t('Total revenue ÷ settled sessions')}</p>
       </KpiCard>
     </div>
   )

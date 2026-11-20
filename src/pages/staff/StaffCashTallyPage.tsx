@@ -14,8 +14,9 @@ import { useStaffLot } from '@/hooks/useStaffLot'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CashDrawerDTO } from '@/types/cashDrawer.dto'
+import { t, tMaybe, localDateFormat } from '@/i18n'
 
-const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const clock = localDateFormat({ hour: '2-digit', minute: '2-digit' })
 
 const STATUS: Record<CashDrawerDTO['status'], { label: string; tone: string }> = {
   NotOpened: { label: 'Not opened', tone: 'bg-slate-100 text-slate-800' },
@@ -30,21 +31,21 @@ function TotalBreakdown({ drawer }: { drawer: CashDrawerDTO }) {
   return (
     <dl className="space-y-2 rounded-xl bg-slate-50 p-4 text-sm">
       <div className="flex justify-between">
-        <dt className="text-slate-700">Opening float</dt>
+        <dt className="text-slate-700">{t('Opening float')}</dt>
         <dd className="font-mono font-bold text-slate-950">{vnd(drawer.floatTotal)}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-slate-700">Cash you took ({formatNumber(drawer.cashPayments)} payments)</dt>
+        <dt className="text-slate-700">{t('Cash you took ({cashPayments} payments)', { cashPayments: formatNumber(drawer.cashPayments) })}</dt>
         <dd className="font-mono font-bold text-slate-950">+ {vnd(drawer.cashCollected)}</dd>
       </div>
       {drawer.topUpTotal > 0 && (
         <div className="flex justify-between">
-          <dt className="text-slate-700">Cash added by your Manager</dt>
+          <dt className="text-slate-700">{t('Cash added by your Manager')}</dt>
           <dd className="font-mono font-bold text-slate-950">+ {vnd(drawer.topUpTotal)}</dd>
         </div>
       )}
       <div className="flex justify-between border-t border-slate-200 pt-2">
-        <dt className="font-semibold text-slate-950">Cash in the drawer</dt>
+        <dt className="font-semibold text-slate-950">{t('Cash in the drawer')}</dt>
         <dd className="font-mono text-lg font-bold text-amber-500">{vnd(drawer.cashTotal)}</dd>
       </div>
     </dl>
@@ -57,12 +58,11 @@ function OpenDrawer({ lotId, defaultFloat }: { lotId: string; defaultFloat: numb
   const open = useOpenCashDrawer()
   return (
     <Panel>
-      <SectionTitle icon={<PiggyBank />}>Open your cash drawer</SectionTitle>
+      <SectionTitle icon={<PiggyBank />}>{t('Open your cash drawer')}</SectionTitle>
       <p className="-mt-2 mb-4 text-sm text-slate-700">
-        Enter the cash you start with ({vnd(defaultFloat)} as standard). Every cash payment you take then adds its fee to the drawer total.
-        If you take cash without opening the drawer, one opens on its own with the standard float.
+        {t('Enter the cash you start with (')}{vnd(defaultFloat)}{' '}{t('as standard). Every cash payment you take then adds its fee to the drawer total. If you take cash without opening the drawer, one opens on its own with the standard float.')}
       </p>
-      <label htmlFor="drawer-float" className="block text-xs font-bold tracking-wider text-slate-700 uppercase">Opening float (VND)</label>
+      <label htmlFor="drawer-float" className="block text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Opening float (VND)')}</label>
       <input
         id="drawer-float"
         inputMode="numeric"
@@ -74,10 +74,10 @@ function OpenDrawer({ lotId, defaultFloat }: { lotId: string; defaultFloat: numb
       />
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => setFloat(defaultFloat)} disabled={open.isPending}>
-          <RotateCcw /> Standard float
+          <RotateCcw />{' '}{t('Standard float')}
         </Button>
         <Button onClick={() => open.mutate({ lotId, float })} disabled={open.isPending}>
-          <Banknote /> {open.isPending ? 'Opening…' : `Open drawer with ${vnd(float)}`}
+          <Banknote /> {open.isPending ? t('Opening…') : t('Open drawer with {v}', { v: vnd(float) })}
         </Button>
       </div>
     </Panel>
@@ -103,31 +103,31 @@ function OpenDrawerTotal({ lotId, drawer, onClosed }: { lotId: string; drawer: C
 
   return (
     <Panel>
-      <SectionTitle icon={<Wallet />} aside={<span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">Drawer {drawer.closeNo} open</span>}>
-        Cash in your drawer
+      <SectionTitle icon={<Wallet />} aside={<span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">{t('Drawer {closeNo} open', { closeNo: drawer.closeNo })}</span>}>
+        {t('Cash in your drawer')}
       </SectionTitle>
       <p className="-mt-2 mb-4 text-sm text-slate-700">
-        The total updates after every cash payment: the fee is added, the change you give back is not kept. There is nothing to count.
+        {t('The total updates after every cash payment: the fee is added, the change you give back is not kept. There is nothing to count.')}
       </p>
       <p className="font-display text-4xl font-bold text-slate-950 sm:text-5xl">
-        {formatNumber(drawer.cashTotal)} <span className="text-lg font-semibold text-slate-600">VND</span>
+        {formatNumber(drawer.cashTotal)} <span className="text-lg font-semibold text-slate-600">{t('VND')}</span>
       </p>
       <div className="mt-5">
         <TotalBreakdown drawer={drawer} />
       </div>
       <div className="mt-4 flex justify-end">
         <Button onClick={() => setConfirming(true)} disabled={close.isPending}>
-          <LockKeyhole /> {close.isPending ? 'Handing in…' : 'Hand in the drawer to the Manager'}
+          <LockKeyhole /> {close.isPending ? t('Handing in…') : t('Hand in the drawer to the Manager')}
         </Button>
       </div>
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title="Hand in the cash drawer?"
-        confirmLabel="Hand in drawer"
+        title={t('Hand in the cash drawer?')}
+        confirmLabel={t('Hand in drawer')}
         pending={close.isPending}
         onConfirm={submit}
-        description={`You hand in ${vnd(drawer.cashTotal)} to your Manager. Drawer ${drawer.closeNo + 1} opens at once with the standard float.`}
+        description={t('You hand in {v} to your Manager. Drawer {v2} opens at once with the standard float.', { v: vnd(drawer.cashTotal), v2: drawer.closeNo + 1 })}
       />
     </Panel>
   )
@@ -140,27 +140,27 @@ function ClosedDrawer({ drawer }: { drawer: CashDrawerDTO }) {
   const difference = drawer.difference ?? 0
   return (
     <Panel>
-      <SectionTitle icon={<Lock />} aside={<span className={cn('rounded px-2 py-0.5 text-xs font-bold', STATUS[drawer.status].tone)}>{STATUS[drawer.status].label}</span>}>
-        Drawer {drawer.closeNo} handed in {drawer.closedAt ? `at ${clock.format(Date.parse(drawer.closedAt))}` : ''}
+      <SectionTitle icon={<Lock />} aside={<span className={cn('rounded px-2 py-0.5 text-xs font-bold', STATUS[drawer.status].tone)}>{tMaybe(STATUS[drawer.status].label)}</span>}>
+        {t('Drawer {closeNo} handed in', { closeNo: drawer.closeNo })}{' '}{drawer.closedAt ? t('at {v}', { v: clock.format(Date.parse(drawer.closedAt)) }) : ''}
       </SectionTitle>
       <TotalBreakdown drawer={drawer} />
       {counted && (
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <StatTile label="Counted"><Metric value={formatNumber(drawer.countedTotal ?? 0)} unit="VND" /></StatTile>
-          <StatTile label="Difference">
-            <Metric value={`${difference > 0 ? '+' : ''}${formatNumber(difference)}`} unit="VND" className={difference === 0 ? 'text-emerald-700' : 'text-amber-500'} />
+          <StatTile label={t('Counted')}><Metric value={formatNumber(drawer.countedTotal ?? 0)} unit={t('VND')} /></StatTile>
+          <StatTile label={t('Difference')}>
+            <Metric value={`${difference > 0 ? '+' : ''}${formatNumber(difference)}`} unit={t('VND')} className={difference === 0 ? 'text-emerald-700' : 'text-amber-500'} />
           </StatTile>
         </div>
       )}
-      {drawer.differenceReason && <p className="mt-4 text-sm text-slate-700"><strong className="text-slate-950">Your reason:</strong> {drawer.differenceReason}</p>}
+      {drawer.differenceReason && <p className="mt-4 text-sm text-slate-700"><strong className="text-slate-950">{t('Your reason:')}</strong> {tMaybe(drawer.differenceReason)}</p>}
       {drawer.status === 'Confirmed' && (
         <p className="mt-3 flex items-center gap-2 text-sm text-emerald-700">
-          <UserCheck className="size-4" aria-hidden /> Confirmed by {drawer.confirmedByName ?? 'the Manager'}
-          {drawer.confirmedAt ? ` at ${clock.format(Date.parse(drawer.confirmedAt))}` : ''}
+          <UserCheck className="size-4" aria-hidden />{' '}{t('Confirmed by {v}', { v: drawer.confirmedByName ?? 'the Manager' })}
+          {drawer.confirmedAt ? t(' at {v}', { v: clock.format(Date.parse(drawer.confirmedAt)) }) : ''}
           {drawer.confirmNote ? ` — ${drawer.confirmNote}` : ''}
         </p>
       )}
-      <p className="mt-4 text-sm text-slate-700">Drawer {drawer.closeNo + 1} opened right after this one, with the standard float.</p>
+      <p className="mt-4 text-sm text-slate-700">{t('Drawer {v} opened right after this one, with the standard float.', { v: drawer.closeNo + 1 })}</p>
     </Panel>
   )
 }
@@ -178,29 +178,29 @@ export default function StaffCashTallyPage() {
   return (
     <div className="space-y-6">
       <Panel>
-        <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">Cash Tally</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">{t('Cash Tally')}</h1>
       </Panel>
 
-      {!lotKey && <Panel><p className="text-sm text-slate-700">No assigned parking lot is available.</p></Panel>}
+      {!lotKey && <Panel><p className="text-sm text-slate-700">{t('No assigned parking lot is available.')}</p></Panel>}
       {lotKey && drawer.isPending && <Skeleton className="h-64 rounded-2xl" />}
-      {drawer.isError && <ErrorState message={getErrorMessage(drawer.error, 'Could not load your cash drawer.')} onRetry={() => void drawer.refetch()} />}
+      {drawer.isError && <ErrorState message={tMaybe(getErrorMessage(drawer.error, 'Could not load your cash drawer.'))} onRetry={() => void drawer.refetch()} />}
 
       {d && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatTile label="Drawer status" icon={<CircleCheck />}>
-              <p className={cn('mt-3 inline-block rounded px-2 py-1 text-sm font-bold', STATUS[d.status].tone)}>{STATUS[d.status].label}</p>
-              {d.openedAt && <p className="mt-2 text-xs text-slate-700">Drawer {d.closeNo} opened at {clock.format(Date.parse(d.openedAt))}</p>}
+            <StatTile label={t('Drawer status')} icon={<CircleCheck />}>
+              <p className={cn('mt-3 inline-block rounded px-2 py-1 text-sm font-bold', STATUS[d.status].tone)}>{tMaybe(STATUS[d.status].label)}</p>
+              {d.openedAt && <p className="mt-2 text-xs text-slate-700">{t('Drawer {closeNo} opened at {v}', { closeNo: d.closeNo, v: clock.format(Date.parse(d.openedAt)) })}</p>}
             </StatTile>
-            <StatTile label="Opening float" icon={<PiggyBank />}>
-              <Metric value={formatNumber(d.status === 'NotOpened' ? d.defaultFloat : d.floatTotal)} unit="VND" />
+            <StatTile label={t('Opening float')} icon={<PiggyBank />}>
+              <Metric value={formatNumber(d.status === 'NotOpened' ? d.defaultFloat : d.floatTotal)} unit={t('VND')} />
             </StatTile>
-            <StatTile label="Cash you took" icon={<Banknote />}>
-              <Metric value={formatNumber(d.cashCollected)} unit="VND" />
-              <p className="mt-1 text-xs text-slate-700">{formatNumber(d.cashPayments)} cash payments in this drawer</p>
+            <StatTile label={t('Cash you took')} icon={<Banknote />}>
+              <Metric value={formatNumber(d.cashCollected)} unit={t('VND')} />
+              <p className="mt-1 text-xs text-slate-700">{t('{cashPayments} cash payments in this drawer', { cashPayments: formatNumber(d.cashPayments) })}</p>
             </StatTile>
-            <StatTile label="Added by your Manager" icon={<HandCoins />}>
-              <Metric value={formatNumber(d.topUpTotal)} unit="VND" />
+            <StatTile label={t('Added by your Manager')} icon={<HandCoins />}>
+              <Metric value={formatNumber(d.topUpTotal)} unit={t('VND')} />
             </StatTile>
           </div>
 

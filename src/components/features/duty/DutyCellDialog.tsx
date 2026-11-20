@@ -10,6 +10,7 @@ import { useDutyCandidates, useDutyMutation } from '@/hooks/useDuty'
 import { EMPLOYMENT_LABEL, clock, shiftLabel } from '@/lib/duty'
 import { cn } from '@/lib/utils'
 import type { DutyCell, DutyScope } from '@/types/duty.dto'
+import { t, tMaybe } from '@/i18n'
 
 /**
  * Manager: who works one shift.
@@ -43,41 +44,41 @@ export function DutyCellDialog({ lotId, cell, onClose }: { lotId: string; cell: 
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-xl">
         <div>
-          <p className="text-xs font-bold tracking-wide text-indigo-700 uppercase">{shiftLabel(cell.date, cell.slot)}</p>
-          <h2 className="mt-1 text-xl font-semibold text-slate-950">{cell.employeeName ?? 'No staff on this shift'}</h2>
+          <p className="text-xs font-bold tracking-wide text-indigo-700 uppercase">{tMaybe(shiftLabel(cell.date, cell.slot))}</p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-950">{tMaybe(cell.employeeName) ?? t('No staff on this shift')}</h2>
           <div className="mt-2 flex flex-wrap gap-1">
-            {cell.employmentType && <Badge tone={cell.employmentType === 'Backup' ? 'violet' : 'neutral'}>{EMPLOYMENT_LABEL[cell.employmentType]}</Badge>}
-            {cell.onLeaveName && <Badge tone="amber">{cell.onLeaveName} on leave</Badge>}
-            {cell.leavePending && <Badge tone="amber">Leave pending</Badge>}
-            {cell.attendanceStatus === 'Absent' && <Badge tone="rose">Absent</Badge>}
-            {cell.isLate && <Badge tone="amber">Late · {clock(cell.checkInAt)}</Badge>}
-            {cell.attendanceStatus === 'Working' && !cell.isLate && <Badge tone="emerald">On shift · {clock(cell.checkInAt)}</Badge>}
+            {cell.employmentType && <Badge tone={cell.employmentType === 'Backup' ? 'violet' : 'neutral'}>{tMaybe(EMPLOYMENT_LABEL[cell.employmentType])}</Badge>}
+            {cell.onLeaveName && <Badge tone="amber">{t('{onLeaveName} on leave', { onLeaveName: cell.onLeaveName })}</Badge>}
+            {cell.leavePending && <Badge tone="amber">{t('Leave pending')}</Badge>}
+            {cell.attendanceStatus === 'Absent' && <Badge tone="rose">{t('Absent')}</Badge>}
+            {cell.isLate && <Badge tone="amber">{t('Late ·')}{' '}{clock(cell.checkInAt)}</Badge>}
+            {cell.attendanceStatus === 'Working' && !cell.isLate && <Badge tone="emerald">{t('On shift ·')}{' '}{clock(cell.checkInAt)}</Badge>}
           </div>
         </div>
 
         {canChange ? (
           <div className="space-y-4">
             <fieldset className="grid gap-2 sm:grid-cols-2">
-              <legend className="mb-1 text-sm font-semibold text-slate-800">What to do</legend>
+              <legend className="mb-1 text-sm font-semibold text-slate-800">{t('What to do')}</legend>
               <label className={cn('flex cursor-pointer items-start gap-2 rounded-lg px-3 py-2 ring-1 ring-slate-200', scope === 'Day' && 'bg-rose-50 ring-rose-300')}>
                 <input type="radio" name="scope" className="mt-1" checked={scope === 'Day'} onChange={() => pickScope('Day')} />
                 <span>
-                  <span className="flex items-center gap-1 text-sm font-semibold text-slate-900"><Siren className="size-4 text-rose-600" />Emergency replacement</span>
-                  <span className="block text-xs text-slate-600">This day only, with a backup Staff member.{started && cell.employeeId ? ' The person on shift is taken off now.' : ''}</span>
+                  <span className="flex items-center gap-1 text-sm font-semibold text-slate-900"><Siren className="size-4 text-rose-600" />{t('Emergency replacement')}</span>
+                  <span className="block text-xs text-slate-600">{t('This day only, with a backup Staff member.')}{started && cell.employeeId ? t(' The person on shift is taken off now.') : ''}</span>
                 </span>
               </label>
               <label className={cn('flex items-start gap-2 rounded-lg px-3 py-2 ring-1 ring-slate-200', started ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
                 scope === 'Following' && 'bg-indigo-50 ring-indigo-300')}>
                 <input type="radio" name="scope" className="mt-1" disabled={started} checked={scope === 'Following'} onChange={() => pickScope('Following')} />
                 <span>
-                  <span className="block text-sm font-semibold text-slate-900">Change the weekly pattern</span>
-                  <span className="block text-xs text-slate-600">{started ? 'Not for a shift that has begun.' : 'This and following weeks, with a full-time Staff member.'}</span>
+                  <span className="block text-sm font-semibold text-slate-900">{t('Change the weekly pattern')}</span>
+                  <span className="block text-xs text-slate-600">{started ? t('Not for a shift that has begun.') : t('This and following weeks, with a full-time Staff member.')}</span>
                 </span>
               </label>
             </fieldset>
 
             <fieldset className="space-y-2">
-              <legend className="mb-1 text-sm font-semibold text-slate-800">{scope === 'Day' ? 'Backup Staff' : 'Full-time Staff'}</legend>
+              <legend className="mb-1 text-sm font-semibold text-slate-800">{scope === 'Day' ? t('Backup Staff') : t('Full-time Staff')}</legend>
               {candidates.isPending ? <Spinner /> : (
                 <ul className="max-h-72 space-y-1 overflow-y-auto pr-1">
                   {list.map((c) => (
@@ -87,18 +88,18 @@ export function DutyCellDialog({ lotId, cell, onClose }: { lotId: string; cell: 
                         <input type="radio" name="person" disabled={!c.eligible} checked={choice === c.employeeId} onChange={() => setChoice(c.employeeId)} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-semibold text-slate-900">{c.fullName}</span>
-                          <span className="block text-xs text-slate-600">{c.shiftsThisWeek} shift(s) this week{c.blockedReason ? ` · ${c.blockedReason}` : ''}</span>
+                          <span className="block text-xs text-slate-600">{t('{shiftsThisWeek} shift(s) this week', { shiftsThisWeek: c.shiftsThisWeek })}{c.blockedReason ? ` · ${c.blockedReason}` : ''}</span>
                         </span>
-                        {c.warning && <Badge tone="amber">{c.warning}</Badge>}
+                        {c.warning && <Badge tone="amber">{tMaybe(c.warning)}</Badge>}
                       </label>
                     </li>
                   ))}
-                  {list.length === 0 && <li className="text-sm text-slate-600">Nobody available.</li>}
+                  {list.length === 0 && <li className="text-sm text-slate-600">{t('Nobody available.')}</li>}
                   {cell.employeeId && (
                     <li>
                       <label className={cn('flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ring-1 ring-slate-200', choice === 'empty' && 'bg-rose-50 ring-rose-300')}>
                         <input type="radio" name="person" checked={choice === 'empty'} onChange={() => setChoice('empty')} />
-                        <span className="text-sm font-semibold text-rose-700">Leave this shift empty</span>
+                        <span className="text-sm font-semibold text-rose-700">{t('Leave this shift empty')}</span>
                       </label>
                     </li>
                   )}
@@ -106,20 +107,20 @@ export function DutyCellDialog({ lotId, cell, onClose }: { lotId: string; cell: 
               )}
             </fieldset>
 
-            <Label className="grid gap-1">Note (optional)
-              <Input maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Sick, called in a backup" />
+            <Label className="grid gap-1">{t('Note (optional)')}
+              <Input maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('e.g. Sick, called in a backup')} />
             </Label>
             <div className="flex flex-wrap gap-2">
               <Button variant={scope === 'Day' ? 'destructive' : 'default'} onClick={submit} disabled={choice == null || save.isPending}>
-                {save.isPending && <Spinner />}{scope === 'Day' ? 'Replace now' : 'Save pattern'}
+                {save.isPending && <Spinner />}{scope === 'Day' ? t('Replace now') : t('Save pattern')}
               </Button>
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
             </div>
           </div>
         ) : (
           <p className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
-            This shift is over.
+            {t('This shift is over.')}
           </p>
         )}
       </DialogContent>

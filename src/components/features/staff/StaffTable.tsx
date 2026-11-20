@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatDate, formatPhone, initials } from '@/lib/format'
 import type { UserDTO } from '@/types/identity.dto'
 import { roleOption, shiftLabel, statusOption } from './staffLabels'
+import { t, tMaybe } from '@/i18n'
 
 const AVATAR_COLORS = [
   'bg-indigo-100 text-indigo-700',
@@ -60,7 +61,7 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map((column) => (
             <TableHead key={column} className={column === 'Actions' ? `${STICKY_ACTIONS} bg-slate-50 text-right` : undefined}>
-              {column}
+              {tMaybe(column)}
             </TableHead>
           ))}
         </TableRow>
@@ -77,7 +78,7 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
 
             return (
               <TableRow key={user.id}>
-                <TableCell className="font-mono text-xs font-medium text-slate-500">{user.employeeCode}</TableCell>
+                <TableCell className="font-mono text-xs font-medium text-slate-500">{tMaybe(user.employeeCode)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div
@@ -88,7 +89,7 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium whitespace-nowrap text-slate-900">{user.fullName}</p>
-                      {user.shift && <p className="text-xs text-slate-500">{shiftLabel(user.shift)}</p>}
+                      {user.shift && <p className="text-xs text-slate-500">{tMaybe(shiftLabel(user.shift))}</p>}
                     </div>
                   </div>
                 </TableCell>
@@ -97,18 +98,18 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                   <p className="text-xs whitespace-nowrap text-slate-500">{formatPhone(user.phoneNumber)}</p>
                 </TableCell>
                 <TableCell>
-                  <Badge tone={role.tone}>{role.label}</Badge>
+                  <Badge tone={role.tone}>{tMaybe(role.label)}</Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex max-w-xs flex-wrap gap-1">
                     {user.assignedParkingLots.slice(0, MAX_LOT_CHIPS).map((lot) => (
-                      <Badge key={lot.id} className="max-w-[12rem] truncate" title={lot.name}>
+                      <Badge key={lot.id} className="max-w-[12rem] truncate" title={tMaybe(lot.name)}>
                         {lot.name.replace(/ Parking$/, '')}
                       </Badge>
                     ))}
                     {extraLots > 0 && (
                       <Badge title={user.assignedParkingLots.slice(MAX_LOT_CHIPS).map((l) => l.name).join(', ')}>
-                        +{extraLots}
+                        +{tMaybe(extraLots)}
                       </Badge>
                     )}
                   </div>
@@ -117,18 +118,18 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                 <TableCell>
                   <Badge tone={status.tone}>
                     <StatusDot />
-                    {status.label}
+                    {tMaybe(status.label)}
                   </Badge>
                 </TableCell>
                 <TableCell className={`${STICKY_ACTIONS} bg-white group-hover:bg-slate-50`}>
                   <div className="flex justify-end gap-0.5">
-                    <Button variant="ghost" size="icon" title="Edit" aria-label={`Edit ${user.fullName}`} onClick={() => onEdit(user)}>
+                    <Button variant="ghost" size="icon" title={t('Edit')} aria-label={t('Edit {fullName}', { fullName: user.fullName })} onClick={() => onEdit(user)}>
                       <Pencil />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      title={isLocked ? 'Activate' : 'Deactivate'}
+                      title={isLocked ? t('Activate') : t('Deactivate')}
                       aria-label={`${isLocked ? 'Activate' : 'Deactivate'} ${user.fullName}`}
                       className={isLocked ? 'text-emerald-600 hover:text-emerald-700' : 'text-rose-600 hover:text-rose-700'}
                       onClick={() => onToggleLock(user)}
@@ -138,8 +139,8 @@ export function StaffTable({ users, isLoading, onEdit, onToggleLock, onResetPass
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Reset password"
-                      aria-label={`Reset password for ${user.fullName}`}
+                      title={t('Reset password')}
+                      aria-label={t('Reset password for {fullName}', { fullName: user.fullName })}
                       onClick={() => onResetPassword(user)}
                     >
                       <KeyRound />

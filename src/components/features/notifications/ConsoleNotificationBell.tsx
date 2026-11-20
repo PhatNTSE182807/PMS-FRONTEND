@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useDeleteNotification, useMarkAllRead, useMarkRead, useNotifications, useTimeAgo } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils'
 import type { NotificationModel } from '@/api/notification.service'
+import { t, tMaybe } from '@/i18n'
 
 /** Dot colour per notification type: a taken bay needs action, the rest are done. */
 const TONE: Record<string, string> = {
@@ -93,7 +94,7 @@ export function ConsoleNotificationBell() {
       <Button
         variant="ghost"
         size="icon"
-        aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}
+        aria-label={t('Notifications{v}', { v: unread > 0 ? ` (${unread} unread)` : '' })}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="relative"
@@ -101,7 +102,7 @@ export function ConsoleNotificationBell() {
         <Bell />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-            {unread > 99 ? '99+' : unread}
+            {unread > 99 ? '99+' : tMaybe(unread)}
           </span>
         )}
       </Button>
@@ -109,11 +110,11 @@ export function ConsoleNotificationBell() {
       {open && (
         <div
           role="region"
-          aria-label="Notifications"
+          aria-label={t('Notifications')}
           className="absolute right-0 z-30 mt-2 w-[min(24rem,calc(100vw-2rem))] overflow-hidden max-sm:fixed max-sm:inset-x-4 max-sm:top-16 max-sm:w-auto rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
         >
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <p className="font-semibold text-slate-950">Notifications</p>
+            <p className="font-semibold text-slate-950">{t('Notifications')}</p>
             {unread > 0 && (
               <button
                 type="button"
@@ -121,26 +122,26 @@ export function ConsoleNotificationBell() {
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
               >
-                <CheckCheck className="size-3.5" aria-hidden /> Mark all read
+                <CheckCheck className="size-3.5" aria-hidden />{' '}{t('Mark all read')}
               </button>
             )}
           </div>
           <ul className="max-h-[26rem] divide-y divide-slate-200 overflow-y-auto">
-            {isLoading && <li className="px-4 py-6 text-center text-sm text-slate-600">Loading…</li>}
+            {isLoading && <li className="px-4 py-6 text-center text-sm text-slate-600">{t('Loading…')}</li>}
             {!isLoading && items.length === 0 && (
-              <li className="px-4 py-6 text-center text-sm text-slate-600">No notifications yet.</li>
+              <li className="px-4 py-6 text-center text-sm text-slate-600">{t('No notifications yet.')}</li>
             )}
             {items.map((n) => (
               <li key={n.id} className={cn('group flex gap-3 px-4 py-3', !n.isRead && 'bg-slate-50')}>
                 <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', toneOf(n), n.isRead && 'opacity-40')} aria-hidden />
                 <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openItem(n)}>
-                  <p className={cn('text-sm text-slate-950', !n.isRead && 'font-semibold')}>{n.title}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{n.message}</p>
+                  <p className={cn('text-sm text-slate-950', !n.isRead && 'font-semibold')}>{tMaybe(n.title)}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{tMaybe(n.message)}</p>
                   <p className="mt-1 text-[11px] text-slate-500">{timeAgo(n.createdAt)}</p>
                 </button>
                 <button
                   type="button"
-                  aria-label="Delete notification"
+                  aria-label={t('Delete notification')}
                   className="self-start rounded p-1 text-slate-500 opacity-0 transition-opacity group-hover:opacity-100 hover:text-rose-600 focus:opacity-100"
                   onClick={() => remove.mutate(n.id)}
                 >

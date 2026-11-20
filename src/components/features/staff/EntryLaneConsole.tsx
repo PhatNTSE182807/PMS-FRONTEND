@@ -15,6 +15,7 @@ import { platesMatch, type LanePlate } from '@/hooks/useLanePlate'
 import { PlateMatch } from './LanePlateArea'
 import { Panel, SectionTitle } from './StaffBits'
 import { STAFF_TOAST, toastEntryAlerts, toastReservationLookup } from './staffToasts'
+import { t as tr, tMaybe, currentLocale } from '@/i18n'
 
 /** Alerts the Staff can clear on the next attempt, and the request flag that clears each one. */
 const OVERRIDES: Partial<Record<string, { flag: keyof CheckInRequest; label: string }>> = {
@@ -28,7 +29,7 @@ const OVERRIDES: Partial<Record<string, { flag: keyof CheckInRequest; label: str
 
 const EMPTY: CheckInRequest = {}
 
-const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+const clock = (iso: string) => new Date(iso).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' })
 
 /**
  * Entry lane console (SRS FR-OPS-01, 4.2.1). The plate comes from the lane's plate area (`lane`): the camera
@@ -143,37 +144,37 @@ export function EntryLaneConsole({ lotId, lane, embedded = false }: { lotId: str
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3 rounded-xl bg-well p-5 ring-1 ring-slate-200">
             <div>
-              <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">{session.sessionType === 'Reservation' ? `Reservation ${session.reservationCode}` : session.sessionType ?? 'Walk-in'}</p>
-              <p className="mt-1 font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{session.plateNumber || 'NO PLATE'}</p>
+              <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">{session.sessionType === 'Reservation' ? tr('Reservation {reservationCode}', { reservationCode: session.reservationCode }) : tMaybe(session.sessionType) ?? tr('Walk-in')}</p>
+              <p className="mt-1 font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{tMaybe(session.plateNumber) || tr('NO PLATE')}</p>
               <p className="mt-1 text-sm text-slate-700">
-                {session.vehicleTypeName} • {session.slotCode ? `Bay ${session.slotCode}` : session.zoneName ?? 'No zone'} • <span className="font-mono">{session.code}</span>
+                {tMaybe(session.vehicleTypeName)} • {session.slotCode ? tr('Bay {slotCode}', { slotCode: session.slotCode }) : tMaybe(session.zoneName) ?? tr('No zone')} • <span className="font-mono">{session.code}</span>
               </p>
             </div>
             {result?.ticket && (
               <div className="w-28 shrink-0 text-center">
-                <QrCode value={result.ticket} label={`Entry ticket ${session.code}`} />
-                <p className="mt-1 text-[10px] font-bold tracking-wider text-slate-700 uppercase">Signed ticket</p>
+                <QrCode value={result.ticket} label={tr('Entry ticket {code}', { code: session.code })} />
+                <p className="mt-1 text-[10px] font-bold tracking-wider text-slate-700 uppercase">{tr('Signed ticket')}</p>
               </div>
             )}
           </div>
           {result?.alerts.filter((a) => !a.blocking).map((a) => <AlertRow key={a.code} alert={a} />)}
           <p className="flex items-center gap-2 text-sm font-medium text-emerald-700">
             <CircleCheck className="size-4 shrink-0" aria-hidden />
-            {session.status === 'PendingEntry' ? 'Barrier open: recording the entry…' : 'Barrier open: the vehicle is in.'}
+            {session.status === 'PendingEntry' ? tr('Barrier open: recording the entry…') : tr('Barrier open: the vehicle is in.')}
           </p>
           <Button className="w-full" disabled={confirm.isPending} onClick={next}>
-            <CircleCheck /> Next vehicle
+            <CircleCheck />{' '}{tr('Next vehicle')}
           </Button>
         </div>
       ) : (
         <form className="space-y-3" onSubmit={submit}>
           <div>
-            <Label htmlFor="lane-reservation">Check-in code or QR (leave empty for a walk-in)</Label>
+            <Label htmlFor="lane-reservation">{tr('Check-in code or QR (leave empty for a walk-in)')}</Label>
             <Input
               id="lane-reservation"
               value={entry}
               onChange={(e) => setEntry(/^rsv(?!\.)/i.test(e.target.value) ? e.target.value.toUpperCase() : e.target.value)}
-              placeholder="RSV… or scan the QR"
+              placeholder={tr('RSV… or scan the QR')}
               className="font-mono"
               autoComplete="off"
             />
@@ -184,25 +185,25 @@ export function EntryLaneConsole({ lotId, lane, embedded = false }: { lotId: str
               <ReservationCard info={found} />
             ) : lookup.isError && lookupEntry === entry.trim() ? (
               <p className="flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-800 ring-1 ring-rose-200">
-                <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden /> {getErrorMessage(lookup.error)}
+                <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden /> {tMaybe(getErrorMessage(lookup.error))}
               </p>
             ) : (
-              <p className="text-sm text-slate-600">Looking up the reservation…</p>
+              <p className="text-sm text-slate-600">{tr('Looking up the reservation…')}</p>
             )
           )}
 
-          {found && bookedPlate && !form.noPlate && <PlateMatch plate={lane.plate} recorded={bookedPlate} label="booking's registered plate" />}
+          {found && bookedPlate && !form.noPlate && <PlateMatch plate={lane.plate} recorded={bookedPlate} label={tr('booking\'s registered plate')} />}
 
           {!entry.trim() && !form.noPlate && lane.plate.trim() && (
             <Button type="button" variant="secondary" className="w-full" disabled={findByPlate.isPending} onClick={findBooking}>
-              Find the booking by this plate
+              {tr('Find the booking by this plate')}
             </Button>
           )}
           <div>
-            <Label htmlFor="lane-type">Vehicle type</Label>
+            <Label htmlFor="lane-type">{tr('Vehicle type')}</Label>
             <NativeSelect id="lane-type" value={form.vehicleTypeId ?? types[0]?.id ?? ''} onChange={(e) => set('vehicleTypeId', Number(e.target.value))}>
               {types.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+                <option key={t.id} value={t.id}>{tMaybe(t.name)}</option>
               ))}
             </NativeSelect>
           </div>
@@ -214,18 +215,18 @@ export function EntryLaneConsole({ lotId, lane, embedded = false }: { lotId: str
                 noPlate: e.target.checked,
                 ...(e.target.checked ? {} : { noPlateReason: undefined }),
               }))}
-            /> Plate unreadable or missing: ticket and photo only
+            />{' '}{tr('Plate unreadable or missing: ticket and photo only')}
           </label>
           {form.noPlate && (
             <div>
-              <Label htmlFor="lane-no-plate-reason">Reason for no plate</Label>
+              <Label htmlFor="lane-no-plate-reason">{tr('Reason for no plate')}</Label>
               <Input
                 id="lane-no-plate-reason"
                 value={form.noPlateReason ?? ''}
                 maxLength={500}
                 required
                 onChange={(e) => set('noPlateReason', e.target.value)}
-                placeholder="e.g. plate torn off, covered by mud"
+                placeholder={tr('e.g. plate torn off, covered by mud')}
                 autoComplete="off"
               />
             </div>
@@ -238,23 +239,23 @@ export function EntryLaneConsole({ lotId, lane, embedded = false }: { lotId: str
                 const { flag, label } = OVERRIDES[a.code]!
                 return (
                   <label key={a.code} className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                    <Checkbox checked={Boolean(form[flag])} onChange={(e) => set(flag, e.target.checked as never)} /> {label}
+                    <Checkbox checked={Boolean(form[flag])} onChange={(e) => set(flag, e.target.checked as never)} /> {tMaybe(label)}
                   </label>
                 )
               })}
               {usesOverride && (
-                <Input value={form.overrideReason ?? ''} onChange={(e) => set('overrideReason', e.target.value)} placeholder="Reason (required, kept in the session log)" />
+                <Input value={form.overrideReason ?? ''} onChange={(e) => set('overrideReason', e.target.value)} placeholder={tr('Reason (required, kept in the session log)')} />
               )}
             </div>
           )}
 
           <Button type="submit" variant="gold" className="h-11 w-full" disabled={checkIn.isPending || plateMismatch || (form.noPlate ? !form.noPlateReason?.trim() : !lane.plate.trim())}>
-            <DoorOpen /> {blocking.length ? 'Check again' : 'Check in & open barrier'}
+            <DoorOpen /> {blocking.length ? tr('Check again') : tr('Check in & open barrier')}
           </Button>
         </form>
       )
 
-  if (embedded) return <div>{body}</div>
+  if (embedded) return <div>{tMaybe(body)}</div>
 
   return (
     <Panel>
@@ -262,13 +263,13 @@ export function EntryLaneConsole({ lotId, lane, embedded = false }: { lotId: str
         icon={<LogIn />}
         aside={
           <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase', session ? 'bg-emerald-100 text-emerald-700' : blocking.length ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700')}>
-            {session ? (session.status === 'PendingEntry' ? 'Barrier open' : session.status) : blocking.length ? 'Barrier held' : 'Ready'}
+            {session ? (session.status === 'PendingEntry' ? tr('Barrier open') : tMaybe(session.status)) : blocking.length ? tr('Barrier held') : tr('Ready')}
           </span>
         }
       >
-        Entry lane
+        {tr('Entry lane')}
       </SectionTitle>
-      {body}
+      {tMaybe(body)}
     </Panel>
   )
 }
@@ -284,33 +285,33 @@ function ReservationCard({ info }: { info: GateReservationLookupDTO }) {
     <div className={cn('space-y-3 rounded-xl p-4 ring-1', info.canCheckIn ? 'bg-emerald-50 ring-emerald-200' : 'bg-rose-50 ring-rose-200')}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Reservation {r.code}</p>
-          <p className="mt-1 font-mono text-2xl font-bold tracking-[0.12em] text-slate-950">{r.plateNumber ?? '—'}</p>
+          <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">{tr('Reservation {code}', { code: r.code })}</p>
+          <p className="mt-1 font-mono text-2xl font-bold tracking-[0.12em] text-slate-950">{tMaybe(r.plateNumber) ?? '—'}</p>
           <p className="mt-0.5 truncate text-sm text-slate-700">
-            {[car || null, info.vehicleColor, info.vehicleTypeName].filter(Boolean).join(' • ') || 'Vehicle details unavailable'}
+            {[car || null, info.vehicleColor, info.vehicleTypeName].filter(Boolean).join(' • ') || tr('Vehicle details unavailable')}
           </p>
         </div>
         <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase', info.canCheckIn ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}>
-          {r.status}
+          {tMaybe(r.status)}
         </span>
       </div>
       <dl className="grid grid-cols-3 gap-2 text-sm">
         <div>
-          <dt className="text-xs text-slate-600">Customer</dt>
-          <dd className="truncate font-medium text-slate-900">{info.customerName ?? '—'}</dd>
+          <dt className="text-xs text-slate-600">{tr('Customer')}</dt>
+          <dd className="truncate font-medium text-slate-900">{tMaybe(info.customerName) ?? '—'}</dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-600">Bay</dt>
-          <dd className="font-mono font-medium text-slate-900">{r.slotCode ?? '—'}</dd>
+          <dt className="text-xs text-slate-600">{tr('Bay')}</dt>
+          <dd className="font-mono font-medium text-slate-900">{tMaybe(r.slotCode) ?? '—'}</dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-600">Check-in window</dt>
+          <dt className="text-xs text-slate-600">{tr('Check-in window')}</dt>
           <dd className="font-mono font-medium text-slate-900">{clock(r.checkInFrom)}–{clock(r.checkInUntil)}</dd>
         </div>
       </dl>
       <p className={cn('flex items-start gap-2 text-sm font-medium', info.canCheckIn ? 'text-emerald-700' : 'text-rose-800')}>
         {info.canCheckIn ? <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden /> : <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />}
-        {info.canCheckIn ? 'Ready to check in: vehicle type filled from the booking. The Staff plate must match its plate.' : info.problem}
+        {info.canCheckIn ? tr('Ready to check in: vehicle type filled from the booking. The Staff plate must match its plate.') : tMaybe(info.problem)}
       </p>
     </div>
   )
@@ -322,7 +323,7 @@ function AlertRow({ alert }: { alert: GateAlertDTO }) {
     <p className={cn('flex items-start gap-2 text-sm', alert.blocking ? 'text-rose-800' : 'text-amber-700')}>
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span>
-        <span className="font-mono text-xs font-bold">{alert.code}</span> {alert.message}
+        <span className="font-mono text-xs font-bold">{alert.code}</span> {tMaybe(alert.message)}
       </span>
     </p>
   )

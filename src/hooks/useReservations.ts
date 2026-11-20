@@ -10,6 +10,7 @@ import { reservationService } from '@/api/reservation.service'
 import { USER_TOAST, toastBookingError, toastPaymentError } from '@/lib/userToasts'
 import type { CreateReservationRequest, PaymentProvider, ReservationDTO, UpdateReservationRequest } from '@/types/operations.dto'
 import { invalidateFromPush } from '@/lib/realtimeInvalidate'
+import { t, currentLocale } from '@/i18n'
 
 /** Polling fallback: deposit deadlines are minutes long, so 15 s is enough without SignalR. */
 const RESERVATIONS_REFRESH_MS = 15_000
@@ -30,7 +31,7 @@ export function useMyReservations() {
         toast.error(USER_TOAST.noShow, { id: `no-show-${event.reservationId}` })
       if (event.type === 'ReservationReminder')
         toast.info(event.kind === 'Arrival' ? 'Your parking arrival time is coming up.' : 'Your bay hold ends soon.', {
-          description: new Date(event.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          description: new Date(event.at).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' }),
         })
     })
   }, [live, queryClient])
@@ -112,7 +113,7 @@ export function useUpdateReservation() {
   const invalidate = useInvalidateReservations()
   return useMutation({
     mutationFn: ({ id, request }: { id: number; request: UpdateReservationRequest }) => reservationService.update(id, request),
-    onSuccess: () => toast.success('Reservation updated.'),
+    onSuccess: () => toast.success(t('Reservation updated.')),
     onError: toastBookingError,
     onSettled: invalidate,
   })
@@ -126,7 +127,7 @@ export function useCancelReservation() {
     onSuccess: (r) =>
       r.refundAmount > 0
         ? toast.success(USER_TOAST.bookingCancelled)
-        : toast.success(`Reservation ${r.code} cancelled`, { description: 'The deposit is not refunded.' }),
+        : toast.success(t('Reservation {code} cancelled', { code: r.code }), { description: t('The deposit is not refunded.') }),
     onError: (error) => toast.error(getErrorMessage(error)),
     onSettled: invalidate,
   })
@@ -146,7 +147,7 @@ export function useSimulateDeposit() {
       return reservationService.get(id)
     },
     onSuccess: (reservation) => {
-      toast.success(`Deposit paid (simulated): bay ${reservation.slotCode} is confirmed.`)
+      toast.success(t('Deposit paid (simulated): bay {slotCode} is confirmed.', { slotCode: reservation.slotCode }))
       void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
     },
     onError: (error) => toastPaymentError(error),
@@ -161,11 +162,11 @@ export function usePayDeposit() {
     onSuccess: (payment, { provider }) => {
       // VNPay / MoMo without keys on a test server: the payment exists but has no pay page
       if (!payment.payUrl && provider !== 'Wallet') {
-        toast.error(`${provider} is not set up on this server. Use "Simulate successful payment" to test the booking.`)
+        toast.error(t('{provider} is not set up on this server. Use "Simulate successful payment" to test the booking.', { provider }))
         return
       }
       if (!payment.payUrl) {
-        toast.success('Deposit successfully paid using XXIV Wallet!')
+        toast.success(t('Deposit successfully paid using XXIV Wallet!'))
         window.dispatchEvent(new Event('xxiv-wallet-updated'))
         void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
         return

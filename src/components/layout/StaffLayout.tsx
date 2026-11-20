@@ -4,6 +4,7 @@ import { Toaster } from 'sonner'
 import { LogOut } from 'lucide-react'
 import { ConsoleNotificationBell } from '@/components/features/notifications/ConsoleNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
+import { LanguageToggle } from '@/components/LanguageToggle'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
@@ -18,13 +19,14 @@ import { resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { STAFF_NAV } from './adminNav'
 import { ShiftBanner } from '@/components/features/duty/ShiftStatus'
+import { t, tMaybe } from '@/i18n'
 
 /** A Staff who cancels their own cash request already gets a popup: the alert only refreshes the drawers. */
 const STAFF_QUIET_CASH_ALERTS = ['CASH_TOPUP_CANCELLED']
 
 function PageSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading page">
+    <div className="space-y-6" aria-busy="true" aria-label={t('Loading page')}>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({ length: 5 }, (_, i) => (
           <Skeleton key={i} className="h-28 rounded-xl" />
@@ -75,15 +77,15 @@ export function StaffLayout() {
           <img src={LOGO_SRC} alt="" className="h-10 w-auto shrink-0 drop-shadow" />
           <div className="leading-tight">
             <p className="font-display text-lg font-bold tracking-wide text-slate-950 uppercase">
-              <span className="brand-gold">XXIV</span> Parking
+              <span className="brand-gold">XXIV</span>{' '}Parking
             </p>
-            <p className="text-[11px] font-bold tracking-[0.14em] uppercase brand-gold">POS terminal console</p>
+            <p className="text-[11px] font-bold tracking-[0.14em] uppercase brand-gold">{t('POS terminal console')}</p>
           </div>
 
           <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 whitespace-nowrap 2xl:flex ring-1 ring-slate-200">
-            <span className="text-xs font-semibold text-slate-700 uppercase">Facility</span>
+            <span className="text-xs font-semibold text-slate-700 uppercase">{t('Facility')}</span>
             {lots.isLoading ? (
-              <span className="text-sm font-semibold text-slate-400">Loading...</span>
+              <span className="text-sm font-semibold text-slate-400">{t('Loading...')}</span>
             ) : lots.data && lots.data.length > 1 ? (
               <select
                 value={lot?.id}
@@ -92,19 +94,22 @@ export function StaffLayout() {
               >
                 {lots.data.map((l) => (
                   <option key={l.id} value={l.id} className="bg-white">
-                    {l.name} (#{l.code})
+                    {tMaybe(l.name)} (#{l.code})
                   </option>
                 ))}
               </select>
             ) : (
               <span className="text-sm font-semibold text-slate-950">
-                {lot ? `${lot.name} (#${lot.code})` : 'No lot assigned yet'}
+                {lot ? `${lot.name} (#${lot.code})` : t('No lot assigned yet')}
               </span>
             )}
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {/* Booked bays a walk-in took, bookings moved and compensation sent to customers */}
+            <Button asChild variant="ghost" size="icon">
+              <LanguageToggle />
+            </Button>
             <Button asChild variant="ghost" size="icon">
               <ThemeToggle />
             </Button>
@@ -123,7 +128,7 @@ export function StaffLayout() {
                 alt=""
                 className="hidden size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300 sm:block"
               />
-              <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={handleLogout}>
+              <Button variant="ghost" size="icon" aria-label={t('Sign out')} title={t('Sign out')} onClick={handleLogout}>
                 <LogOut />
               </Button>
             </div>
@@ -131,7 +136,7 @@ export function StaffLayout() {
         </div>
 
         <div className="flex items-center justify-between gap-4 bg-slate-50 px-4 sm:px-6">
-          <nav aria-label="Staff navigation" className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto py-1.5 [scrollbar-width:none]">
+          <nav aria-label={t('Staff navigation')} className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto py-1.5 [scrollbar-width:none]">
             {STAFF_NAV.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -144,7 +149,7 @@ export function StaffLayout() {
                 }
               >
                 <Icon className="size-4" aria-hidden />
-                {label}
+                {tMaybe(label)}
               </NavLink>
             ))}
           </nav>
@@ -158,7 +163,7 @@ export function StaffLayout() {
           <ErrorBoundary
             fallback={(error, reset) => (
               <div className="rounded-xl bg-white ring-1 ring-slate-200">
-                <ErrorState message={error.message} onRetry={reset} />
+                <ErrorState message={tMaybe(error.message)} onRetry={reset} />
               </div>
             )}
           >
@@ -170,8 +175,8 @@ export function StaffLayout() {
       </main>
 
       <footer className="flex flex-col gap-1 border-t border-slate-200 px-4 py-4 text-[11px] font-semibold tracking-wider text-slate-600 uppercase sm:flex-row sm:justify-between sm:px-6">
-        <span>XXIV Parking • Gate console</span>
-        <span>All gate operations are logged</span>
+        <span>{t('XXIV Parking • Gate console')}</span>
+        <span>{t('All gate operations are logged')}</span>
       </footer>
 
       <Toaster position="top-right" theme="dark" richColors closeButton toastOptions={{ className: 'font-sans' }} />

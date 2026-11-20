@@ -1,4 +1,5 @@
 import type { DutyCell, DutySlot } from '@/types/duty.dto'
+import { currentLocale } from '@/i18n'
 
 /** The four fixed shifts of a day. */
 export const DUTY_SLOTS: { slot: DutySlot; label: string; hours: string }[] = [
@@ -58,7 +59,7 @@ export function startsIn(iso: string, now = Date.now()): string {
 
 /** "06:20" in the viewer's time. */
 export const clock = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'
+  iso ? new Date(iso).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' }) : '—'
 
 export const EMPLOYMENT_LABEL: Record<string, string> = { FullTime: 'Full-time', Backup: 'Backup', Manager: 'Manager' }
 
@@ -71,4 +72,4 @@ export const leaveRange = (r: { fromDate: string; toDate: string }) =>
 
 /** "November 2026" from yyyy-MM-01 */
 export const monthLabel = (month: string) =>
-  new Date(`${month.slice(0, 7)}-01T00:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  new Date(`${month.slice(0, 7)}-01T00:00:00`).toLocaleDateString(currentLocale(), { month: 'long', year: 'numeric' })

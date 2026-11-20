@@ -7,14 +7,15 @@ import { getErrorMessage } from '@/api/apiError'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { cn } from '@/lib/utils'
 import type { ManagedLot } from '@/types/lot-management.dto'
+import { t, tMaybe } from '@/i18n'
 
 /** Stat card used across the Manager console (label, icon, value block). */
 export function Kpi({ label, icon, children, className }: { label: string; icon?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={cn('rounded-2xl bg-white p-5 ring-1 ring-slate-200', className)}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{label}</p>
-        {icon && <span className="grid size-9 place-items-center rounded-lg bg-slate-100 text-indigo-700 [&_svg]:size-4.5">{icon}</span>}
+        <p className="text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{tMaybe(label)}</p>
+        {icon && <span className="grid size-9 place-items-center rounded-lg bg-slate-100 text-indigo-700 [&_svg]:size-4.5">{tMaybe(icon)}</span>}
       </div>
       {children}
     </section>
@@ -42,7 +43,7 @@ export function WithManagerLot({ children }: { children: (lot: ManagedLot) => Re
   if (lots.isError && !lots.data) {
     return (
       <Card>
-        <ErrorState message={getErrorMessage(lots.error)} onRetry={() => lots.refetch()} />
+        <ErrorState message={tMaybe(getErrorMessage(lots.error))} onRetry={() => lots.refetch()} />
       </Card>
     )
   }
@@ -51,8 +52,8 @@ export function WithManagerLot({ children }: { children: (lot: ManagedLot) => Re
       <Card>
         <EmptyState
           icon={Building2}
-          title="No parking lot assigned yet"
-          description="Ask an Admin to assign you to a parking lot. Its console appears here once it is assigned."
+          title={t('No parking lot assigned yet')}
+          description={t('Ask an Admin to assign you to a parking lot. Its console appears here once it is assigned.')}
         />
       </Card>
     )

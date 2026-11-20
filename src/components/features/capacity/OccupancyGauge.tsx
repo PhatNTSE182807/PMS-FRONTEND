@@ -1,6 +1,7 @@
 import { occupancyLevel } from '@/lib/occupancy'
 import { cn } from '@/lib/utils'
 import { LEVEL_STYLES } from './occupancyStyles'
+import { t, tMaybe } from '@/i18n'
 
 const SIZE = 120
 const STROKE = 10
@@ -20,7 +21,7 @@ export function OccupancyGauge({ percentage, isFull }: { percentage: number; isF
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(clamped)}
-      aria-label={`Occupancy ${clamped.toFixed(1)}% — ${style.label}`}
+      aria-label={t('Occupancy {v}% — {label}', { v: clamped.toFixed(1), label: style.label })}
       className={cn('relative shrink-0', isFull && 'animate-pulse-soft')}
       style={{ width: SIZE, height: SIZE }}
     >
@@ -48,7 +49,7 @@ export function OccupancyGauge({ percentage, isFull }: { percentage: number; isF
           {/* Narrower than the ring's inner diameter, so long labels wrap instead of crossing the ring */}
           <p className="mx-auto mt-0.5 max-w-[72px] text-[11px] leading-tight font-medium text-slate-600">
             <Icon className="mr-0.5 inline size-3 align-[-2px]" aria-hidden style={{ color: style.stroke }} />
-            {style.label}
+            {tMaybe(style.label)}
           </p>
         </div>
       </div>

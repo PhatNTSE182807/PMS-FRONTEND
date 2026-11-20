@@ -23,7 +23,7 @@
   --home-amber: #f59e0b;
   --home-crimson: #ef4444;
   --home-body-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --home-headline-font: 'Plus Jakarta Sans', var(--home-body-font);
+  --home-headline-font: 'Be Vietnam Pro', var(--home-body-font);
 
   min-height: 100vh;
   background: var(--home-surface);
@@ -1398,3 +1398,12 @@ html[data-theme='light'] .home-showcase__media::after {
   display: none;
 }
 
+
+/* Language switch of the top bar: stays visible on phones (the sun/moon button moves into the menu there) */
+.home-lang-toggle {
+  display: flex;
+  padding: 0.4rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}

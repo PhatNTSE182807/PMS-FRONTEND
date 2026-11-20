@@ -8,6 +8,7 @@ import {
   type AssistantMessage,
 } from '@/hooks/useAssistantChat'
 import '@/styles/assistant.css'
+import { t, tMaybe } from '@/i18n'
 
 const SUGGESTIONS = [
   'How much is the booking deposit?',
@@ -31,9 +32,9 @@ export function AssistantWidget() {
       {isOpen ? (
         <AssistantPanel searchOnly={status.data.mode === 'SearchOnly'} onClose={() => setIsOpen(false)} />
       ) : (
-        <button type="button" className="ast-launcher" onClick={() => setIsOpen(true)} aria-label={`Open ${ASSISTANT_NAME}, the XXIV Parking assistant`}>
+        <button type="button" className="ast-launcher" onClick={() => setIsOpen(true)} aria-label={t('Open {ASSISTANT_NAME}, the XXIV Parking assistant', { ASSISTANT_NAME })}>
           <Avatar className="ast-launcher__avatar" />
-          <span className="ast-launcher__label">Ask {ASSISTANT_NAME}</span>
+          <span className="ast-launcher__label">{t('Ask {ASSISTANT_NAME}', { ASSISTANT_NAME })}</span>
         </button>
       )}
     </div>
@@ -74,17 +75,17 @@ function AssistantPanel({ searchOnly, onClose }: { searchOnly: boolean; onClose:
   }
 
   return (
-    <section className="ast-panel" role="dialog" aria-label={`${ASSISTANT_NAME}, the XXIV Parking assistant`}>
+    <section className="ast-panel" role="dialog" aria-label={t('{ASSISTANT_NAME}, the XXIV Parking assistant', { ASSISTANT_NAME })}>
       <header className="ast-panel__head">
         <Avatar className="ast-panel__avatar" />
         <div className="ast-panel__title">
-          <strong>{ASSISTANT_NAME}</strong>
-          <span>{searchOnly ? 'Help search mode' : 'Answers from the XXIV Parking help'}</span>
+          <strong>{tMaybe(ASSISTANT_NAME)}</strong>
+          <span>{searchOnly ? t('Help search mode') : t('Answers from the XXIV Parking help')}</span>
         </div>
-        <button type="button" className="ast-icon" onClick={reset} disabled={messages.length === 0} aria-label="Start a new conversation" title="New conversation">
+        <button type="button" className="ast-icon" onClick={reset} disabled={messages.length === 0} aria-label={t('Start a new conversation')} title={t('New conversation')}>
           <RotateCcw size={16} />
         </button>
-        <button type="button" className="ast-icon" onClick={onClose} aria-label="Close the assistant" title="Close">
+        <button type="button" className="ast-icon" onClick={onClose} aria-label={t('Close the assistant')} title={t('Close')}>
           <X size={18} />
         </button>
       </header>
@@ -93,19 +94,18 @@ function AssistantPanel({ searchOnly, onClose }: { searchOnly: boolean; onClose:
         {messages.length === 0 ? (
           <div className="ast-welcome">
             <p>
-              Hi, I&apos;m {ASSISTANT_NAME}! Ask me about booking a bay, deposits, fees, paying, the wallet or vehicle
-              verification.
+              {t('Hi, I\'m {ASSISTANT_NAME}! Ask me about booking a bay, deposits, fees, paying, the wallet or vehicle verification.', { ASSISTANT_NAME })}
             </p>
             <div className="ast-suggestions">
               {SUGGESTIONS.map((s) => (
                 <button key={s} type="button" className="ast-chip" onClick={() => submit(s)}>
-                  {s}
+                  {tMaybe(s)}
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          messages.map((m) => <MessageBubble key={m.id} message={m} isStreaming={isAnswering && m === messages[messages.length - 1]} />)
+          messages.map((m) => <MessageBubble key={m.id} message={tMaybe(m)} isStreaming={isAnswering && m === messages[messages.length - 1]} />)
         )}
       </div>
 
@@ -116,22 +116,22 @@ function AssistantPanel({ searchOnly, onClose }: { searchOnly: boolean; onClose:
           rows={2}
           value={draft}
           maxLength={ASSISTANT_MAX_QUESTION}
-          placeholder="Type your question..."
-          aria-label="Your question"
+          placeholder={t('Type your question...')}
+          aria-label={t('Your question')}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKeyDown}
         />
         {isAnswering ? (
-          <button type="button" className="ast-send" onClick={stop} aria-label="Stop the answer" title="Stop">
+          <button type="button" className="ast-send" onClick={stop} aria-label={t('Stop the answer')} title={t('Stop')}>
             <Square size={16} />
           </button>
         ) : (
-          <button type="submit" className="ast-send" disabled={!draft.trim()} aria-label="Send" title="Send">
+          <button type="submit" className="ast-send" disabled={!draft.trim()} aria-label={t('Send')} title={t('Send')}>
             <Send size={16} />
           </button>
         )}
       </form>
-      <p className="ast-panel__note">Don&apos;t share passwords, ID or plate numbers. Answers may be imperfect; staff at the lot have the final say.</p>
+      <p className="ast-panel__note">{t('Don\'t share passwords, ID or plate numbers. Answers may be imperfect; staff at the lot have the final say.')}</p>
     </section>
   )
 }
@@ -145,20 +145,20 @@ function MessageBubble({ message, isStreaming }: { message: AssistantMessage; is
       {!isUser && <Avatar className="ast-msg__avatar" />}
       <div className="ast-msg__bubble">
         {isUser ? (
-          message.content
+          tMaybe(message.content)
         ) : message.content ? (
-          <FormattedText text={message.content} />
+          <FormattedText text={tMaybe(message.content)} />
         ) : isStreaming ? (
-          <span className="ast-typing" aria-label={`${ASSISTANT_NAME} is typing`}>
+          <span className="ast-typing" aria-label={t('{ASSISTANT_NAME} is typing', { ASSISTANT_NAME })}>
             <i />
             <i />
             <i />
           </span>
         ) : null}
-        {message.error && <p className="ast-msg__error">{message.error}</p>}
+        {message.error && <p className="ast-msg__error">{tMaybe(message.error)}</p>}
       </div>
       {!isUser && sources.length > 0 && !isStreaming && (
-        <p className="ast-msg__sources">From the help: {[...new Set(sources.map((s) => s.heading))].join(' · ')}</p>
+        <p className="ast-msg__sources">{t('From the help:')}{' '}{[...new Set(sources.map((s) => s.heading))].join(' · ')}</p>
       )}
     </div>
   )
@@ -194,7 +194,7 @@ function FormattedText({ text }: { text: string }) {
     if (line.trim()) blocks.push(<p key={`p${blocks.length}`}>{bold(line)}</p>)
   }
   flushList()
-  return <>{blocks}</>
+  return <>{tMaybe(blocks)}</>
 }
 
 function bold(text: string): ReactNode[] {

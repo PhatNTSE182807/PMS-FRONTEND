@@ -14,6 +14,7 @@ import { formatDate, formatVnd } from '@/lib/format'
 import { monthLabel } from '@/lib/duty'
 import type { PaySlip } from '@/types/payroll.dto'
 import { PayslipDetail, SlipStatus } from './PayslipDetail'
+import { t, tMaybe } from '@/i18n'
 
 const MONTHLY = { MANAGER: 10_000_000, STAFF: 5_800_000 } as const
 const HOURLY = 30_000
@@ -30,25 +31,25 @@ function SimulateDialog({ backup, onClose }: { backup: boolean; onClose: () => v
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <div>
-          <h2 className="text-xl font-semibold text-slate-950">Simulate payday</h2>
-          <p className="mt-1 text-sm text-slate-600">Creates a received payslip marked “Simulated”. It is listed for the Admin too and does not replace your real salary.</p>
+          <h2 className="text-xl font-semibold text-slate-950">{t('Simulate payday')}</h2>
+          <p className="mt-1 text-sm text-slate-600">{t('Creates a received payslip marked “Simulated”. It is listed for the Admin too and does not replace your real salary.')}</p>
         </div>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); simulate.mutate({ includeBase: includeBase && !backup, overtimeHours: hours }, { onSuccess: onClose }) }}>
           {!backup && (
             <Label className="flex items-center gap-2"><Checkbox checked={includeBase} onChange={(e) => setIncludeBase(e.target.checked)} />
-              Base salary ({formatVnd(user?.role === 'MANAGER' ? MONTHLY.MANAGER : MONTHLY.STAFF)})
+              {t('Base salary ({v})', { v: formatVnd(user?.role === 'MANAGER' ? MONTHLY.MANAGER : MONTHLY.STAFF) })}
             </Label>
           )}
-          <Label className="grid gap-1">{backup ? 'Hours worked' : 'Overtime hours'} (× {formatVnd(HOURLY)})
+          <Label className="grid gap-1">{backup ? t('Hours worked') : t('Overtime hours')} (× {formatVnd(HOURLY)})
             <Input type="number" min={0} max={200} step={1} value={hours} onChange={(e) => setHours(Math.max(0, Math.trunc(Number(e.target.value))))} />
           </Label>
           <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-3 ring-1 ring-slate-200">
-            <span className="font-semibold text-slate-800">You receive</span>
+            <span className="font-semibold text-slate-800">{t('You receive')}</span>
             <span className="text-lg font-bold text-slate-950 tabular-nums">{formatVnd(total)}</span>
           </div>
           <div className="flex gap-2">
-            <Button type="submit" variant="success" disabled={simulate.isPending || total <= 0 || hours < 0 || hours > 200}>{simulate.isPending && <Spinner />}Receive</Button>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" variant="success" disabled={simulate.isPending || total <= 0 || hours < 0 || hours > 200}>{simulate.isPending && <Spinner />}{t('Receive')}</Button>
+            <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
           </div>
         </form>
       </DialogContent>
@@ -67,21 +68,21 @@ export function MyPayslips() {
   const backup = duty.data?.employmentType === 'Backup'
   return (
     <div className="space-y-6">
-      <PageHeader title="My payslips"
+      <PageHeader title={t('My payslips')}
         actions={simulation.data?.enabled
-          ? <Button onClick={() => setSimulating(true)}><Sparkles />Simulate payday</Button>
+          ? <Button onClick={() => setSimulating(true)}><Sparkles />{t('Simulate payday')}</Button>
           : <Wallet className="size-9 text-indigo-700" />} />
       <Card className="divide-y divide-slate-100">
         {slips.isPending ? <div className="p-6"><Spinner /></div> : slips.isError ? (
-          <ErrorState message={getErrorMessage(slips.error)} onRetry={() => slips.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(slips.error))} onRetry={() => slips.refetch()} />
         ) : slips.data.length === 0 ? (
-          <EmptyState icon={Wallet} title="No salary received yet" description="Your salary is paid at the start of each month." />
+          <EmptyState icon={Wallet} title={t('No salary received yet')} description={t('Your salary is paid at the start of each month.')} />
         ) : slips.data.map((slip) => (
           <button key={slip.id} type="button" onClick={() => setOpen(slip)}
             className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 sm:px-5">
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-slate-900">{monthLabel(slip.month)}</p>
-              <p className="text-sm text-slate-600">Received {formatDate(slip.paidAt)}</p>
+              <p className="font-semibold text-slate-900">{tMaybe(monthLabel(slip.month))}</p>
+              <p className="text-sm text-slate-600">{t('Received {paidAt}', { paidAt: formatDate(slip.paidAt) })}</p>
             </div>
             <SlipStatus slip={slip} />
             <span className="text-base font-bold text-slate-950 tabular-nums">{formatVnd(slip.netAmount)}</span>

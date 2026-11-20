@@ -1,0 +1,82 @@
+/*
+ * Vietnamese UI only (<html lang="vi">, set by the language switch). Vietnamese stacks accents above and below
+ * the letters (Ế, Ộ, Ữ), so it needs taller lines and less letter-spacing than the English design, and long
+ * capitalised labels read better in sentence case. The English UI is untouched.
+ */
+
+/* Headings: room for the accents of the line above */
+html[lang='vi'] :is(h1, h2, h3, h4),
+html[lang='vi'] :is(
+  .home-hero__title,
+  .home-heading,
+  .home-cta__title,
+  .home-showcase__title,
+  .home-capability__title,
+  .home-terminal__name,
+  .auth-shell__title
+) {
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+/* Buttons, menu links and dividers: sentence case instead of capitals (the translations are written that way) */
+html[lang='vi'] :is(
+  .auth-shell__divider,
+  .home-btn,
+  .home-nav__links a,
+  .home-nav__signin,
+  .home-hero__discover,
+  .home-capability__link,
+  .home-heading,
+  .home-cta__title,
+  .home-showcase__title,
+  .home-capability__title,
+  .cx-submit-row .cx-btn,
+  .cx-wallet-submit
+) {
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+/* Short labels kept in capitals (eyebrows, table headers, pills, form labels): tighter spacing, accents clear */
+html[lang='vi'] :is(
+  .auth-shell__label,
+  .auth-shell__demo-label,
+  .cx-crumbs,
+  .cx-pill,
+  .cx-chip,
+  .cx-demo-tag,
+  .cx-eyebrow,
+  .cx-label,
+  .cx-strength__verdict,
+  .cx-zone__label,
+  .cx-table th,
+  .cx-status-row,
+  .cx-stats span,
+  .cx-doc-head span:last-child,
+  .cx-footer__status,
+  .home-eyebrow,
+  .home-pill,
+  .home-hud__header,
+  .home-hud__stat-label,
+  .home-terminal__tags,
+  .home-cta__badge,
+  .home-footer__status,
+  .home-footer__title,
+  .vd-slot__side,
+  .vd-fields__title,
+  .vd-fields thead th,
+  .vd-rejected__title,
+  .cx-wallet-summary__label,
+  .cx-wallet-history__title,
+  .cx-wallet-stat-card__label,
+  .cx-wallet-tx-badge
+) {
+  letter-spacing: 0.03em;
+  line-height: 1.45;
+}
+
+/* Admin, manager and staff consoles (Tailwind): capitalised labels with wide tracking */
+html[lang='vi'] .uppercase {
+  letter-spacing: 0.03em;
+}

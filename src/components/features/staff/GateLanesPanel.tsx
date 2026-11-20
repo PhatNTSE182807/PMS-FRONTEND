@@ -18,8 +18,9 @@ import { AlertRow, EntryLaneConsole } from './EntryLaneConsole'
 import { LanePlateArea } from './LanePlateArea'
 import { Panel, Plate } from './StaffBits'
 import { STAFF_TOAST, toastEntryAlerts, toastUnsettled } from './staffToasts'
+import { t, tMaybe, currentLocale } from '@/i18n'
 
-const clock = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—')
+const clock = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' }) : '—')
 
 /** "2 min ago" since the customer pressed the button. */
 function waited(iso: string, now: number) {
@@ -75,7 +76,7 @@ export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: strin
 
   return (
     <Panel className="flex flex-col">
-      <div role="tablist" aria-label="Gate lanes" className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-50 p-1">
+      <div role="tablist" aria-label={t('Gate lanes')} className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-50 p-1">
         {(['CheckIn', 'CheckOut'] as const).map((kind) => {
           const Icon = kind === 'CheckIn' ? LogIn : LogOut
           return (
@@ -90,8 +91,8 @@ export function GateLanesPanel({ lotId, initialTab = 'CheckIn' }: { lotId: strin
                 tab === kind ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
               )}
             >
-              <Icon className="size-4" aria-hidden /> {kind === 'CheckIn' ? 'Check-in' : 'Check-out'}
-              {counts[kind] > 0 && <span className="rounded-full bg-amber-500 px-1.5 text-[11px] text-(--color-on-gold) tabular-nums">{counts[kind]}</span>}
+              <Icon className="size-4" aria-hidden /> {kind === 'CheckIn' ? t('Check-in') : t('Check-out')}
+              {counts[kind] > 0 && <span className="rounded-full bg-amber-500 px-1.5 text-[11px] text-(--color-on-gold) tabular-nums">{tMaybe(counts[kind])}</span>}
             </button>
           )
         })}
@@ -157,13 +158,13 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
         />
       ) : kind === 'CheckIn' ? (
         <p className="flex items-center gap-2 text-sm text-slate-700">
-          <Hourglass className="size-4 shrink-0 text-slate-600" aria-hidden /> {loading ? 'Loading app check-in requests…' : 'No app check-in requests waiting.'}
+          <Hourglass className="size-4 shrink-0 text-slate-600" aria-hidden /> {loading ? t('Loading app check-in requests…') : t('No app check-in requests waiting.')}
         </p>
       ) : (
         <div className="rounded-xl bg-slate-50 p-6 text-center ring-1 ring-slate-200">
           <Hourglass className="mx-auto size-6 text-slate-600" aria-hidden />
-          <p className="mt-2 font-semibold text-slate-950">{loading ? 'Loading requests…' : 'No check-out requests'}</p>
-          <p className="mt-1 text-sm text-slate-700">Paid vehicles (at the POS or in the app, walk-ins too) and customers who press "Check out" appear here, oldest first.</p>
+          <p className="mt-2 font-semibold text-slate-950">{loading ? t('Loading requests…') : t('No check-out requests')}</p>
+          <p className="mt-1 text-sm text-slate-700">{t('Paid vehicles (at the POS or in the app, walk-ins too) and customers who press "Check out" appear here, oldest first.')}</p>
         </div>
       )}
 
@@ -171,19 +172,19 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
         <Button className="h-11 w-full" variant={handled ? 'gold' : 'outline'} onClick={next} disabled={!handled && queue.length < 2}>
           {handled ? <ArrowRight /> : <SkipForward />}
           {handled
-            ? others.length ? `Next vehicle (${others.length} waiting)` : 'Next vehicle'
-            : `Skip to next vehicle (${others.length} more waiting)`}
+            ? others.length ? t('Next vehicle ({length} waiting)', { length: others.length }) : t('Next vehicle')
+            : t('Skip to next vehicle ({length} more waiting)', { length: others.length })}
         </Button>
       )}
 
       {others.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-bold tracking-wider text-slate-700 uppercase">Waiting at the {lane} lane</p>
+          <p className="mb-2 text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Waiting at the {lane} lane', { lane })}</p>
           <ul className="space-y-1.5">
             {others.slice(0, 4).map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                <Plate>{r.plateNumber ?? '—'}</Plate>
-                <span className="min-w-0 flex-1 truncate text-slate-700">{r.vehicleLabel ?? r.customerName ?? ''}</span>
+                <Plate>{tMaybe(r.plateNumber) ?? '—'}</Plate>
+                <span className="min-w-0 flex-1 truncate text-slate-700">{tMaybe(r.vehicleLabel) ?? tMaybe(r.customerName) ?? ''}</span>
                 <span className="shrink-0 text-xs text-slate-600">{waited(r.createdAt, now)}</span>
               </li>
             ))}
@@ -194,14 +195,14 @@ function Lane({ lotId, kind, queue, loading }: { lotId: string; kind: GateReques
       {kind === 'CheckIn' ? (
         // Always shown: walk-ins and bookings scanned at the lane use the same plate area
         <div className="space-y-4 border-t border-slate-200 pt-4">
-          <LaneHeader title={current && !handled ? 'Other vehicle: walk-in or booking code' : 'Walk-in or booking code'} detail="Walk-in, or scan the reservation QR at the lane" />
-          {(handled || !current) && plateArea}
+          <LaneHeader title={current && !handled ? t('Other vehicle: walk-in or booking code') : t('Walk-in or booking code')} detail={t('Walk-in, or scan the reservation QR at the lane')} />
+          {(handled || !current) && tMaybe(plateArea)}
           <EntryLaneConsole lotId={lotId} lane={plate} embedded />
         </div>
       ) : (
         <Button variant="secondary" className="w-full" asChild>
           <Link to="/staff/checkout">
-            <Keyboard /> Walk-up exit or fee at the POS
+            <Keyboard />{' '}{t('Walk-up exit or fee at the POS')}
           </Link>
         </Button>
       )}
@@ -213,10 +214,10 @@ function LaneHeader({ title, detail, aside }: { title: string; detail?: string; 
   return (
     <div className="flex items-start justify-between gap-3">
       <div>
-        <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">{title}</p>
-        {detail && <p className="mt-0.5 text-sm text-slate-700">{detail}</p>}
+        <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">{tMaybe(title)}</p>
+        {detail && <p className="mt-0.5 text-sm text-slate-700">{tMaybe(detail)}</p>}
       </div>
-      {aside}
+      {tMaybe(aside)}
     </div>
   )
 }
@@ -272,11 +273,11 @@ function RequestView({
             // Opening the barrier is the last step: the entry is confirmed at once, no "vehicle passed" press
             if (session?.status === 'PendingEntry') {
               confirmEntry.mutate(session.id, {
-                onSuccess: (s) => onHandled({ request: decision.request, phase: 'done', sessionId: s.id, message: `Checked in to ${s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot')}.` }),
-                onError: (e) => onHandled({ request: decision.request, phase: 'done', sessionId: session.id, message: `Barrier opened, but the entry was not recorded: ${getErrorMessage(e)}` }),
+                onSuccess: (s) => onHandled({ request: decision.request, phase: 'done', sessionId: s.id, message: t('Checked in to {v}.', { v: s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot') }) }),
+                onError: (e) => onHandled({ request: decision.request, phase: 'done', sessionId: session.id, message: t('Barrier opened, but the entry was not recorded: {v}', { v: getErrorMessage(e) }) }),
               })
             } else {
-              onHandled({ request: decision.request, phase: 'done', sessionId: session?.id ?? null, message: session?.slotCode ? `Checked in to bay ${session.slotCode}.` : 'Checked in.' })
+              onHandled({ request: decision.request, phase: 'done', sessionId: session?.id ?? null, message: session?.slotCode ? t('Checked in to bay {slotCode}.', { slotCode: session.slotCode }) : t('Checked in.') })
             }
           } else {
             const refund = decision.checkOut?.depositRefund ?? 0
@@ -298,10 +299,10 @@ function RequestView({
       { requestId: request.id, reason: text },
       {
         onSuccess: (r) => {
-          toast.info(`${request.plateNumber ?? 'Request'} refused`, {
-            description: request.customerName ? 'The customer sees your reason in the app.' : 'Walk-in: tell the driver the reason at the lane.',
+          toast.info(t('{v} refused', { v: request.plateNumber ?? 'Request' }), {
+            description: request.customerName ? t('The customer sees your reason in the app.') : t('Walk-in: tell the driver the reason at the lane.'),
           })
-          onHandled({ request: r, phase: 'done', sessionId: null, message: `Refused: ${text}` })
+          onHandled({ request: r, phase: 'done', sessionId: null, message: t('Refused: {text}', { text }) })
         },
         onError: (e) => toast.error(getErrorMessage(e, 'Could not refuse the request.')),
       },
@@ -313,9 +314,9 @@ function RequestView({
         title={
           checkIn
             ? request.isSimulated
-              ? 'Walk-in check-in · Simulated vehicle'
-              : `App check-in · Reservation ${request.reservationCode ?? ''}`
-            : `${request.customerName ? 'Check-out' : 'Walk-in check-out'} · Session ${request.sessionCode ?? ''}`
+              ? t('Walk-in check-in · Simulated vehicle')
+              : t('App check-in · Reservation {v}', { v: request.reservationCode ?? '' })
+            : t('{v} · Session {v2}', { v: request.customerName ? 'Check-out' : 'Walk-in check-out', v2: request.sessionCode ?? '' })
         }
         aside={
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
@@ -325,42 +326,42 @@ function RequestView({
       />
 
       <div className="rounded-xl bg-well p-5 ring-1 ring-slate-200">
-        <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{request.plateNumber ?? 'NO PLATE'}</p>
+        <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{tMaybe(request.plateNumber) ?? t('NO PLATE')}</p>
         <p className="mt-1 text-sm text-slate-700">
-          {[request.vehicleLabel, request.vehicleColor, request.vehicleTypeName].filter(Boolean).join(' • ') || 'Vehicle details unavailable'}
+          {[request.vehicleLabel, request.vehicleColor, request.vehicleTypeName].filter(Boolean).join(' • ') || t('Vehicle details unavailable')}
         </p>
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <div>
-            <dt className="text-xs text-slate-600">Customer</dt>
+            <dt className="text-xs text-slate-600">{t('Customer')}</dt>
             <dd className="flex items-center gap-1.5 font-medium text-slate-900">
-              <UserRound className="size-3.5 text-slate-600" aria-hidden /> {request.customerName ?? 'Walk-in (no account)'}
+              <UserRound className="size-3.5 text-slate-600" aria-hidden /> {tMaybe(request.customerName) ?? t('Walk-in (no account)')}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-slate-600">Phone</dt>
+            <dt className="text-xs text-slate-600">{t('Phone')}</dt>
             <dd className="flex items-center gap-1.5 font-mono font-medium text-slate-900">
-              <Phone className="size-3.5 text-slate-600" aria-hidden /> {request.customerPhone ?? '—'}
+              <Phone className="size-3.5 text-slate-600" aria-hidden /> {tMaybe(request.customerPhone) ?? '—'}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-slate-600">Bay</dt>
-            <dd className="font-mono font-medium text-slate-900">{request.slotCode ?? '—'}</dd>
+            <dt className="text-xs text-slate-600">{t('Bay')}</dt>
+            <dd className="font-mono font-medium text-slate-900">{tMaybe(request.slotCode) ?? '—'}</dd>
           </div>
           {checkIn && request.isSimulated ? (
             <div>
-              <dt className="text-xs text-slate-600">Entry</dt>
-              <dd className="font-medium text-slate-900">Walk-in, no booking</dd>
+              <dt className="text-xs text-slate-600">{t('Entry')}</dt>
+              <dd className="font-medium text-slate-900">{t('Walk-in, no booking')}</dd>
             </div>
           ) : checkIn ? (
             <div>
-              <dt className="text-xs text-slate-600">Check-in window</dt>
+              <dt className="text-xs text-slate-600">{t('Check-in window')}</dt>
               <dd className="font-mono font-medium text-slate-900">
                 {clock(request.checkInFrom)}–{clock(request.checkInUntil)}
               </dd>
             </div>
           ) : (
             <div>
-              <dt className="text-xs text-slate-600">Parked</dt>
+              <dt className="text-xs text-slate-600">{t('Parked')}</dt>
               <dd className="font-mono font-medium text-slate-900">
                 {clock(request.entryTime)}
                 {minutesInside != null && ` • ${Math.floor(minutesInside / 60)}h ${minutesInside % 60}m`}
@@ -370,38 +371,38 @@ function RequestView({
           {!checkIn && (
             <>
               <div>
-                <dt className="text-xs text-slate-600">Payment</dt>
+                <dt className="text-xs text-slate-600">{t('Payment')}</dt>
                 <dd className={cn('font-medium', request.sessionStatus === 'Paid' ? 'text-emerald-700' : 'text-amber-500')}>
-                  {request.sessionStatus === 'Paid' ? `Paid ${formatNumber(request.paidAmount)} VND` : 'Not paid yet'}
+                  {request.sessionStatus === 'Paid' ? t('Paid {v} VND', { v: formatNumber(request.paidAmount) }) : t('Not paid yet')}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-slate-600">Exit window</dt>
-                <dd className="font-mono font-medium text-slate-900">{request.exitWindowEndsAt ? `until ${clock(request.exitWindowEndsAt)}` : '—'}</dd>
+                <dt className="text-xs text-slate-600">{t('Exit window')}</dt>
+                <dd className="font-mono font-medium text-slate-900">{request.exitWindowEndsAt ? t('until {v}', { v: clock(request.exitWindowEndsAt) }) : '—'}</dd>
               </div>
             </>
           )}
         </dl>
       </div>
 
-      {plateArea}
+      {tMaybe(plateArea)}
 
       {request.problem ? (
         <p className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
           <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>
-            {request.problem}
+            {tMaybe(request.problem)}
             {!checkIn && request.sessionStatus !== 'Paid' && (
               <>
                 {' '}
-                <Link to="/staff/checkout" className="font-semibold underline">Open the POS</Link>
+                <Link to="/staff/checkout" className="font-semibold underline">{t('Open the POS')}</Link>
               </>
             )}
           </span>
         </p>
       ) : plateMatches ? (
         <p className="flex items-center gap-2 text-sm font-medium text-emerald-700">
-          <CircleCheck className="size-4 shrink-0" aria-hidden /> Check the vehicle at the {checkIn ? 'entry' : 'exit'} lane matches, then open the barrier.
+          <CircleCheck className="size-4 shrink-0" aria-hidden />{' '}{t('Check the vehicle at the')}{' '}{checkIn ? 'entry' : 'exit'}{' '}{t('lane matches, then open the barrier.')}
         </p>
       ) : null}
 
@@ -412,44 +413,44 @@ function RequestView({
             const { flag, label } = OVERRIDES[a.code]!
             return (
               <label key={a.code} className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                <Checkbox checked={Boolean(options[flag])} onChange={(e) => setOptions((o) => ({ ...o, [flag]: e.target.checked }))} /> {label}
+                <Checkbox checked={Boolean(options[flag])} onChange={(e) => setOptions((o) => ({ ...o, [flag]: e.target.checked }))} /> {tMaybe(label)}
               </label>
             )
           })}
           {usesOverride && (
-            <Input value={options.overrideReason ?? ''} onChange={(e) => setOptions((o) => ({ ...o, overrideReason: e.target.value }))} placeholder="Reason (required, kept in the session log)" />
+            <Input value={options.overrideReason ?? ''} onChange={(e) => setOptions((o) => ({ ...o, overrideReason: e.target.value }))} placeholder={t('Reason (required, kept in the session log)')} />
           )}
         </div>
       )}
 
       {refusing ? (
         <div className="space-y-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-          <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Reason for the customer</p>
+          <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Reason for the customer')}</p>
           <div className="flex flex-wrap gap-1.5">
             {REFUSE_REASONS[request.kind].map((r) => (
               <button key={r} type="button" onClick={() => setReason(r)} className={cn('rounded-full px-2.5 py-1 text-xs ring-1', reason === r ? 'bg-selected text-indigo-800 ring-indigo-300' : 'text-slate-800 ring-slate-200 hover:bg-slate-100')}>
-                {r}
+                {tMaybe(r)}
               </button>
             ))}
           </div>
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Or type the reason" maxLength={500} />
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Or type the reason')} maxLength={500} />
           <div className="grid grid-cols-2 gap-2">
             <Button variant="destructive" disabled={!reason.trim() || refuse.isPending} onClick={() => sendRefusal(reason.trim())}>
-              <CircleX /> Refuse request
+              <CircleX />{' '}{t('Refuse request')}
             </Button>
-            <Button variant="outline" onClick={() => setRefusing(false)}>Back</Button>
+            <Button variant="outline" onClick={() => setRefusing(false)}>{t('Back')}</Button>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
           <Button variant="gold" className="h-11" disabled={!plateMatches || approve.isPending || confirmEntry.isPending || (usesOverride && !options.overrideReason?.trim())}
-            title={plateMatches ? undefined : 'The Staff plate must match the plate on record'}
+            title={plateMatches ? undefined : t('The Staff plate must match the plate on record')}
             onClick={open}
           >
-            <DoorOpen /> {alerts.length ? 'Check again & open barrier' : 'Open barrier'}
+            <DoorOpen /> {alerts.length ? t('Check again & open barrier') : t('Open barrier')}
           </Button>
           <Button variant="outline" className="h-11 text-rose-700" onClick={() => setRefusing(true)}>
-            <CircleX /> Refuse
+            <CircleX />{' '}{t('Refuse')}
           </Button>
         </div>
       )}
@@ -462,13 +463,13 @@ function HandledView({ handled, kind }: { handled: Handled; kind: GateRequestKin
   const r = handled.request
   return (
     <div className="space-y-4">
-      <LaneHeader title={kind === 'CheckIn' ? 'Entry barrier' : 'Exit barrier'} />
+      <LaneHeader title={kind === 'CheckIn' ? t('Entry barrier') : t('Exit barrier')} />
       <div className={cn('rounded-xl p-5 ring-1', r.status === 'Refused' ? 'bg-rose-50 ring-rose-200' : 'bg-emerald-50 ring-emerald-200')}>
-        <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{r.plateNumber ?? 'NO PLATE'}</p>
+        <p className="font-mono text-3xl font-bold tracking-[0.15em] text-slate-950">{tMaybe(r.plateNumber) ?? t('NO PLATE')}</p>
         <p className="mt-1 text-sm text-slate-700">{[r.vehicleLabel, r.customerName].filter(Boolean).join(' • ')}</p>
         <p className={cn('mt-3 flex items-start gap-2 text-sm font-medium', r.status === 'Refused' ? 'text-rose-800' : 'text-emerald-700')}>
           {r.status === 'Refused' ? <CircleX className="mt-0.5 size-4 shrink-0" aria-hidden /> : <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden />}
-          {handled.message}
+          {tMaybe(handled.message)}
         </p>
       </div>
     </div>

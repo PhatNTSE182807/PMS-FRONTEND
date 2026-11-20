@@ -7,6 +7,7 @@ import { formatNumber } from '@/lib/format'
 import { occupancyLevel } from '@/lib/occupancy'
 import { cn } from '@/lib/utils'
 import type { HubPerformanceDTO } from '@/types/dashboard.dto'
+import { t, tMaybe } from '@/i18n'
 
 const vnd = (value: number) => formatNumber(Math.round(value))
 
@@ -43,28 +44,28 @@ export function HubPerformanceItem({ hub, onOpen }: { hub: HubPerformanceDTO; on
           <Building2 className="size-5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="truncate font-display text-base font-semibold text-slate-950">{hub.lotName}</p>
+          <p className="truncate font-display text-base font-semibold text-slate-950">{tMaybe(hub.lotName)}</p>
           {onOpen && (
             <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-indigo-700">
-              <Rotate3d className="size-3.5" aria-hidden /> View 3D model
+              <Rotate3d className="size-3.5" aria-hidden />{' '}{t('View 3D model')}
             </p>
           )}
           <p className="mt-0.5 flex items-start gap-1 text-sm text-slate-700">
             <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-500" aria-hidden />
-            <span className="line-clamp-2">{hub.location}</span>
+            <span className="line-clamp-2">{tMaybe(hub.location)}</span>
           </p>
         </div>
       </div>
 
       <div>
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="font-semibold text-slate-800">Occupancy</span>
+          <span className="font-semibold text-slate-800">{t('Occupancy')}</span>
           <span className="font-mono font-bold text-slate-950 tabular-nums">{hub.occupancyRate.toFixed(1)}%</span>
         </div>
         <div
           className={cn('mt-2 h-2 overflow-hidden rounded-full', level.track)}
           role="meter"
-          aria-label={`${hub.lotName} occupancy`}
+          aria-label={t('{lotName} occupancy', { lotName: hub.lotName })}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(percent)}
@@ -73,26 +74,26 @@ export function HubPerformanceItem({ hub, onOpen }: { hub: HubPerformanceDTO; on
         </div>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <span className="font-mono text-xs text-slate-600 tabular-nums">
-            {formatNumber(hub.occupiedBays)} / {formatNumber(hub.totalBays)} bays
+            {t('{occupiedBays} / {totalBays} bays', { occupiedBays: formatNumber(hub.occupiedBays), totalBays: formatNumber(hub.totalBays) })}
           </span>
           <Badge tone={level.tone}>
             <LevelIcon aria-hidden />
-            {level.label}
+            {tMaybe(level.label)}
           </Badge>
         </div>
       </div>
 
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:gap-2 lg:text-right">
         <div>
-          <dt className="text-[11px] font-bold tracking-wider text-slate-600 uppercase">Today</dt>
+          <dt className="text-[11px] font-bold tracking-wider text-slate-600 uppercase">{t('Today')}</dt>
           <dd className="font-mono text-lg font-bold text-amber-500 tabular-nums">
-            {vnd(hub.todayRevenue)} <span className="text-xs font-semibold text-slate-600">VND</span>
+            {vnd(hub.todayRevenue)} <span className="text-xs font-semibold text-slate-600">{t('VND')}</span>
           </dd>
         </div>
         <div>
-          <dt className="text-[11px] font-bold tracking-wider text-slate-600 uppercase">Month to date</dt>
+          <dt className="text-[11px] font-bold tracking-wider text-slate-600 uppercase">{t('Month to date')}</dt>
           <dd className="font-mono text-sm font-semibold text-slate-900 tabular-nums">
-            {vnd(hub.mtdRevenue)} <span className="text-xs text-slate-600">VND</span>
+            {vnd(hub.mtdRevenue)} <span className="text-xs text-slate-600">{t('VND')}</span>
           </dd>
         </div>
       </dl>

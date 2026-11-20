@@ -5,6 +5,7 @@ import { walletService } from '@/api/wallet.service'
 import { getErrorMessage } from '@/api/apiError'
 import { session } from '@/lib/session'
 import { USER_TOAST, toastPaymentError } from '@/lib/userToasts'
+import { t as tr, localNumberFormat } from '@/i18n'
 
 export interface WalletTransaction {
   id: string
@@ -44,11 +45,11 @@ function demoTopUpsToday(transactions: WalletTransaction[]): number {
 }
 
 export function formatVndBalance(amount: number): string {
-  return new Intl.NumberFormat('en-US').format(amount) + ' ₫'
+  return localNumberFormat().format(amount) + ' ₫'
 }
 
 export function formatVndQuick(amount: number): string {
-  return new Intl.NumberFormat('en-US').format(amount) + '₫'
+  return localNumberFormat().format(amount) + '₫'
 }
 
 export function useWallet() {
@@ -308,12 +309,12 @@ export function useWallet() {
   const deposit = useCallback(
     async (amount: number, method: 'vnpay' | 'momo', options: { simulate?: boolean } = {}): Promise<boolean> => {
       if (amount <= 0 || isNaN(amount)) {
-        toast.error('Please enter a valid amount.')
+        toast.error(tr('Please enter a valid amount.'))
         return false
       }
 
       if (amount < minTopUp) {
-        toast.error(`Minimum top-up amount is ${formatVndBalance(minTopUp)}.`)
+        toast.error(tr('Minimum top-up amount is {minTopUp}.', { minTopUp: formatVndBalance(minTopUp) }))
         return false
       }
 
@@ -347,7 +348,7 @@ export function useWallet() {
 
           if (!res.payUrl) throw new Error(`${methodName} did not return a payment page. Please try again.`)
 
-          toast.loading(`Redirecting to ${methodName} payment gateway...`)
+          toast.loading(tr('Redirecting to {methodName} payment gateway...', { methodName }))
           setTimeout(() => {
             window.location.assign(res.payUrl!)
           }, 600)
@@ -367,8 +368,8 @@ export function useWallet() {
 
       const newTx: WalletTransaction = {
         id: code,
-        title: `Wallet Top-up (${methodName})`,
-        subtitle: `${timeStr} • ID: ${code}`,
+        title: tr('Wallet Top-up ({methodName})', { methodName }),
+        subtitle: tr('{timeStr} • ID: {code}', { timeStr, code }),
         amount,
         balanceBefore: balance,
         balanceAfter: balance + amount,
@@ -381,7 +382,7 @@ export function useWallet() {
       const nextBal = balance + amount
       const nextTxs = [newTx, ...transactions]
       updateBalanceAndTxs(nextBal, nextTxs)
-      toast.success(`Successfully deposited ${formatVndBalance(amount)} via ${methodName}!`)
+      toast.success(tr('Successfully deposited {amount} via {methodName}!', { amount: formatVndBalance(amount), methodName }))
       return true
     },
     [balance, transactions, updateBalanceAndTxs, usesApi, minTopUp, topUpRemainingToday, dailyTopUpLimit, fetchWallet],
@@ -390,11 +391,11 @@ export function useWallet() {
   const withdraw = useCallback(
     async (amount: number, method: 'bank' | 'momo', noteOrAccount?: string, bankName?: string): Promise<boolean> => {
       if (amount <= 0 || isNaN(amount)) {
-        toast.error('Please enter a valid withdrawal amount.')
+        toast.error(tr('Please enter a valid withdrawal amount.'))
         return false
       }
       if (amount > balance) {
-        toast.error('Available balance is insufficient for this withdrawal.')
+        toast.error(tr('Available balance is insufficient for this withdrawal.'))
         return false
       }
 
@@ -444,7 +445,7 @@ export function useWallet() {
           // Broadcast immediately to update header balance and other listeners across the app
           window.dispatchEvent(new Event('xxiv-wallet-updated'))
 
-          toast.success(`Withdrawal request of ${formatVndBalance(amount)} submitted successfully.`)
+          toast.success(tr('Withdrawal request of {amount} submitted successfully.', { amount: formatVndBalance(amount) }))
           await fetchWallet({ silent: true })
           setLoading(false)
           return true
@@ -462,7 +463,7 @@ export function useWallet() {
 
       const newTx: WalletTransaction = {
         id: code,
-        title: `Withdrawal to ${targetTitle}`,
+        title: tr('Withdrawal to {targetTitle}', { targetTitle }),
         subtitle: `${timeStr} • ${noteOrAccount || `ID: ${code}`}`,
         amount: -amount,
         balanceBefore: balance,
@@ -476,7 +477,7 @@ export function useWallet() {
       const nextBal = balance - amount
       const nextTxs = [newTx, ...transactions]
       updateBalanceAndTxs(nextBal, nextTxs)
-      toast.success(`Withdrawal request of ${formatVndBalance(amount)} submitted.`)
+      toast.success(tr('Withdrawal request of {amount} submitted.', { amount: formatVndBalance(amount) }))
       return true
     },
     [balance, transactions, updateBalanceAndTxs, fetchWallet],

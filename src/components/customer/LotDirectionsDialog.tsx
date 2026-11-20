@@ -4,6 +4,7 @@ import type { Feature, LineString } from 'geojson'
 import { ExternalLink, LocateFixed, MapPin, X } from 'lucide-react'
 import type { PublicLotDTO } from '@/types/publicLot.dto'
 import { formatDistance, formatDuration, geocodeAddress, getDrivingRoute, mapboxToken, type DrivingRoute, type LngLat } from '@/api/mapbox.service'
+import { t, tMaybe } from '@/i18n'
 
 type DirectionsLot = Pick<PublicLotDTO, 'name' | 'address' | 'district' | 'city' | 'latitude' | 'longitude'>
 
@@ -186,12 +187,12 @@ export function LotDirectionsDialog({ lot: openedLot, onClose }: { lot: Directio
       <div className="cx-map-dialog" role="dialog" aria-modal="true" aria-labelledby="lot-directions-title" onClick={(e) => e.stopPropagation()}>
         <div className="cx-map-dialog__head">
           <div>
-            <h2 className="cx-card__title" id="lot-directions-title">Directions to {lot.name}</h2>
+            <h2 className="cx-card__title" id="lot-directions-title">{t('Directions to {name}', { name: lot.name })}</h2>
             <p className="cx-map-dialog__addr">
               <MapPin size={14} aria-hidden /> {[lot.address, lot.district, lot.city].filter(Boolean).join(', ') || '—'}
             </p>
           </div>
-          <button type="button" className="cx-icon-btn" aria-label="Close" onClick={onClose}>
+          <button type="button" className="cx-icon-btn" aria-label={t('Close')} onClick={onClose}>
             <X aria-hidden />
           </button>
         </div>
@@ -200,16 +201,16 @@ export function LotDirectionsDialog({ lot: openedLot, onClose }: { lot: Directio
           {mapboxToken ? (
             <DirectionsMap lot={lot} origin={locate === 'locating' ? null : origin} onRoute={setRoute} />
           ) : (
-            <p className="cx-map-dialog__empty">The map is not set up yet. Open the directions in Google Maps instead.</p>
+            <p className="cx-map-dialog__empty">{t('The map is not set up yet. Open the directions in Google Maps instead.')}</p>
           )}
         </div>
 
         <div className="cx-map-dialog__foot">
           <span className="cx-map-dialog__status" aria-live="polite">
-            <LocateFixed size={15} aria-hidden /> {status}
+            <LocateFixed size={15} aria-hidden /> {tMaybe(status)}
           </span>
           <a className="cx-btn cx-btn--teal" href={googleMapsUrl(lot, origin)} target="_blank" rel="noopener noreferrer">
-            <ExternalLink aria-hidden /> Open in Google Maps
+            <ExternalLink aria-hidden />{' '}{t('Open in Google Maps')}
           </a>
         </div>
       </div>

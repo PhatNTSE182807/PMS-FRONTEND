@@ -22,6 +22,7 @@ import { toSearchable } from '@/lib/text'
 import { cn } from '@/lib/utils'
 import type { UserDTO } from '@/types/identity.dto'
 import type { ManagedLot } from '@/types/lot-management.dto'
+import { t as tr, tMaybe } from '@/i18n'
 
 type Tab = 'ALL' | 'ACTIVE' | 'LOCKED'
 type PendingAction = { type: 'lock'; user: UserDTO }
@@ -66,29 +67,29 @@ function Staff({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Staff Directory"
+        title={tr('Staff Directory')}
        
         actions={
           <Button variant="gold" onClick={() => setForm({ open: true })}>
-            <UserPlus aria-hidden /> Add staff
+            <UserPlus aria-hidden />{' '}{tr('Add staff')}
           </Button>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Kpi label="Team at this lot" icon={<Users />}>
+        <Kpi label={tr('Team at this lot')} icon={<Users />}>
           <p className="mt-3 font-display text-4xl font-bold text-slate-950">
-            {people.length} <span className="text-base font-medium text-slate-700">staff</span>
+            {people.length} <span className="text-base font-medium text-slate-700">{tr('staff')}</span>
           </p>
         </Kpi>
-        <Kpi label="Can sign in" icon={<UserCheck />}>
+        <Kpi label={tr('Can sign in')} icon={<UserCheck />}>
           <p className="mt-3 font-display text-4xl font-bold text-emerald-600">
-            {active.length} <span className="text-base font-medium text-slate-950">active</span>
+            {active.length} <span className="text-base font-medium text-slate-950">{tr('active')}</span>
           </p>
         </Kpi>
-        <Kpi label="Access blocked" icon={<UserX />}>
+        <Kpi label={tr('Access blocked')} icon={<UserX />}>
           <p className="mt-3 font-display text-4xl font-bold text-rose-400">
-            {locked.length} <span className="text-base font-medium text-slate-950">locked</span>
+            {locked.length} <span className="text-base font-medium text-slate-950">{tr('locked')}</span>
           </p>
         </Kpi>
       </div>
@@ -97,16 +98,16 @@ function Staff({ lot }: { lot: ManagedLot }) {
         <div className="flex flex-col gap-3 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-              <UserCheck className="size-5 text-amber-500" aria-hidden /> Staff roster
+              <UserCheck className="size-5 text-amber-500" aria-hidden />{' '}{tr('Staff roster')}
             </h2>
-            <p className="text-sm text-slate-700">Add, edit, lock or move the staff of the lots you manage.</p>
+            <p className="text-sm text-slate-700">{tr('Add, edit, lock or move the staff of the lots you manage.')}</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search staff…" className="pl-9 sm:w-64" aria-label="Search staff" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr('Search staff…')} className="pl-9 sm:w-64" aria-label={tr('Search staff')} />
             </div>
-            <div role="tablist" aria-label="Status" className="flex gap-1 rounded-lg bg-slate-50 p-1 ring-1 ring-slate-200">
+            <div role="tablist" aria-label={tr('Status')} className="flex gap-1 rounded-lg bg-slate-50 p-1 ring-1 ring-slate-200">
               {TABS.map((t) => (
                 <button
                   key={t.value}
@@ -116,7 +117,7 @@ function Staff({ lot }: { lot: ManagedLot }) {
                   onClick={() => setTab(t.value)}
                   className={cn('rounded-md px-3 py-1.5 text-sm font-medium', tab === t.value ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100')}
                 >
-                  {t.label} ({count(t.value)})
+                  {tMaybe(t.label)} ({count(t.value)})
                 </button>
               ))}
             </div>
@@ -124,12 +125,12 @@ function Staff({ lot }: { lot: ManagedLot }) {
         </div>
 
         {staff.isError ? (
-          <ErrorState message={getErrorMessage(staff.error)} onRetry={() => staff.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(staff.error))} onRetry={() => staff.refetch()} />
         ) : !staff.isPending && visible.length === 0 ? (
           <EmptyState
             icon={Users}
-            title={people.length ? 'No matching staff' : 'No staff at this lot yet'}
-            description={people.length ? 'Try another name or code.' : 'Use “Add staff” to create the first gate account for this lot.'}
+            title={people.length ? tr('No matching staff') : tr('No staff at this lot yet')}
+            description={people.length ? tr('Try another name or code.') : tr('Use “Add staff” to create the first gate account for this lot.')}
           />
         ) : (
           <Table aria-busy={staff.isPending}>
@@ -137,7 +138,7 @@ function Staff({ lot }: { lot: ManagedLot }) {
               <TableRow className="hover:bg-transparent">
                 {['Staff member', 'Contact & email', 'Status', ''].map((h, i) => (
                   <TableHead key={i} className={i === 3 ? 'text-right' : undefined}>
-                    {h || <span className="sr-only">Actions</span>}
+                    {tMaybe(h) || <span className="sr-only">{tr('Actions')}</span>}
                   </TableHead>
                 ))}
               </TableRow>
@@ -163,7 +164,7 @@ function Staff({ lot }: { lot: ManagedLot }) {
                             </span>
                             <div>
                               <p className="font-semibold text-slate-950">{p.fullName}</p>
-                              <p className="font-mono text-xs text-slate-600">{p.employeeCode}</p>
+                              <p className="font-mono text-xs text-slate-600">{tMaybe(p.employeeCode)}</p>
                             </div>
                           </div>
                         </TableCell>
@@ -173,18 +174,18 @@ function Staff({ lot }: { lot: ManagedLot }) {
                         </TableCell>
                         <TableCell>
                           <Badge tone={status.tone}>
-                            <StatusDot /> {status.label}
+                            <StatusDot /> {tMaybe(status.label)}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-0.5">
-                            <Button variant="ghost" size="icon" title="Edit or move" aria-label={`Edit ${p.fullName}`} onClick={() => setForm({ open: true, user: p })}>
+                            <Button variant="ghost" size="icon" title={tr('Edit or move')} aria-label={tr('Edit {fullName}', { fullName: p.fullName })} onClick={() => setForm({ open: true, user: p })}>
                               <Pencil />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              title={isLocked ? 'Reactivate' : 'Deactivate'}
+                              title={isLocked ? tr('Reactivate') : tr('Deactivate')}
                               aria-label={`${isLocked ? 'Reactivate' : 'Deactivate'} ${p.fullName}`}
                               className={isLocked ? 'text-emerald-600 hover:text-emerald-700' : 'text-amber-600 hover:text-amber-700'}
                               onClick={() => setPending({ type: 'lock', user: p })}
@@ -202,8 +203,7 @@ function Staff({ lot }: { lot: ManagedLot }) {
 
         <p className="flex items-start gap-2 border-t border-slate-200 px-4 py-3 text-sm text-slate-700">
           <Info className="mt-0.5 size-4 shrink-0 text-amber-500" aria-hidden />
-          Each lot has one Manager and any number of Staff. Deactivating a staff member blocks sign-in and keeps all their history;
-          it is not possible while they are on shift. Have them hand in their cash drawer first.
+          {tr('Each lot has one Manager and any number of Staff. Deactivating a staff member blocks sign-in and keeps all their history; it is not possible while they are on shift. Have them hand in their cash drawer first.')}
         </p>
       </Card>
 
@@ -219,16 +219,16 @@ function Staff({ lot }: { lot: ManagedLot }) {
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setPending(null)}
-          title={pending.user.status === 'ACTIVE' ? 'Deactivate staff member?' : 'Reactivate staff member?'}
+          title={pending.user.status === 'ACTIVE' ? tr('Deactivate staff member?') : tr('Reactivate staff member?')}
           description={
             <>
               <strong className="text-slate-900">{pending.user.fullName}</strong>{' '}
               {pending.user.status === 'ACTIVE'
-                ? 'can no longer sign in or be put on shifts until you reactivate the account. Their sessions, cash and pay records are kept.'
+                ? tr('can no longer sign in or be put on shifts until you reactivate the account. Their sessions, cash and pay records are kept.')
                 : 'can sign in and be put on shifts again right away.'}
             </>
           }
-          confirmLabel={pending.user.status === 'ACTIVE' ? 'Deactivate' : 'Reactivate'}
+          confirmLabel={pending.user.status === 'ACTIVE' ? tr('Deactivate') : tr('Reactivate')}
           tone={pending.user.status === 'ACTIVE' ? 'destructive' : 'default'}
           pending={setStatus.isPending}
           onConfirm={() => confirmLock(pending.user)}

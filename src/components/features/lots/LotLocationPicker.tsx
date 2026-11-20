@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { geocodeAddress, mapboxToken, type LngLat } from '@/api/mapbox.service'
 import { coordinateError } from '@/lib/lotCoordinates'
+import { t, tMaybe } from '@/i18n'
 
 /** Map centre when the lot has no position yet (Ho Chi Minh City). */
 const DEFAULT_CENTER: LngLat = { lng: 106.7009, lat: 10.7769 }
@@ -84,23 +85,23 @@ export function LotLocationPicker({ latitude, longitude, address, onChange }: Pr
 
   return (
     <div className="grid gap-2 sm:col-span-2">
-      <span className="text-sm font-medium text-slate-700">Map position</span>
+      <span className="text-sm font-medium text-slate-700">{t('Map position')}</span>
       <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-        <Input inputMode="decimal" placeholder="Latitude, e.g. 10.801684" aria-label="Latitude" value={latText} onChange={(e) => typed('lat', e.target.value)} />
-        <Input inputMode="decimal" placeholder="Longitude, e.g. 106.655154" aria-label="Longitude" value={lngText} onChange={(e) => typed('lng', e.target.value)} />
+        <Input inputMode="decimal" placeholder={t('Latitude, e.g. 10.801684')} aria-label={t('Latitude')} value={latText} onChange={(e) => typed('lat', e.target.value)} />
+        <Input inputMode="decimal" placeholder={t('Longitude, e.g. 106.655154')} aria-label={t('Longitude')} value={lngText} onChange={(e) => typed('lng', e.target.value)} />
         <div className="flex gap-2">
           {mapboxToken && (
             <Button type="button" variant="outline" disabled={!address.trim() || finding} onClick={findFromAddress}>
-              <Search className="size-4" aria-hidden /> {finding ? 'Searching…' : 'Find from address'}
+              <Search className="size-4" aria-hidden /> {finding ? t('Searching…') : t('Find from address')}
             </Button>
           )}
-          <Button type="button" variant="outline" disabled={latitude == null && longitude == null} onClick={() => setPoint(null)} aria-label="Clear the map position">
+          <Button type="button" variant="outline" disabled={latitude == null && longitude == null} onClick={() => setPoint(null)} aria-label={t('Clear the map position')}>
             <MapPinOff className="size-4" aria-hidden />
           </Button>
         </div>
       </div>
       {mapboxToken && <PickerMap point={point} onPick={setPoint} />}
-      <p className={error || findError ? 'text-xs text-rose-600' : 'text-xs text-slate-500'}>{error || findError || hint}</p>
+      <p className={error || findError ? 'text-xs text-rose-600' : 'text-xs text-slate-500'}>{tMaybe(error) || tMaybe(findError) || tMaybe(hint)}</p>
     </div>
   )
 }
@@ -185,7 +186,7 @@ function PickerMap({ point, onPick }: { point: LngLat | null; onPick: (point: Ln
       <div ref={containerRef} className="size-full" />
       {!point && (
         <span className="pointer-events-none absolute left-2 top-2 flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-600 shadow">
-          <Crosshair className="size-3.5" aria-hidden /> Click the lot entrance to place the pin
+          <Crosshair className="size-3.5" aria-hidden />{' '}{t('Click the lot entrance to place the pin')}
         </span>
       )}
     </div>

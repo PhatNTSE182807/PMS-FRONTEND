@@ -3,11 +3,12 @@ import { toast } from 'sonner'
 import { Clock, Info, Trash2 } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { useDeletionRequest, useDeletionRequestActions } from '@/hooks/useProfile'
+import { t, currentLocale, tMaybe } from '@/i18n'
 
 const MAX_REASON = 500
 
 const formatWhen = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
+  new Date(iso).toLocaleString(currentLocale(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
 
 /**
  * Profile card where a customer asks for their account to be deleted. The request goes to the Admins, who lock the
@@ -23,7 +24,7 @@ export function AccountDeletionCard() {
     e.preventDefault()
     send.mutate(reason, {
       onSuccess: () => {
-        toast.success('Request sent. An administrator will close your account.')
+        toast.success(t('Request sent. An administrator will close your account.'))
         setAsking(false)
         setReason('')
       },
@@ -33,7 +34,7 @@ export function AccountDeletionCard() {
 
   const withdraw = () =>
     cancel.mutate(undefined, {
-      onSuccess: () => toast.success('Your account deletion request was withdrawn.'),
+      onSuccess: () => toast.success(t('Your account deletion request was withdrawn.')),
       onError: (err) => toast.error(getErrorMessage(err)),
     })
 
@@ -43,27 +44,26 @@ export function AccountDeletionCard() {
         <div className="cx-card__title-row">
           <span className="cx-card__icon"><Trash2 aria-hidden /></span>
           <div>
-            <h2 className="cx-card__title" id="delete-account-title">Delete Account</h2>
-            <p className="cx-card__subtitle">Ask an administrator to close your account.</p>
+            <h2 className="cx-card__title" id="delete-account-title">{t('Delete Account')}</h2>
+            <p className="cx-card__subtitle">{t('Ask an administrator to close your account.')}</p>
           </div>
         </div>
       </div>
 
       {isLoading ? (
-        <p className="cx-card__subtitle">Loading…</p>
+        <p className="cx-card__subtitle">{t('Loading…')}</p>
       ) : request ? (
         <>
           <p className="cx-note cx-note--warn">
             <Clock aria-hidden />
             <span className="cx-note__text">
-              You asked for your account to be deleted on {formatWhen(request.requestedAt)}
-              {request.reason ? ` ("${request.reason}")` : ''}. An administrator will lock it once nothing is left open
-              on it. You can keep using the app until then.
+              {t('You asked for your account to be deleted on {requestedAt}', { requestedAt: formatWhen(request.requestedAt) })}
+              {request.reason ? ` ("${request.reason}")` : ''}{t('. An administrator will lock it once nothing is left open on it. You can keep using the app until then.')}
             </span>
           </p>
           <div className="cx-actions">
             <button type="button" className="cx-btn cx-btn--light" onClick={withdraw} disabled={cancel.isPending}>
-              {cancel.isPending ? 'Withdrawing...' : 'Withdraw request'}
+              {cancel.isPending ? t('Withdrawing...') : t('Withdraw request')}
             </button>
           </div>
         </>
@@ -72,13 +72,12 @@ export function AccountDeletionCard() {
           <p className="cx-note">
             <Info aria-hidden />
             <span className="cx-note__text">
-              Your parking history and payments are kept without your personal details. Finish any parked stay and booking
-              and use up your wallet balance first.
+              {t('Your parking history and payments are kept without your personal details. Finish any parked stay and booking and use up your wallet balance first.')}
             </span>
           </p>
           <div className="cx-actions">
             <button type="button" className="cx-btn cx-btn--danger" onClick={() => setAsking(true)}>
-              <Trash2 aria-hidden /> Request account deletion
+              <Trash2 aria-hidden />{' '}{t('Request account deletion')}
             </button>
           </div>
         </>
@@ -86,8 +85,8 @@ export function AccountDeletionCard() {
         <form className="cx-form" onSubmit={submit} noValidate>
           <div className="cx-field">
             <div className="cx-field__label-row">
-              <label className="cx-field__label" htmlFor="delete-reason">Reason (optional)</label>
-              <span className="cx-card__subtitle">{reason.length}/{MAX_REASON}</span>
+              <label className="cx-field__label" htmlFor="delete-reason">{t('Reason (optional)')}</label>
+              <span className="cx-card__subtitle">{reason.length}/{tMaybe(MAX_REASON)}</span>
             </div>
             <textarea
               id="delete-reason"
@@ -96,15 +95,15 @@ export function AccountDeletionCard() {
               maxLength={MAX_REASON}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Tell us why you are leaving"
+              placeholder={t('Tell us why you are leaving')}
             />
           </div>
           <div className="cx-actions">
             <button type="button" className="cx-btn cx-btn--ghost" onClick={() => setAsking(false)} disabled={send.isPending}>
-              Cancel
+              {t('Cancel')}
             </button>
             <button type="submit" className="cx-btn cx-btn--danger" disabled={send.isPending}>
-              {send.isPending ? 'Sending...' : 'Send deletion request'}
+              {send.isPending ? t('Sending...') : t('Send deletion request')}
             </button>
           </div>
         </form>

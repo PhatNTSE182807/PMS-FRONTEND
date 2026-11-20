@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { USER_TOAST } from '@/lib/userToasts'
 import { DUTY_NOTIFICATION_TYPES, dutyKeys } from './useDuty'
 import { payrollKeys } from './usePayroll'
+import { currentLocale } from '@/i18n'
 
 const BOOKED_BAY_TYPES = new Set<string>([
   'BookedBayTaken',
@@ -172,6 +173,6 @@ export function useTimeAgo() {
     if (hours < 24) return `${hours} h ago`
     const days = Math.floor(hours / 24)
     if (days < 30) return `${days} d ago`
-    return new Date(iso).toLocaleDateString()
+    return new Date(iso).toLocaleDateString(currentLocale())
   }, [])
 }

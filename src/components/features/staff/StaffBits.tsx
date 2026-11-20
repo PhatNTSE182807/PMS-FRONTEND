@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { tMaybe } from '@/i18n'
 
 /** Rounded module surface of the Staff console. */
 export function Panel({ className, children, ...props }: ComponentProps<'section'>) {
@@ -15,10 +16,10 @@ export function SectionTitle({ icon, children, aside, className }: { icon?: Reac
   return (
     <div className={cn('mb-5 flex flex-wrap items-center justify-between gap-3', className)}>
       <h2 className="flex items-center gap-2.5 font-display text-lg font-bold tracking-wide text-slate-950 uppercase [&_svg]:size-5 [&_svg]:text-amber-500">
-        {icon}
+        {tMaybe(icon)}
         {children}
       </h2>
-      {aside}
+      {tMaybe(aside)}
     </div>
   )
 }
@@ -37,8 +38,8 @@ export function StatTile({ label, icon, children, className }: { label: string; 
   return (
     <section className={cn('rounded-2xl bg-white p-5 ring-1 ring-slate-200', className)}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{label}</p>
-        {icon && <span className="text-indigo-700 [&_svg]:size-4.5">{icon}</span>}
+        <p className="text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{tMaybe(label)}</p>
+        {icon && <span className="text-indigo-700 [&_svg]:size-4.5">{tMaybe(icon)}</span>}
       </div>
       {children}
     </section>
@@ -49,8 +50,8 @@ export function StatTile({ label, icon, children, className }: { label: string; 
 export function Metric({ value, unit, className }: { value: ReactNode; unit?: ReactNode; className?: string }) {
   return (
     <p className={cn('mt-3 font-display text-3xl font-bold tracking-tight text-slate-950 tabular-nums', className)}>
-      {value}
-      {unit && <span className="ml-1.5 text-sm font-semibold text-slate-700">{unit}</span>}
+      {tMaybe(value)}
+      {unit && <span className="ml-1.5 text-sm font-semibold text-slate-700">{tMaybe(unit)}</span>}
     </p>
   )
 }

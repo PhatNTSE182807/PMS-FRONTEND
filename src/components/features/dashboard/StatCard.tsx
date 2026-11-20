@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { tMaybe } from '@/i18n'
 
 export type StatCardTone = 'teal' | 'gold' | 'emerald' | 'steel'
 
@@ -68,7 +69,7 @@ export function StatCard({
       />
 
       <div className="flex items-start justify-between gap-4">
-        <p className="text-xs font-bold tracking-[0.1em] text-slate-800 uppercase">{label}</p>
+        <p className="text-xs font-bold tracking-[0.1em] text-slate-800 uppercase">{tMaybe(label)}</p>
         <span className={cn('grid shrink-0 place-items-center rounded-lg', large ? 'size-10' : 'size-9', t.icon)}>
           <Icon className={large ? 'size-5' : 'size-4'} aria-hidden />
         </span>
@@ -88,17 +89,17 @@ export function StatCard({
               large ? 'text-4xl sm:text-5xl lg:text-3xl xl:text-5xl' : 'text-3xl',
             )}
           >
-            {value}
-            {unit && <span className="ml-2 text-base font-semibold tracking-normal text-slate-600">{unit}</span>}
+            {tMaybe(value)}
+            {unit && <span className="ml-2 text-base font-semibold tracking-normal text-slate-600">{tMaybe(unit)}</span>}
           </p>
-          {caption && <p className="mt-2 text-sm text-slate-700">{caption}</p>}
+          {caption && <p className="mt-2 text-sm text-slate-700">{tMaybe(caption)}</p>}
           {children}
         </>
       )}
 
       {to && (
         <p className={cn('mt-4 flex items-center gap-1.5 text-sm font-semibold', t.accent)}>
-          {linkLabel}
+          {tMaybe(linkLabel)}
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
         </p>
       )}
@@ -108,7 +109,7 @@ export function StatCard({
   if (!to) return card
   return (
     <Link to={to} className="group block rounded-xl outline-none">
-      {card}
+      {tMaybe(card)}
     </Link>
   )
 }

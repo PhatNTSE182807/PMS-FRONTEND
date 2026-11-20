@@ -4,6 +4,7 @@ import { CreditCard, LogOut, Menu, Shield, X } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { LOGO_SRC } from '@/components/ParkingLogo'
+import { LanguageToggle } from '@/components/LanguageToggle'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -14,6 +15,7 @@ import { UserWalletModal } from './UserWalletModal'
 import '@/styles/customer.css'
 import '@/styles/customer-light.css'
 import '@/styles/wallet.css'
+import { t, tMaybe } from '@/i18n'
 
 /** Hash links scroll to a dashboard section; the others are pages of their own. */
 const LINKS = [
@@ -66,7 +68,7 @@ export function CustomerShell() {
     <div className="cx">
       <header className="cx-nav">
         <div className="cx-container cx-nav__inner">
-          <Link to="/" className="cx-nav__brand" aria-label="XXIV Parking home">
+          <Link to="/" className="cx-nav__brand" aria-label={t('XXIV Parking home')}>
             <img src={LOGO_SRC} alt="" className="cx-nav__logo" />
             <span className="cx-nav__brand-text">
               <span className="cx-nav__brand-name brand-gold">XXIV</span>
@@ -74,14 +76,14 @@ export function CustomerShell() {
             </span>
           </Link>
 
-          <nav id="cx-nav-links" className={`cx-nav__links ${isMenuOpen ? 'cx-nav__links--open' : ''}`} aria-label="Customer area">
+          <nav id="cx-nav-links" className={`cx-nav__links ${isMenuOpen ? 'cx-nav__links--open' : ''}`} aria-label={t('Customer area')}>
             {LINKS.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 className={() => `cx-nav__link ${isActive(link.to, link.end) ? 'cx-nav__link--active' : ''}`}
               >
-                {link.label}
+                {tMaybe(link.label)}
               </NavLink>
             ))}
             {/* The wallet balance and Logout of the bar are hidden on small screens: the menu carries them */}
@@ -93,29 +95,30 @@ export function CustomerShell() {
                 setIsWalletOpen(true)
               }}
             >
-              <CreditCard aria-hidden /> Wallet · {formatVndBalance(balance)}
+              <CreditCard aria-hidden />{' '}{t('Wallet · {balance}', { balance: formatVndBalance(balance) })}
             </button>
             <button type="button" className="cx-nav__link cx-nav__mobile-only" onClick={handleLogout}>
-              <LogOut aria-hidden /> Logout
+              <LogOut aria-hidden />{' '}{t('Logout')}
             </button>
           </nav>
 
           <div className="cx-nav__actions">
+            <LanguageToggle className="cx-btn cx-btn--ghost cx-theme-toggle" />
             <ThemeToggle className="cx-btn cx-btn--ghost cx-theme-toggle" />
             <NotificationBell />
             <div className="cx-nav__user-block">
-              <Link to="/me/profile" className="cx-avatar cx-avatar--nav" title="User Profile">
+              <Link to="/me/profile" className="cx-avatar cx-avatar--nav" title={t('User Profile')}>
                 {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
               </Link>
               <div className="cx-nav__user-text">
-                <Link to="/me/profile" className="cx-nav__user-name-link" title="User Profile">
-                  {name}
+                <Link to="/me/profile" className="cx-nav__user-name-link" title={t('User Profile')}>
+                  {tMaybe(name)}
                 </Link>
                 <button
                   type="button"
                   className="cx-nav__user-balance-btn"
                   onClick={() => setIsWalletOpen(true)}
-                  title="XXIV E-Wallet (Click to view balance, deposit & withdraw)"
+                  title={t('XXIV E-Wallet (Click to view balance, deposit & withdraw)')}
                 >
                   <CreditCard className="cx-nav__wallet-icon" aria-hidden="true" />
                   <span className="cx-nav__wallet-amount">{formatVndBalance(balance)}</span>
@@ -123,12 +126,12 @@ export function CustomerShell() {
               </div>
             </div>
             <button type="button" className="cx-btn cx-btn--ghost cx-nav__logout" onClick={handleLogout}>
-              <LogOut aria-hidden /> Logout
+              <LogOut aria-hidden />{' '}{t('Logout')}
             </button>
             <button
               type="button"
               className="cx-btn cx-btn--ghost cx-nav__menu-btn"
-              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={isMenuOpen ? t('Close menu') : t('Open menu')}
               aria-expanded={isMenuOpen}
               aria-controls="cx-nav-links"
               onClick={() => setIsMenuOpen((open) => !open)}
@@ -150,13 +153,13 @@ export function CustomerShell() {
           <div className="cx-footer__top">
             <div>
               <p className="cx-footer__brand">
-                <Shield aria-hidden /> XXIV PARKING
+                <Shield aria-hidden />{' '}XXIV PARKING
               </p>
-              <p className="cx-footer__tag">Saigon Metropolitan Network • Intelligent parking</p>
+              <p className="cx-footer__tag">{t('Saigon Metropolitan Network • Intelligent parking')}</p>
             </div>
           </div>
           <div className="cx-footer__bottom">
-            <span>© {new Date().getFullYear()} XXIV PARKING. Saigon Metropolitan Network. All rights reserved.</span>
+            <span>© {new Date().getFullYear()}{' '}{t('XXIV PARKING. Saigon Metropolitan Network. All rights reserved.')}</span>
           </div>
         </div>
       </footer>

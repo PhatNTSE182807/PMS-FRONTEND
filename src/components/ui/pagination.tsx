@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Button } from './button'
+import { t, tMaybe } from '@/i18n'
 
 interface PaginationProps {
   pageNumber: number
@@ -26,19 +27,19 @@ export function Pagination({ pageNumber, pageSize, totalCount, totalPages, onPag
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={t('Pagination')}
       className={cn('flex flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row', className)}
     >
       <p>
-        Showing <span className="font-medium text-slate-900">{formatNumber(from)}</span>–
-        <span className="font-medium text-slate-900">{formatNumber(to)}</span> of{' '}
-        <span className="font-medium text-slate-900">{formatNumber(totalCount)}</span> results
+        {t('Showing')}{' '}<span className="font-medium text-slate-900">{formatNumber(from)}</span>–
+        <span className="font-medium text-slate-900">{formatNumber(to)}</span>{' '}{t('of')}
+        <span className="font-medium text-slate-900">{formatNumber(totalCount)}</span>{' '}{t('results')}
       </p>
       <div className="flex items-center gap-1">
         <Button
           variant="outline"
           size="icon"
-          aria-label="Previous page"
+          aria-label={t('Previous page')}
           disabled={pageNumber <= 1}
           onClick={() => onPageChange(pageNumber - 1)}
         >
@@ -57,14 +58,14 @@ export function Pagination({ pageNumber, pageSize, totalCount, totalPages, onPag
               aria-current={page === pageNumber ? 'page' : undefined}
               onClick={() => onPageChange(page)}
             >
-              {page}
+              {tMaybe(page)}
             </Button>
           ),
         )}
         <Button
           variant="outline"
           size="icon"
-          aria-label="Next page"
+          aria-label={t('Next page')}
           disabled={pageNumber >= totalPages}
           onClick={() => onPageChange(pageNumber + 1)}
         >

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { FieldError, Input, Label } from '@/components/ui/form-controls'
 import { cn } from '@/lib/utils'
+import { t, tMaybe } from '@/i18n'
 
 /** Same limit as the API. */
 const MAX_BYTES = 8 * 1024 * 1024
@@ -54,7 +55,7 @@ function PaperPicker({
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>{tMaybe(label)}</Label>
       <label
         htmlFor={id}
         className={cn(
@@ -63,14 +64,14 @@ function PaperPicker({
         )}
       >
         {preview ? (
-          <img src={preview} alt={label} className="size-full object-contain" />
+          <img src={preview} alt={tMaybe(label)} className="size-full object-contain" />
         ) : file ? (
           <span className="flex flex-col items-center gap-1 px-3 text-slate-950">
-            <FileImage className="size-6 text-indigo-700" aria-hidden /> {file.name}
+            <FileImage className="size-6 text-indigo-700" aria-hidden /> {tMaybe(file.name)}
           </span>
         ) : (
           <span className="flex flex-col items-center gap-1 px-3 text-slate-600">
-            <Upload className="size-6" aria-hidden /> {hint}
+            <Upload className="size-6" aria-hidden /> {tMaybe(hint)}
           </span>
         )}
       </label>
@@ -114,7 +115,7 @@ export function LostTicketPapersDialog({ vehicle, onClose }: { vehicle: LostTick
     mutationFn: () => gateService.reportLostTicketWithPapers(vehicle!.sessionId, reason.trim(), citizenId!, registration!),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.gate.all })
-      toast.success('Papers uploaded: compare them with the vehicle and decide.')
+      toast.success(t('Papers uploaded: compare them with the vehicle and decide.'))
       navigate('/staff/exceptions', {
         state: { lostTicketReview: vehicle!.sessionId },
       })
@@ -138,45 +139,44 @@ export function LostTicketPapersDialog({ vehicle, onClose }: { vehicle: LostTick
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <IdCard className="size-5 text-amber-500" aria-hidden /> Lost ticket: driver&apos;s papers
+                <IdCard className="size-5 text-amber-500" aria-hidden />{' '}{t('Lost ticket: driver\'s papers')}
               </DialogTitle>
               <DialogDescription>
                 <span className="mr-2 align-middle">
-                  <Plate>{vehicle.plate || 'NO PLATE'}</Plate>
+                  <Plate>{vehicle.plate || t('NO PLATE')}</Plate>
                 </span>
-                {[vehicle.vehicleTypeName, vehicle.code].filter(Boolean).join(' • ')}. Photograph both papers; you compare them with the
-                vehicle on the next screen.
+                {[vehicle.vehicleTypeName, vehicle.code].filter(Boolean).join(' • ')}{t('. Photograph both papers; you compare them with the vehicle on the next screen.')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 sm:grid-cols-2">
               <PaperPicker
                 id="lost-citizen-id"
-                label="Citizen ID (CCCD)"
-                hint="Front of the driver's Citizen ID"
+                label={t('Citizen ID (CCCD)')}
+                hint={t('Front of the driver\'s Citizen ID')}
                 file={citizenId}
                 onChange={setCitizenId}
                 onPicked={() => setError(null)}
               />
               <PaperPicker
                 id="lost-registration"
-                label="Vehicle registration certificate"
-                hint="The certificate of this vehicle"
+                label={t('Vehicle registration certificate')}
+                hint={t('The certificate of this vehicle')}
                 file={registration}
                 onChange={setRegistration}
                 onPicked={() => setError(null)}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="lost-papers-reason">Reason</Label>
+              <Label htmlFor="lost-papers-reason">{t('Reason')}</Label>
               <Input id="lost-papers-reason" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
             </div>
-            {error && <FieldError message={error} />}
+            {error && <FieldError message={tMaybe(error)} />}
             <div className="flex flex-wrap justify-end gap-2">
               <Button variant="ghost" onClick={onClose} disabled={upload.isPending}>
-                Cancel
+                {t('Cancel')}
               </Button>
               <Button variant="gold" onClick={submit} disabled={upload.isPending}>
-                <Upload /> {upload.isPending ? 'Uploading…' : 'Upload and check the papers'}
+                <Upload /> {upload.isPending ? t('Uploading…') : t('Upload and check the papers')}
               </Button>
             </div>
           </>

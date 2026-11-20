@@ -1,8 +1,9 @@
-const vndFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 })
-const compactFormatter = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })
-const numberFormatter = new Intl.NumberFormat('en-US')
-const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
-const timeFormatter = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+import { localDateFormat, localNumberFormat, t } from '@/i18n'
+const vndFormatter = localNumberFormat({ style: 'currency', currency: 'VND', maximumFractionDigits: 0 })
+const compactFormatter = localNumberFormat({ notation: 'compact', maximumFractionDigits: 1 })
+const numberFormatter = localNumberFormat()
+const dateFormatter = localDateFormat({ day: '2-digit', month: '2-digit', year: 'numeric' })
+const timeFormatter = localDateFormat({ hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
 /** ₫1,250,000 */
 export const formatVnd = (value: number) => vndFormatter.format(value)
@@ -35,11 +36,11 @@ export function toIsoDate(date: Date): string {
 /** "just now", "5s ago", "2 min ago"… */
 export function formatRelativeTime(from: number, now: number = Date.now()): string {
   const seconds = Math.max(0, Math.round((now - from) / 1000))
-  if (seconds < 5) return 'just now'
-  if (seconds < 60) return `${seconds}s ago`
+  if (seconds < 5) return t('just now')
+  if (seconds < 60) return t('{seconds}s ago', { seconds })
   const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `${minutes} min ago`
-  return `${Math.round(minutes / 60)} h ago`
+  if (minutes < 60) return t('{minutes} min ago', { minutes })
+  return t('{hours} h ago', { hours: Math.round(minutes / 60) })
 }
 
 /** "0901234567" → "0901 234 567"; other formats are returned unchanged. */

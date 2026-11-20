@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useNotifications, useMarkRead, useMarkAllRead, useDeleteNotification, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
+import { t, tMaybe } from '@/i18n'
 
 const ICON_MAP: Record<string, typeof Bell> = {
   VehicleApproved: ShieldCheck,
@@ -101,21 +102,21 @@ export function NotificationBell() {
         type="button"
         className="cx-btn cx-btn--ghost cx-notif__trigger"
         onClick={() => setOpen((v) => !v)}
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+        aria-label={t('Notifications{v}', { v: unreadCount > 0 ? ` (${unreadCount} unread)` : '' })}
         aria-expanded={open}
       >
         <Bell size={20} />
         {unreadCount > 0 && (
           <span className="cx-notif__badge" aria-hidden="true">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? '99+' : tMaybe(unreadCount)}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="cx-notif__dropdown" role="region" aria-label="Notifications">
+        <div className="cx-notif__dropdown" role="region" aria-label={t('Notifications')}>
           <div className="cx-notif__header">
-            <h3 className="cx-notif__title">Notifications</h3>
+            <h3 className="cx-notif__title">{t('Notifications')}</h3>
             {unreadCount > 0 && (
               <button
                 type="button"
@@ -123,19 +124,19 @@ export function NotificationBell() {
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
               >
-                <CheckCheck size={14} /> Mark all read
+                <CheckCheck size={14} />{' '}{t('Mark all read')}
               </button>
             )}
           </div>
 
           <div className="cx-notif__list">
             {isLoading && (
-              <div className="cx-notif__empty">Loading…</div>
+              <div className="cx-notif__empty">{t('Loading…')}</div>
             )}
             {!isLoading && items.length === 0 && (
               <div className="cx-notif__empty">
                 <Car size={32} />
-                <p>No notifications yet</p>
+                <p>{t('No notifications yet')}</p>
               </div>
             )}
             {items.map((n) => {
@@ -154,8 +155,8 @@ export function NotificationBell() {
                     <Icon size={18} />
                   </div>
                   <div className="cx-notif__content">
-                    <p className="cx-notif__item-title">{n.title}</p>
-                    <p className="cx-notif__item-msg">{n.message}</p>
+                    <p className="cx-notif__item-title">{tMaybe(n.title)}</p>
+                    <p className="cx-notif__item-msg">{tMaybe(n.message)}</p>
                     <span className="cx-notif__time">{timeAgo(n.createdAt)}</span>
                   </div>
                   <div className="cx-notif__actions">
@@ -163,7 +164,7 @@ export function NotificationBell() {
                       <button
                         type="button"
                         className="cx-notif__action-btn"
-                        title="Mark as read"
+                        title={t('Mark as read')}
                         onClick={(e) => { e.stopPropagation(); markRead.mutate(n.id) }}
                       >
                         <Check size={14} />
@@ -172,7 +173,7 @@ export function NotificationBell() {
                     <button
                       type="button"
                       className="cx-notif__action-btn cx-notif__action-btn--danger"
-                      title="Delete"
+                      title={t('Delete')}
                       onClick={(e) => { e.stopPropagation(); deleteNotif.mutate(n.id) }}
                     >
                       <Trash2 size={14} />

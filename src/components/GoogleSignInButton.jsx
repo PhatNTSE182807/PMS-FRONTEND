@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { GOOGLE_CLIENT_ID, startGoogleSignIn } from '../lib/google-identity';
+import { t, tMaybe } from '@/i18n'
 
 const LABELS = {
   signin_with: 'Sign in with Google',
@@ -47,7 +48,7 @@ export default function GoogleSignInButton({ rememberMe = false, text = 'continu
       <button type="button" className="google-signin__dark" onClick={signIn} disabled={leaving} aria-busy={leaving}>
         <span className="google-signin__face">
           <GoogleMark />
-          {leaving ? 'Opening Google...' : LABELS[text]}
+          {leaving ? t('Opening Google...') : tMaybe(LABELS[text])}
         </span>
       </button>
     </div>

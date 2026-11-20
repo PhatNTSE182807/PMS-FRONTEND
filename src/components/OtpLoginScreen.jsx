@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import AuthSplitLayout from './AuthSplitLayout';
 import { getErrorMessage } from '../api/apiError';
 import { useOtpLogin, useRequestLoginOtp, useResendTwoFactor, useVerifyTwoFactor } from '../hooks/useAuth';
+import { t, tMaybe } from '@/i18n'
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -194,14 +195,14 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
               </svg>
             </span>
             <h2 className="otp-heading__title">
-              {isTwoFactor ? 'Verify it’s you' : step === 'email' ? 'Sign in with email code' : 'Check your inbox'}
+              {isTwoFactor ? t('Verify it’s you') : step === 'email' ? t('Sign in with email code') : t('Check your inbox')}
             </h2>
             <p className="otp-heading__subtitle">
               {step === 'email' ? (
-                'Enter any email and we will send it a 6-digit code. No password or sign-up needed.'
+                t('Enter any email and we will send it a 6-digit code. No password or sign-up needed.')
               ) : (
                 <>
-                  Enter the code sent to <strong>{isTwoFactor ? destination : email.trim()}</strong>
+                  {t('Enter the code sent to')}{' '}<strong>{isTwoFactor ? tMaybe(destination) : email.trim()}</strong>
                 </>
               )}
             </p>
@@ -214,7 +215,7 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <span>{errorMsg}</span>
+              <span>{tMaybe(errorMsg)}</span>
             </div>
           )}
 
@@ -225,7 +226,7 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
                 <path d="M12 16v-4" />
                 <path d="M12 8h.01" />
               </svg>
-              <span>{infoMsg}</span>
+              <span>{tMaybe(infoMsg)}</span>
             </div>
           )}
 
@@ -236,7 +237,7 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
                   id="otp-email"
                   type="email"
                   className="cyber-input"
-                  placeholder="Email"
+                  placeholder={t('Email')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
@@ -245,12 +246,12 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
               </div>
 
               <button type="submit" className="btn btn-primary-cyan btn-full" disabled={isLoading}>
-                {isLoading ? 'Sending code...' : 'Send login code'}
+                {isLoading ? t('Sending code...') : t('Send login code')}
               </button>
             </form>
           ) : (
             <form className="auth-form" onSubmit={handleCodeSubmit} noValidate>
-              <div className="otp-code-inputs" role="group" aria-label="6-digit login code">
+              <div className="otp-code-inputs" role="group" aria-label={t('6-digit login code')}>
                 {digits.map((digit, index) => (
                   <input
                     key={index}
@@ -263,7 +264,7 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
                     autoComplete={index === 0 ? 'one-time-code' : 'off'}
                     maxLength={CODE_LENGTH}
                     value={digit}
-                    aria-label={`Digit ${index + 1}`}
+                    aria-label={t('Digit {v}', { v: index + 1 })}
                     // readOnly instead of disabled so focus can move back to the first box after a failed attempt
                     readOnly={isLoading}
                     onChange={(e) => handleDigitChange(index, e.target.value)}
@@ -282,28 +283,28 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="cyber-checkbox"
                   />
-                  <span>Remember Me</span>
+                  <span>{t('Remember Me')}</span>
                 </label>
 
                 <button type="button" className="auth-link-btn" onClick={isTwoFactor ? onNavigateToLogin : changeEmail}>
-                  {isTwoFactor ? 'Back to login' : 'Change email'}
+                  {isTwoFactor ? t('Back to login') : t('Change email')}
                 </button>
               </div>
 
               <button type="submit" className="btn btn-primary-cyan btn-full" disabled={isLoading}>
-                {isLoading ? 'Verifying...' : 'Verify & Login'}
+                {isLoading ? t('Verifying...') : t('Verify & Login')}
               </button>
 
               <div className="otp-resend">
                 {cooldown > 0 ? (
                   <span>
-                    Resend code in <strong>{cooldown}s</strong>
+                    {t('Resend code in')}{' '}<strong>{tMaybe(cooldown)}s</strong>
                   </span>
                 ) : (
                   <>
-                    <span>Didn&apos;t get the email? </span>
+                    <span>{t('Didn\'t get the email?')}{' '}</span>
                     <button type="button" className="auth-link-btn" onClick={sendCode} disabled={isLoading}>
-                      Resend code
+                      {t('Resend code')}
                     </button>
                   </>
                 )}
@@ -315,14 +316,14 @@ export default function OtpLoginScreen({ onLoginSuccess, onNavigateToLogin, twoF
             <>
               <div className="sso-section">
                 <div className="sso-divider">
-                  <span>or</span>
+                  <span>{t('or')}</span>
                 </div>
               </div>
 
               <div className="auth-card-footer auth-card-footer--tight">
-                <span>Prefer your password? </span>
+                <span>{t('Prefer your password?')}{' '}</span>
                 <button type="button" className="auth-link-highlight" onClick={onNavigateToLogin}>
-                  Back to Login
+                  {t('Back to Login')}
                 </button>
               </div>
             </>

@@ -35,3 +35,23 @@
 html[data-theme='light'] .brand-gold {
   color: #b8901f;
 }
+
+/* Language switch: the flags of Vietnam and the United States in one circle (LanguageToggle.tsx) */
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.language-toggle svg {
+  border-radius: 9999px;
+  transition: transform 0.2s ease;
+}
+
+.language-toggle:hover svg {
+  transform: scale(1.08);
+}
+
+.language-toggle:active svg {
+  transform: scale(0.94);
+}

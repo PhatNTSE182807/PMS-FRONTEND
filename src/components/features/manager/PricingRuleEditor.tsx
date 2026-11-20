@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Checkbox, FieldError, Input, Label } from '@/components/ui/form-controls'
 import { cn } from '@/lib/utils'
 import type { PricingChargeModel, PricingRuleDTO, PricingRuleInput } from '@/types/pricing.dto'
+import { t, tMaybe } from '@/i18n'
 
 /** Form values as typed text, so empty fields can be told apart from zeros. */
 interface Draft {
@@ -117,10 +118,10 @@ function validate(d: Draft): { errors: Errors; input?: Omit<PricingRuleInput, 'v
 function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: string; error?: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>{tMaybe(label)}</Label>
       {children}
-      {hint && !error && <p className="text-xs text-slate-600">{hint}</p>}
-      <FieldError message={error} />
+      {hint && !error && <p className="text-xs text-slate-600">{tMaybe(hint)}</p>}
+      <FieldError message={tMaybe(error)} />
     </div>
   )
 }
@@ -193,8 +194,8 @@ export function PricingRuleEditor({
       >
         <Icon className={cn('mt-0.5 size-4 shrink-0', active ? 'text-amber-500' : 'text-slate-600')} aria-hidden />
         <span>
-          <strong className="block text-sm text-slate-950">{title}</strong>
-          <span className="text-xs text-slate-700">{text}</span>
+          <strong className="block text-sm text-slate-950">{tMaybe(title)}</strong>
+          <span className="text-xs text-slate-700">{tMaybe(text)}</span>
         </span>
       </button>
     )
@@ -205,21 +206,20 @@ export function PricingRuleEditor({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingDraft ? 'Edit draft' : 'Edit prices'} • {rule.vehicleTypeName}
+            {editingDraft ? t('Edit draft') : t('Edit prices')} • {tMaybe(rule.vehicleTypeName)}
           </DialogTitle>
           <DialogDescription>
-            Applied prices go live at once for every vehicle entering from now on, booked or not, and customers are told. Vehicles already inside keep
-            the price they entered with. Each save keeps the previous version in the pricing history.
-            {onSaveDraft && ' Save as a draft to keep the change for later: nothing changes at the gates until you apply it.'}
+            {t('Applied prices go live at once for every vehicle entering from now on, booked or not, and customers are told. Vehicles already inside keep the price they entered with. Each save keeps the previous version in the pricing history.')}
+            {onSaveDraft && t(' Save as a draft to keep the change for later: nothing changes at the gates until you apply it.')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-5" noValidate>
-          <Field id="rule-name" label="Rule name" error={errors.name}>
+          <Field id="rule-name" label={t('Rule name')} error={tMaybe(errors.name)}>
             <Input id="rule-name" value={draft.name} onChange={(e) => set('name', e.target.value)} />
           </Field>
 
-          <div role="radiogroup" aria-label="Pricing model" className="flex flex-col gap-2 sm:flex-row">
+          <div role="radiogroup" aria-label={t('Pricing model')} className="flex flex-col gap-2 sm:flex-row">
             {modelButton('Block', Clock, 'Same price all day', 'Every block costs the same, whatever the hour.')}
             {modelButton('DayNight', Sun, 'Day and night prices', 'Blocks starting in the day and at night cost differently.')}
             {modelButton('PerEntry', CalendarDays, 'One fee per day', 'A flat fee for each calendar day, however long the stay.')}
@@ -229,9 +229,9 @@ export function PricingRuleEditor({
             <>
               <Field
                 id="rule-block-min"
-                label="Block length (min)"
-                hint="Each started block is charged in full. The first block is charged as soon as the vehicle enters: a stay is never free."
-                error={errors.blockMinutes}
+                label={t('Block length (min)')}
+                hint={t('Each started block is charged in full. The first block is charged as soon as the vehicle enters: a stay is never free.')}
+                error={tMaybe(errors.blockMinutes)}
               >
                 <Input id="rule-block-min" inputMode="numeric" value={draft.blockMinutes} onChange={(e) => set('blockMinutes', e.target.value)} />
               </Field>
@@ -239,14 +239,14 @@ export function PricingRuleEditor({
               <div className="space-y-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-950">
                   <Checkbox checked={draft.hasFirstBlock} onChange={(e) => set('hasFirstBlock', e.target.checked)} />
-                  Different price for the first block
+                  {t('Different price for the first block')}
                 </label>
                 {draft.hasFirstBlock && (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field id="rule-first-min" label="First block length (min)" error={errors.firstBlockMinutes}>
+                    <Field id="rule-first-min" label={t('First block length (min)')} error={tMaybe(errors.firstBlockMinutes)}>
                       <Input id="rule-first-min" inputMode="numeric" value={draft.firstBlockMinutes} onChange={(e) => set('firstBlockMinutes', e.target.value)} />
                     </Field>
-                    <Field id="rule-first-price" label="First block price (VND)" hint="Charged as soon as the vehicle enters." error={errors.firstBlockPrice}>
+                    <Field id="rule-first-price" label={t('First block price (VND)')} hint={t('Charged as soon as the vehicle enters.')} error={tMaybe(errors.firstBlockPrice)}>
                       <Input id="rule-first-price" inputMode="numeric" value={draft.firstBlockPrice} onChange={(e) => set('firstBlockPrice', e.target.value)} />
                     </Field>
                   </div>
@@ -256,51 +256,51 @@ export function PricingRuleEditor({
           )}
 
           {draft.chargeModel === 'PerEntry' ? (
-            <Field id="rule-entry-fee" label="Fee per day (VND)" hint="Charged once for each calendar day of the stay, from entry." error={errors.entryFee}>
+            <Field id="rule-entry-fee" label={t('Fee per day (VND)')} hint={t('Charged once for each calendar day of the stay, from entry.')} error={tMaybe(errors.entryFee)}>
               <Input id="rule-entry-fee" inputMode="numeric" value={draft.entryFee} onChange={(e) => set('entryFee', e.target.value)} />
             </Field>
           ) : draft.chargeModel === 'Block' ? (
-            <Field id="rule-block-price" label="Price per block (VND)" error={errors.blockPrice}>
+            <Field id="rule-block-price" label={t('Price per block (VND)')} error={tMaybe(errors.blockPrice)}>
               <Input id="rule-block-price" inputMode="numeric" value={draft.blockPrice} onChange={(e) => set('blockPrice', e.target.value)} />
             </Field>
           ) : (
             <div className="grid gap-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 sm:grid-cols-2">
-              <Field id="rule-day-start" label="Day starts at" error={errors.dayStartTime}>
+              <Field id="rule-day-start" label={t('Day starts at')} error={tMaybe(errors.dayStartTime)}>
                 <Input id="rule-day-start" type="time" value={draft.dayStartTime} onChange={(e) => set('dayStartTime', e.target.value)} />
               </Field>
-              <Field id="rule-night-start" label="Night starts at" error={errors.nightStartTime}>
+              <Field id="rule-night-start" label={t('Night starts at')} error={tMaybe(errors.nightStartTime)}>
                 <Input id="rule-night-start" type="time" value={draft.nightStartTime} onChange={(e) => set('nightStartTime', e.target.value)} />
               </Field>
-              <Field id="rule-day-price" label="Day price per block (VND)" error={errors.dayPrice}>
+              <Field id="rule-day-price" label={t('Day price per block (VND)')} error={tMaybe(errors.dayPrice)}>
                 <div className="relative">
                   <Sun className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-amber-500" aria-hidden />
                   <Input id="rule-day-price" className="pl-9" inputMode="numeric" value={draft.dayPrice} onChange={(e) => set('dayPrice', e.target.value)} />
                 </div>
               </Field>
-              <Field id="rule-night-price" label="Night price per block (VND)" error={errors.nightPrice}>
+              <Field id="rule-night-price" label={t('Night price per block (VND)')} error={tMaybe(errors.nightPrice)}>
                 <div className="relative">
                   <Moon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-indigo-700" aria-hidden />
                   <Input id="rule-night-price" className="pl-9" inputMode="numeric" value={draft.nightPrice} onChange={(e) => set('nightPrice', e.target.value)} />
                 </div>
               </Field>
-              <p className="text-xs text-slate-600 sm:col-span-2">A block is priced by the hour it starts: from {draft.dayStartTime} it is a day block, from {draft.nightStartTime} a night block.</p>
+              <p className="text-xs text-slate-600 sm:col-span-2">{t('A block is priced by the hour it starts: from {dayStartTime} it is a day block, from {nightStartTime} a night block.', { dayStartTime: draft.dayStartTime, nightStartTime: draft.nightStartTime })}</p>
             </div>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             {draft.chargeModel !== 'PerEntry' && (
-              <Field id="rule-cap" label="Daily cap (VND)" hint="Most charged per calendar day. Leave empty for no cap." error={errors.maxDailyFee}>
+              <Field id="rule-cap" label={t('Daily cap (VND)')} hint={t('Most charged per calendar day. Leave empty for no cap.')} error={tMaybe(errors.maxDailyFee)}>
                 <Input id="rule-cap" inputMode="numeric" value={draft.maxDailyFee} onChange={(e) => set('maxDailyFee', e.target.value)} />
               </Field>
             )}
-            <Field id="rule-lost" label="Lost ticket fee (VND)" hint="Added to the parking fee." error={errors.lostTicketFee}>
+            <Field id="rule-lost" label={t('Lost ticket fee (VND)')} hint={t('Added to the parking fee.')} error={tMaybe(errors.lostTicketFee)}>
               <Input id="rule-lost" inputMode="numeric" value={draft.lostTicketFee} onChange={(e) => set('lostTicketFee', e.target.value)} />
             </Field>
             <Field
               id="rule-compensation"
-              label="Booked bay compensation (VND)"
-              hint="Paid into the customer's XXIV wallet, and taken off this lot's revenue, when a walk-in took their booked bay and no other bay was free. Customers are not told when it changes."
-              error={errors.bookedBayCompensation}
+              label={t('Booked bay compensation (VND)')}
+              hint={t('Paid into the customer\'s XXIV wallet, and taken off this lot\'s revenue, when a walk-in took their booked bay and no other bay was free. Customers are not told when it changes.')}
+              error={tMaybe(errors.bookedBayCompensation)}
             >
               <Input
                 id="rule-compensation"
@@ -311,31 +311,31 @@ export function PricingRuleEditor({
             </Field>
             <Field
               id="rule-penalty"
-              label="Towing penalty (VND)"
-              hint="Added to the fee of a vehicle Staff towed out of a booked bay into a penalty bay: a walk-in in the wrong bay, or a booking that stayed past its time."
-              error={errors.penaltyFee}
+              label={t('Towing penalty (VND)')}
+              hint={t('Added to the fee of a vehicle Staff towed out of a booked bay into a penalty bay: a walk-in in the wrong bay, or a booking that stayed past its time.')}
+              error={tMaybe(errors.penaltyFee)}
             >
               <Input id="rule-penalty" inputMode="numeric" value={draft.penaltyFee} onChange={(e) => set('penaltyFee', e.target.value)} />
             </Field>
           </div>
 
           {onSaveDraft && (
-            <Field id="rule-draft-note" label="Draft note (optional)" hint="Kept with the draft, e.g. why or when to apply it." error={note.length > 500 ? 'The note can be at most 500 characters.' : undefined}>
-              <Input id="rule-draft-note" maxLength={500} value={note} placeholder="e.g. Weekend prices for December" onChange={(e) => setNote(e.target.value)} />
+            <Field id="rule-draft-note" label={t('Draft note (optional)')} hint={t('Kept with the draft, e.g. why or when to apply it.')} error={note.length > 500 ? t('The note can be at most 500 characters.') : undefined}>
+              <Input id="rule-draft-note" maxLength={500} value={note} placeholder={t('e.g. Weekend prices for December')} onChange={(e) => setNote(e.target.value)} />
             </Field>
           )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('Cancel')}
             </Button>
             {onSaveDraft && (
               <Button type="button" variant="outline" disabled={busy} onClick={() => run(onSaveDraft)}>
-                <FileClock /> {savingDraft ? 'Saving draft…' : editingDraft ? 'Save draft' : 'Save as draft'}
+                <FileClock /> {savingDraft ? t('Saving draft…') : editingDraft ? t('Save draft') : t('Save as draft')}
               </Button>
             )}
             <Button type="submit" variant="gold" disabled={busy}>
-              {saving ? 'Saving…' : editingDraft ? 'Apply prices now' : 'Save prices'}
+              {saving ? t('Saving…') : editingDraft ? t('Apply prices now') : t('Save prices')}
             </Button>
           </DialogFooter>
         </form>

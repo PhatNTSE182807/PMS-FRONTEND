@@ -1,4 +1,5 @@
 import type { BookingMode } from '@/types/operations.dto'
+import { localDateFormat } from '@/i18n'
 
 /** Same limits as the API (Parking:Reservations): book up to 30 days ahead; a scheduled stay lasts 30 min to 24 h. */
 export const BOOKING_RULES = {
@@ -60,8 +61,8 @@ export function checkBookingTimes(times: BookingTimes, now: number):
   return { ok: true, arrivalTime: new Date(arrival).toISOString(), departureTime: new Date(departure).toISOString() }
 }
 
-const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
-const dayFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })
+const timeFormat = localDateFormat({ hour: '2-digit', minute: '2-digit' })
+const dayFormat = localDateFormat({ weekday: 'short', day: '2-digit', month: 'short' })
 
 /** "Today", "Tomorrow" or "Fri 24 Oct". */
 export function relativeDay(ts: number, now: number) {

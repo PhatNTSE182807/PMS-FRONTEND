@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import type { CapacityVehicleType, ParkingLotCapacityDTO, VehicleCapacityDetail } from '@/types/parking.dto'
 import { OccupancyBar, OccupancyGauge } from './OccupancyGauge'
 import { LOT_STATUS_STYLES } from './occupancyStyles'
+import { t, tMaybe } from '@/i18n'
 
 const VEHICLE_ROWS: Record<CapacityVehicleType, { label: string; icon: LucideIcon }> = {
   CAR: { label: 'Car zone', icon: Car },
@@ -23,16 +24,16 @@ function CapacityRow({ detail }: { detail: VehicleCapacityDetail }) {
       <div className="flex items-center justify-between gap-2 text-sm">
         <span className="flex items-center gap-2 font-medium text-slate-700">
           <Icon className="size-4 text-slate-400" aria-hidden />
-          {label}
+          {tMaybe(label)}
         </span>
         <span className="text-slate-900 tabular-nums">
-          {formatNumber(detail.occupiedSlots)} / {formatNumber(detail.totalSlots)} slots
+          {t('{occupiedSlots} / {totalSlots} slots', { occupiedSlots: formatNumber(detail.occupiedSlots), totalSlots: formatNumber(detail.totalSlots) })}
         </span>
       </div>
       <OccupancyBar percentage={rate} />
       <p className="text-xs text-slate-500">
-        <span className="font-medium text-slate-700">{formatNumber(detail.availableSlots)}</span> slots free
-        {detail.maintenanceSlots > 0 && ` · ${formatNumber(detail.maintenanceSlots)} under maintenance`}
+        <span className="font-medium text-slate-700">{formatNumber(detail.availableSlots)}</span>{' '}{t('slots free')}
+        {detail.maintenanceSlots > 0 && t(' · {v} under maintenance', { v: formatNumber(detail.maintenanceSlots) })}
       </p>
     </div>
   )
@@ -52,16 +53,16 @@ export function ParkingLotCard({ lot, onShowZones }: ParkingLotCardProps) {
       <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-slate-900">{lot.name}</h2>
-            <Badge tone={status.tone}>{status.label}</Badge>
+            <h2 className="text-base font-semibold text-slate-900">{tMaybe(lot.name)}</h2>
+            <Badge tone={status.tone}>{tMaybe(status.label)}</Badge>
           </div>
           <p className="mt-1 flex items-start gap-1.5 text-xs text-slate-500">
             <MapPin className="mt-px size-3.5 shrink-0" aria-hidden />
-            <span className="line-clamp-2">{lot.address}</span>
+            <span className="line-clamp-2">{tMaybe(lot.address)}</span>
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
             <UserRound className="size-3.5 shrink-0" aria-hidden />
-            Shift manager: <span className="font-medium text-slate-700">{lot.managerOnDuty}</span>
+            {t('Shift manager:')}{' '}<span className="font-medium text-slate-700">{tMaybe(lot.managerOnDuty)}</span>
           </p>
         </div>
         <span className="shrink-0 font-mono text-[11px] text-slate-400">{lot.code}</span>
@@ -71,7 +72,7 @@ export function ParkingLotCard({ lot, onShowZones }: ParkingLotCardProps) {
         <OccupancyGauge percentage={lot.overallOccupancyPercentage} isFull={isFull} />
         <div className="flex-1 space-y-4">
           {lot.capacityByVehicle.map((detail) => (
-            <CapacityRow key={detail.vehicleType} detail={detail} />
+            <CapacityRow key={detail.vehicleType} detail={tMaybe(detail)} />
           ))}
         </div>
       </div>
@@ -79,7 +80,7 @@ export function ParkingLotCard({ lot, onShowZones }: ParkingLotCardProps) {
       <div className="border-t border-slate-100 px-5 py-3">
         <Button variant="ghost" size="sm" className="-ml-2 text-indigo-600 hover:text-indigo-700" onClick={() => onShowZones(lot)}>
           <Layers />
-          View zone details
+          {t('View zone details')}
         </Button>
       </div>
     </Card>
