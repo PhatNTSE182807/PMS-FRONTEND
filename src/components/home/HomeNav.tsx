@@ -12,12 +12,7 @@ const LINKS = [
   { href: '#terminals', label: 'Terminals' },
 ]
 
-interface HomeNavProps {
-  /** False when the capacity feed is unreachable. */
-  isOnline: boolean
-}
-
-export function HomeNav({ isOnline }: HomeNavProps) {
+export function HomeNav() {
   const { user } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -53,11 +48,6 @@ export function HomeNav({ isOnline }: HomeNavProps) {
 
         <div className="home-nav__actions">
           <ThemeToggle className="home-theme-toggle" />
-          {/* Plain text like Sign in: no box behind the status or the Book a slot link */}
-          <span className="home-nav__status">
-            <span className={`home-dot ${isOnline ? 'home-dot--live' : 'home-dot--off'}`} aria-hidden="true" />
-            {isOnline ? 'System online' : 'Feed offline'}
-          </span>
           {user ? (
             <Link to={homePathFor(user.role)} className="home-nav__signin">
               Dashboard

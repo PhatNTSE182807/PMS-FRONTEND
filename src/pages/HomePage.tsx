@@ -23,7 +23,7 @@ export default function HomePage() {
       <a href="#terminals" className="home-skip">
         Skip to live terminals
       </a>
-      <HomeNav isOnline={!publicLots.isError} />
+      <HomeNav />
       <main>
         <HeroSection />
         <FacilityShowcase />
