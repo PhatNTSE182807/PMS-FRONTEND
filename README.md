@@ -6,7 +6,7 @@
 
 Live 3D lot map · bookings & deposits · gate POS · approvals · revenue dashboards · AI assistant
 
-[Backend repo](https://github.com/PhatNTSE182807/PMS-BACKEND) · [API used by the UI](document/API_DOCUMENT.md) · [Requirements (SRS v1.7)](document/SRS_v1.7.docx)
+[Backend repo](https://github.com/PhatNTSE182807/PMS-BACKEND) · [Requirements (SRS v1.7)](document/SRS_v1.7.docx)
 
 </div>
 
@@ -121,7 +121,6 @@ paths. `vercel.json` already does this for Vercel. CI (GitLab and GitHub Actions
 | Document | Content |
 | --- | --- |
 | [SRS v1.7](document/SRS_v1.7.docx) | Requirements, business rules and use cases — the source of truth |
-| [API_DOCUMENT.md](document/API_DOCUMENT.md) | Backend endpoints the UI calls |
 | [PARKING_LOT_MANAGEMENT.md](docs/PARKING_LOT_MANAGEMENT.md) | Lot management review notes |
 | [GITHUB-ACTIONS.md](document/GITHUB-ACTIONS.md) | CI on the GitHub mirror |
 
