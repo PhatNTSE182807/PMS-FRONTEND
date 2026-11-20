@@ -91,11 +91,11 @@ export function BookingTimeFields({
         </label>
       )}
 
-      <span className="cx-field__hint">
-        {value.mode === 'Scheduled'
-          ? t('The bay is yours for this window ({minStayMinutes} min to {maxStayHours} h). You pay for the time you actually park.', { minStayMinutes: BOOKING_RULES.minStayMinutes, maxStayHours: BOOKING_RULES.maxStayHours })
-          : t('The bay is yours from arrival until you leave. You pay for the time you actually park.')}{t('Check-in opens 15 minutes before arrival and closes {holdMinutes} minutes after.', { holdMinutes })}
-      </span>
+      {value.mode === 'Scheduled' && (
+        <span className="cx-field__hint">
+          {t('The bay is yours for this window ({minStayMinutes} min to {maxStayHours} h). You pay for the time you actually park.', { minStayMinutes: BOOKING_RULES.minStayMinutes, maxStayHours: BOOKING_RULES.maxStayHours })}{t('Check-in opens 15 minutes before arrival and closes {holdMinutes} minutes after.', { holdMinutes })}
+        </span>
+      )}
     </div>
   )
 }
