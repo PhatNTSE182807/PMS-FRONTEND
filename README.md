@@ -1,92 +1,149 @@
-# PMS Frontend
+<div align="center">
 
-Frontend of the Parking Management System (OJT), built with React 19, Vite and TypeScript.
+# 🅿️ XXIV Parking — Web App
 
-- **Driver app** (`/login`, `/register`, `/me`): the original cyber-themed screens.
-- **Admin dashboard** (`/admin/*`, role `Admin`):
-  - Staff account management (`/admin/staff`)
-  - Revenue report (`/admin/revenue`)
-  - Live parking capacity (`/admin/capacity`)
+**One React app for every seat in the parking lot: the driver, the gate, the manager and the head office.**
 
-See [docs/ADMIN_DASHBOARD_PLAN.md](docs/ADMIN_DASHBOARD_PLAN.md) for how this frontend compares with the dashboard spec and the backend, and for the path to microservices.
+Live 3D lot map · bookings & deposits · gate POS · approvals · revenue dashboards · AI assistant
 
-## Requirements
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![three.js](https://img.shields.io/badge/three.js-3D-000000?logo=threedotjs&logoColor=white)
+![React Query](https://img.shields.io/badge/TanStack%20Query-5-FF4154?logo=reactquery&logoColor=white)
+![SignalR](https://img.shields.io/badge/SignalR-real--time-0078D4)
+![Vercel](https://img.shields.io/badge/Vercel-ready-000000?logo=vercel&logoColor=white)
 
-- Node.js 20.19+ or 22.12+
-- npm
+[Backend repo](https://github.com/PhatNTSE182807/PMS-BACKEND) · [API used by the UI](document/API_DOCUMENT.md) · [Requirements (SRS v1.6)](document/SRS_v1.6.md)
 
-## Get started
+</div>
 
-```sh
-npm install
-cp .env.example .env.local   # optional, see "Configuration"
-npm run dev
-```
+---
 
-No backend? Use the demo buttons on the login screen:
+## ✨ Four apps in one
 
-- **Instant Access Demo** opens the driver dashboard.
-- **Admin Demo** opens the admin dashboard.
+| Area | Route | Who | Screens |
+| --- | --- | --- | --- |
+| 🏠 **Public** | `/` | Everyone | Home with live lots and prices · sign in / register (form or Google) · password reset · AI chat assistant |
+| 🚗 **Customer** | `/me` | User | Dashboard with the 3D lot map · book a bay or park a motorbike now · bookings · active sessions with in-app payment · wallet · vehicles & registration papers · profile · directions to the lot |
+| 🧑‍✈️ **Staff** | `/staff` | Staff | Gate dashboard (check-in / check-out lanes, camera plate reads, barrier) · checkout POS · cash drawer · exceptions & lost tickets · vehicle verification · work schedule · payroll |
+| 🧑‍💼 **Management** | `/management` | Manager | Lot console · reservations & booked-bay cases · approval queue · pricing rules, drafts and history · Staff accounts · work schedules · payroll |
+| 🛡️ **Admin** | `/admin` | Admin | Dashboard · lots & 3D building templates · Manager and customer accounts · revenue report · live capacity · pricing history · payroll · parking simulation |
 
-Both run entirely on mock data.
+### Highlights
 
-## Available scripts
+- **3D garage in the browser** — three.js with instanced meshes and on-demand rendering; bays, walk-ins, lane cameras and barriers update live.
+- **Real-time consoles** — SignalR pushes slot changes, gate requests, cash requests and notifications straight into React Query caches.
+- **Gate built for speed** — the barrier unlocks only when the Staff plate matches the plate on record; camera reads fill the field automatically.
+- **Works without a backend** — every service has a mock twin speaking the real API envelope, switchable per service.
+- **Payments end to end** — wallet, VNPay and MoMo return pages, signed QR tickets and exit passes.
+- **Light and dark themes**, responsive layouts, lazy-loaded consoles so drivers never download the admin bundle.
 
-| Script | What it does |
-| --- | --- |
-| `npm run dev` | Starts the Vite dev server. |
-| `npm run typecheck` | Type-checks the project (`tsc -b`). |
-| `npm run lint` | Lints JS/TS with ESLint. |
-| `npm run build` | Type-checks, then creates a production build in `dist/`. |
-| `npm run preview` | Serves the production build locally. |
+---
 
-## Configuration
+## 🏗️ Architecture
 
-Copy `.env.example` to `.env.local` (git-ignored) and adjust:
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | `https://localhost:44391/api` | Root of the REST API: today the PMS.API monolith, later the API gateway. |
-| `VITE_USE_MOCK_DATA` | `false` | `true` serves **every** service from in-browser mock data. |
-| `VITE_MOCK_SERVICES` | `staff,parking,reports` | Services that use mock data even when the flag above is off. These have no backend endpoints yet. |
-
-Service keys:
-
-- `auth`: login and register
-- `profile`: driver profile and vehicles
-- `staff`: admin staff accounts
-- `parking`: lots and occupancy
-- `reports`: revenue
-
-When a backend endpoint ships, remove its key from `VITE_MOCK_SERVICES`. No UI code changes.
-
-In development, the API status badge in the header can override the base URL at runtime.
-
-## Architecture
-
-```
-pages/ ─► hooks/ (React Query) ─► api/*.service.ts ─► api/axiosClient.ts ─► REST API / gateway
-                                        └─ mocks/*.mock.ts when the service is mocked
-types/*.dto.ts — contracts shared by every layer, mirroring the backend DTOs
+```mermaid
+flowchart LR
+    PAGES["pages / components<br/>UI only"] --> HOOKS["hooks<br/>TanStack Query"]
+    HOOKS --> SVC["api/*.service.ts<br/>one per bounded context"]
+    SVC --> AX["api/axiosClient.ts<br/>envelope · errors · 401"]
+    AX --> API[("PMS.API<br/>REST")]
+    SVC -. mock mode .-> MOCK["mocks/*"]
+    RT["api/realtime.ts<br/>SignalR"] --> HOOKS
+    API -. push .-> RT
+    TYPES["types/*.dto.ts<br/>mirror backend DTOs"] -.- SVC
 ```
 
 | Folder | Layer | Rule |
 | --- | --- | --- |
-| `src/pages`, `src/components` | Presentation | UI only; never calls HTTP directly. |
-| `src/hooks` | Application | React Query hooks: caching, loading, errors, invalidation. |
-| `src/types` | Contracts | DTOs matching the backend use cases. IDs are strings. |
-| `src/api` | Infrastructure | One client per bounded context (identity, profile, parking, report). |
-| `src/mocks` | Infrastructure | Deterministic mock "backends" with 500 ms latency. |
-| `src/config`, `src/lib` | Shared | Env/service paths, session store, formatters, domain rules. |
+| `src/pages`, `src/components` | Presentation | UI only; never calls HTTP directly |
+| `src/hooks` | Application | React Query hooks: caching, loading, errors, invalidation |
+| `src/api` | Infrastructure | One service per bounded context, the HTTP client, SignalR connections, query keys |
+| `src/types` | Contracts | DTOs that mirror the backend exactly |
+| `src/mocks` | Infrastructure | Deterministic mock backends |
+| `src/lib`, `src/config` | Shared | Domain rules, formatters, env and service paths |
+| `src/components/customer/garage` | 3D | The three.js lot model |
 
-Key decisions:
+---
 
-- **One HTTP client** (`api/axiosClient.ts`). It is the only code that knows the response envelope. It accepts both the current `ApiResult<T> { succeeded, result, errors[] }` and the spec's `ApiResponse<T> { isSuccess, data, errors[{ code, description }] }`. Every failure becomes a typed `ApiError`, and a 401 clears the session.
-- **Service paths in one map** (`config/env.ts` → `SERVICE_PATHS`). Moving a bounded context to its own microservice, or behind a gateway route, is a one-line change.
-- **Mocks speak the backend envelope.** Mock responses go through the same `unwrap` code as real ones.
-- **Legacy CSS lives in a cascade layer.** The cyber theme (`index.css`, `App.css`) sits in a low-priority `legacy` layer. Tailwind's preflight is scoped to `.admin-root`, so the two styles never collide.
-- **Admin pages are lazy-loaded.** Drivers never download the dashboard or the chart library.
+## 🧰 Tech stack
 
-## Deployment note
+| Area | Choice |
+| --- | --- |
+| Core | React 19 · TypeScript · Vite 7 |
+| Routing & data | React Router 7 · TanStack React Query 5 · Axios |
+| Real-time | `@microsoft/signalr` |
+| UI | Tailwind CSS 4 · Radix UI · lucide-react · sonner toasts · Recharts |
+| Forms | react-hook-form · zod |
+| 3D & maps | three.js · Mapbox GL |
+| Extras | QR codes (`qrcode`) · Google Identity |
 
-This is a single-page app using browser history routes (`/admin/staff`, …). The web server must fall back to `index.html` for unknown paths.
+---
+
+## 🚀 Quick start
+
+**Requirements:** Node.js 20.19+ or 22.12+, npm. The [backend](https://github.com/PhatNTSE182807/PMS-BACKEND) running locally, or mock mode.
+
+```bash
+git clone https://github.com/PhatNTSE182807/PMS-FRONTEND.git
+cd PMS-FRONTEND
+npm install
+cp .env.example .env.local     # then adjust, see below
+npm run dev                    # http://localhost:5173
+```
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server with hot reload |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc -b` |
+| `npm run build` | Type-check, then production build in `dist/` |
+| `npm run preview` | Serve the production build |
+| `node --test tests/parking` | Unit tests for lot rules and services |
+
+### Configuration
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_BASE_URL` | Root of the backend REST API |
+| `VITE_USE_MOCK_DATA` | `true` serves **every** service from in-browser mock data |
+| `VITE_MOCK_SERVICES` | Comma-separated services to mock even when the flag above is off |
+| `VITE_GOOGLE_CLIENT_ID` | Google Sign-In client (must match the backend) |
+| `VITE_MAPBOX_ACCESS_TOKEN` | Directions map; empty = Google Maps link only |
+| `VITE_ANPR_SERVICE_URL` | Plate reader service for the gate cameras |
+
+Demo accounts come from the backend seed: see the backend's `docs/DEMO_DATA.md`.
+
+---
+
+## 🌐 Deployment
+
+A single-page app with browser-history routes: the host must fall back to `index.html` for unknown
+paths. `vercel.json` already does this for Vercel. CI (GitLab and GitHub Actions) lints and builds every push.
+
+---
+
+## 📚 Documentation
+
+| Document | Content |
+| --- | --- |
+| [SRS v1.6](document/SRS_v1.6.md) | Requirements, business rules and use cases — the source of truth |
+| [API_DOCUMENT.md](document/API_DOCUMENT.md) | Backend endpoints the UI calls |
+| [PARKING_LOT_MANAGEMENT.md](docs/PARKING_LOT_MANAGEMENT.md) | Lot management review notes |
+| [GITHUB-ACTIONS.md](document/GITHUB-ACTIONS.md) | CI on the GitHub mirror |
+
+---
+
+## 🤝 Contributing
+
+- Branch from `develop` as `features/<feature-name>`; use the same name in the backend repo when a feature touches both.
+- Keep `src/types/*.dto.ts` in step with the backend on the same branch.
+- Conventional Commits in English. `npm run lint && npm run build` pass → merge into `develop`.
+
+<div align="center">
+
+Built by **Team 03 · HCM26 CPL .NET 07** — FPT Software Academy OJT
+
+</div>
