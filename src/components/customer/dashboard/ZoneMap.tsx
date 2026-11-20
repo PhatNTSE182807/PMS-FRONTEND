@@ -9,7 +9,7 @@ import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { usePublicPrices } from '@/hooks/usePricing'
 import { useBayForecast, useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { useNow } from '@/hooks/useNow'
-import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
+import { checkBookingTimes, defaultBookingTimes } from '@/lib/bookingTime'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import type { BayForecastDTO } from '@/types/operations.dto'
 import { formatNumber } from '@/lib/format'
@@ -204,11 +204,6 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow, realtime.connected)
   const forecastBySlot = useMemo(() => new Map((forecast.data ?? []).map((f) => [String(f.slotId), f])), [forecast.data])
   const floors = useMemo(() => projectFloors(liveFloors, forecastBySlot), [liveFloors, forecastBySlot])
-  const forecastOn = forecastBySlot.size > 0
-  // Car bays only: motorbikes claim a bay on arrival and are not part of the picked window
-  const projectedFree = floors
-    .filter((f) => f.kind === 'car')
-    .reduce((sum, f) => sum + standardBays(f).filter((b) => forecastBySlot.get(b.id)?.bookable).length, 0)
   const [focusFloor, setFocusFloor] = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -387,13 +382,11 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                   <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}{t('When will you park your car?')}
                 </span>
                 <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`map-${lot.id}`} />
-                <p className="cx-field__hint" role="status">
-                  {!checkedTimes.ok
-                    ? tMaybe(checkedTimes.error)
-                    : forecastOn
-                      ? t('{v}: {projectedFree} car bays free. A bay whose vehicle leaves before you arrive shows as free.', { v: describeWindow(checkedTimes.arrivalTime, checkedTimes.departureTime, now), projectedFree })
-                      : t('Loading the bays for your time…')}
-                </p>
+                {!checkedTimes.ok && (
+                  <p className="cx-field__hint" role="status">
+                    {tMaybe(checkedTimes.error)}
+                  </p>
+                )}
               </div>
             )}
 
