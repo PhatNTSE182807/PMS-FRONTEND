@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 /**
- * Background videos of the hero carousel, shown one at a time. `start` (seconds) skips an intro:
- * the Lamborghini clip opens with the filmmaker's logo for its first 4 seconds.
+ * Background videos of the hero carousel, shown one at a time. `start` (seconds) skips each intro so
+ * the hero never shows a black frame: the Lamborghini clip opens with the filmmaker's logo for 4 s,
+ * the Pagani clip with a black frame and the BMW clip fades in from black for about 1.5 s.
  */
 const HERO_VIDEOS = [
   { src: '/home/videos/lamborghini-revuelto.mp4', start: 4.5 },
-  { src: '/home/videos/pagani-huayra.mp4', start: 0 },
-  { src: '/home/videos/bmw-m3-competition.mp4', start: 0 },
+  { src: '/home/videos/pagani-huayra.mp4', start: 0.5 },
+  { src: '/home/videos/bmw-m3-competition.mp4', start: 1.5 },
 ]
 
 /** How long each video stays on screen before the carousel moves to the next one. */
@@ -75,7 +76,16 @@ export function HeroSection() {
     }
     const events = ['touchstart', 'pointerdown', 'scroll'] as const
     events.forEach((name) => window.addEventListener(name, resume, { passive: true }))
-    return () => events.forEach((name) => window.removeEventListener(name, resume))
+    // Browsers pause videos in a background tab: start again as soon as the tab is back in view.
+    const onVisible = () => document.visibilityState === 'visible' && resume()
+    document.addEventListener('visibilitychange', onVisible)
+    // Safety net: if the video stops on its own (stalled network, decoder reset), kick it every few seconds.
+    const watchdog = window.setInterval(() => document.visibilityState === 'visible' && resume(), 3000)
+    return () => {
+      events.forEach((name) => window.removeEventListener(name, resume))
+      document.removeEventListener('visibilitychange', onVisible)
+      window.clearInterval(watchdog)
+    }
   }, [active, reducedMotion])
 
   // Instead of the native loop (which would replay the intro), go back to the video's start when it ends.
@@ -113,8 +123,9 @@ export function HeroSection() {
             playsInline
             autoPlay={i === active && !reducedMotion}
             onPlaying={() => show(i)}
-            // With reduced motion nothing plays: show the first video's still frame once it is loaded.
-            onLoadedData={() => reducedMotion && show(i)}
+            // The very first video shows its first frame as soon as it is loaded, without waiting for
+            // playback (and stays as a still frame with reduced motion), so the page never opens black.
+            onLoadedData={() => shown < 0 && show(i)}
             onEnded={() => restart(i)}
             // The playing video and the next one load in full; the third only fetches its metadata.
             preload={i === active || i === nextIndex ? 'auto' : 'metadata'}

@@ -143,14 +143,6 @@
   background: var(--bg-surface);
 }
 
-/* Replaces the header on the sign-in screens */
-.auth-floating-badge {
-  position: fixed;
-  top: 1rem;
-  right: 1.25rem;
-  z-index: 50;
-}
-
 .auth-split__brand {
   position: relative;
   display: flex;

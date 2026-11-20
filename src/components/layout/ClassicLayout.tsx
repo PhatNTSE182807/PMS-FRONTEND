@@ -52,13 +52,6 @@ export function ClassicLayout() {
       <div className="cyber-glow cyber-glow--cyan-top"></div>
       <div className="cyber-glow cyber-glow--blue-bottom"></div>
 
-      {/* The API status badge (and its URL override) stays reachable on the sign-in screens */}
-      {isAuthView && (
-        <div className="auth-floating-badge">
-          <ApiStatusBadge />
-        </div>
-      )}
-
       {/* Global Navigation Bar / Control Header */}
       {!isAuthView && (
         <nav className="global-header">
