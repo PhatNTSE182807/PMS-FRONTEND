@@ -58,7 +58,7 @@ export function ClassicLayout() {
           <div className="global-header__left">
             <div className="brand-pill" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
               <img src={LOGO_SRC} alt="" className="brand-logo" />
-              <span className="brand-text">XXIV PARKING</span>
+              <span className="brand-text"><span className="brand-gold">XXIV</span> PARKING</span>
             </div>
 
             {/* Quick Screen Switcher Tabs */}

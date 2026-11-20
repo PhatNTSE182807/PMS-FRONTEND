@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import {
   CalendarClock,
   Car,
+  ChevronLeft,
+  ChevronRight,
   CircleX,
   Clock,
   CreditCard,
@@ -63,6 +65,9 @@ const FILTERS: { value: Filter; label: string }[] = [
 ]
 
 const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+
+/** Rows per page of the Booking History table. */
+const HISTORY_PAGE_SIZE = 10
 const day = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 const vnd = (value: number) => `${formatNumber(value)} VND`
 
@@ -300,6 +305,7 @@ export default function CustomerBookingsPage() {
   const reservations = useMyReservations()
   const [filter, setFilter] = useState<Filter>('ALL')
   const [query, setQuery] = useState('')
+  const [historyPage, setHistoryPage] = useState(1)
 
   const all = reservations.data ?? []
   const matches = (b: ReservationDTO) => {
@@ -314,15 +320,17 @@ export default function CustomerBookingsPage() {
   const featured = visible.filter((b) => b.status === 'Confirmed' || b.status === 'CheckedIn')
   const upcoming = visible.filter((b) => b.status === 'PendingDeposit')
   const history = visible.filter((b) => GROUP[b.status] === 'COMPLETED' || GROUP[b.status] === 'CANCELLED')
+  // Client-side paging: the reservation list is loaded whole, so only the rows on screen are sliced
+  const historyPages = Math.max(1, Math.ceil(history.length / HISTORY_PAGE_SIZE))
+  const currentHistoryPage = Math.min(historyPage, historyPages)
+  const historyRows = history.slice((currentHistoryPage - 1) * HISTORY_PAGE_SIZE, currentHistoryPage * HISTORY_PAGE_SIZE)
   const count = (f: Filter) => (f === 'ALL' ? all.length : all.filter((b) => GROUP[b.status] === f).length)
 
   return (
     <>
       <header className="cx-page-head">
         <div>
-          <span className="cx-eyebrow"><span className="cx-dot cx-dot--gold" aria-hidden="true" /> Slot reservations • Deposits via XXIV Wallet / VNPay / MoMo</span>
           <h1 className="cx-page-title">My Bookings &amp; Reservations</h1>
-          <p className="cx-page-lead">Track reservations, pay deposits, show your check-in QR and review your history. Up to 2 active reservations per account.</p>
         </div>
         <Link to="/me#map" className="cx-btn cx-btn--teal" style={{ padding: '0.9rem 1.4rem' }}>
           <SquarePlus aria-hidden /> New reservation
@@ -338,7 +346,10 @@ export default function CustomerBookingsPage() {
               role="tab"
               aria-selected={filter === f.value}
               className={`cx-tab ${filter === f.value ? 'cx-tab--active' : ''}`}
-              onClick={() => setFilter(f.value)}
+              onClick={() => {
+                setFilter(f.value)
+                setHistoryPage(1)
+              }}
             >
               {f.label} <span className="cx-count">{count(f.value)}</span>
             </button>
@@ -346,7 +357,10 @@ export default function CustomerBookingsPage() {
         </div>
         <label className="cx-filterbar__search">
           <Search aria-hidden />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by plate or code..." aria-label="Search bookings" />
+          <input value={query} onChange={(e) => {
+            setQuery(e.target.value)
+            setHistoryPage(1)
+          }} placeholder="Search by plate or code..." aria-label="Search bookings" />
         </label>
       </div>
 
@@ -400,7 +414,7 @@ export default function CustomerBookingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map((b) => {
+                  {historyRows.map((b) => {
                     const ended = GROUP[b.status] === 'CANCELLED'
                     return (
                       <tr key={b.id}>
@@ -431,6 +445,30 @@ export default function CustomerBookingsPage() {
               </table>
             </div>
           </div>
+
+          {historyPages > 1 && (
+            <nav className="cx-pager" aria-label="Booking history pages">
+              <button
+                type="button"
+                className="cx-btn cx-btn--sm"
+                disabled={currentHistoryPage <= 1}
+                onClick={() => setHistoryPage(currentHistoryPage - 1)}
+              >
+                <ChevronLeft aria-hidden /> Newer
+              </button>
+              <span>
+                Page {currentHistoryPage} of {historyPages} • {history.length} bookings
+              </span>
+              <button
+                type="button"
+                className="cx-btn cx-btn--sm"
+                disabled={currentHistoryPage >= historyPages}
+                onClick={() => setHistoryPage(currentHistoryPage + 1)}
+              >
+                Older <ChevronRight aria-hidden />
+              </button>
+            </nav>
+          )}
         </section>
       )}
 

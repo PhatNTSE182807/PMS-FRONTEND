@@ -227,14 +227,8 @@ export default function CustomerAccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          <>
-            <span className="text-indigo-700">XXIV Parking</span>
-            <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] tracking-normal">ADMINISTRATION</span>
-          </>
-        }
         title="User Accounts Directory"
-        description="Look up registered drivers, see who asked to delete their account, and lock or unlock accounts."
+       
         actions={
           <Button variant="outline" size="lg" onClick={() => exportAccounts(items)} disabled={!items.length}>
             <Download />

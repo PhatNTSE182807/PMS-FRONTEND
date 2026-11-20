@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 import { lotManagementService as service } from '@/api/lot-management.service'
 import { getErrorMessage } from '@/api/apiError'
 import { useAuth } from '@/hooks/useAuth'
-import { EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -196,21 +196,8 @@ export default function ParkingLotsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          selected ? undefined : (
-            <>
-              <EyebrowTag>Saigon metropolitan grid</EyebrowTag>
-              <span aria-hidden>•</span>
-              <span>Facility control layer</span>
-            </>
-          )
-        }
         title={selected ? title : admin ? 'Parking Lots & Facilities Management' : 'Facility Zones & Bays'}
-        description={
-          selected
-            ? 'Lot details, zones and reservable slots.'
-            : 'Register new facilities from ready-made parking models, update the operating lifecycle and assign facility managers across Ho Chi Minh City.'
-        }
+       
         actions={
           !selected ? (
             <>

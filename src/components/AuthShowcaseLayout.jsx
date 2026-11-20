@@ -9,25 +9,24 @@ function Brand({ className = '' }) {
       <span className="auth-shell__logo-box">
         <img src={LOGO_SRC} alt="" />
       </span>
-      <span className="auth-shell__brand-name">XXIV Parking</span>
+      <span className="auth-shell__brand-name"><span className="brand-gold">XXIV</span> Parking</span>
     </Link>
   );
 }
 
 /**
  * Full-window shell of the Login and Register screens (Stitch "Universal Login/Register"):
- * left = car photo with the brand and tagline, right = the form column.
+ * left = car photo with the brand, right = the form column.
  *
  * @param {{
  *   title: string,
  *   subtitle: string,
  *   photo: string,
- *   tagline: string,
  *   wide?: boolean,
  *   children: import('react').ReactNode,
  * }} props
  */
-export default function AuthShowcaseLayout({ title, subtitle, photo, tagline, wide = false, children }) {
+export default function AuthShowcaseLayout({ title, subtitle, photo, wide = false, children }) {
   return (
     <div className={`auth-shell ${wide ? 'auth-shell--wide' : ''}`}>
       <aside className="auth-shell__hero">
@@ -35,11 +34,6 @@ export default function AuthShowcaseLayout({ title, subtitle, photo, tagline, wi
         <div className="auth-shell__fade" aria-hidden="true" />
 
         <Brand />
-
-        <div className="auth-shell__tagline">
-          <p className="auth-shell__tagline-title">Precision access for elite automotive collections.</p>
-          <p className="auth-shell__tagline-text">{tagline}</p>
-        </div>
       </aside>
 
       <section className="auth-shell__panel">

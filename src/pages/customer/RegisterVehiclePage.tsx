@@ -251,13 +251,7 @@ export default function RegisterVehiclePage() {
     <form onSubmit={submit} noValidate>
       <header className="cx-page-head">
         <div>
-          <nav className="cx-crumbs" aria-label="Breadcrumb">
-            <span>Fleet management</span> / <span>My vehicles</span> / <span className="cx-crumbs__current">Register new vehicle</span>
-          </nav>
           <h1 className="cx-page-title">Register Vehicle &amp; Upload Documents</h1>
-          <p className="cx-page-lead">
-            Link your vehicle for automated plate recognition at the barrier and seamless digital billing across all Saigon terminals.
-          </p>
         </div>
         <span className="cx-pill">
           <span className="cx-dot cx-dot--gold" aria-hidden="true" /> Plate gateway ready

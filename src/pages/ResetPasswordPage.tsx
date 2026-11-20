@@ -51,7 +51,6 @@ export default function ResetPasswordPage() {
         title="Choose a new password"
         subtitle={linkIsComplete ? `For the account ${email}.` : 'This link is incomplete.'}
         photo="/login-car.jpg"
-        tagline="Experience effortless, intelligent parking management crafted for luxury vehicles."
       >
         {!linkIsComplete ? (
           <>

@@ -67,7 +67,7 @@ export function MyPayslips() {
   const backup = duty.data?.employmentType === 'Backup'
   return (
     <div className="space-y-6">
-      <PageHeader title="My payslips" description="Salary you received, with what it is made of."
+      <PageHeader title="My payslips"
         actions={simulation.data?.enabled
           ? <Button onClick={() => setSimulating(true)}><Sparkles />Simulate payday</Button>
           : <Wallet className="size-9 text-indigo-700" />} />

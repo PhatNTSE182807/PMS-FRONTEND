@@ -10,7 +10,7 @@ export function HomeFooter() {
         <div className="home-footer__grid">
           <div>
             <p className="home-footer__brand">
-              <span>XXIV</span>PARKING
+              <span className="brand-gold">XXIV</span>PARKING
             </p>
             <p className="home-footer__about">
               Real-time occupancy, automated bay allocation and secure vehicle management for high-density city

@@ -276,11 +276,11 @@ html[data-theme='light'] .home-nav__brand-mark {
 
 /* "XXIV PARKING" on one line, both words the same size */
 .home-nav__brand-name {
-  margin-left: 0.3rem;
+  margin-left: 0.05rem;
   font-family: var(--home-headline-font);
   font-size: 1.35rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
 }
 
 .home-nav__links {
@@ -1013,10 +1013,6 @@ html[data-theme='light'] .home-nav__brand-mark {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.03em;
-}
-
-.home-footer__brand span {
-  color: var(--home-primary);
 }
 
 .home-footer__about {
