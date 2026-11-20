@@ -100,10 +100,7 @@ export function HeroSection() {
       </div>
 
       <div className="home-container home-hero__center">
-        <h1 className="home-hero__title">
-          Next-generation
-          <span className="home-hero__title-accent">Parking System</span>
-        </h1>
+        <h1 className="home-hero__title">XXIV Parking</h1>
 
         <button type="button" className="home-hero__discover" onClick={discover}>
           Discover
