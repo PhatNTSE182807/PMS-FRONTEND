@@ -22,7 +22,7 @@
 }
 
 /*
- * Dark "XXIV Sovereign Telemetry" palette for the admin dashboard (Stitch "Admin Command").
+ * Dark "XXIV Sovereign" palette for the admin dashboard (Stitch "Admin Command").
  * The components use stock Tailwind colour utilities; re-pointing the colour variables here
  * re-themes all of them. The scales are inverted for the dark surface: `white` is the card
  * surface, slate-50 the faintest tint and slate-950 the brightest text.

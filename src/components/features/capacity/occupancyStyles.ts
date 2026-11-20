@@ -53,12 +53,3 @@ export const LOT_STATUS_STYLES: Record<ParkingLotStatus, { label: string; tone: 
   MAINTENANCE: { label: 'Maintenance', tone: 'amber' },
   CLOSED: { label: 'Closed', tone: 'neutral' },
 }
-
-export type CapacityFilter = 'ALL' | OccupancyLevel
-
-export const CAPACITY_FILTERS: { value: CapacityFilter; label: string }[] = [
-  { value: 'ALL', label: 'All' },
-  { value: 'AVAILABLE', label: 'Plenty free' },
-  { value: 'HIGH', label: 'Filling up' },
-  { value: 'CRITICAL', label: 'Full' },
-]

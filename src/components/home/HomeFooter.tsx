@@ -13,7 +13,7 @@ export function HomeFooter() {
               <span>XXIV</span>PARKING
             </p>
             <p className="home-footer__about">
-              Real-time telemetry, automated bay allocation and secure vehicle management for high-density city
+              Real-time occupancy, automated bay allocation and secure vehicle management for high-density city
               estates.
             </p>
             <p className="home-footer__status">
