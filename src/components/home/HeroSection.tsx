@@ -44,6 +44,19 @@ export function HeroSection() {
     })
   }, [active, reducedMotion])
 
+  // Phones can refuse to autoplay (iOS Low Power Mode, data saver): start the video on the first touch,
+  // click or scroll instead of leaving the poster up.
+  useEffect(() => {
+    if (reducedMotion) return
+    const resume = () => {
+      const video = videoRefs.current[active]
+      if (video?.paused) void video.play().catch(() => {})
+    }
+    const events = ['touchstart', 'pointerdown', 'scroll'] as const
+    events.forEach((name) => window.addEventListener(name, resume, { passive: true }))
+    return () => events.forEach((name) => window.removeEventListener(name, resume))
+  }, [active, reducedMotion])
+
   // Instead of the native loop (which would replay the intro), go back to the video's start when it ends.
   const restart = (i: number) => {
     const video = videoRefs.current[i]
@@ -64,6 +77,13 @@ export function HeroSection() {
             key={src}
             ref={(el) => {
               videoRefs.current[i] = el
+              // React sets `muted` only as a property, but iOS Safari autoplays only videos that carry the
+              // muted attribute in the DOM, so write it out as well.
+              if (el) {
+                el.muted = true
+                el.defaultMuted = true
+                el.setAttribute('muted', '')
+              }
             }}
             className={`home-hero__video${i === active ? ' is-active' : ''}`}
             // The media fragment makes the browser load and show the first frame at `start` already.
@@ -71,6 +91,7 @@ export function HeroSection() {
             poster="/home/hero-garage.jpg"
             muted
             playsInline
+            autoPlay={i === active && !reducedMotion}
             onEnded={() => restart(i)}
             // Load the first video right away; the others only fetch metadata until their turn.
             preload={i === active ? 'auto' : 'metadata'}
@@ -79,10 +100,7 @@ export function HeroSection() {
       </div>
 
       <div className="home-container home-hero__center">
-        <h1 className="home-hero__title">
-          Next-generation
-          <span className="home-hero__title-accent">Parking System</span>
-        </h1>
+        <h1 className="home-hero__title">XXIV Parking</h1>
 
         <button type="button" className="home-hero__discover" onClick={discover}>
           Discover
