@@ -126,7 +126,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
             label={t('Full name')}
             icon={User}
             type="text"
-            placeholder={t('Alexander Vance')}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
@@ -136,7 +135,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
             label={t('Phone number')}
             icon={Phone}
             type="tel"
-            placeholder="0988 123 456"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
             autoComplete="tel"
@@ -148,7 +146,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
           label={t('Email address')}
           icon={Mail}
           type="email"
-          placeholder={t('name@domain.com')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
@@ -161,7 +158,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
           type="text"
           inputMode="numeric"
           maxLength={12}
-          placeholder={t('12-digit Citizen ID (CCCD)')}
           value={citizenId}
           onChange={(e) => setCitizenId(e.target.value.replace(/\D/g, ''))}
           autoComplete="off"
@@ -173,7 +169,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
               id="reg-password"
               label={t('Password')}
               icon={Lock}
-              placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
@@ -188,7 +183,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
             id="reg-confirm-password"
             label={t('Confirm password')}
             icon={RotateCcwKey}
-            placeholder="••••••••••••"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             autoComplete="new-password"

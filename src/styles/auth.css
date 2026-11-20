@@ -840,29 +840,6 @@ html[data-theme='light'] .auth-shell__dialog {
   }
 }
 
-/* Sun/moon button at the top of the form column */
-.auth-shell__theme {
-  position: absolute;
-  top: 1rem;
-  left: 1.25rem;
-  z-index: 2;
-  display: flex;
-  padding: 0.4rem;
-  border: none;
-  background: transparent;
-  color: var(--auth-on-variant);
-  cursor: pointer;
-}
-
-.auth-shell__theme:hover {
-  color: var(--auth-on-surface);
-}
-
-.auth-shell__theme svg {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
 /* The legacy layout around the sign-in screens (App.css: warm sand background and glows) shows for a moment
    while the screen fades in: give it the sign-in page color in both modes so nothing flashes */
 .pms-app:has(.auth-shell) {
@@ -881,25 +858,4 @@ html[data-theme='light'] .pms-app:has(.auth-shell) {
 html[data-theme='light'] .auth-shell__dialog .auth-shell__input {
   border-color: #e2e2de;
   background: var(--auth-container-high);
-}
-
-/* Phones and tablets: the form column sits under the photo, so its top-right corner is free (the API badge
-   floats over the photo): the toggle moves there */
-@media (max-width: 1023px) {
-  .auth-shell__theme {
-    right: 1.25rem;
-    left: auto;
-  }
-}
-
-/* Language switch: right of the sun/moon button (left of it on phones, where both sit at the right) */
-.auth-shell__lang {
-  left: 3.4rem;
-}
-
-@media (max-width: 1023px) {
-  .auth-shell__lang {
-    right: 3.4rem;
-    left: auto;
-  }
 }

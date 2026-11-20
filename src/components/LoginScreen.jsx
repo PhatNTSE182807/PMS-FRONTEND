@@ -74,7 +74,6 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
           label={t('Email or username')}
           icon={Mail}
           type="text"
-          placeholder={t('name@domain.com')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="username"
@@ -84,7 +83,6 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
           id="login-password"
           label={t('Password')}
           icon={Lock}
-          placeholder="••••••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
