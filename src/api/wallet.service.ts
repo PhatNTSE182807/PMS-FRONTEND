@@ -2,7 +2,7 @@ import { paymentReturnUrl } from './reservation.service'
 import { http } from './axiosClient'
 import type { PaymentDTO, TopUpWalletRequest, WalletDTO, WalletTransactionDTO, WithdrawWalletRequest } from '@/types/operations.dto'
 
-/** XXIV User Wallet API: telemetry balance, VNPay/MoMo top-ups, and withdrawals. */
+/** XXIV User Wallet API: balance, VNPay/MoMo top-ups, and withdrawals. */
 export const walletService = {
   /** Fetch current user's wallet balance, hold amount, and recent transaction history. */
   getWallet(): Promise<WalletDTO> {

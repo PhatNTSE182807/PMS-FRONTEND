@@ -271,11 +271,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
     <section className="cx-card cx-map" id="map" aria-labelledby="map-title">
       <div className="cx-map__head">
         <div>
-          <span className="cx-eyebrow">
-            <span className="cx-dot cx-dot--gold" aria-hidden="true" /> 3D digital twin • Real-time bay reservation
-          </span>
           <h2 className="cx-map__title" id="map-title">Interactive 3D Parking Map &amp; Slot Booking</h2>
-          <p className="cx-card__subtitle">Every level refreshed live from the gate sensors. Drag to rotate, scroll to zoom, click a bay.</p>
         </div>
         <div className="cx-tabs" role="tablist" aria-label="Parking terminal">
           {lots.map((l) => (
@@ -362,7 +358,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
           <aside className="cx-map__detail" aria-live="polite">
             <div className="cx-card__head" style={{ marginBottom: 0 }}>
               <span className="cx-eyebrow cx-eyebrow--teal">
-                <Info size={14} aria-hidden /> Selected slot telemetry
+                <Info size={14} aria-hidden /> Selected slot
               </span>
               <span className="cx-chip cx-chip--teal">{lot.code}</span>
             </div>

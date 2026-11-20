@@ -1,20 +1,17 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { Activity, Building2, CircleParking, Gauge, ParkingMeter, RefreshCw, SquareParking, WifiOff } from 'lucide-react'
-import { parkingService } from '@/api/parking.service'
+import { Building2, CircleParking, Gauge, ParkingMeter, RefreshCw, SquareParking } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { OccupancyBar } from '@/components/features/capacity/OccupancyGauge'
 import { ParkingLotCard } from '@/components/features/capacity/ParkingLotCard'
 import { ZoneDetailsDialog } from '@/components/features/capacity/ZoneDetailsDialog'
-import { CAPACITY_FILTERS, type CapacityFilter } from '@/components/features/capacity/occupancyStyles'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/states'
-import { useNow } from '@/hooks/useNow'
-import { SIMULATION_TICK_MS, useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
-import { formatNumber, formatRelativeTime } from '@/lib/format'
-import { occupancyLevel, occupancyRate, parkingSlots } from '@/lib/occupancy'
+import { useParkingCapacity } from '@/hooks/useParking'
+import { formatNumber } from '@/lib/format'
+import { occupancyRate, parkingSlots } from '@/lib/occupancy'
 import { cn } from '@/lib/utils'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
 
@@ -73,25 +70,11 @@ function CapacitySkeleton() {
 
 export default function ParkingCapacityPage() {
   const capacity = useParkingCapacity()
-  const canSimulate = parkingService.canSimulate()
-  const [isSimulating, setIsSimulating] = useState(false)
-  const [filter, setFilter] = useState<CapacityFilter>('ALL')
   const [zoneLotId, setZoneLotId] = useState<string | null>(null)
-  const now = useNow(1000)
-
-  useCapacitySimulation(isSimulating)
 
   const lots = useMemo(() => capacity.data ?? [], [capacity.data])
-  const counts = useMemo(() => {
-    const result: Record<CapacityFilter, number> = { ALL: lots.length, AVAILABLE: 0, HIGH: 0, CRITICAL: 0 }
-    for (const lot of lots) result[occupancyLevel(lot.overallOccupancyPercentage)]++
-    return result
-  }, [lots])
-  const visibleLots = filter === 'ALL' ? lots : lots.filter((lot) => occupancyLevel(lot.overallOccupancyPercentage) === filter)
   // Looked up on every render, so the open dialog follows live updates.
   const zoneLot = lots.find((lot) => lot.id === zoneLotId) ?? null
-
-  const isLive = !capacity.isError
 
   return (
     <div className="space-y-6">
@@ -106,63 +89,6 @@ export default function ParkingCapacityPage() {
         }
       />
 
-      {/* Real-time control bar */}
-      <Card className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
-        <div className="flex items-center gap-3 px-2">
-          <span className="relative flex size-2.5" aria-hidden>
-            {isLive && <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />}
-            <span className={cn('relative inline-flex size-2.5 rounded-full', isLive ? 'bg-emerald-500' : 'bg-rose-500')} />
-          </span>
-          <div className="text-sm" aria-live="polite">
-            <span className="font-medium text-slate-900">{isLive ? 'Live Updates' : 'Disconnected'}</span>
-            <span className="text-slate-500">
-              {' · '}
-              {capacity.dataUpdatedAt ? `Updated ${formatRelativeTime(capacity.dataUpdatedAt, now)}` : 'Loading…'}
-            </span>
-          </div>
-          {!isLive && <WifiOff className="size-4 text-rose-500" aria-hidden />}
-        </div>
-
-        {canSimulate && (
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 lg:ml-2">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isSimulating}
-              onClick={() => setIsSimulating((v) => !v)}
-              className={cn('relative h-5 w-9 shrink-0 rounded-full transition-colors', isSimulating ? 'bg-indigo-600' : 'bg-slate-300')}
-            >
-              <span
-                className={cn(
-                  'absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform',
-                  isSimulating && 'translate-x-4',
-                )}
-              />
-            </button>
-            <Activity className={cn('size-4', isSimulating ? 'text-indigo-600' : 'text-slate-400')} aria-hidden />
-            Simulate traffic ({SIMULATION_TICK_MS / 1000}s)
-          </label>
-        )}
-
-        <div role="group" aria-label="Filter by occupancy" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 lg:ml-auto">
-          {CAPACITY_FILTERS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={filter === option.value}
-              onClick={() => setFilter(option.value)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                filter === option.value ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900',
-              )}
-            >
-              {option.label}
-              <span className="rounded-full bg-slate-200/70 px-1.5 text-xs text-slate-600 tabular-nums">{counts[option.value]}</span>
-            </button>
-          ))}
-        </div>
-      </Card>
-
       {capacity.isPending ? (
         <CapacitySkeleton />
       ) : capacity.isError && lots.length === 0 ? (
@@ -173,22 +99,13 @@ export default function ParkingCapacityPage() {
         <>
           <SystemBanner lots={lots} />
 
-          {visibleLots.length === 0 ? (
+          {lots.length === 0 ? (
             <Card>
-              <EmptyState
-                icon={Gauge}
-                title="No parking lots at this level"
-                description="Pick another occupancy level or show all lots."
-                action={
-                  <Button variant="outline" onClick={() => setFilter('ALL')}>
-                    Show all
-                  </Button>
-                }
-              />
+              <EmptyState icon={Gauge} title="No parking lots yet" description="Parking lots appear here once they are created." />
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-              {visibleLots.map((lot) => (
+              {lots.map((lot) => (
                 <ParkingLotCard key={lot.id} lot={lot} onShowZones={(selected) => setZoneLotId(selected.id)} />
               ))}
             </div>

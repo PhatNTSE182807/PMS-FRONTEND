@@ -34,29 +34,21 @@ export default function CustomerDashboardPage() {
   const [directionsLot, setDirectionsLot] = useState<PublicLotDTO | null>(null)
 
   const vehicles = vehiclesQuery.data ?? []
-  const defaultVehicle = vehicles.find((v) => v.isDefault) ?? vehicles[0]
   const name = profile?.fullName || user?.fullName || user?.username || 'Driver'
-  const openLots = lots.filter((l) => l.isBookable).length
-  const freeBays = lots.filter((l) => l.isBookable).reduce((sum, l) => sum + l.freeBays, 0)
 
   return (
     <>
       <section className="cx-welcome">
         <div className="cx-welcome__intro">
-          <span className="cx-eyebrow">
-            <span className="cx-dot cx-dot--gold" aria-hidden="true" /> Client console • Live telemetry
-            {defaultVehicle && <span style={{ color: 'var(--cx-on-variant)' }}>• Plate {defaultVehicle.licensePlate} linked</span>}
-          </span>
           <h1 className="cx-welcome__title">
             Welcome back, <span className="cx-welcome__name">{name}</span>
           </h1>
-          <p className="cx-welcome__lead">
-            {publicLots.isPending
-              ? 'Connecting to the parking network...'
-              : publicLots.isError && lots.length === 0
-                ? 'The parking network cannot be reached right now.'
-                : `${openLots} of ${lots.length} parking lot${lots.length === 1 ? '' : 's'} open for bookings, ${freeBays.toLocaleString('en-US')} bays free right now.`}
-          </p>
+          {/* Only a status line while the lot list is loading or unreachable */}
+          {(publicLots.isPending || (publicLots.isError && lots.length === 0)) && (
+            <p className="cx-welcome__lead">
+              {publicLots.isPending ? 'Connecting to the parking network...' : 'The parking network cannot be reached right now.'}
+            </p>
+          )}
         </div>
 
         {lots.length > 0 && (

@@ -22,14 +22,7 @@ export function FacilityShowcase() {
     <section className="home-section home-section--raised" id="facilities">
       <div ref={ref} className="home-container home-reveal">
         <div className="home-section__head">
-          <div>
-            <span className="home-eyebrow">Infrastructure telemetry</span>
-            <h2 className="home-heading">Autonomous vault engineering</h2>
-          </div>
-          <p className="home-section__intro">
-            Engineered from the foundation up for low-clearance hypercars, heavy luxury SUVs and high-security
-            requirements.
-          </p>
+          <h2 className="home-heading">Autonomous vault engineering</h2>
         </div>
 
         <div className="home-showcase">

@@ -1,5 +1,5 @@
 /* =========================================================
-   HOMEPAGE (public landing at "/") — dark "XXIV Sovereign Telemetry" design from Stitch.
+   HOMEPAGE (public landing at "/") — dark "XXIV Sovereign" design from Stitch.
    Tokens are local to .home, matching the Login/Register screens (styles/auth.css).
 ========================================================= */
 .home {
@@ -328,19 +328,6 @@ html[data-theme='light'] .home-nav__brand-mark {
   color: var(--home-on-surface);
 }
 
-/* Live status in the header: plain text with the status dot, styled like the Sign in link */
-.home-nav__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--home-on-variant);
-}
-
 .home-nav__logo {
   display: block;
   width: auto;
@@ -450,7 +437,7 @@ html[data-theme='light'] .home-nav__brand-mark {
   height: 1.1rem;
 }
 
-/* Telemetry HUD card (live numbers from the capacity feed) */
+/* Live HUD card (live numbers from the capacity feed) */
 .home-hud {
   padding: 1.5rem;
   border: 1px solid rgba(18, 78, 102, 0.6);
@@ -1167,10 +1154,6 @@ html[data-theme='light'] .home-nav__brand-mark {
 
   .home-nav__links {
     gap: 1.25rem;
-  }
-
-  .home-nav__status {
-    display: none;
   }
 }
 

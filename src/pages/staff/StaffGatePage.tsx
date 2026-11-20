@@ -110,7 +110,7 @@ function KpiRow({
   )
 }
 
-function AnprTelemetry({
+function AnprCameras({
   sessions,
   exits,
 }: {
@@ -123,7 +123,7 @@ function AnprTelemetry({
       <SectionTitle
         icon={<Video />}
       >
-        Live optical ANPR telemetry
+        Live ANPR cameras
       </SectionTitle>
       <GateLaneCameras sessions={sessions} history={exits} />
     </Panel>
@@ -282,7 +282,7 @@ export default function StaffGatePage() {
 
       {/* Four cameras (entry lane on top, exit lane below) with the Check-in / Check-out lanes beside them */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
-        <AnprTelemetry sessions={sessions.data} exits={exits.data?.items} />
+        <AnprCameras sessions={sessions.data} exits={exits.data?.items} />
         {lotKey ? (
           <GateLanesPanel lotId={lotKey} initialTab={lane === 'checkout' ? 'CheckOut' : 'CheckIn'} />
         ) : (
