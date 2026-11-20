@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom';
 import { LOGO_SRC } from './ParkingLogo';
-import { ThemeToggle } from './ThemeToggle';
-import { LanguageToggle } from './LanguageToggle';
 import '../styles/auth.css';
 import { tMaybe } from '@/i18n'
 
@@ -39,8 +37,6 @@ export default function AuthShowcaseLayout({ title, subtitle, photo, wide = fals
       </aside>
 
       <section className="auth-shell__panel">
-        <ThemeToggle className="auth-shell__theme" />
-        <LanguageToggle className="auth-shell__theme auth-shell__lang" />
         <div className="auth-shell__panel-inner">
           <Brand className="auth-shell__mobile-brand" />
 
