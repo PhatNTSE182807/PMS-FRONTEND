@@ -36,14 +36,8 @@ export default function CustomerActiveSessionsPage() {
     <>
       <header className="cx-page-head">
         <div>
-          <span className="cx-eyebrow">
-            <span className="cx-dot cx-dot--live" aria-hidden="true" /> Live sessions • Refreshed automatically
-          </span>
+          <span className="cx-eyebrow cx-eyebrow--brand"><span className="cx-eyebrow__gold">XXIV</span> Parking</span>
           <h1 className="cx-page-title">Active Sessions</h1>
-          <p className="cx-page-lead">
-            Your parked vehicles and the bookings you have not used yet. Pay, show your exit pass, check in or out from here.
-            Up to {allowance.limit} active bookings per account, one per vehicle.
-          </p>
         </div>
         {allowance.atLimit ? (
           <span className="cx-btn" aria-disabled="true" title="Use or cancel a booking before making a new one">

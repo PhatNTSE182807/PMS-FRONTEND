@@ -123,13 +123,8 @@ function Reservations({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          <>
-            <span>Console matrix</span> / <span className="text-amber-500">Allocations</span>
-          </>
-        }
         title="Facility Reservations & Slot Allocations"
-        description={`${lot.name} • Active booking operations`}
+       
         actions={
           <Button variant="outline" size="lg" onClick={exportCsv} disabled={!visible.length}>
             <Download /> Export booking manifest (CSV)

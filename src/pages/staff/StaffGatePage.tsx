@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
-  BadgeCheck,
   DoorOpen,
   LogIn,
   LogOut,
@@ -16,6 +15,7 @@ import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { GateLaneCameras } from '@/components/features/staff/GateLaneCameras'
 import { GateLanesPanel } from '@/components/features/staff/GateLanesPanel'
 import { Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
+import { BrandEyebrow } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,7 +27,7 @@ import { useStaffLot } from '@/hooks/useStaffLot'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/features/staff/LostTicketPapersDialog'
-import { demoGateStats, demoStation } from '@/mocks/staffOps.mock'
+import { demoGateStats } from '@/mocks/staffOps.mock'
 import type { CashDrawerDTO } from '@/types/cashDrawer.dto'
 import type { ParkingSessionDTO, ZoneCounterDTO } from '@/types/operations.dto'
 
@@ -264,9 +264,7 @@ export default function StaffGatePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] text-slate-700 uppercase">
-            <BadgeCheck className="size-4 text-indigo-700" aria-hidden /> {myLots.data?.find((l) => l.id === lotKey)?.name ?? demoStation.station}
-          </p>
+          <BrandEyebrow />
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-slate-950">Gate operations dashboard</h1>
         </div>
         {incidentCount > 0 && (

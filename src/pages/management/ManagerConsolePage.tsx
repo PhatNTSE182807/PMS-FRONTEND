@@ -15,7 +15,7 @@ import { Kpi, WithManagerLot } from '@/components/features/manager/ManagerBits'
 import { formatClock, vnd } from '@/components/features/manager/managerFormat'
 import { arrivesWithinHour, dayRange, isAwaitingArrival, VOID_RESERVATION } from '@/components/features/manager/managerReservations'
 import { presetRange } from '@/components/features/revenue/revenueFilters'
-import { EyebrowTag, PageHeader } from '@/components/layout/PageHeader'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useManagerLot } from '@/hooks/useManagerLot'
@@ -25,7 +25,7 @@ import { useManagerAllTimeRevenue, useManagerRevenue } from '@/hooks/useRevenueR
 import { useNow } from '@/hooks/useNow'
 import { formatNumber, toIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { LOT_STATES, type ManagedLot } from '@/types/lot-management.dto'
+import type { ManagedLot } from '@/types/lot-management.dto'
 import type { CapacityVehicleType } from '@/types/parking.dto'
 
 const VEHICLE_ICON: Record<CapacityVehicleType, typeof Car> = { CAR: Car, MOTORBIKE: Bike }
@@ -80,17 +80,8 @@ function Console({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          <>
-            <EyebrowTag>Facility console</EyebrowTag>
-            <span className="font-mono tracking-normal">{lot.code}</span>
-            <span className={cn('rounded-full px-2.5 py-0.5', lot.status === 'Active' && lot.isStaffed !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700')}>
-              {lot.status === 'Active' && lot.isStaffed === false ? 'Maintenance · add Staff to open for bookings' : LOT_STATES[lot.status]}
-            </span>
-          </>
-        }
         title={lot.name}
-        description={undefined}
+       
         actions={
           <div className="flex flex-col gap-2 sm:items-end">
             <div className="flex flex-wrap gap-2">

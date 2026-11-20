@@ -51,8 +51,7 @@ function Scheduling({ lot }: { lot: ManagedLot }) {
   const pending = week.data?.pendingLeaveRequests ?? 0
   return (
     <div className="space-y-6">
-      <PageHeader title="Work schedule" eyebrow={lot.name}
-        description="Four 6-hour shifts a day. The weekly pattern repeats until you change it."
+      <PageHeader title="Work schedule"
         actions={<CalendarDays className="size-9 text-indigo-700" />} />
       <div className="flex flex-wrap gap-2" role="tablist">
         {(['board', 'leave'] as const).map((value) => (

@@ -165,9 +165,8 @@ export default function AnprDatasetPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Developer tools"
         title="Plate reader training images"
-        description="Renders the 3D gate lanes with random vehicles, Vietnamese plates, camera angles and light, and saves each frame with the plate and character boxes. Train the plate reader on the folder with the tools in the backend repo (tools/anpr)."
+       
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">

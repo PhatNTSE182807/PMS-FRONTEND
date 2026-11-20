@@ -74,7 +74,7 @@ export function AdminPayroll() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Payroll" description="Pay everyone at the start of the month and see every payment made."
+      <PageHeader title="Payroll"
         actions={<BadgeDollarSign className="size-9 text-indigo-700" />} />
 
       <Card className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-[10rem_1fr_10rem_10rem_auto] lg:items-end">

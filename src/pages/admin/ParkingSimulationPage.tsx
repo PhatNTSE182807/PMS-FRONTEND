@@ -233,9 +233,8 @@ export default function ParkingSimulationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Demo tools"
         title="Parking Simulation"
-        description="Speed up time to show fees and booking rules in a few seconds: charge a pricing block every few seconds and shorten holds and deadlines."
+       
       />
       {simulation.isPending && <Skeleton className="h-96 rounded-xl" />}
       {simulation.isError && (

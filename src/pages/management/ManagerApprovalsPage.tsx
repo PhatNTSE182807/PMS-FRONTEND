@@ -172,15 +172,8 @@ function Approvals({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={
-          <>
-            <span className="text-amber-500">{lot.name}</span>
-            <span aria-hidden>•</span>
-            <span>Pending manager sign-offs</span>
-          </>
-        }
         title="Approval Queue"
-        description="Staff cash requests and cash closes. Lost tickets are decided by the Staff at the counter."
+       
         actions={
           <span className="rounded-xl bg-slate-50 px-4 py-3 text-right ring-1 ring-slate-200">
             <span className="block text-xs font-bold tracking-wider text-slate-700 uppercase">Waiting</span>

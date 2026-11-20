@@ -272,11 +272,8 @@ export default function CustomerProfilePage() {
     <>
       <header className="cx-page-head">
         <div>
-          <nav className="cx-crumbs" aria-label="Breadcrumb">
-            <span>Account settings</span> <ChevronRight aria-hidden /> <span className="cx-crumbs__current">Personal profile</span>
-          </nav>
+          <span className="cx-eyebrow cx-eyebrow--brand"><span className="cx-eyebrow__gold">XXIV</span> Parking</span>
           <h1 className="cx-page-title">User Profile &amp; Security</h1>
-          <p className="cx-page-lead">Manage your personal details, contact information and sign-in security.</p>
         </div>
       </header>
 

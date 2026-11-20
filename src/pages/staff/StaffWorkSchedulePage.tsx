@@ -20,8 +20,7 @@ export default function StaffWorkSchedulePage() {
   const myShifts = week.data?.cells.filter((c) => c.isMine).length ?? 0
   return (
     <div className="space-y-6">
-      <PageHeader title="Duty board" eyebrow={week.data?.lotName}
-        description="Who works each shift at your lot. Your shifts are highlighted."
+      <PageHeader title="Duty board"
         actions={<CalendarDays className="size-9 text-indigo-700" />} />
       <Card className="space-y-4 p-4 sm:p-5">
         {week.isPending ? <Spinner /> : week.isError ? (

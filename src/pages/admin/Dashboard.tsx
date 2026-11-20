@@ -135,9 +135,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Administration"
         title="Network overview"
-        description="Network revenue, bay utilisation and hub performance at a glance."
+       
       />
 
       {overview.isError ? (

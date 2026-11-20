@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { Banknote, CalendarDays, CircleCheck, HandCoins, Lock, LockKeyhole, PiggyBank, RotateCcw, Store, UserCheck, Wallet } from 'lucide-react'
+import { Banknote, CircleCheck, HandCoins, Lock, LockKeyhole, PiggyBank, RotateCcw, UserCheck, Wallet } from 'lucide-react'
 import { getErrorMessage } from '@/api/apiError'
 import { Metric, Panel, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
+import { BrandEyebrow } from '@/components/layout/PageHeader'
 import { CashTopUpPanel } from '@/components/features/staff/CashTopUp'
 import { vnd } from '@/components/features/manager/managerFormat'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
-import { useAuth } from '@/hooks/useAuth'
 import { useCashDrawer, useCloseCashDrawer, useOpenCashDrawer } from '@/hooks/useCashDrawer'
 import { useMyStaffLots } from '@/hooks/useParking'
 import { useStaffLot } from '@/hooks/useStaffLot'
@@ -16,7 +16,6 @@ import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CashDrawerDTO } from '@/types/cashDrawer.dto'
 
-const longDate = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 const STATUS: Record<CashDrawerDTO['status'], { label: string; tone: string }> = {
@@ -169,7 +168,6 @@ function ClosedDrawer({ drawer }: { drawer: CashDrawerDTO }) {
 
 /** Cash drawer of the signed-in Staff: one running total, handed in to the Manager whenever they want. */
 export default function StaffCashTallyPage() {
-  const { user } = useAuth()
   const myLots = useMyStaffLots()
   const { lot } = useStaffLot()
   const lotKey = lot?.id ?? myLots.data?.[0]?.id
@@ -181,12 +179,8 @@ export default function StaffCashTallyPage() {
   return (
     <div className="space-y-6">
       <Panel>
-        <h1 className="font-display text-3xl font-bold text-slate-950">Cash Tally</h1>
-        <p className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-700">
-          <span className="flex items-center gap-1.5"><CalendarDays className="size-4" aria-hidden /> Today, {longDate.format(new Date())}</span>
-          <span className="flex items-center gap-1.5"><Store className="size-4" aria-hidden /> {lot?.name ?? myLots.data?.[0]?.name ?? 'No lot assigned'}</span>
-          <span className="flex items-center gap-1.5"><UserCheck className="size-4" aria-hidden /> {user?.fullName ?? user?.username}</span>
-        </p>
+        <BrandEyebrow className="mb-2" />
+        <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">Cash Tally</h1>
       </Panel>
 
       {!lotKey && <Panel><p className="text-sm text-slate-700">No assigned parking lot is available.</p></Panel>}

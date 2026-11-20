@@ -2,31 +2,27 @@ import type { ReactNode } from 'react'
 
 interface PageHeaderProps {
   title: string
-  description?: string
-  /** Small uppercase line above the title, e.g. "Saigon metropolitan grid • Facility control layer". */
-  eyebrow?: ReactNode
   actions?: ReactNode
 }
 
-/** Hero card at the top of every admin page (Stitch "Admin Command" design). */
-export function PageHeader({ title, description, eyebrow, actions }: PageHeaderProps) {
+/** "XXIV PARKING" brand line shown above every page title; "XXIV" is in the brand amber. */
+export function BrandEyebrow({ className = '' }: { className?: string }) {
+  return (
+    <p className={`text-xs font-bold tracking-[0.12em] text-slate-700 uppercase ${className}`}>
+      <span className="text-amber-500">XXIV</span> Parking
+    </p>
+  )
+}
+
+/** Hero card at the top of every admin, manager and staff page: brand line, title and optional actions. */
+export function PageHeader({ title, actions }: PageHeaderProps) {
   return (
     <div className="flex flex-col gap-5 rounded-2xl bg-linear-to-br from-white via-slate-50 to-header-end px-6 py-6 ring-1 ring-slate-200 sm:flex-row sm:items-center sm:justify-between sm:px-7">
       <div className="min-w-0">
-        {eyebrow && (
-          <p className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold tracking-[0.12em] text-slate-700 uppercase">
-            {eyebrow}
-          </p>
-        )}
+        <BrandEyebrow className="mb-2" />
         <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{title}</h1>
-        {description && <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-700">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>
   )
-}
-
-/** Teal pill used inside a PageHeader eyebrow. */
-export function EyebrowTag({ children }: { children: ReactNode }) {
-  return <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-indigo-700">{children}</span>
 }

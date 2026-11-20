@@ -318,9 +318,8 @@ function Pricing({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={<span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-700">Applied at every gate checkout</span>}
         title="Pricing Rules"
-        description={`${lot.name} • 4-seat cars, 7-seat cars and motorbikes. Saved prices apply at once to vehicles entering from now on; save a change as a draft to apply it later.`}
+       
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
