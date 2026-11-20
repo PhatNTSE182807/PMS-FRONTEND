@@ -272,7 +272,6 @@ export default function CustomerProfilePage() {
     <>
       <header className="cx-page-head">
         <div>
-          <span className="cx-eyebrow cx-eyebrow--brand"><span className="brand-gold">XXIV</span> Parking</span>
           <h1 className="cx-page-title">User Profile &amp; Security</h1>
         </div>
       </header>

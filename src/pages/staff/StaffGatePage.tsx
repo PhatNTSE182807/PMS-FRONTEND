@@ -15,7 +15,6 @@ import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { GateLaneCameras } from '@/components/features/staff/GateLaneCameras'
 import { GateLanesPanel } from '@/components/features/staff/GateLanesPanel'
 import { Metric, Panel, Plate, SectionTitle, StatTile } from '@/components/features/staff/StaffBits'
-import { BrandEyebrow } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/form-controls'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -264,8 +263,7 @@ export default function StaffGatePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <BrandEyebrow />
-          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-slate-950">Gate operations dashboard</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">Gate operations dashboard</h1>
         </div>
         {incidentCount > 0 && (
           <Button variant="outline" asChild>

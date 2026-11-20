@@ -82,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <p className="font-display text-lg font-bold tracking-wide text-slate-950">
             <span className="brand-gold">XXIV</span> PARKING
           </p>
-          <p className="text-xs font-bold tracking-[0.14em] text-indigo-700 uppercase">
+          <p className="text-xs font-bold tracking-[0.14em] uppercase brand-gold">
             {user?.role === 'MANAGER' ? 'Manager console' : 'Admin command'}
           </p>
         </div>
