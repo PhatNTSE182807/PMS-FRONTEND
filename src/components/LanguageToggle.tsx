@@ -3,9 +3,9 @@ import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 /**
- * Round button with the flag of Vietnam (left half) and of the United States (right half). The flag of
- * the current language is in full color, the other one faded; a click switches between Vietnamese and
- * English. Unstyled like ThemeToggle: each area passes the class of its own icon buttons.
+ * Round button showing the flag of the current language over the whole circle: Vietnam in Vietnamese, the
+ * United States in English. A click switches to the other language and flips to its flag. Unstyled like
+ * ThemeToggle: each area passes the class of its own icon buttons.
  */
 export function LanguageToggle({ className }: { className?: string }) {
   const { language, toggle } = useLanguage()
@@ -19,51 +19,63 @@ export function LanguageToggle({ className }: { className?: string }) {
       title={label}
       data-language={language}
     >
-      <FlagsCircle active={language} />
+      <FlagCircle language={language} />
     </button>
   )
 }
 
-/** The two flags clipped into one circle. */
-function FlagsCircle({ active }: { active: 'en' | 'vi' }) {
+/** Stars of the US canton: rows of 4 and 3, inside the part of the canton the circle shows. */
+const US_STARS = [
+  [5, 3.2], [8.3, 3.2], [11.6, 3.2],
+  [3.4, 6.4], [6.7, 6.4], [10, 6.4], [13.3, 6.4],
+  [5, 9.6], [8.3, 9.6], [11.6, 9.6],
+  [3.4, 12.8], [6.7, 12.8], [10, 12.8], [13.3, 12.8],
+]
+
+/** The flag of the current language filling the whole circle. */
+function FlagCircle({ language }: { language: 'en' | 'vi' }) {
   const id = useId().replace(/:/g, '')
   const clip = `lang-clip-${id}`
-  const faded = { opacity: 0.35, filter: 'grayscale(0.7)', transition: 'opacity .2s, filter .2s' }
-  const full = { opacity: 1, filter: 'none', transition: 'opacity .2s, filter .2s' }
   return (
-    <svg viewBox="0 0 32 32" width="1em" height="1em" aria-hidden focusable="false" style={{ width: 22, height: 22, flexShrink: 0 }}>
+    // Keyed by language so the flip animation plays on every switch
+    <svg
+      key={language}
+      className="language-toggle__flag"
+      viewBox="0 0 32 32"
+      width="1em"
+      height="1em"
+      aria-hidden
+      focusable="false"
+      style={{ width: 22, height: 22, flexShrink: 0 }}
+    >
       <defs>
         <clipPath id={clip}>
           <circle cx="16" cy="16" r="15" />
         </clipPath>
       </defs>
       <g clipPath={`url(#${clip})`}>
-        {/* Vietnam: red field, yellow five-pointed star */}
-        <g style={active === 'vi' ? full : faded}>
-          <rect x="0" y="0" width="16" height="32" fill="#DA251D" />
-          <polygon
-            fill="#FFCD00"
-            points="9,10.2 10.4,14.4 14.8,14.4 11.2,17 12.6,21.2 9,18.6 5.4,21.2 6.8,17 3.2,14.4 7.6,14.4"
-          />
-        </g>
-        {/* United States: thirteen stripes, blue canton with stars */}
-        <g style={active === 'en' ? full : faded}>
-          <rect x="16" y="0" width="16" height="32" fill="#FFFFFF" />
-          {Array.from({ length: 7 }, (_, i) => (
-            <rect key={i} x="16" y={i * (32 / 6.5)} width="16" height={32 / 13} fill="#B22234" />
-          ))}
-          <rect x="16" y="0" width="9" height={(32 / 13) * 7} fill="#3C3B6E" />
-          {[
-            [18, 2.5], [21, 2.5], [23.5, 2.5],
-            [19.5, 5.5], [22.5, 5.5],
-            [18, 8.5], [21, 8.5], [23.5, 8.5],
-            [19.5, 11.5], [22.5, 11.5],
-            [18, 14.5], [21, 14.5], [23.5, 14.5],
-          ].map(([cx, cy]) => (
-            <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="0.75" fill="#FFFFFF" />
-          ))}
-        </g>
-        <line x1="16" y1="0" x2="16" y2="32" stroke="rgba(0,0,0,.25)" strokeWidth="0.6" />
+        {language === 'vi' ? (
+          // Vietnam: red field, yellow five-pointed star in the middle
+          <>
+            <rect x="0" y="0" width="32" height="32" fill="#DA251D" />
+            <polygon
+              fill="#FFCD00"
+              points="16,8.5 17.69,13.68 23.13,13.68 18.73,16.89 20.41,22.07 16,18.87 11.59,22.07 13.27,16.89 8.87,13.68 14.31,13.68"
+            />
+          </>
+        ) : (
+          // United States: thirteen red and white stripes, blue canton with white stars
+          <>
+            <rect x="0" y="0" width="32" height="32" fill="#FFFFFF" />
+            {Array.from({ length: 7 }, (_, i) => (
+              <rect key={i} x="0" y={i * (64 / 13)} width="32" height={32 / 13} fill="#B22234" />
+            ))}
+            <rect x="0" y="0" width="16" height={(32 / 13) * 7} fill="#3C3B6E" />
+            {US_STARS.map(([cx, cy]) => (
+              <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="0.9" fill="#FFFFFF" />
+            ))}
+          </>
+        )}
       </g>
       <circle cx="16" cy="16" r="15" fill="none" stroke="rgba(127,127,127,.55)" strokeWidth="1" />
     </svg>

@@ -55,3 +55,25 @@ html[data-theme='light'] .brand-gold {
 .language-toggle:active svg {
   transform: scale(0.94);
 }
+
+/* The new flag flips in when the language changes */
+.language-toggle__flag {
+  animation: language-flag-in 0.35s ease-out;
+}
+
+@keyframes language-flag-in {
+  from {
+    transform: rotateY(90deg);
+    opacity: 0.4;
+  }
+  to {
+    transform: rotateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .language-toggle__flag {
+    animation: none;
+  }
+}
