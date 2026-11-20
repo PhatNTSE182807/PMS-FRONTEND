@@ -1,10 +1,9 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ChevronRight, LogOut, Menu } from 'lucide-react'
+import { ChevronRight, Menu } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
-import { LanguageToggle } from '@/components/LanguageToggle'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { UserMenu } from '@/components/UserMenu'
 import { ConsoleNotificationBell } from '@/components/features/notifications/ConsoleNotificationBell'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
@@ -15,7 +14,7 @@ import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useCashAlerts } from '@/hooks/useCashAlerts'
 import { useProfile } from '@/hooks/useProfile'
-import { resolveMediaUrl } from '@/lib/format'
+import { initials, resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
@@ -165,6 +164,7 @@ export function AdminLayout() {
   const current = [...ADMIN_NAV, ...MANAGER_NAV].find((item) => pathname.startsWith(item.to))
 
   const handleLogout = useSignOut()
+  const displayName = profile?.fullName || user?.fullName || user?.username || 'Admin'
 
   return (
     <div className="admin-root min-h-dvh bg-page">
@@ -201,31 +201,16 @@ export function AdminLayout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <Button asChild variant="ghost" size="icon">
-              <LanguageToggle />
-            </Button>
-            <Button asChild variant="ghost" size="icon">
-              <ThemeToggle />
-            </Button>
             {/* Managers: their lots' cash drawers and booked bays. Admins: account deletion requests and price changes */}
             <ConsoleNotificationBell />
-            <div className="flex items-center gap-2.5 sm:border-l sm:border-slate-200 sm:pl-3">
-              <img
-                src={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
-                alt=""
-                className="hidden size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300 sm:block"
+            <div className="sm:border-l sm:border-slate-200 sm:pl-3">
+              <UserMenu
+                name={displayName}
+                subtitle={[profile?.employeeCode || user?.employeeCode, tMaybe(roleLabel(user?.role))].filter(Boolean).join(' • ')}
+                avatarUrl={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
+                initials={initials(displayName)}
+                onSignOut={handleLogout}
               />
-              <div className="hidden leading-tight whitespace-nowrap md:block">
-                <p className="text-sm font-semibold text-slate-950">
-                  {profile?.fullName || user?.fullName || user?.username}
-                </p>
-                <p className="text-xs font-bold tracking-wide text-amber-500 uppercase">
-                  {profile?.employeeCode ? `${profile.employeeCode} • ` : user?.employeeCode ? `${user.employeeCode} • ` : ''}{tMaybe(roleLabel(user?.role))}
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" aria-label={t('Sign out')} title={t('Sign out')} onClick={handleLogout}>
-                <LogOut />
-              </Button>
             </div>
           </div>
         </header>

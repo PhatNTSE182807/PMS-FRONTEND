@@ -1,13 +1,10 @@
 import { Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { LogOut } from 'lucide-react'
 import { ConsoleNotificationBell } from '@/components/features/notifications/ConsoleNotificationBell'
 import { LOGO_SRC } from '@/components/ParkingLogo'
-import { LanguageToggle } from '@/components/LanguageToggle'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { UserMenu } from '@/components/UserMenu'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
@@ -15,7 +12,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { useStaffLot } from '@/hooks/useStaffLot'
 import { useCashAlerts } from '@/hooks/useCashAlerts'
 import { cn } from '@/lib/utils'
-import { resolveMediaUrl } from '@/lib/format'
+import { initials, resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { STAFF_NAV } from './adminNav'
 import { ShiftBanner } from '@/components/features/duty/ShiftStatus'
@@ -50,6 +47,7 @@ export function StaffLayout() {
     document.querySelector('[aria-label="Staff navigation"] a[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [pathname])
   const handleLogout = useSignOut()
+  const displayName = profile?.fullName || user?.fullName || user?.username || 'Staff'
 
   // Sync profile details (FullName, EmployeeCode, Avatar) into session if received from API
   useEffect(() => {
@@ -107,30 +105,15 @@ export function StaffLayout() {
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {/* Booked bays a walk-in took, bookings moved and compensation sent to customers */}
-            <Button asChild variant="ghost" size="icon">
-              <LanguageToggle />
-            </Button>
-            <Button asChild variant="ghost" size="icon">
-              <ThemeToggle />
-            </Button>
             <ConsoleNotificationBell />
-            <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
-              <div className="hidden text-right leading-tight whitespace-nowrap sm:block">
-                <p className="text-sm font-semibold text-slate-950">
-                  {profile?.fullName || user?.fullName || user?.username}
-                </p>
-                <p className="text-xs text-slate-700">
-                  {[profile?.employeeCode || user?.employeeCode, 'Gate staff'].filter(Boolean).join(' • ')}
-                </p>
-              </div>
-              <img
-                src={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
-                alt=""
-                className="hidden size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300 sm:block"
+            <div className="border-l border-slate-200 pl-3">
+              <UserMenu
+                name={displayName}
+                subtitle={[profile?.employeeCode || user?.employeeCode, t('Gate staff')].filter(Boolean).join(' • ')}
+                avatarUrl={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
+                initials={initials(displayName)}
+                onSignOut={handleLogout}
               />
-              <Button variant="ghost" size="icon" aria-label={t('Sign out')} title={t('Sign out')} onClick={handleLogout}>
-                <LogOut />
-              </Button>
             </div>
           </div>
         </div>

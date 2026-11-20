@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { CreditCard, LogOut, Menu, Shield, X } from 'lucide-react'
+import { BookMarked, Car, CreditCard, Menu, Shield, UserRound, X } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { LOGO_SRC } from '@/components/ParkingLogo'
-import { LanguageToggle } from '@/components/LanguageToggle'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { UserMenu } from '@/components/UserMenu'
 import { useAuth, useSignOut } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useWallet, formatVndBalance } from '@/hooks/useWallet'
@@ -17,15 +16,11 @@ import '@/styles/customer-light.css'
 import '@/styles/wallet.css'
 import { t, tMaybe } from '@/i18n'
 
-/** Hash links scroll to a dashboard section; the others are pages of their own. */
+/** Hash links scroll to a section of a page. Profile, vehicles, bookings and the wallet are in the account menu. */
 const LINKS = [
   { to: '/me', label: 'Dashboard', end: true },
   { to: '/me/sessions', label: 'Active Sessions' },
-  { to: '/me/vehicles', label: 'My Vehicles' },
-  { to: '/me/bookings', label: 'My Bookings' },
-  { to: '/me#map', label: 'Book Slot' },
   { to: '/me/bookings#history', label: 'History' },
-  { to: '/me/profile', label: 'Profile' },
 ]
 
 /** Layout of the signed-in customer area: top navigation, page outlet and footer. */
@@ -86,48 +81,31 @@ export function CustomerShell() {
                 {tMaybe(link.label)}
               </NavLink>
             ))}
-            {/* The wallet balance and Logout of the bar are hidden on small screens: the menu carries them */}
-            <button
-              type="button"
-              className="cx-nav__link cx-nav__mobile-only"
-              onClick={() => {
-                setIsMenuOpen(false)
-                setIsWalletOpen(true)
-              }}
-            >
-              <CreditCard aria-hidden />{' '}{t('Wallet · {balance}', { balance: formatVndBalance(balance) })}
-            </button>
-            <button type="button" className="cx-nav__link cx-nav__mobile-only" onClick={handleLogout}>
-              <LogOut aria-hidden />{' '}{t('Logout')}
-            </button>
           </nav>
 
           <div className="cx-nav__actions">
-            <LanguageToggle className="cx-btn cx-btn--ghost cx-theme-toggle" />
-            <ThemeToggle className="cx-btn cx-btn--ghost cx-theme-toggle" />
             <NotificationBell />
-            <div className="cx-nav__user-block">
-              <Link to="/me/profile" className="cx-avatar cx-avatar--nav" title={t('User Profile')}>
-                {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
-              </Link>
-              <div className="cx-nav__user-text">
-                <Link to="/me/profile" className="cx-nav__user-name-link" title={t('User Profile')}>
-                  {tMaybe(name)}
-                </Link>
-                <button
-                  type="button"
-                  className="cx-nav__user-balance-btn"
-                  onClick={() => setIsWalletOpen(true)}
-                  title={t('XXIV E-Wallet (Click to view balance, deposit & withdraw)')}
-                >
-                  <CreditCard className="cx-nav__wallet-icon" aria-hidden="true" />
-                  <span className="cx-nav__wallet-amount">{formatVndBalance(balance)}</span>
+            <UserMenu
+              name={tMaybe(name)}
+              subtitle={profile?.email || user?.email}
+              avatarUrl={avatarUrl}
+              initials={initials(name)}
+              extra={
+                <button type="button" className="user-menu__wallet" onClick={() => setIsWalletOpen(true)}>
+                  <CreditCard className="user-menu__icon" aria-hidden />
+                  <span className="user-menu__wallet-text">
+                    <span className="user-menu__wallet-label">{t('XXIV E-Wallet')}</span>
+                    <span className="user-menu__wallet-amount">{formatVndBalance(balance)}</span>
+                  </span>
                 </button>
-              </div>
-            </div>
-            <button type="button" className="cx-btn cx-btn--ghost cx-nav__logout" onClick={handleLogout}>
-              <LogOut aria-hidden />{' '}{t('Logout')}
-            </button>
+              }
+              items={[
+                { label: t('User Profile'), icon: UserRound, to: '/me/profile' },
+                { label: t('My Vehicles'), icon: Car, to: '/me/vehicles' },
+                { label: t('My Bookings'), icon: BookMarked, to: '/me/bookings' },
+              ]}
+              onSignOut={handleLogout}
+            />
             <button
               type="button"
               className="cx-btn cx-btn--ghost cx-nav__menu-btn"
