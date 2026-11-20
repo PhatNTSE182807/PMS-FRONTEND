@@ -2,7 +2,7 @@ import { occupancyLevel } from '@/lib/occupancy'
 import { cn } from '@/lib/utils'
 import { LEVEL_STYLES } from './occupancyStyles'
 
-const SIZE = 112
+const SIZE = 120
 const STROKE = 10
 const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
@@ -45,8 +45,9 @@ export function OccupancyGauge({ percentage, isFull }: { percentage: number; isF
             {clamped.toFixed(1).replace('.', ',')}
             <span className="text-sm font-semibold text-slate-500">%</span>
           </p>
-          <p className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-600">
-            <Icon className="size-3" aria-hidden style={{ color: style.stroke }} />
+          {/* Narrower than the ring's inner diameter, so long labels wrap instead of crossing the ring */}
+          <p className="mx-auto mt-0.5 max-w-[72px] text-[11px] leading-tight font-medium text-slate-600">
+            <Icon className="mr-0.5 inline size-3 align-[-2px]" aria-hidden style={{ color: style.stroke }} />
             {style.label}
           </p>
         </div>

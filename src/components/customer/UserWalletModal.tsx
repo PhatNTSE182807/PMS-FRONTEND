@@ -247,7 +247,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
               </button>
             </div>
 
-            {/* Telemetry Balance Overview */}
+            {/* Balance overview */}
             <div className="cx-wallet-summary">
               <div className="cx-wallet-summary__left">
                 <span className="cx-wallet-summary__label">CURRENT AVAILABLE BALANCE</span>
@@ -573,7 +573,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
               </button>
             </div>
 
-            {/* Overview Telemetry Stats */}
+            {/* Overview stats */}
             <div className="cx-wallet-stats-grid">
               <div className="cx-wallet-stat-card">
                 <span className="cx-wallet-stat-card__label">Current Balance</span>
@@ -709,7 +709,7 @@ export function UserWalletModal({ isOpen, onClose, wallet: parentWallet }: UserW
                         </div>
                       </div>
 
-                      {/* Balance Before & After Progression if telemetry available */}
+                      {/* Balance Before & After Progression if available */}
                       {typeof tx.balanceBefore === 'number' && typeof tx.balanceAfter === 'number' && (
                         <div className="cx-wallet-tx-card__balance-flow">
                           <span>Wallet Balance Flow:</span>

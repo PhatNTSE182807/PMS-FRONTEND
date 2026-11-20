@@ -152,7 +152,7 @@ export function CustomerShell() {
               <p className="cx-footer__brand">
                 <Shield aria-hidden /> XXIV PARKING
               </p>
-              <p className="cx-footer__tag">Saigon Metropolitan Network • Intelligent parking telemetry</p>
+              <p className="cx-footer__tag">Saigon Metropolitan Network • Intelligent parking</p>
             </div>
           </div>
           <div className="cx-footer__bottom">

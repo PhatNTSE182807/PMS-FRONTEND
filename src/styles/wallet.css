@@ -1,6 +1,6 @@
 /* =========================================================
    USER XXIV WALLET & HEADER BALANCE STYLES
-   Matches the "XXIV Sovereign Telemetry" design tone (.cx)
+   Matches the "XXIV Sovereign" design tone (.cx)
 ========================================================= */
 
 /* Header User & Balance Section */
@@ -209,7 +209,7 @@
   color: var(--cx-on-surface);
 }
 
-/* Telemetry Balance Overview Card */
+/* Balance overview card */
 .cx-wallet-summary {
   display: flex;
   align-items: flex-start;
@@ -725,7 +725,7 @@
   color: var(--cx-gold);
 }
 
-/* Overview telemetry stats */
+/* Overview stats */
 .cx-wallet-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

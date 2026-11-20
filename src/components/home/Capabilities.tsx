@@ -7,7 +7,7 @@ const CAPABILITIES = [
     gold: false,
     title: '3D digital twin mapping',
     text: 'Interactive multi-level guidance showing real-time bay occupancy from ultrasonic and LiDAR sensors.',
-    link: 'Spatial mesh telemetry',
+    link: 'Explore the 3D map',
     href: '#terminals',
   },
   {
