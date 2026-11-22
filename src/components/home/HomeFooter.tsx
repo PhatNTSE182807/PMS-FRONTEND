@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { SocialLinks } from '@/components/customer/SocialLinks'
 import { t, tMaybe } from '@/i18n'
 
@@ -52,8 +53,8 @@ export function HomeFooter() {
         <div className="home-footer__bottom">
           <span>© {new Date().getFullYear()} XXIV Parking Systems. All rights reserved.</span>
           <span className="home-footer__legal">
-            <span>{t('Terms of Service')}</span>
-            <span>{t('Privacy Policy')}</span>
+            <Link to="/terms">{t('Terms of Service')}</Link>
+            <Link to="/privacy">{t('Privacy Policy')}</Link>
           </span>
         </div>
       </div>

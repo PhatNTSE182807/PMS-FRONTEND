@@ -33,7 +33,6 @@ export const part03: Record<string, string> = {
   "Parking lots appear here once one has been created.": "Bãi xe sẽ hiện ở đây sau khi được tạo.",
   "I agree to the": "Tôi đồng ý với",
   "I own or am authorised to drive this vehicle, and allow XXIV PARKING to recognise its plate at the gates.": "Tôi là chủ hoặc được phép lái xe này, và cho phép XXIV PARKING nhận diện biển số xe tại các cổng.",
-  "I understand & agree": "Tôi hiểu & đồng ý",
   "I've saved the password": "Tôi đã lưu mật khẩu",
   "If approved:": "Nếu được duyệt:",
   "If the lot closes or the bay needs maintenance, the lot cancels the booking and returns the whole deposit.": "Nếu bãi đóng cửa hoặc ô cần bảo trì, bãi sẽ hủy đặt chỗ và hoàn toàn bộ tiền cọc.",

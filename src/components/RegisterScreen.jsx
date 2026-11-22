@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, IdCard, Lock, Mail, Phone, RotateCcwKey, User, X } from 'lucide-react';
+import { ArrowRight, IdCard, Lock, Mail, Phone, RotateCcwKey, User } from 'lucide-react';
 import AuthShowcaseLayout from './AuthShowcaseLayout';
 import { AuthAlert, AuthCheckbox, AuthField } from './AuthFields';
 import GoogleSignInButton from './GoogleSignInButton';
@@ -35,7 +35,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
   const isLoading = registerMutation.isPending;
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   const handleRegister = (e) => {
     e.preventDefault();
@@ -98,11 +97,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
         onError: (error) => setErrorMsg(getErrorMessage(error, 'Registration failed.')),
       },
     );
-  };
-
-  const openTerms = (e) => {
-    e.preventDefault();
-    setIsTermsOpen(true);
   };
 
   return (
@@ -193,12 +187,13 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
 
         <AuthCheckbox checked={agreeTerms} onChange={setAgreeTerms}>
           {t('I agree to the')}
-          <button type="button" className="auth-shell__link auth-shell__link--muted" onClick={openTerms}>
+          {/* New tab: the form keeps what was typed */}
+          <a href="/terms" target="_blank" rel="noopener" className="auth-shell__link auth-shell__link--muted">
             {t('Terms of Service')}
-          </button>{t('and')}
-          <button type="button" className="auth-shell__link auth-shell__link--muted" onClick={openTerms}>
+          </a>{t('and')}
+          <a href="/privacy" target="_blank" rel="noopener" className="auth-shell__link auth-shell__link--muted">
             {t('Privacy Policy')}
-          </button>
+          </a>
           .
         </AuthCheckbox>
 
@@ -214,44 +209,6 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
           {t('Sign in')}
         </button>
       </p>
-
-
-      {isTermsOpen && (
-        <div className="auth-shell__backdrop" onClick={() => setIsTermsOpen(false)}>
-          <div className="auth-shell__dialog" role="dialog" aria-modal="true" aria-labelledby="terms-title" onClick={(e) => e.stopPropagation()}>
-            <div className="auth-shell__dialog-header">
-              <h2 id="terms-title" className="auth-shell__dialog-title">{t('Terms of Service & Privacy Policy')}</h2>
-              <button type="button" className="auth-shell__toggle" onClick={() => setIsTermsOpen(false)} aria-label={t('Close')}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className="auth-shell__dialog-body">
-              <p>{t('Welcome to')}{' '}<strong>XXIV Parking</strong>.</p>
-              <p>
-                1. <strong>{t('Parking Access:')}</strong>{' '}{t('Your bay is held for 15 minutes after your arrival time, or 30 minutes with a deposit.')}
-              </p>
-              <p>
-                2. <strong>{t('Automated Billing:')}</strong>{' '}{t('Fees are charged in time blocks from each lot\'s price list. Entry and exit times are recorded automatically.')}
-              </p>
-              <p>
-                3. <strong>{t('Data Privacy:')}</strong>{' '}{t('Your license plate and payment details are sent over an encrypted connection (TLS).')}
-              </p>
-            </div>
-            <div className="auth-shell__dialog-footer">
-              <button
-                type="button"
-                className="auth-shell__submit"
-                onClick={() => {
-                  setAgreeTerms(true);
-                  setIsTermsOpen(false);
-                }}
-              >
-                {t('I understand & agree')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AuthShowcaseLayout>
   );
 }

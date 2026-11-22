@@ -141,7 +141,6 @@ export const part02: Record<string, string> = {
   "Daily top-up limit {dailyTopUpLimit} • left today": "Hạn mức nạp mỗi ngày {dailyTopUpLimit} • còn lại hôm nay",
   "Dashboard": "Bảng điều khiển",
   "Dashboard ({username})": "Bảng điều khiển ({username})",
-  "Data Privacy:": "Quyền riêng tư dữ liệu:",
   "Day / night pricing": "Giá ngày / đêm",
   "Day price per block (VND)": "Giá ngày mỗi block (VND)",
   "Day starts at": "Ban ngày bắt đầu lúc",

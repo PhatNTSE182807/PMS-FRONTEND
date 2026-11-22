@@ -7,11 +7,13 @@ import { part06 } from './vi/part06'
 import { part07 } from './vi/part07'
 import { part08 } from './vi/part08'
 import { part09 } from './vi/part09'
+import { part10 } from './vi/part10'
 
 /**
  * Vietnamese UI text keyed by the English text. A missing entry falls back to English.
  * Parts 01–06 hold the text written in components; 07–09 hold labels, status names and messages declared
- * outside them (label maps, validation and error messages). Keep `{placeholders}` identical to the key.
+ * outside them (label maps, validation and error messages); 10 holds the legal pages. Keep `{placeholders}`
+ * identical to the key.
  */
 export const vi: Record<string, string> = {
   ...part01,
@@ -23,4 +25,5 @@ export const vi: Record<string, string> = {
   ...part07,
   ...part08,
   ...part09,
+  ...part10,
 }

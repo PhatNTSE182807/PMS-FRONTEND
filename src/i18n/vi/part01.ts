@@ -196,7 +196,6 @@ export const part01: Record<string, string> = {
   "Assigned parking lots": "Các bãi xe được phân công",
   "Authenticating...": "Đang xác thực...",
   "Auto-Deduct (VNPAY)": "Tự động trừ tiền (VNPAY)",
-  "Automated Billing:": "Thanh toán tự động:",
   "Automatic license plate capture": "Tự động nhận diện biển số",
   "Automatically retrieved from your profile. Vehicles must be registered under your verified Citizen ID.": "Tự động lấy từ hồ sơ của bạn. Xe phải được đăng ký theo CCCD đã xác minh của bạn.",
   "Inside our parking lots": "Bên trong bãi xe",
