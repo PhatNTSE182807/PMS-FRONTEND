@@ -141,7 +141,9 @@ function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastD
             // colour and 4- or 7-seat body), even when a booking also covers that time. A bay forecast as free keeps
             // its car only when the API says the vehicle is still there (overdue past its planned exit)
             const staysParked = status === 'AVAILABLE' ? f.parkedThen === true : f.parkedThen !== false
-            if (bay.status === 'OCCUPIED' && (staysParked || myParkedBayIds.has(bay.id))) return bay
+            // A counted walk-in has no bay on record, so the forecast sees this bay as free; it is still in the lot
+            const walkInStays = bay.countedWalkIn === true && status === 'AVAILABLE'
+            if (bay.status === 'OCCUPIED' && (staysParked || walkInStays || myParkedBayIds.has(bay.id))) return bay
             if (status === bay.status) return bay
             // A vehicle expected to be gone is not drawn; a bay expected to fill gets the model's own car
             return { ...bay, status, vehicleColor: null, vehicleKind: null, countedWalkIn: false, walkInSessionId: null }
@@ -422,9 +424,11 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                           ? t('Your vehicle is parked here')
                           : selected.penalty
                             ? selected.status === 'OCCUPIED' ? t('Penalty bay • towed vehicle') : t('Penalty bay')
-                            : selectedForecast
-                              ? tMaybe(forecastLabel(selectedForecast))
-                              : tMaybe(STATUS_LABEL[selected.status])}
+                            : selected.countedWalkIn && selectedForecast?.state === 'Free'
+                              ? tMaybe('Occupied now • may be free by your time')
+                              : selectedForecast
+                                ? tMaybe(forecastLabel(selectedForecast))
+                                : tMaybe(STATUS_LABEL[selected.status])}
                     </strong>
                   </div>
                   <div className="cx-map__cell">
