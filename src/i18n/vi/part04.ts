@@ -23,7 +23,6 @@ export const part04: Record<string, string> = {
   "Owner": "Chủ xe",
   "Owner Citizen ID": "CCCD của chủ xe",
   "Ownership & plate recognition consent": "Quyền sở hữu & đồng ý nhận diện biển số",
-  "PAY": "THANH TOÁN",
   "PDF receipt": "Biên lai PDF",
   "PDF receipt {receiptNumber}": "Biên lai PDF {receiptNumber}",
   "PDF · open": "PDF · mở",
