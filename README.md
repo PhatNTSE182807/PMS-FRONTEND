@@ -6,7 +6,7 @@
 
 Live 3D lot map · bookings & deposits · gate POS · approvals · revenue dashboards · AI assistant
 
-[Backend repo](https://github.com/PhatNTSE182807/PMS-BACKEND) · [Requirements (SRS v1.7)](document/SRS_v1.7.docx)
+[Backend repo](https://github.com/PhatNTSE182807/PMS-BACKEND)
 
 </div>
 
@@ -105,7 +105,7 @@ npm run dev                    # http://localhost:5173
 | `VITE_MAPBOX_ACCESS_TOKEN` | Directions map; empty = Google Maps link only |
 | `VITE_ANPR_SERVICE_URL` | Plate reader service for the gate cameras |
 
-Demo accounts come from the backend seed: see the backend's `docs/DEMO_DATA.md`.
+Demo accounts come from the backend seed.
 
 ---
 
@@ -113,16 +113,6 @@ Demo accounts come from the backend seed: see the backend's `docs/DEMO_DATA.md`.
 
 A single-page app with browser-history routes: the host must fall back to `index.html` for unknown
 paths. `vercel.json` already does this for Vercel. CI (GitLab and GitHub Actions) lints and builds every push.
-
----
-
-## Documentation
-
-| Document | Content |
-| --- | --- |
-| [SRS v1.7](document/SRS_v1.7.docx) | Requirements, business rules and use cases — the source of truth |
-| [PARKING_LOT_MANAGEMENT.md](docs/PARKING_LOT_MANAGEMENT.md) | Lot management review notes |
-| [GITHUB-ACTIONS.md](document/GITHUB-ACTIONS.md) | CI on the GitHub mirror |
 
 ---
 
