@@ -135,11 +135,11 @@ export function CustomerShell() {
               <p className="cx-footer__brand">
                 <Shield aria-hidden />{' '}XXIV PARKING
               </p>
-              <p className="cx-footer__tag">{t('Saigon Metropolitan Network • Intelligent parking')}</p>
+              <p className="cx-footer__tag">{t('Smart parking in Ho Chi Minh City')}</p>
             </div>
           </div>
           <div className="cx-footer__bottom">
-            <span>© {new Date().getFullYear()}{' '}{t('XXIV PARKING. Saigon Metropolitan Network. All rights reserved.')}</span>
+            <span>© {new Date().getFullYear()} XXIV PARKING. All rights reserved.</span>
           </div>
         </div>
       </footer>

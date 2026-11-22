@@ -53,7 +53,7 @@ export function WithManagerLot({ children }: { children: (lot: ManagedLot) => Re
         <EmptyState
           icon={Building2}
           title={t('No parking lot assigned yet')}
-          description={t('Ask an Admin to assign you to a parking lot. Its console appears here once it is assigned.')}
+          description={t('Ask an Admin to assign you to a parking lot. Its overview appears here once it is assigned.')}
         />
       </Card>
     )

@@ -38,8 +38,8 @@ function ManagerLotSelect() {
   if (!lots.data?.length) {
     return (
       <div className="flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
-        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">{t('Facility')}</span>
-        <span className="truncate text-sm font-semibold text-slate-500 italic">{t('No facility assigned')}</span>
+        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">{t('Parking lot')}</span>
+        <span className="truncate text-sm font-semibold text-slate-500 italic">{t('No parking lot assigned yet')}</span>
       </div>
     )
   }
@@ -48,7 +48,7 @@ function ManagerLotSelect() {
     // On a phone the chip shrinks to the lot name (truncated) so the sign-out button stays on screen
     <div className="flex min-w-0 items-center gap-2.5">
       <div className="flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
-        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">{t('Facility')}</span>
+        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">{t('Parking lot')}</span>
         {lots.data.length > 1 ? (
           <select
             value={lot?.id}
@@ -84,7 +84,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <span className="brand-gold">XXIV</span>{' '}PARKING
           </p>
           <p className="text-xs font-bold tracking-[0.14em] uppercase brand-gold">
-            {user?.role === 'MANAGER' ? t('Manager console') : t('Admin command')}
+            {user?.role === 'MANAGER' ? t('Manager') : t('Admin')}
           </p>
         </div>
       </div>

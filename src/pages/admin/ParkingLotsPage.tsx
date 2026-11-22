@@ -197,19 +197,19 @@ export default function ParkingLotsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={selected ? tMaybe(title) : admin ? tr('Parking Lots & Facilities Management') : tr('Facility Zones & Bays')}
+        title={selected ? tMaybe(title) : admin ? tr('Parking Lot Management') : tr('Zones & Bays')}
        
         actions={
           !selected ? (
             <>
               <Button variant="outline" onClick={() => exportLots(filtered, managerName)} disabled={!filtered.length}>
                 <Download />
-                {tr('Export fleet metrics')}
+                {tr('Export lots (CSV)')}
               </Button>
               {admin && (
                 <Button variant="gold" size="lg" onClick={() => setEditing({ kind: 'lot' })}>
                   <CirclePlus />
-                  {tr('Register new facility')}
+                  {tr('Add parking lot')}
                 </Button>
               )}
             </>
@@ -243,8 +243,8 @@ export default function ParkingLotsPage() {
                     }}
                   />
                 </div>
-                <div role="tablist" aria-label={tr('Filter by lifecycle state')} className="flex flex-wrap gap-1">
-                  {[['', 'All facilities'] as const, ...Object.entries(LOT_STATES)].map(([key, label]) => {
+                <div role="tablist" aria-label={tr('Filter by status')} className="flex flex-wrap gap-1">
+                  {[['', 'All parking lots'] as const, ...Object.entries(LOT_STATES)].map(([key, label]) => {
                     const count = key ? lots.data.filter((l) => shownState(l) === key).length : lots.data.length
                     const active = status === key
                     return (
@@ -273,9 +273,9 @@ export default function ParkingLotsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
                   <h2 className="flex items-center gap-2.5 font-display text-xl font-semibold text-slate-950">
                     <Layers className="size-5 text-amber-500" aria-hidden />
-                    {tr('Registered Facilities & Hub Fleet')}
+                    {tr('Parking lots')}
                     <span className="rounded bg-indigo-100 px-2 py-0.5 font-sans text-xs font-semibold text-indigo-700">
-                      {tr('{length} hubs', { length: lots.data.length })}
+                      {tr('{length} lots', { length: lots.data.length })}
                     </span>
                   </h2>
                   <p className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-800">
@@ -292,7 +292,7 @@ export default function ParkingLotsPage() {
                     title={tr('No matching parking lots')}
                     description={
                       admin
-                        ? tr('Try clearing the filters or register a new facility.')
+                        ? tr('Try clearing the filters or add a parking lot.')
                         : tr('You have no assigned lots or the filters returned nothing. Ask an Admin to check your assignments.')
                     }
                   />
@@ -300,7 +300,7 @@ export default function ParkingLotsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        {['Facility & identifier', 'Location', 'Capacity breakdown', 'Assigned manager', 'Lifecycle state', 'Actions'].map((h) => (
+                        {['Parking lot & code', 'Location', 'Capacity breakdown', 'Assigned manager', 'Status', 'Actions'].map((h) => (
                           <TableHead key={h} className={h === 'Actions' ? 'text-right' : undefined}>
                             {tMaybe(h)}
                           </TableHead>
@@ -424,7 +424,7 @@ export default function ParkingLotsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-5 py-3 text-sm text-slate-700">
                   <span>
                     {tr('Displaying')}{' '}<strong className="text-slate-950">{Math.min(filtered.length, PAGE_SIZE)}</strong>{' '}{tr('of')}
-                    <strong className="text-slate-950">{filtered.length}</strong>{' '}{tr('Saigon infrastructure hubs')}
+                    <strong className="text-slate-950">{filtered.length}</strong>{' '}{tr('parking lots')}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>

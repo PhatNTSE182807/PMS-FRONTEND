@@ -8,10 +8,10 @@
 /* ------------------------------------------------------------------ */
 
 export const demoStation = {
-  facility: 'Saigon Centre - Takashimaya Hub',
+  facility: 'Saigon Centre - Takashimaya',
   facilityCode: 'LOT-SGC-01',
-  station: 'Gate POS Station 01',
-  lane: 'Front Concourse',
+  station: 'Gate POS 01',
+  lane: 'Front entrance',
   employeeCode: 'EMP-0418',
   title: 'Senior Gate Officer',
   manager: 'Duc Nguyen',

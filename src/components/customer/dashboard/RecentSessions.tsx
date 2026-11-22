@@ -82,7 +82,7 @@ export function RecentSessions() {
               <thead>
                 <tr>
                   <th scope="col">{t('Timeline')}</th>
-                  <th scope="col">{t('Terminal & stall')}</th>
+                  <th scope="col">{t('Lot & bay')}</th>
                   <th scope="col">{t('Vehicle')}</th>
                   <th scope="col">{t('Duration')}</th>
                   <th scope="col">{t('Amount')}</th>

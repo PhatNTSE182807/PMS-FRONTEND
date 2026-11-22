@@ -121,7 +121,7 @@ export default function StaffAccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('Facility Managers Directory & Hub Allocation')}
+        title={t('Lot Managers & Assignments')}
        
         actions={
           <Button size="lg" onClick={() => setFormState({ open: true })}>

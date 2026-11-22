@@ -24,12 +24,12 @@ interface Seed {
 }
 
 const SEEDS: Seed[] = [
-  { id: 9101, daysAgo: 1, minutes: 192, lot: ['Bitexco Financial Terminal', 'District 1', '2 Hai Trieu, Ben Nghe'], zone: 'Basement 1', slot: 'B1-09', vehicle: 0, fee: 80_000, deposit: 30_000, reservation: 'RSV-24101' },
-  { id: 9102, daysAgo: 4, minutes: 105, lot: ['Landmark 81 Terminal', 'Binh Thanh', '720A Dien Bien Phu, Ward 22'], zone: 'Basement 2', slot: 'B2-30', vehicle: 1, fee: 45_000 },
-  { id: 9103, daysAgo: 7, minutes: 250, lot: ['Saigon Centre Terminal', 'District 1', '65 Le Loi, Ben Nghe'], zone: 'Basement 3', slot: 'B3-04', vehicle: 0, fee: 110_000 },
-  { id: 9104, daysAgo: 12, minutes: 12, lot: ['Saigon Centre Terminal', 'District 1', '65 Le Loi, Ben Nghe'], zone: 'Basement 2', slot: 'B2-17', vehicle: 0, fee: 0 },
-  { id: 9105, daysAgo: 18, minutes: 320, lot: ['Bitexco Financial Terminal', 'District 1', '2 Hai Trieu, Ben Nghe'], zone: 'Basement 1', slot: 'B1-22', vehicle: 1, fee: 130_000, status: 'EmergencyExit' },
-  { id: 9106, daysAgo: 26, minutes: 75, lot: ['Landmark 81 Terminal', 'Binh Thanh', '720A Dien Bien Phu, Ward 22'], zone: 'Basement 1', slot: 'B1-03', vehicle: 0, fee: 30_000 },
+  { id: 9101, daysAgo: 1, minutes: 192, lot: ['Bitexco Financial Tower', 'District 1', '2 Hai Trieu, Ben Nghe'], zone: 'Basement 1', slot: 'B1-09', vehicle: 0, fee: 80_000, deposit: 30_000, reservation: 'RSV-24101' },
+  { id: 9102, daysAgo: 4, minutes: 105, lot: ['Landmark 81', 'Binh Thanh', '720A Dien Bien Phu, Ward 22'], zone: 'Basement 2', slot: 'B2-30', vehicle: 1, fee: 45_000 },
+  { id: 9103, daysAgo: 7, minutes: 250, lot: ['Saigon Centre', 'District 1', '65 Le Loi, Ben Nghe'], zone: 'Basement 3', slot: 'B3-04', vehicle: 0, fee: 110_000 },
+  { id: 9104, daysAgo: 12, minutes: 12, lot: ['Saigon Centre', 'District 1', '65 Le Loi, Ben Nghe'], zone: 'Basement 2', slot: 'B2-17', vehicle: 0, fee: 0 },
+  { id: 9105, daysAgo: 18, minutes: 320, lot: ['Bitexco Financial Tower', 'District 1', '2 Hai Trieu, Ben Nghe'], zone: 'Basement 1', slot: 'B1-22', vehicle: 1, fee: 130_000, status: 'EmergencyExit' },
+  { id: 9106, daysAgo: 26, minutes: 75, lot: ['Landmark 81', 'Binh Thanh', '720A Dien Bien Phu, Ward 22'], zone: 'Basement 1', slot: 'B1-03', vehicle: 0, fee: 30_000 },
 ]
 
 async function items(): Promise<ParkingHistoryItemDTO[]> {

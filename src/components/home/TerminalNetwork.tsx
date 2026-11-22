@@ -107,8 +107,8 @@ export function TerminalNetwork({ lots, isLoading, isError, onRetry, reserveTo }
       <div ref={ref} className="home-container home-reveal">
         <div className="home-section__head">
           <div>
-            <span className="home-eyebrow">{t('Premier hubs')}</span>
-            <h2 className="home-heading">{t('Metropolitan terminal network')}</h2>
+            <span className="home-eyebrow">{t('Our locations')}</span>
+            <h2 className="home-heading">{t('Parking lots')}</h2>
           </div>
           <span className="home-pill">
             <span className={`home-dot ${isError ? 'home-dot--off' : 'home-dot--live'}`} aria-hidden="true" />

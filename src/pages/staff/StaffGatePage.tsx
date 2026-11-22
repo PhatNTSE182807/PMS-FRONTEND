@@ -80,7 +80,7 @@ function KpiRow({
         : 'Drawer handed in for the tally'
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatTile label={t('Facility capacity')} className="ring-amber-300/40">
+      <StatTile label={t('Lot capacity')} className="ring-amber-300/40">
         <div className="mt-2 flex items-center justify-between gap-3">
           <div>
             <Metric value={active} unit={`/ ${total}`} className="mt-0" />
@@ -92,7 +92,7 @@ function KpiRow({
       <StatTile label={t('General open')} icon={<DoorOpen />}>
         <Metric value={free} unit={t('free')} className="text-indigo-700" />
         <p className="mt-1 text-sm text-slate-700">
-          {counters?.length ? counters.map((c) => `${c.zoneCode} ${c.availableSpaces}`).join(' • ') : t('Levels B1, B2, B3 active')}
+          {counters?.length ? counters.map((c) => `${c.zoneCode} ${c.availableSpaces}`).join(' • ') : t('No zone data yet')}
         </p>
       </StatTile>
       <StatTile label={t('Pre-booked inside')} icon={<ShieldCheck />}>

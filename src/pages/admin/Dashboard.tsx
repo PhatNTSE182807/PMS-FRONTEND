@@ -44,7 +44,7 @@ function OverviewStats({
           isLoading={isLoading}
           value={formatNumber(Math.round(overview?.totalGrossRevenue ?? 0))}
           unit={t('VND')}
-          caption={t('Consolidated revenue across every hub')}
+          caption={t('Total revenue across all parking lots')}
           to="/admin/revenue"
           linkLabel="Open revenue report"
         />
@@ -62,7 +62,7 @@ function OverviewStats({
           size="lg"
           tone="teal"
           icon={Gauge}
-          label={t('Network load factor')}
+          label={t('Overall occupancy')}
           isLoading={isLoading}
           value={`${loadFactor.toFixed(1)}%`}
           caption={

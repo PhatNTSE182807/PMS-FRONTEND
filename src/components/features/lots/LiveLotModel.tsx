@@ -21,7 +21,7 @@ const INSPECTING_ROLES: AccountRole[] = ['STAFF', 'MANAGER', 'ADMIN']
 const hasVehicle = (bay: Bay) => bay.status === 'OCCUPIED'
 
 const SOURCE_TEXT = {
-  layout: 'live bay statuses from the gate and sensor feed',
+  layout: 'live bay statuses from gate activity',
   pushed: 'bay statuses pushed live (SignalR)',
   capacity: 'live zone occupancy (this lot has no bay layout yet)',
   model: 'no live bay data yet, showing the default model until an Admin picks one',

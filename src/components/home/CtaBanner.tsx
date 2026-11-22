@@ -17,15 +17,15 @@ export function CtaBanner({ isSignedIn, dashboardTo }: CtaBannerProps) {
         <div className="home-cta">
           <div>
             <span className="home-cta__badge">
-              <BadgeCheck aria-hidden />{' '}{t('Zero wait protocol active')}
+              <BadgeCheck aria-hidden />{' '}{t('Book online')}
             </span>
             <h2 className="home-cta__title">
-              {t('Experience frictionless')}
+              {t('Park easier')}
               <br />
-              {t('parking today')}
+              {t('starting today')}
             </h2>
             <p className="home-cta__text">
-              {t('Link your vehicle plate in under sixty seconds and drive through every XXIV facility with no paper tickets and no waiting at the gate.')}
+              {t('Register your vehicle, book a bay before you arrive and pay with your wallet, VNPay or MoMo.')}
             </p>
           </div>
 
@@ -34,7 +34,7 @@ export function CtaBanner({ isSignedIn, dashboardTo }: CtaBannerProps) {
               {isSignedIn ? t('Open dashboard') : t('Sign up free')} <ArrowRight aria-hidden />
             </Link>
             <a href="#terminals" className="home-btn home-btn--dark">
-              <Map aria-hidden />{' '}{t('View live terminals')}
+              <Map aria-hidden />{' '}{t('View parking lots')}
             </a>
           </div>
         </div>

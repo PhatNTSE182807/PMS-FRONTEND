@@ -51,7 +51,7 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
       {
         onSuccess: (result) => (result.kind === 'two-factor' ? onTwoFactorRequired(result) : onLoginSuccess(result)),
         onError: (error) => {
-          const message = getErrorMessage(error, 'Login failed. Please check your credentials.');
+          const message = getErrorMessage(error, 'Login failed. Please check your sign-in details.');
           // Without a backend, point the user to the demo modes below.
           setErrorMsg(error.isNetworkError ? `${message} Start the .NET backend or use a demo account below.` : message);
         },
@@ -62,7 +62,7 @@ export default function LoginScreen({ onLoginSuccess, onTwoFactorRequired, onNav
   return (
     <AuthShowcaseLayout
       title={t('Welcome back')}
-      subtitle={t('Enter your credentials to access your account.')}
+      subtitle={t('Enter your email or username and password to sign in.')}
       photo="/login-car.jpg"
     >
       {errorMsg && <AuthAlert tone="error">{tMaybe(errorMsg)}</AuthAlert>}

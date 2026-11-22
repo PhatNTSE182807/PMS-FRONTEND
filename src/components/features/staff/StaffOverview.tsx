@@ -50,7 +50,7 @@ export function StaffOverview() {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label={t('Total station leads')} icon={<IdCard />}>
+        <Kpi label={t('Total managers')} icon={<IdCard />}>
           <p className="mt-3 font-display text-4xl font-bold text-slate-950">
             {list.length} <span className="text-base font-medium text-slate-700">{t('Managers')}</span>
           </p>
@@ -64,12 +64,12 @@ export function StaffOverview() {
           </div>
         </Kpi>
 
-        <Kpi label={t('Covered hubs')} icon={<SquareParking />}>
+        <Kpi label={t('Lots with a manager')} icon={<SquareParking />}>
           <p className="mt-3 font-display text-4xl font-bold text-slate-950">
-            {tMaybe(coveredIds.size)} <span className="text-base font-medium text-amber-500">{t('of {totalLots} hubs', { totalLots })}</span>
+            {tMaybe(coveredIds.size)} <span className="text-base font-medium text-amber-500">{t('of {totalLots} lots', { totalLots })}</span>
           </p>
           <p className="mt-2 truncate text-sm text-slate-700">
-            {uncovered.length ? t('Uncovered: {v}', { v: uncovered.map((l) => l.name).join(', ') }) : t('Every hub has an active manager.')}
+            {uncovered.length ? t('Uncovered: {v}', { v: uncovered.map((l) => l.name).join(', ') }) : t('Every parking lot has an active manager.')}
           </p>
           <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-indigo-700">
             <ShieldCheck className="size-3.5" aria-hidden />{' '}{t('{coverage}% supervisory coverage', { coverage })}
@@ -80,7 +80,7 @@ export function StaffOverview() {
           <p className="mt-3 font-display text-4xl font-bold text-slate-950">
             {formatNumber(gateStaff.data?.totalCount ?? 0)} <span className="text-base font-medium text-slate-700">{t('Operators')}</span>
           </p>
-          <p className="mt-2 text-sm text-slate-700">{t('Gate and lane staff rostered across all hubs.')}</p>
+          <p className="mt-2 text-sm text-slate-700">{t('Gate and lane staff across all parking lots.')}</p>
         </Kpi>
 
         <Kpi label={t('Access lockouts')} icon={<Gavel />}>
