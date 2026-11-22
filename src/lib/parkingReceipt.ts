@@ -1,3 +1,4 @@
+import { LOGO_SRC } from '@/components/ParkingLogo'
 import { formatNumber } from '@/lib/format'
 import type { ParkingReceiptDTO } from '@/types/parkingHistory.dto'
 import { localDateFormat } from '@/i18n'
@@ -32,18 +33,21 @@ export function receiptHtml(r: ParkingReceiptDTO): string {
         .join('')
     : `<tr><td colspan="3" class="muted">${html(r.zeroFeeReason ?? 'No payment was needed.')}</td></tr>`
 
+  // The receipt opens from a blob: URL, where a root-relative image path would not resolve
+  const logoUrl = new URL(LOGO_SRC, window.location.origin).href
+
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Receipt ${html(r.receiptNumber)}</title>
 <style>
 *{box-sizing:border-box}body{margin:0;padding:32px;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:#14181c;background:#fff}
 .sheet{max-width:620px;margin:0 auto}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #14181c;padding-bottom:14px;margin-bottom:18px}
-h1{margin:0;font-size:20px;letter-spacing:.04em}h1 span{color:#a17a10}.meta{text-align:right;font-size:12px;color:#55606a}.meta strong{display:block;font-size:15px;color:#14181c}
+.brand{display:flex;align-items:center;gap:12px}.brand img{display:block;width:auto;height:60px;flex:none}h1{margin:0;font-size:20px;letter-spacing:.04em}h1 span{color:#a17a10}.meta{text-align:right;font-size:12px;color:#55606a}.meta strong{display:block;font-size:15px;color:#14181c}
 h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#55606a;margin:22px 0 6px}table{width:100%;border-collapse:collapse}
 th,td{padding:6px 0;text-align:left;vertical-align:top;border-bottom:1px solid #e4e7ea}th{font-weight:500;color:#55606a;width:45%}
 td.strong{font-weight:700}.num{text-align:right;white-space:nowrap}small{display:block;font-size:11px;color:#7a858e}.muted{color:#7a858e}
 .total{display:flex;justify-content:space-between;margin-top:18px;padding:12px 14px;background:#f3f5f6;border-radius:8px;font-size:16px;font-weight:700}
 footer{margin-top:26px;font-size:11px;color:#7a858e;text-align:center}@media print{body{padding:0}}
 </style></head><body><div class="sheet">
-<header><div><h1>XXIV <span>PARKING</span></h1><div class="muted">Parking e-receipt</div></div>
+<header><div class="brand"><img src="${html(logoUrl)}" alt=""><div><h1>XXIV <span>PARKING</span></h1><div class="muted">Parking e-receipt</div></div></div>
 <div class="meta"><strong>${html(r.receiptNumber)}</strong>Issued ${html(stamp(r.issuedAt))}</div></header>
 <h2>Session</h2><table>
 ${row('Customer', r.customerName ?? '—')}
