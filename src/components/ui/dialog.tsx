@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { t, tMaybe } from '@/i18n'
 
 /*
  * Dialog (centered) and Sheet (side drawer) on top of Radix Dialog, which handles focus
@@ -23,7 +24,7 @@ function CloseButton() {
   return (
     <DialogPrimitive.Close
       className="absolute top-4 right-4 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-      aria-label="Close"
+      aria-label={t('Close')}
     >
       <X className="size-4" />
     </DialogPrimitive.Close>
@@ -127,14 +128,14 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{tMaybe(title)}</DialogTitle>
           <DialogDescription asChild>
-            <div>{description}</div>
+            <div>{tMaybe(description)}</div>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
-            Cancel
+            {t('Cancel')}
           </DialogClose>
           <button
             type="button"
@@ -146,7 +147,7 @@ export function ConfirmDialog({
             )}
           >
             {pending && <span className="size-3.5 animate-spin rounded-full border-2 border-on-accent/40 border-t-on-accent" />}
-            {confirmLabel}
+            {tMaybe(confirmLabel)}
           </button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,9 @@
+import { Link } from 'react-router-dom'
 import { SocialLinks } from '@/components/customer/SocialLinks'
+import { t, tMaybe } from '@/i18n'
 
-const ARCHITECTURE = ['LiDAR space mesh', 'Sub-second ANPR array', 'Ultra-fast DC charging', 'Sovereign vault docks']
-const OPERATIONS = ['Autonomous valet transit', 'Terminal gate dispatch', '24/7 operations desk', 'Fleet telematics API']
+const FEATURES = ['3D parking map', 'Plate recognition', 'Online booking', 'XXIV Wallet']
+const SERVICES = ['Vehicle check-in', 'Vehicle check-out', 'Online payment', 'Customer support']
 
 export function HomeFooter() {
   return (
@@ -13,41 +15,36 @@ export function HomeFooter() {
               <span className="brand-gold">XXIV</span>PARKING
             </p>
             <p className="home-footer__about">
-              Real-time occupancy, automated bay allocation and secure vehicle management for high-density city
-              estates.
-            </p>
-            <p className="home-footer__status">
-              <span className="home-dot home-dot--gold" aria-hidden="true" />
-              Core gateways active
+              {t('See free bays live, book ahead and manage your vehicles and payments in one place.')}
             </p>
           </div>
 
           <div>
-            <h2 className="home-footer__title">Architecture</h2>
+            <h2 className="home-footer__title">{t('Features')}</h2>
             <ul className="home-footer__list">
-              {ARCHITECTURE.map((item) => (
-                <li key={item}>{item}</li>
+              {FEATURES.map((item) => (
+                <li key={item}>{tMaybe(item)}</li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h2 className="home-footer__title">Operations</h2>
+            <h2 className="home-footer__title">{t('Services')}</h2>
             <ul className="home-footer__list">
-              {OPERATIONS.map((item) => (
-                <li key={item}>{item}</li>
+              {SERVICES.map((item) => (
+                <li key={item}>{tMaybe(item)}</li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h2 className="home-footer__title">Concierge &amp; support</h2>
+            <h2 className="home-footer__title">{t('Support')}</h2>
             <div className="home-footer__contact">
-              <p>24/7 priority dispatch and assistance across all metropolitan terminals.</p>
+              <p>{t('Contact us if you need help with parking, bookings or payments.')}</p>
               <a href="mailto:support@xxivparking.vn" className="home-footer__mail">
-                support@xxivparking.vn
+                {t('support@xxivparking.vn')}
               </a>
-              <span className="home-footer__phone">Direct line: +84 (28) 7300-2424</span>
+              <span className="home-footer__phone">{t('Direct line: +84 (28) 7300-2424')}</span>
               <SocialLinks blockClass="home-footer" />
             </div>
           </div>
@@ -56,9 +53,8 @@ export function HomeFooter() {
         <div className="home-footer__bottom">
           <span>© {new Date().getFullYear()} XXIV Parking Systems. All rights reserved.</span>
           <span className="home-footer__legal">
-            <span>System protocol</span>
-            <span>Security attestation</span>
-            <span>Terminal SLA</span>
+            <Link to="/terms">{t('Terms of Service')}</Link>
+            <Link to="/privacy">{t('Privacy Policy')}</Link>
           </span>
         </div>
       </div>

@@ -1,9 +1,10 @@
 import { formatNumber } from '@/lib/format'
+import { localDateFormat } from '@/i18n'
 
 /** "1,250,000 VND" — the Manager console shows amounts like the Stitch design. */
 export const vnd = (value: number) => `${formatNumber(Math.round(value))} VND`
 
-const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const clock = localDateFormat({ hour: '2-digit', minute: '2-digit' })
 
 /** "14:30" */
 export const formatClock = (ts: number) => clock.format(ts)

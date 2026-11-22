@@ -9,6 +9,7 @@ import { formatNumber, formatVnd, formatVndCompact, toIsoDate } from '@/lib/form
 import { formatPeriod, formatPeriodTick } from '@/lib/revenuePeriods'
 import { cn } from '@/lib/utils'
 import type { AdminRevenueTimeSeriesDTO, RevenueGranularityDTO } from '@/types/report.dto'
+import { t, tMaybe } from '@/i18n'
 
 const METRICS = {
   revenue: { label: 'Revenue', unit: 'in VND', total: 'totalRevenue', car: 'carRevenue', motorbike: 'motorbikeRevenue', format: formatVnd, tick: formatVndCompact },
@@ -33,8 +34,8 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
   const m = METRICS[metric]
   const series = compare
     ? [
-        { key: m.car, label: 'Cars', color: SERIES_COLORS.blue },
-        { key: m.motorbike, label: 'Motorbikes', color: SERIES_COLORS.orange },
+        { key: m.car, label: t('Cars'), color: SERIES_COLORS.blue },
+        { key: m.motorbike, label: t('Motorbikes'), color: SERIES_COLORS.orange },
       ]
     : [{ key: m.total, label: m.label, color: metric === 'revenue' ? SERIES_COLORS.blue : SERIES_COLORS.orange }]
 
@@ -49,10 +50,10 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
     <Card className="flex flex-col lg:col-span-2">
       <CardHeader>
         <div>
-          <CardTitle>Revenue trend</CardTitle>
+          <CardTitle>{t('Revenue trend')}</CardTitle>
           <CardDescription>
-            {STEP_LABELS[granularity]}, {m.unit}
-            {includesToday && ' · latest period counted up to now'}
+            {tMaybe(STEP_LABELS[granularity])}, {tMaybe(m.unit)}
+            {includesToday && t(' · latest period counted up to now')}
           </CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -68,9 +69,9 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
             <span className={cn('relative h-5 w-9 rounded-full transition-colors', compare ? 'bg-indigo-600' : 'bg-slate-300')}>
               <span className={cn('absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform', compare && 'translate-x-4')} />
             </span>
-            Compare car / motorbike
+            {t('Compare car / motorbike')}
           </button>
-          <div role="group" aria-label="Chart metric" className="flex gap-1 rounded-lg bg-slate-100 p-1">
+          <div role="group" aria-label={t('Chart metric')} className="flex gap-1 rounded-lg bg-slate-100 p-1">
             {(Object.keys(METRICS) as Metric[]).map((key) => (
               <button
                 key={key}
@@ -82,7 +83,7 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
                   metric === key ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900',
                 )}
               >
-                {METRICS[key].label}
+                {tMaybe(METRICS[key].label)}
               </button>
             ))}
           </div>
@@ -95,7 +96,7 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
         {isLoading || !data ? (
           <Skeleton className="mx-3 h-full" />
         ) : !hasData ? (
-          <EmptyState title="No data" description="No settled parking sessions in this period." />
+          <EmptyState title={t('No data')} description={t('No settled parking sessions in this period.')} />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={points} margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
@@ -108,7 +109,7 @@ export function RevenueTrendChart({ data, isLoading, canCompare }: RevenueTrendC
                   <ChartTooltip
                     active={props.active}
                     payload={props.payload}
-                    label={props.label}
+                    label={tMaybe(props.label)}
                     formatLabel={(date) => formatPeriod({ startDate: date, endDate: endDates.get(date) ?? date })}
                     formatValue={m.format}
                   />

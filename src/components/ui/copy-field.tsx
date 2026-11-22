@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from './button'
+import { t, tMaybe } from '@/i18n'
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -27,10 +28,10 @@ export function CopyField({ value, label, actions }: CopyFieldProps) {
   const handleCopy = async () => {
     if (await copyText(value)) {
       setCopied(true)
-      toast.success('Copied to clipboard')
+      toast.success(t('Copied to clipboard'))
       window.setTimeout(() => setCopied(false), 1500)
     } else {
-      toast.error('Could not copy automatically', { description: 'Select and copy it manually.' })
+      toast.error(t('Could not copy automatically'), { description: t('Select and copy it manually.') })
     }
   }
 
@@ -39,15 +40,15 @@ export function CopyField({ value, label, actions }: CopyFieldProps) {
       <input
         readOnly
         value={value}
-        aria-label={label}
+        aria-label={tMaybe(label)}
         onFocus={(e) => e.currentTarget.select()}
         className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-sm tracking-wide text-slate-900"
       />
-      <Button variant="outline" size="sm" onClick={handleCopy} aria-label={`Copy ${label}`}>
+      <Button variant="outline" size="sm" onClick={handleCopy} aria-label={t('Copy {label}', { label })}>
         {copied ? <Check className="text-emerald-600" /> : <Copy />}
-        {copied ? 'Copied' : 'Copy'}
+        {copied ? t('Copied') : t('Copy')}
       </Button>
-      {actions}
+      {tMaybe(actions)}
     </div>
   )
 }

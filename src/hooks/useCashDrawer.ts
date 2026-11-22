@@ -6,6 +6,7 @@ import { cashDrawerService } from '@/api/cashDrawer.service'
 import { parkingOpsRealtime } from '@/api/parkingOpsRealtime'
 import { queryKeys } from '@/api/queryKeys'
 import { invalidateFromPush } from '@/lib/realtimeInvalidate'
+import { t } from '@/i18n'
 
 /**
  * The signed-in Staff's open drawer at the lot (else their latest of today). A payment push refreshes it (cash moves the
@@ -35,7 +36,7 @@ export function useOpenCashDrawer() {
   return useMutation({
     mutationFn: ({ lotId, float }: { lotId: string; float: number }) => cashDrawerService.open(lotId, float),
     onSuccess: () => {
-      toast.success('Cash drawer opened.')
+      toast.success(t('Cash drawer opened.'))
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Could not open the cash drawer.')),
@@ -48,7 +49,7 @@ export function useCloseCashDrawer() {
   return useMutation({
     mutationFn: ({ lotId }: { lotId: string }) => cashDrawerService.close(lotId),
     onSuccess: () => {
-      toast.success('Cash drawer handed in to your Manager. A new drawer is open with the standard float.')
+      toast.success(t('Cash drawer handed in to your Manager. A new drawer is open with the standard float.'))
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Could not hand in the cash drawer.')),
@@ -76,7 +77,7 @@ export function useConfirmCashClose() {
   return useMutation({
     mutationFn: ({ id, note }: { id: number; note?: string }) => cashDrawerService.confirm(id, note),
     onSuccess: () => {
-      toast.success('Cash close confirmed.')
+      toast.success(t('Cash close confirmed.'))
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Could not confirm the cash close.')),
@@ -90,7 +91,7 @@ export function useRequestCashTopUp() {
     mutationFn: ({ lotId, amount, reason }: { lotId: string; amount: number; reason?: string }) =>
       cashDrawerService.requestTopUp(lotId, amount, reason),
     onSuccess: () => {
-      toast.success('Cash request sent to your Manager.')
+      toast.success(t('Cash request sent to your Manager.'))
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
     },
   })
@@ -101,7 +102,7 @@ export function useCancelCashTopUp() {
   return useMutation({
     mutationFn: ({ lotId, id }: { lotId: string; id: number }) => cashDrawerService.cancelTopUp(lotId, id),
     onSuccess: () => {
-      toast.info('Cash request cancelled.')
+      toast.info(t('Cash request cancelled.'))
       void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Could not cancel the cash request.')),

@@ -14,6 +14,7 @@ import { ADMIN_TOAST } from '@/lib/adminToasts'
 import { generatePassword, isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/password'
 import type { UserDTO } from '@/types/identity.dto'
 import type { ManagedLot } from '@/types/lot-management.dto'
+import { t, tMaybe } from '@/i18n'
 
 /** BR-28, same rules as the backend's CreateStaffAccountModelValidator. */
 const PHONE_REGEX = /^0\d{9}$/
@@ -69,10 +70,10 @@ export function ManagerStaffFormSheet({ open, onOpenChange, user, lots, defaultL
 function Field({ label, htmlFor, error, hint, children }: { label: string; htmlFor: string; error?: string; hint?: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor}>{tMaybe(label)}</Label>
       {children}
-      {hint && !error && <p className="text-xs text-slate-500">{hint}</p>}
-      <FieldError message={error} />
+      {hint && !error && <p className="text-xs text-slate-500">{tMaybe(hint)}</p>}
+      <FieldError message={tMaybe(error)} />
     </div>
   )
 }
@@ -120,7 +121,7 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
           command: details,
           parkingLotId: values.parkingLotId !== currentLotId ? values.parkingLotId : undefined,
         })
-        toast.success('Staff updated', { description: `${updated.fullName} (${updated.employeeCode})` })
+        toast.success(t('Staff updated'), { description: `${updated.fullName} (${updated.employeeCode})` })
       } else {
         await createStaff.mutateAsync({
           ...details,
@@ -139,56 +140,56 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
   return (
     <form onSubmit={onSubmit} noValidate className="flex h-full flex-col">
       <div className="border-b border-slate-200 px-6 py-5 pr-12">
-        <DialogTitle className="text-lg font-semibold text-slate-900">{user ? 'Edit staff' : 'Add staff'}</DialogTitle>
+        <DialogTitle className="text-lg font-semibold text-slate-900">{user ? t('Edit staff') : t('Add staff')}</DialogTitle>
         <DialogDescription className="mt-1 text-sm text-slate-500">
-          {user ? `${user.employeeCode} · ${user.email}` : 'Create a gate Staff account in one of the lots you manage.'}
+          {user ? `${user.employeeCode} · ${user.email}` : t('Create a gate Staff account in one of the lots you manage.')}
         </DialogDescription>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-        <Field label="Full name" htmlFor="team-fullName" error={errors.fullName?.message}>
-          <Input id="team-fullName" autoComplete="off" placeholder="e.g. Nguyen Van An" aria-invalid={!!errors.fullName} {...register('fullName')} />
+        <Field label={t('Full name')} htmlFor="team-fullName" error={tMaybe(errors.fullName?.message)}>
+          <Input id="team-fullName" autoComplete="off" placeholder={t('e.g. Nguyen Van An')} aria-invalid={!!errors.fullName} {...register('fullName')} />
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Email" htmlFor="team-email" error={errors.email?.message} hint="Used to sign in.">
-            <Input id="team-email" type="email" autoComplete="off" placeholder="ten.ho@xxivparking.vn" aria-invalid={!!errors.email} {...register('email')} />
+          <Field label={t('Email')} htmlFor="team-email" error={tMaybe(errors.email?.message)} hint={t('Used to sign in.')}>
+            <Input id="team-email" type="email" autoComplete="off" placeholder={t('ten.ho@xxivparking.vn')} aria-invalid={!!errors.email} {...register('email')} />
           </Field>
-          <Field label="Phone number" htmlFor="team-phone" error={errors.phoneNumber?.message}>
+          <Field label={t('Phone number')} htmlFor="team-phone" error={tMaybe(errors.phoneNumber?.message)}>
             <Input id="team-phone" type="tel" inputMode="tel" placeholder="0901234567" aria-invalid={!!errors.phoneNumber} {...register('phoneNumber')} />
           </Field>
         </div>
 
         <Field
-          label="Parking lot"
+          label={t('Parking lot')}
           htmlFor="team-lot"
-          error={errors.parkingLotId?.message}
-          hint="A Staff member works at one lot. You can only pick lots you manage."
+          error={tMaybe(errors.parkingLotId?.message)}
+          hint={t('A Staff member works at one lot. You can only pick lots you manage.')}
         >
           <NativeSelect id="team-lot" aria-invalid={!!errors.parkingLotId} {...register('parkingLotId')}>
-            <option value="">Select a lot…</option>
+            <option value="">{t('Select a lot…')}</option>
             {lots.map((lot) => (
               <option key={lot.id} value={lot.id}>
-                {lot.name}
+                {tMaybe(lot.name)}
               </option>
             ))}
           </NativeSelect>
         </Field>
 
         <Field
-          label="Employment"
+          label={t('Employment')}
           htmlFor="team-employment"
-          hint="Full-time Staff get a monthly salary and a weekly shift pattern; backup Staff are paid by the hour and fill empty shifts."
+          hint={t('Full-time Staff get a monthly salary and a weekly shift pattern; backup Staff are paid by the hour and fill empty shifts.')}
         >
           <NativeSelect id="team-employment" {...register('employmentType')}>
-            <option value="FullTime">Full-time</option>
-            <option value="Backup">Backup</option>
+            <option value="FullTime">{t('Full-time')}</option>
+            <option value="Backup">{t('Backup')}</option>
           </NativeSelect>
         </Field>
 
         {mode === 'create' && (
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Password" htmlFor="team-password" error={errors.password?.message}>
+            <Field label={t('Password')} htmlFor="team-password" error={tMaybe(errors.password?.message)}>
               <div className="relative">
                 <Input
                   id="team-password"
@@ -202,13 +203,13 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-slate-500 hover:text-slate-800"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('Hide password') : t('Show password')}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </Field>
-            <Field label="Confirm password" htmlFor="team-confirm" error={errors.confirmPassword?.message}>
+            <Field label={t('Confirm password')} htmlFor="team-confirm" error={tMaybe(errors.confirmPassword?.message)}>
               <Input
                 id="team-confirm"
                 type={showPassword ? 'text' : 'password'}
@@ -218,25 +219,25 @@ function StaffForm({ user, lots, defaultLotId, onDone }: { user?: UserDTO; lots:
               />
             </Field>
             <Button type="button" variant="outline" size="sm" className="sm:col-span-2 sm:justify-self-start" onClick={fillPassword}>
-              <RefreshCw className="size-4" aria-hidden /> Generate a strong password
+              <RefreshCw className="size-4" aria-hidden />{' '}{t('Generate a strong password')}
             </Button>
           </div>
         )}
 
         {formError && (
           <p role="alert" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden /> {formError}
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden /> {tMaybe(formError)}
           </p>
         )}
       </div>
 
       <div className="flex justify-end gap-2 border-t border-slate-200 px-6 py-4">
         <DialogClose asChild>
-          <Button variant="outline">Cancel</Button>
+          <Button variant="outline">{t('Cancel')}</Button>
         </DialogClose>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Spinner className="size-4" />}
-          {user ? 'Save changes' : 'Create account'}
+          {user ? t('Save changes') : t('Create account')}
         </Button>
       </div>
     </form>

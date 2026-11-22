@@ -8,6 +8,7 @@ import { buildCoupeModel, buildSuvModel } from './carModels'
 import { buildBikeModel, type PartSlot } from './vehicleModels'
 import { scenePaint } from '@/lib/vehicleColor'
 import { readTheme, subscribeTheme } from '@/lib/theme'
+import { t } from '@/i18n'
 
 export interface Garage3DProps {
   floors: GarageFloor[]
@@ -156,7 +157,7 @@ function labelTexture(title: string, sub: string) {
       ctx.lineWidth = 4
       ctx.stroke()
       ctx.fillStyle = '#e9c349'
-      ctx.font = 'bold 50px "Plus Jakarta Sans", sans-serif'
+      ctx.font = 'bold 50px "Be Vietnam Pro", sans-serif'
       ctx.fillText(title, 28, 62)
       ctx.fillStyle = '#dae4ed'
       ctx.font = '600 30px Inter, sans-serif'
@@ -384,7 +385,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
           ctx.fillStyle = '#0b141b'
           ctx.fillRect(0, 0, 128, 640)
           ctx.fillStyle = '#e9c349'
-          ctx.font = 'bold 92px "Plus Jakarta Sans", sans-serif'
+          ctx.font = 'bold 92px "Be Vietnam Pro", sans-serif'
           ctx.textAlign = 'center'
           'CARPARK'.split('').forEach((ch, i) => ctx.fillText(ch, 64, 90 + i * 82))
         },
@@ -840,7 +841,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
       ref={hostRef}
       className={`garage3d ${className ?? ''}`}
       role="img"
-      aria-label="3D model of the car park. Drag to rotate, scroll to zoom, point at a bay to see its code."
+      aria-label={t('3D model of the car park. Drag to rotate, scroll to zoom, point at a bay to see its code.')}
     >
       {/* Moved and filled by the pointer handlers above, outside React, so hovering never re-renders */}
       <div
@@ -859,7 +860,7 @@ export default function Garage3D({ floors, focusFloor, selectedBayId, myBayId, m
           background: 'rgba(6, 15, 22, 0.9)',
           border: '1px solid rgba(233, 195, 73, 0.7)',
           color: '#e9c349',
-          fontFamily: '"Plus Jakarta Sans", Inter, sans-serif',
+          fontFamily: '"Be Vietnam Pro", Inter, sans-serif',
           whiteSpace: 'nowrap',
           boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)',
         }}

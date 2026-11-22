@@ -14,6 +14,7 @@ import { formatNumber } from '@/lib/format'
 import { occupancyRate, parkingSlots } from '@/lib/occupancy'
 import { cn } from '@/lib/utils'
 import type { ParkingLotCapacityDTO } from '@/types/parking.dto'
+import { t, tMaybe } from '@/i18n'
 
 function SystemStat({ icon: Icon, label, value, children }: {
   icon: typeof Building2
@@ -27,8 +28,8 @@ function SystemStat({ icon: Icon, label, value, children }: {
         <Icon className="size-5" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-slate-500">{label}</p>
-        <p className="mt-0.5 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{value}</p>
+        <p className="text-sm text-slate-500">{tMaybe(label)}</p>
+        <p className="mt-0.5 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{tMaybe(value)}</p>
         {children}
       </div>
     </div>
@@ -42,15 +43,15 @@ function SystemBanner({ lots }: { lots: ParkingLotCapacityDTO[] }) {
 
   return (
     <Card className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4 xl:divide-x">
-      <SystemStat icon={Building2} label="Active lots" value={`${active.length} / ${lots.length}`} />
-      <SystemStat icon={SquareParking} label="Total capacity" value={formatNumber(totals.total)} />
-      <SystemStat icon={CircleParking} label="In use" value={formatNumber(totals.occupied)}>
+      <SystemStat icon={Building2} label={t('Active lots')} value={`${active.length} / ${lots.length}`} />
+      <SystemStat icon={SquareParking} label={t('Total capacity')} value={formatNumber(totals.total)} />
+      <SystemStat icon={CircleParking} label={t('In use')} value={formatNumber(totals.occupied)}>
         <div className="mt-2 flex items-center gap-2">
           <OccupancyBar percentage={rate} className="flex-1" />
           <span className="text-xs font-medium text-slate-600 tabular-nums">{rate.toFixed(1).replace('.', ',')}%</span>
         </div>
       </SystemStat>
-      <SystemStat icon={ParkingMeter} label="Available" value={formatNumber(totals.available)} />
+      <SystemStat icon={ParkingMeter} label={t('Available')} value={formatNumber(totals.available)} />
     </Card>
   )
 }
@@ -79,12 +80,12 @@ export default function ParkingCapacityPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Parking Lot Performance"
+        title={t('Parking Lot Performance')}
        
         actions={
           <Button variant="outline" onClick={() => capacity.refetch()} disabled={capacity.isFetching}>
             <RefreshCw className={cn(capacity.isFetching && 'animate-spin')} />
-            Refresh
+            {t('Refresh')}
           </Button>
         }
       />
@@ -93,7 +94,7 @@ export default function ParkingCapacityPage() {
         <CapacitySkeleton />
       ) : capacity.isError && lots.length === 0 ? (
         <Card>
-          <ErrorState message={getErrorMessage(capacity.error)} onRetry={() => capacity.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(capacity.error))} onRetry={() => capacity.refetch()} />
         </Card>
       ) : (
         <>
@@ -101,7 +102,7 @@ export default function ParkingCapacityPage() {
 
           {lots.length === 0 ? (
             <Card>
-              <EmptyState icon={Gauge} title="No parking lots yet" description="Parking lots appear here once they are created." />
+              <EmptyState icon={Gauge} title={t('No parking lots yet')} description={t('Parking lots appear here once they are created.')} />
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">

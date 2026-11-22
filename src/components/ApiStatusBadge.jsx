@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { systemService } from '../api/system.service';
 import { getApiBaseUrl, setApiBaseUrlOverride } from '../config/env';
+import { t, tMaybe } from '@/i18n'
 
 // The runtime URL override is a development aid; production builds use VITE_API_BASE_URL.
 const canConfigureUrl = import.meta.env.DEV;
@@ -62,11 +63,11 @@ export default function ApiStatusBadge() {
         type="button"
         className={`api-status-badge ${isOnline ? 'api-status-badge--online' : 'api-status-badge--offline'}`}
         onClick={() => setIsOpen(true)}
-        title="Click to view or configure Backend API connection"
+        title={t('Click to view or configure Backend API connection')}
       >
         <span className="api-status-badge__dot"></span>
         <span className="api-status-badge__text">
-          API: {isOnline ? 'Connected' : 'Offline'}
+          {t('API:')}{' '}{isOnline ? t('Connected') : t('Offline')}
         </span>
       </button>
 
@@ -74,7 +75,7 @@ export default function ApiStatusBadge() {
         <div className="api-modal-backdrop" onClick={() => setIsOpen(false)}>
           <div className="api-modal" onClick={(e) => e.stopPropagation()}>
             <div className="api-modal__header">
-              <h3>Backend API Connection</h3>
+              <h3>{t('Backend API Connection')}</h3>
               <button
                 type="button"
                 className="api-modal__close"
@@ -87,21 +88,21 @@ export default function ApiStatusBadge() {
             <div className="api-modal__body">
               <div className="api-modal__status-box">
                 <span className={`status-pill ${isOnline ? 'status-pill--success' : 'status-pill--warning'}`}>
-                  {isOnline ? '● Backend Is Online' : '○ Backend Disconnected'}
+                  {isOnline ? t('● Backend Is Online') : t('○ Backend Disconnected')}
                 </span>
-                <p className="api-modal__status-msg">{statusMessage}</p>
+                <p className="api-modal__status-msg">{tMaybe(statusMessage)}</p>
               </div>
 
               {canConfigureUrl && (
                 <>
                   <div className="api-modal__form-group">
-                    <label>Backend API Base URL (.NET Web API):</label>
+                    <label>{t('Backend API Base URL (.NET Web API):')}</label>
                     <div className="api-modal__input-row">
                       <input
                         type="text"
                         value={inputUrl}
                         onChange={(e) => setInputUrl(e.target.value)}
-                        placeholder="https://localhost:44391/api"
+                        placeholder={t('https://localhost:44391/api')}
                         className="api-modal__input"
                       />
                       <button
@@ -110,34 +111,34 @@ export default function ApiStatusBadge() {
                         onClick={handleSaveUrl}
                         disabled={isChecking}
                       >
-                        Save & Test
+                        {t('Save & Test')}
                       </button>
                     </div>
                   </div>
 
                   <div className="api-modal__presets">
-                    <span className="api-modal__presets-label">Quick Presets (from PMS.sln launchSettings):</span>
+                    <span className="api-modal__presets-label">{t('Quick Presets (from PMS.sln launchSettings):')}</span>
                     <div className="api-modal__presets-buttons">
                       <button
                         type="button"
                         className="preset-btn"
                         onClick={() => handleQuickPreset('https://localhost:44391/api')}
                       >
-                        IIS Express (44391)
+                        {t('IIS Express (44391)')}
                       </button>
                       <button
                         type="button"
                         className="preset-btn"
                         onClick={() => handleQuickPreset('https://localhost:5001/api')}
                       >
-                        Kestrel HTTPS (5001)
+                        {t('Kestrel HTTPS (5001)')}
                       </button>
                       <button
                         type="button"
                         className="preset-btn"
                         onClick={() => handleQuickPreset('http://localhost:5000/api')}
                       >
-                        Kestrel HTTP (5000)
+                        {t('Kestrel HTTP (5000)')}
                       </button>
                     </div>
                   </div>
@@ -146,7 +147,7 @@ export default function ApiStatusBadge() {
 
               <div className="api-modal__tip">
                 <p>
-                  <strong>Tip:</strong> Make sure the .NET backend is started to access all features.
+                  <strong>{t('Tip:')}</strong>{' '}{t('Make sure the .NET backend is started to access all features.')}
                 </p>
               </div>
             </div>
@@ -158,14 +159,14 @@ export default function ApiStatusBadge() {
                 onClick={checkStatus}
                 disabled={isChecking}
               >
-                {isChecking ? 'Checking...' : 'Ping Server'}
+                {isChecking ? t('Checking...') : t('Ping Server')}
               </button>
               <button
                 type="button"
                 className="btn btn-primary-cyan"
                 onClick={() => setIsOpen(false)}
               >
-                Close
+                {t('Close')}
               </button>
             </div>
           </div>

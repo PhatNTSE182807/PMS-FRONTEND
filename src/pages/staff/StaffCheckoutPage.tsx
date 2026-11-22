@@ -26,6 +26,7 @@ import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CheckoutQuoteDTO, PaymentDTO, PaymentProvider, StaffPaymentHistoryItemDTO } from '@/types/operations.dto'
 import { VnpayButton } from '@/components/payment/VnpayButton'
+import { t, tMaybe, currentLocale } from '@/i18n'
 
 
 /**
@@ -172,8 +173,8 @@ export default function StaffCheckoutPage() {
       {
         onSuccess: (p) => {
           setConfirmCash(false)
-          toast.success(`Cash ${vnd(p.amount)} recorded`, {
-            description: change > 0 ? `Give back ${vnd(change)}.` : undefined,
+          toast.success(t('Cash {amount} recorded', { amount: vnd(p.amount) }), {
+            description: change > 0 ? t('Give back {v}.', { v: vnd(change) }) : undefined,
           })
           void queryClient.invalidateQueries({ queryKey: queryKeys.cashDrawer.all })
           loadQuote(session.id, exitPlate)
@@ -199,7 +200,7 @@ export default function StaffCheckoutPage() {
       {
         onSuccess: (p) => {
           if (!p.payUrl) {
-            toast.success(`Paid ${vnd(p.amount)} via XXIV Wallet!`)
+            toast.success(t('Paid {amount} via XXIV Wallet!', { amount: vnd(p.amount) }))
             loadQuote(session.id, exitPlate)
           } else {
             setQr(p)
@@ -216,13 +217,13 @@ export default function StaffCheckoutPage() {
     try {
       const result = await paymentService.check(qr.id)
       if (result.outcome === 'Applied' || result.outcome === 'AlreadyProcessed') {
-        toast.success(`${qr.provider}: payment received`)
+        toast.success(t('{provider}: payment received', { provider: qr.provider }))
         loadQuote(session.id, exitPlate)
       } else if (result.outcome === 'Refunded') {
-        toast.info('The QR payment came after another payment and was refunded automatically.')
+        toast.info(t('The QR payment came after another payment and was refunded automatically.'))
         loadQuote(session.id, exitPlate)
       } else {
-        toast.info(result.message ?? 'Still waiting for the gateway.', { description: qrLeft === 0 ? 'You may take cash instead.' : undefined })
+        toast.info(result.message ?? 'Still waiting for the gateway.', { description: qrLeft === 0 ? t('You may take cash instead.') : undefined })
       }
     } catch (e) {
       toast.error(getErrorMessage(e))
@@ -256,52 +257,52 @@ export default function StaffCheckoutPage() {
           aside={
             waiting.data && (
               <span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-500">
-                {waiting.data.filter((s) => s.status === 'PendingPayment').length} fee requested · {waiting.data.filter((s) => leavingIds.has(s.id)).length} asked to exit
+                {t('{length} fee requested · {length2} asked to exit', { length: waiting.data.filter((s) => s.status === 'PendingPayment').length, length2: waiting.data.filter((s) => leavingIds.has(s.id)).length })}
               </span>
             )
           }
         >
-          Vehicles to collect from
+          {t('Vehicles to collect from')}
         </SectionTitle>
-        {!lotKey && <p className="text-sm text-slate-700">No assigned parking lot is available.</p>}
-        {lotKey && waiting.isLoading && <p className="text-sm text-slate-700">Loading…</p>}
-        {waiting.isError && <p className="text-sm text-rose-700">Unable to load the queue: {getErrorMessage(waiting.error)}</p>}
+        {!lotKey && <p className="text-sm text-slate-700">{t('No assigned parking lot is available.')}</p>}
+        {lotKey && waiting.isLoading && <p className="text-sm text-slate-700">{t('Loading…')}</p>}
+        {waiting.isError && <p className="text-sm text-rose-700">{t('Unable to load the queue:')}{' '}{tMaybe(getErrorMessage(waiting.error))}</p>}
         {waiting.data && waiting.data.length > 0 && (
           <>
-            <label className="sr-only" htmlFor="queue-filter">Filter by plate</label>
-            <Input id="queue-filter" className="mb-2" value={queueFilter} onChange={(e) => setQueueFilter(e.target.value)} placeholder="Filter by plate" />
+            <label className="sr-only" htmlFor="queue-filter">{t('Filter by plate')}</label>
+            <Input id="queue-filter" className="mb-2" value={queueFilter} onChange={(e) => setQueueFilter(e.target.value)} placeholder={t('Filter by plate')} />
           </>
         )}
         {waiting.data && queue.length === 0 && (
-          <p className="text-sm text-slate-700">{waiting.data.length === 0 ? 'No vehicle is waiting to pay. Use Force check-out on the gate dashboard, or find a vehicle by plate.' : 'No vehicle matches this plate.'}</p>
+          <p className="text-sm text-slate-700">{waiting.data.length === 0 ? t('No vehicle is waiting to pay. Use Force check-out on the gate dashboard, or find a vehicle by plate.') : t('No vehicle matches this plate.')}</p>
         )}
         {queue.length > 0 && (
           <ul className="divide-y divide-slate-200">
             {queue.slice(0, QUEUE_SHOWN).map((s) => (
               <li key={s.id} className={cn('flex flex-wrap items-center gap-x-6 gap-y-1 py-3', session?.id === s.id && 'bg-amber-50/40')}>
-                <span className="w-36 font-mono text-lg font-bold text-slate-950">{s.plateNumber || 'NO PLATE'}</span>
+                <span className="w-36 font-mono text-lg font-bold text-slate-950">{tMaybe(s.plateNumber) || t('NO PLATE')}</span>
                 <span className={cn('rounded px-2 py-0.5 text-xs font-bold', s.status === 'PendingPayment' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-700')}>
-                  {s.status === 'PendingPayment' ? 'Fee requested' : 'Asked to exit'}
+                  {s.status === 'PendingPayment' ? t('Fee requested') : t('Asked to exit')}
                 </span>
                 <span className="font-mono text-xs text-slate-700">{s.code}</span>
-                <span className="text-sm text-slate-700">{s.vehicleTypeName}</span>
-                <span className="text-sm text-slate-700">In since {formatClock(Date.parse(s.entryTime))}</span>
+                <span className="text-sm text-slate-700">{tMaybe(s.vehicleTypeName)}</span>
+                <span className="text-sm text-slate-700">{t('In since {v}', { v: formatClock(Date.parse(s.entryTime)) })}</span>
                 <Button size="sm" className="ml-auto" variant={session?.id === s.id ? 'secondary' : 'default'} onClick={() => openWaiting(s.id, s.plateNumber)}>
-                  <Banknote /> {session?.id === s.id ? 'Open' : 'Collect payment'}
+                  <Banknote /> {session?.id === s.id ? t('Open') : t('Collect payment')}
                 </Button>
               </li>
             ))}
           </ul>
         )}
         {queue.length > QUEUE_SHOWN && (
-          <p className="mt-2 text-xs text-slate-700">{queue.length - QUEUE_SHOWN} more: filter by plate to find them.</p>
+          <p className="mt-2 text-xs text-slate-700">{t('{v} more: filter by plate to find them.', { v: queue.length - QUEUE_SHOWN })}</p>
         )}
       </Panel>
 
       {!session ? (
         <Panel>
           <p className="py-10 text-center text-slate-700">
-            {requestQuote.isPending ? 'Calculating the fee…' : 'Pick a vehicle from the list above, or open one from the gate dashboard.'}
+            {requestQuote.isPending ? t('Calculating the fee…') : t('Pick a vehicle from the list above, or open one from the gate dashboard.')}
           </p>
         </Panel>
       ) : (
@@ -309,81 +310,81 @@ export default function StaffCheckoutPage() {
           {/* Left column: vehicle and fee */}
           <div className="space-y-6">
             <Panel>
-              <SectionTitle icon={<Car />} aside={<span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">{session.status}</span>}>
-                Vehicle
+              <SectionTitle icon={<Car />} aside={<span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">{tMaybe(session.status)}</span>}>
+                {t('Vehicle')}
               </SectionTitle>
               <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-well p-5 ring-1 ring-slate-200">
                 <div>
-                  <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Entry plate</p>
-                  <p className="mt-1 font-mono text-4xl font-bold tracking-[0.12em] text-slate-950">{session.plateNumber || 'NO PLATE'}</p>
+                  <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Entry plate')}</p>
+                  <p className="mt-1 font-mono text-4xl font-bold tracking-[0.12em] text-slate-950">{tMaybe(session.plateNumber) || t('NO PLATE')}</p>
                   <p className="mt-1 text-sm text-amber-500">
-                    {session.vehicleTypeName} • {session.sessionType === 'Reservation' ? `Reservation ${session.reservationCode}` : session.sessionType ?? 'Walk-in'}
+                    {tMaybe(session.vehicleTypeName)} • {session.sessionType === 'Reservation' ? t('Reservation {reservationCode}', { reservationCode: session.reservationCode }) : tMaybe(session.sessionType) ?? t('Walk-in')}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">Bay / zone</p>
-                  <p className="font-mono text-xl font-bold text-slate-950">{session.slotCode ?? session.zoneName ?? '—'}</p>
+                  <p className="text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Bay / zone')}</p>
+                  <p className="font-mono text-xl font-bold text-slate-950">{tMaybe(session.slotCode) ?? tMaybe(session.zoneName) ?? '—'}</p>
                 </div>
               </div>
               <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-lg bg-slate-50 py-2">
-                  <dt className="text-xs font-bold text-slate-700 uppercase">Check-in</dt>
+                  <dt className="text-xs font-bold text-slate-700 uppercase">{t('Check-in')}</dt>
                   <dd className="font-mono font-bold text-slate-950">{formatClock(Date.parse(session.entryTime))}</dd>
                 </div>
                 <div className="rounded-lg bg-slate-50 py-2">
-                  <dt className="text-xs font-bold text-slate-700 uppercase">Now</dt>
+                  <dt className="text-xs font-bold text-slate-700 uppercase">{t('Now')}</dt>
                   <dd className="font-mono font-bold text-slate-950">{formatClock(now)}</dd>
                 </div>
                 <div className="rounded-lg bg-amber-50 py-2">
-                  <dt className="text-xs font-bold text-amber-500 uppercase">Dwell</dt>
+                  <dt className="text-xs font-bold text-amber-500 uppercase">{t('Parking time')}</dt>
                   <dd className="font-mono font-bold text-amber-500">{formatMinutes(quote.durationMinutes)}</dd>
                 </div>
               </dl>
               <div className="mt-4 space-y-2">
-                <label className="block text-xs font-bold tracking-wider text-slate-700 uppercase" htmlFor="exit-plate">Plate read at the exit</label>
+                <label className="block text-xs font-bold tracking-wider text-slate-700 uppercase" htmlFor="exit-plate">{t('Plate read at the exit')}</label>
                 <div className="flex gap-2">
                   <Input id="exit-plate" value={exitPlate} onChange={(e) => setExitPlate(e.target.value.toUpperCase())} className="font-mono uppercase" />
                   <Button variant="secondary" onClick={() => loadQuote(session.id, exitPlate)} disabled={requestQuote.isPending}>
-                    <RefreshCw /> Recheck
+                    <RefreshCw />{' '}{t('Recheck')}
                   </Button>
                 </div>
               </div>
             </Panel>
 
             <Panel>
-              <SectionTitle icon={<ReceiptText />} aside={<span className="font-mono text-xs text-slate-700">{quote.pricingRuleId ? `Rule #${quote.pricingRuleId} v${quote.pricingRuleVersion}` : 'Default tariff'}</span>}>
-                Fee breakdown
+              <SectionTitle icon={<ReceiptText />} aside={<span className="font-mono text-xs text-slate-700">{quote.pricingRuleId ? t('Rule #{pricingRuleId} v{pricingRuleVersion}', { pricingRuleId: quote.pricingRuleId, pricingRuleVersion: quote.pricingRuleVersion }) : t('Default tariff')}</span>}>
+                {t('Fee breakdown')}
               </SectionTitle>
               <ul className="divide-y divide-slate-200">
                 {quote.days.map((d) => (
                   <li key={d.date} className="flex items-center justify-between gap-4 py-3">
                     <div>
-                      <p className="font-medium text-slate-950">{d.date}</p>
-                      <p className="text-sm text-slate-700">{formatMinutes(d.minutes)} • {d.blocks} block{d.blocks === 1 ? '' : 's'}{d.capped ? ' • daily cap' : ''}</p>
+                      <p className="font-medium text-slate-950">{tMaybe(d.date)}</p>
+                      <p className="text-sm text-slate-700">{t('{minutes} • {blocks} block', { minutes: formatMinutes(d.minutes), blocks: d.blocks })}{d.blocks === 1 ? '' : 's'}{d.capped ? t(' • daily cap') : ''}</p>
                     </div>
                     <span className="font-mono text-sm font-bold text-slate-950">{vnd(d.amount)}</span>
                   </li>
                 ))}
                 {quote.days.length === 0 && (
-                  <li className="py-3 text-sm text-slate-700">{quote.zeroFeeReason === 'Whitelist' ? 'Whitelisted plate: free of charge.' : 'No parking fee for this stay.'}</li>
+                  <li className="py-3 text-sm text-slate-700">{quote.zeroFeeReason === 'Whitelist' ? t('Whitelisted plate: free of charge.') : t('No parking fee for this stay.')}</li>
                 )}
-                <FeeLine label="Parking fee" value={quote.fee} />
-                {quote.lostTicketFee > 0 && <FeeLine label="Lost ticket fine" value={quote.lostTicketFee} />}
-                {quote.exitWindowLateFee > 0 && <FeeLine label="Exit window missed" value={quote.exitWindowLateFee} />}
+                <FeeLine label={t('Parking fee')} value={quote.fee} />
+                {quote.lostTicketFee > 0 && <FeeLine label={t('Lost ticket fine')} value={quote.lostTicketFee} />}
+                {quote.exitWindowLateFee > 0 && <FeeLine label={t('Exit window missed')} value={quote.exitWindowLateFee} />}
                 {(quote.penaltyFee ?? 0) > 0 && (
                   <FeeLine
-                    label={quote.penaltyReason === 'Overstay' ? 'Towing penalty (stayed past booking)' : 'Towing penalty (parked in a booked bay)'}
+                    label={quote.penaltyReason === 'Overstay' ? t('Towing penalty (stayed past booking)') : t('Towing penalty (parked in a booked bay)')}
                     value={quote.penaltyFee ?? 0}
                   />
                 )}
-                {quote.depositApplied > 0 && <FeeLine label="Reservation deposit" value={-quote.depositApplied} tone="text-indigo-700" />}
-                {quote.alreadyPaid > 0 && <FeeLine label="Already paid" value={-quote.alreadyPaid} tone="text-indigo-700" />}
+                {quote.depositApplied > 0 && <FeeLine label={t('Reservation deposit')} value={-quote.depositApplied} tone="text-indigo-700" />}
+                {quote.alreadyPaid > 0 && <FeeLine label={t('Already paid')} value={-quote.alreadyPaid} tone="text-indigo-700" />}
               </ul>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-well p-5 ring-1 ring-slate-200">
                 <div>
-                  <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">Amount due</p>
+                  <p className="text-xs font-bold tracking-wider text-amber-500 uppercase">{t('Amount due')}</p>
                   <p className="text-sm text-slate-700">
-                    {quote.depositRefund > 0 ? `${vnd(quote.depositRefund)} of the deposit is refunded at exit` : session.status === 'Paid' ? 'Settled' : 'Ready for payment'}
+                    {quote.depositRefund > 0 ? t('{v} of the deposit is refunded at exit', { v: vnd(quote.depositRefund) }) : session.status === 'Paid' ? t('Settled') : t('Ready for payment')}
                   </p>
                 </div>
                 <p className="font-mono text-4xl font-bold text-amber-500">{vnd(due)}</p>
@@ -394,28 +395,28 @@ export default function StaffCheckoutPage() {
           {/* Right column: payment and barrier */}
           <div className="space-y-6">
             <Panel>
-              <SectionTitle icon={<Banknote />}>Payment</SectionTitle>
+              <SectionTitle icon={<Banknote />}>{t('Payment')}</SectionTitle>
               {due === 0 ? (
                 <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 ring-1 ring-emerald-200">
-                  Nothing to collect{quote.zeroFeeReason ? ` (${quote.zeroFeeReason})` : ''}: the vehicle goes to the Check-out lane.
+                  {t('Nothing to collect')}{quote.zeroFeeReason ? ` (${quote.zeroFeeReason})` : ''}{t(': the vehicle goes to the Check-out lane.')}
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <div className="flex flex-col items-center rounded-xl bg-slate-50 p-4">
                     <div className="flex w-full items-center justify-between text-xs font-bold">
-                      <span className="rounded bg-indigo-100 px-2 py-0.5 text-indigo-700 uppercase">{qr?.provider ?? 'Dynamic QR'}</span>
-                      {qr && <span className={cn('font-mono', qrLeft > 0 ? 'text-indigo-700' : 'text-rose-700')}>{qrLeft > 0 ? `${qrLeft}s wait` : 'Switch allowed'}</span>}
+                      <span className="rounded bg-indigo-100 px-2 py-0.5 text-indigo-700 uppercase">{tMaybe(qr?.provider) ?? t('Dynamic QR')}</span>
+                      {qr && <span className={cn('font-mono', qrLeft > 0 ? 'text-indigo-700' : 'text-rose-700')}>{qrLeft > 0 ? t('{qrLeft}s wait', { qrLeft }) : t('Switch allowed')}</span>}
                     </div>
                     {qr?.payUrl ? (
                       <>
-                        <QrCode value={qr.qrCode || qr.payUrl} label={`${qr.provider} payment QR`} className="mt-4 w-44 ring-1 ring-slate-200" />
-                        <a href={qr.payUrl} target="_blank" rel="noreferrer" className="mt-2 text-xs font-semibold text-indigo-700 underline">Open payment page</a>
+                        <QrCode value={qr.qrCode || qr.payUrl} label={t('{provider} payment QR', { provider: qr.provider })} className="mt-4 w-44 ring-1 ring-slate-200" />
+                        <a href={qr.payUrl} target="_blank" rel="noreferrer" className="mt-2 text-xs font-semibold text-indigo-700 underline">{t('Open payment page')}</a>
                         <Button size="sm" variant="secondary" className="mt-3" onClick={() => void checkGateway()}>
-                          <RefreshCw /> Check gateway (F8)
+                          <RefreshCw />{' '}{t('Check gateway (F8)')}
                         </Button>
                         {/* Back to the payment choices (another QR, the wallet or cash); a late QR payment is refunded */}
                         <Button size="sm" variant="ghost" className="mt-1" onClick={() => setQr(null)}>
-                          <Undo2 /> Back to payment options
+                          <Undo2 />{' '}{t('Back to payment options')}
                         </Button>
                       </>
                     ) : (
@@ -423,31 +424,31 @@ export default function StaffCheckoutPage() {
                         {/* The wallet can only be charged when the session belongs to a customer account */}
                         {session.isCustomerAccount && (
                           <Button className="bg-[#059669] text-white hover:bg-[#047857]" disabled={payOnline.isPending} onClick={() => showQr('Wallet')}>
-                            <CreditCard /> Charge XXIV Wallet
+                            <CreditCard />{' '}{t('Charge XXIV Wallet')}
                           </Button>
                         )}
-                        <VnpayButton aria-label="Show the VNPAY QR code" disabled={payOnline.isPending} onClick={() => showQr('VNPay')} />
+                        <VnpayButton aria-label={t('Show the VNPAY QR code')} disabled={payOnline.isPending} onClick={() => showQr('VNPay')} />
                         <Button className="bg-[#a50064] text-white hover:bg-[#c2187a]" disabled={payOnline.isPending} onClick={() => showQr('MoMo')}>
-                          <QrIcon /> MoMo QR
+                          <QrIcon />{' '}{t('MoMo QR')}
                         </Button>
-                        <p className="text-center text-xs text-slate-700">The guest scans it with their banking or MoMo app.</p>
+                        <p className="text-center text-xs text-slate-700">{t('The guest scans it with their banking or MoMo app.')}</p>
                       </div>
                     )}
                   </div>
 
                   <div className="rounded-xl bg-slate-50 p-4">
                     <div className="flex items-center justify-between">
-                      <p className="font-display text-lg font-bold text-slate-950 uppercase">Cash</p>
+                      <p className="font-display text-lg font-bold text-slate-950 uppercase">{t('Cash')}</p>
                       <Key>F5</Key>
                     </div>
-                    <p className="mt-3 text-xs font-bold tracking-wider text-slate-700 uppercase">Add the notes handed over</p>
+                    <p className="mt-3 text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Add the notes handed over')}</p>
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       {BANKNOTES.slice(0, 6).map((note) => (
                         <button
                           key={note}
                           type="button"
                           onClick={() => addNote(note)}
-                          aria-label={`Add ${formatNumber(note)} VND`}
+                          aria-label={t('Add {v} VND', { v: formatNumber(note) })}
                           className="rounded-lg bg-white py-2 font-mono text-sm font-bold text-slate-950 ring-1 ring-slate-200 transition-colors hover:bg-slate-100"
                         >
                           +{formatNumber(note / 1000)}k
@@ -456,13 +457,13 @@ export default function StaffCheckoutPage() {
                     </div>
                     <div className="mt-2 flex gap-2">
                       <Button size="sm" variant="secondary" className="flex-1" onClick={() => setTendered(due)}>
-                        Exact {formatNumber(due)}
+                        {t('Exact {due}', { due: formatNumber(due) })}
                       </Button>
                       <Button size="sm" variant="ghost" disabled={!tendered} onClick={() => setTendered(0)}>
-                        Clear
+                        {t('Clear')}
                       </Button>
                     </div>
-                    <label htmlFor="cash-received" className="mt-4 block text-xs font-bold tracking-wider text-slate-700 uppercase">Cash received (VND)</label>
+                    <label htmlFor="cash-received" className="mt-4 block text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Cash received (VND)')}</label>
                     <input
                       id="cash-received"
                       ref={cashRef}
@@ -473,7 +474,7 @@ export default function StaffCheckoutPage() {
                       className="mt-2 w-full rounded-lg bg-well px-3 py-2 font-mono text-xl font-bold text-slate-950 ring-1 ring-slate-200 focus-visible:outline-none"
                     />
                     <p className="mt-2 flex justify-between text-sm">
-                      <span className="text-slate-700">{change >= 0 ? 'Change' : 'Still due'}</span>
+                      <span className="text-slate-700">{change >= 0 ? t('Change') : t('Still due')}</span>
                       <span className={cn('font-mono font-bold', change >= 0 ? 'text-amber-500' : 'text-rose-700')}>{vnd(Math.abs(change))}</span>
                     </p>
                     {/* Short of change: ask the Manager for cash (one request at a time) */}
@@ -484,7 +485,7 @@ export default function StaffCheckoutPage() {
                     ) : (
                       lotKey && change > 0 && (
                         <Button size="sm" variant="ghost" className="mt-2 w-full" onClick={() => setAskingCash(true)}>
-                          <HandCoins /> Short of change? Ask the Manager for cash
+                          <HandCoins />{' '}{t('Short of change? Ask the Manager for cash')}
                         </Button>
                       )
                     )}
@@ -499,11 +500,11 @@ export default function StaffCheckoutPage() {
                     )}
                     <p className="mt-1 text-xs text-slate-600">
                       {drawer.data?.status === 'Open'
-                        ? `Drawer ${drawer.data.closeNo} holds ${vnd(drawer.data.cashTotal)}; this payment adds ${vnd(due)} to it.`
-                        : 'No cash drawer open: one opens with this payment, with the standard float.'}
+                        ? t('Drawer {closeNo} holds {v}; this payment adds {v2} to it.', { closeNo: drawer.data.closeNo, v: vnd(drawer.data.cashTotal), v2: vnd(due) })
+                        : t('No cash drawer open: one opens with this payment, with the standard float.')}
                     </p>
                     <Button className="mt-3 w-full" disabled={tendered < due || payCash.isPending} onClick={() => setConfirmCash(true)}>
-                      <Banknote /> Take cash
+                      <Banknote />{' '}{t('Take cash')}
                     </Button>
                   </div>
                 </div>
@@ -513,44 +514,44 @@ export default function StaffCheckoutPage() {
                   variant="ghost"
                   size="sm"
                   className="mt-3"
-                  onClick={() => cancelRequest.mutate(session.id, { onSuccess: () => { toast.info('Payment request cancelled: the vehicle stays parked.'); reset() } })}
+                  onClick={() => cancelRequest.mutate(session.id, { onSuccess: () => { toast.info(t('Payment request cancelled: the vehicle stays parked.')); reset() } })}
                 >
-                  <Undo2 /> Customer backed up (cancel payment)
+                  <Undo2 />{' '}{t('Customer backed up (cancel payment)')}
                 </Button>
               )}
             </Panel>
 
             {/* The barrier is opened from the Check-out lane of the gate dashboard, never from here */}
             <Panel>
-              <SectionTitle icon={<DoorOpen />}>Exit</SectionTitle>
+              <SectionTitle icon={<DoorOpen />}>{t('Exit')}</SectionTitle>
               {blocking.length > 0 && (
                 <div className="mb-3 space-y-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">
                   {blocking.map((a) => (
                     <p key={a.code} className="flex items-start gap-2 text-sm text-rose-800">
-                      <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden /> {a.message}
+                      <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden /> {tMaybe(a.message)}
                     </p>
                   ))}
-                  <p className="text-xs text-slate-700">The Staff at the Check-out lane sees this too and checks it before opening the barrier.</p>
+                  <p className="text-xs text-slate-700">{t('The Staff at the Check-out lane sees this too and checks it before opening the barrier.')}</p>
                 </div>
               )}
               {session.status === 'Paid' ? (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-100 px-5 py-4 ring-1 ring-emerald-300">
                   <p className="font-display text-lg font-bold text-emerald-800">
-                    Paid • {session.plateNumber || session.code} moved to the Check-out lane
-                    {quote.depositRefund > 0 ? ` • refund ${vnd(quote.depositRefund)} at exit` : ''}
+                    {t('Paid •')}{' '}{tMaybe(session.plateNumber) || session.code}{' '}{t('moved to the Check-out lane')}
+                    {quote.depositRefund > 0 ? t(' • refund {v} at exit', { v: vnd(quote.depositRefund) }) : ''}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button variant="secondary" asChild>
                       <Link to="/staff/gate?lane=checkout">
-                        <DoorOpen /> Open the Check-out lane
+                        <DoorOpen />{' '}{t('Open the Check-out lane')}
                       </Link>
                     </Button>
-                    <Button variant="success" onClick={reset}>Next vehicle</Button>
+                    <Button variant="success" onClick={reset}>{t('Next vehicle')}</Button>
                   </div>
                 </div>
               ) : (
                 <p className="rounded-xl bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-900">
-                  Collect {vnd(due)} first. Once paid, the vehicle moves to the Check-out lane of the gate dashboard, where the barrier is opened.
+                  {t('Collect')}{' '}{vnd(due)}{' '}{t('first. Once paid, the vehicle moves to the Check-out lane of the gate dashboard, where the barrier is opened.')}
                 </p>
               )}
             </Panel>
@@ -562,7 +563,7 @@ export default function StaffCheckoutPage() {
         <SectionTitle
           icon={<ReceiptText />}
           aside={
-            <div className="flex flex-wrap rounded-lg bg-slate-50 p-0.5 text-xs font-bold" role="group" aria-label="Payment method">
+            <div className="flex flex-wrap rounded-lg bg-slate-50 p-0.5 text-xs font-bold" role="group" aria-label={t('Payment method')}>
               {HISTORY_METHODS.map(({ value, label }) => (
                 <button
                   key={value || 'all'}
@@ -571,43 +572,43 @@ export default function StaffCheckoutPage() {
                   onClick={() => { setMethodFilter(value); setHistoryPage(1) }}
                   className={cn('rounded-md px-3 py-1', methodFilter === value ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-700')}
                 >
-                  {label}
+                  {tMaybe(label)}
                 </button>
               ))}
             </div>
           }
         >
-          Payment history
+          {t('Payment history')}
         </SectionTitle>
-        <label className="sr-only" htmlFor="history-plate">Search by plate</label>
-        <Input id="history-plate" value={historyPlate} onChange={(e) => { setHistoryPlate(e.target.value); setHistoryPage(1) }} placeholder="Search by plate" />
-        {lotKey && history.isLoading && <p className="mt-3 text-sm text-slate-700">Loading payments…</p>}
-        {history.isError && <p className="mt-3 text-sm text-rose-700">Unable to load payments: {getErrorMessage(history.error)}</p>}
-        {history.data && history.data.items.length === 0 && <p className="mt-3 text-sm text-slate-700">No payments yet.</p>}
+        <label className="sr-only" htmlFor="history-plate">{t('Search by plate')}</label>
+        <Input id="history-plate" value={historyPlate} onChange={(e) => { setHistoryPlate(e.target.value); setHistoryPage(1) }} placeholder={t('Search by plate')} />
+        {lotKey && history.isLoading && <p className="mt-3 text-sm text-slate-700">{t('Loading payments…')}</p>}
+        {history.isError && <p className="mt-3 text-sm text-rose-700">{t('Unable to load payments:')}{' '}{tMaybe(getErrorMessage(history.error))}</p>}
+        {history.data && history.data.items.length === 0 && <p className="mt-3 text-sm text-slate-700">{t('No payments yet.')}</p>}
         {history.data && history.data.items.length > 0 && (
           <div className="mt-3 overflow-x-auto">
             {/* min-w: on a phone the table scrolls sideways instead of squeezing the columns into each other */}
             <table className="w-full min-w-[52rem] text-left text-sm [&_td]:pr-4 [&_th]:pr-4">
               <thead className="text-xs font-bold tracking-wider text-slate-700 uppercase">
-                <tr><th className="py-2">Paid at</th><th>Plate</th><th>Session</th><th>Method</th><th className="text-right">Amount</th><th className="pl-6">Collected by</th></tr>
+                <tr><th className="py-2">{t('Paid at')}</th><th>{t('Plate')}</th><th>{t('Session')}</th><th>{t('Method')}</th><th className="text-right">{t('Amount')}</th><th className="pl-6">{t('Collected by')}</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {history.data.items.map((p) => (
                   <tr key={p.id}>
-                    <td className="py-2 font-mono">{p.paidAt ? new Date(p.paidAt).toLocaleString() : '—'}</td>
+                    <td className="py-2 font-mono">{p.paidAt ? new Date(p.paidAt).toLocaleString(currentLocale()) : '—'}</td>
                     <td className="font-mono font-bold text-slate-950">
-                      {p.plateNumber || 'No plate'}
+                      {tMaybe(p.plateNumber) || t('No plate')}
                       {p.isSimulated && (
-                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 font-sans text-[10px] font-bold tracking-wide text-amber-700 uppercase" title="Demo vehicle sent by the Admin parking simulation">
-                          Simulated
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 font-sans text-[10px] font-bold tracking-wide text-amber-700 uppercase" title={t('Demo vehicle sent by the Admin parking simulation')}>
+                          {t('Simulated')}
                         </span>
                       )}
                     </td>
-                    <td className="font-mono text-xs">{p.sessionCode ?? '—'}</td>
+                    <td className="font-mono text-xs">{tMaybe(p.sessionCode) ?? '—'}</td>
                     <td>
-                      <span className="font-semibold text-slate-950">{METHOD_LABEL[p.method] ?? p.method}</span>
+                      <span className="font-semibold text-slate-950">{tMaybe(METHOD_LABEL[p.method]) ?? tMaybe(p.method)}</span>
                       <span className="block text-xs text-slate-600">
-                        {CHANNEL_LABEL[p.channel ?? ''] ?? p.channel ?? ''}
+                        {tMaybe(CHANNEL_LABEL[p.channel ?? '']) ?? tMaybe(p.channel) ?? ''}
                         {p.status !== 'Succeeded' ? ` · ${p.status === 'RefundPending' ? 'refund pending' : p.status.toLowerCase()}` : ''}
                       </span>
                     </td>
@@ -621,9 +622,9 @@ export default function StaffCheckoutPage() {
         )}
         {history.data && history.data.totalCount > 0 && (
           <div className="mt-3 flex items-center gap-3 text-sm">
-            <Button variant="secondary" size="sm" disabled={historyPage <= 1} onClick={() => setHistoryPage((page) => page - 1)}>Previous</Button>
-            <span>Page {historyPage} · {history.data.totalCount} payments</span>
-            <Button variant="secondary" size="sm" disabled={historyPage * history.data.pageSize >= history.data.totalCount} onClick={() => setHistoryPage((page) => page + 1)}>Next</Button>
+            <Button variant="secondary" size="sm" disabled={historyPage <= 1} onClick={() => setHistoryPage((page) => page - 1)}>{t('Previous')}</Button>
+            <span>{t('Page {historyPage} · {totalCount} payments', { historyPage, totalCount: history.data.totalCount })}</span>
+            <Button variant="secondary" size="sm" disabled={historyPage * history.data.pageSize >= history.data.totalCount} onClick={() => setHistoryPage((page) => page + 1)}>{t('Next')}</Button>
           </div>
         )}
       </Panel>
@@ -632,16 +633,16 @@ export default function StaffCheckoutPage() {
         <ConfirmDialog
           open={confirmCash}
           onOpenChange={setConfirmCash}
-          title="Confirm cash payment"
-          confirmLabel={payCash.isPending ? 'Recording…' : 'Confirm payment'}
+          title={t('Confirm cash payment')}
+          confirmLabel={payCash.isPending ? t('Recording…') : t('Confirm payment')}
           pending={payCash.isPending}
           onConfirm={takeCash}
           description={
             <dl className="mt-2 space-y-1.5 text-sm">
-              <div className="flex justify-between"><dt>Vehicle</dt><dd className="font-mono font-bold">{session.plateNumber || 'No plate'} · {session.code}</dd></div>
-              <div className="flex justify-between"><dt>Amount due</dt><dd className="font-mono font-bold">{vnd(due)}</dd></div>
-              <div className="flex justify-between"><dt>Cash received</dt><dd className="font-mono font-bold">{vnd(tendered)}</dd></div>
-              <div className="flex justify-between border-t border-slate-200 pt-1.5"><dt>Change to give back</dt><dd className="font-mono font-bold">{vnd(Math.max(0, change))}</dd></div>
+              <div className="flex justify-between"><dt>{t('Vehicle')}</dt><dd className="font-mono font-bold">{tMaybe(session.plateNumber) || t('No plate')} · {session.code}</dd></div>
+              <div className="flex justify-between"><dt>{t('Amount due')}</dt><dd className="font-mono font-bold">{vnd(due)}</dd></div>
+              <div className="flex justify-between"><dt>{t('Cash received')}</dt><dd className="font-mono font-bold">{vnd(tendered)}</dd></div>
+              <div className="flex justify-between border-t border-slate-200 pt-1.5"><dt>{t('Change to give back')}</dt><dd className="font-mono font-bold">{vnd(Math.max(0, change))}</dd></div>
             </dl>
           }
         />
@@ -653,7 +654,7 @@ export default function StaffCheckoutPage() {
 function FeeLine({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
     <li className="flex items-center justify-between gap-4 py-3">
-      <span className={cn('font-medium text-slate-950', tone)}>{label}</span>
+      <span className={cn('font-medium text-slate-950', tone)}>{tMaybe(label)}</span>
       <span className={cn('font-mono text-sm font-bold text-slate-950', tone)}>{value < 0 ? `−${vnd(-value)}` : vnd(value)}</span>
     </li>
   )

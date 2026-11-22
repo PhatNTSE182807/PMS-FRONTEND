@@ -18,7 +18,7 @@
   --auth-error: #ffb4ab;
   --auth-success: #6fdba8;
   --auth-body-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --auth-headline-font: 'Plus Jakarta Sans', var(--auth-body-font);
+  --auth-headline-font: 'Be Vietnam Pro', var(--auth-body-font);
 
   display: flex;
   min-height: 100vh;
@@ -475,6 +475,24 @@
   outline-offset: 2px;
 }
 
+.google-signin__notice {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--auth-on-variant);
+}
+
+.google-signin__notice a {
+  font-weight: 500;
+  color: var(--auth-gold);
+}
+
+.google-signin__notice a:hover {
+  color: var(--auth-gold-fixed);
+  text-decoration: underline;
+}
+
 .auth-shell__link {
   padding: 0;
   border: none;
@@ -840,29 +858,6 @@ html[data-theme='light'] .auth-shell__dialog {
   }
 }
 
-/* Sun/moon button at the top of the form column */
-.auth-shell__theme {
-  position: absolute;
-  top: 1rem;
-  left: 1.25rem;
-  z-index: 2;
-  display: flex;
-  padding: 0.4rem;
-  border: none;
-  background: transparent;
-  color: var(--auth-on-variant);
-  cursor: pointer;
-}
-
-.auth-shell__theme:hover {
-  color: var(--auth-on-surface);
-}
-
-.auth-shell__theme svg {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
 /* The legacy layout around the sign-in screens (App.css: warm sand background and glows) shows for a moment
    while the screen fades in: give it the sign-in page color in both modes so nothing flashes */
 .pms-app:has(.auth-shell) {
@@ -881,13 +876,4 @@ html[data-theme='light'] .pms-app:has(.auth-shell) {
 html[data-theme='light'] .auth-shell__dialog .auth-shell__input {
   border-color: #e2e2de;
   background: var(--auth-container-high);
-}
-
-/* Phones and tablets: the form column sits under the photo, so its top-right corner is free (the API badge
-   floats over the photo): the toggle moves there */
-@media (max-width: 1023px) {
-  .auth-shell__theme {
-    right: 1.25rem;
-    left: auto;
-  }
 }

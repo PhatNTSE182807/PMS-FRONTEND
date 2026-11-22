@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { GOOGLE_CLIENT_ID, startGoogleSignIn } from '../lib/google-identity';
+import { t, tMaybe } from '@/i18n'
 
 const LABELS = {
   signin_with: 'Sign in with Google',
@@ -47,9 +48,16 @@ export default function GoogleSignInButton({ rememberMe = false, text = 'continu
       <button type="button" className="google-signin__dark" onClick={signIn} disabled={leaving} aria-busy={leaving}>
         <span className="google-signin__face">
           <GoogleMark />
-          {leaving ? 'Opening Google...' : LABELS[text]}
+          {leaving ? t('Opening Google...') : tMaybe(LABELS[text])}
         </span>
       </button>
+      {/* The first Google sign-in creates an account without the form's checkbox, so consent is stated here */}
+      <p className="google-signin__notice">
+        {t('By continuing with Google, you agree to the')}{' '}
+        <a href="/terms" target="_blank" rel="noopener">{t('Terms of Service')}</a>{' '}
+        {t('and')}{' '}
+        <a href="/privacy" target="_blank" rel="noopener">{t('Privacy Policy')}</a>.
+      </p>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { ArrowLeftRight, Bell, CalendarX, Check, CheckCheck, CircleCheck, HandCoins, LogIn, LogOut, ShieldAlert, ShieldCheck, ShieldX, Tag, TriangleAlert, Truck, Undo2 } from 'lucide-react'
 import { useNotifications, useMarkRead, useMarkAllRead, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
+import { t, tMaybe } from '@/i18n'
 
 const ICON_MAP: Record<string, typeof Bell> = {
   VehicleApproved: ShieldCheck,
@@ -46,15 +47,15 @@ export function NotificationCard() {
       <div className="cx-card__head" style={{ marginBottom: '1rem' }}>
         <div>
           <h2 className="cx-card__title" id="notifications-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Bell size={18} style={{ color: 'var(--cx-gold, #f59e0b)' }} aria-hidden /> Activity Notifications
+            <Bell size={18} style={{ color: 'var(--cx-gold, #f59e0b)' }} aria-hidden />{' '}{t('Activity Notifications')}
             {unreadCount > 0 && (
               <span className="cx-chip cx-chip--gold" style={{ fontSize: '0.7rem', padding: '0.1rem 0.45rem' }}>
-                {unreadCount} new
+                {t('{unreadCount} new', { unreadCount })}
               </span>
             )}
           </h2>
           <p className="cx-card__subtitle">
-            Vehicle approvals, gate check-in &amp; check-out events, price changes, booked bay updates
+            {t('Vehicle approvals, gate check-in & check-out events, price changes, booked bay updates')}
           </p>
         </div>
 
@@ -66,7 +67,7 @@ export function NotificationCard() {
             disabled={markAllRead.isPending}
             style={{ fontSize: '0.75rem' }}
           >
-            <CheckCheck size={14} /> Mark all read
+            <CheckCheck size={14} />{' '}{t('Mark all read')}
           </button>
         )}
       </div>
@@ -74,14 +75,14 @@ export function NotificationCard() {
       <div className="cx-stack" style={{ gap: '0.6rem' }}>
         {isLoading && (
           <p className="cx-card__subtitle" style={{ padding: '1rem 0', textAlign: 'center' }}>
-            Loading activity notifications…
+            {t('Loading activity notifications…')}
           </p>
         )}
 
         {!isLoading && items.length === 0 && (
           <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--cx-text-muted)' }}>
             <ShieldAlert size={28} style={{ opacity: 0.3, margin: '0 auto 0.5rem' }} />
-            <p style={{ margin: 0, fontSize: '0.85rem' }}>No recent activity notifications.</p>
+            <p style={{ margin: 0, fontSize: '0.85rem' }}>{t('No recent activity notifications.')}</p>
           </div>
         )}
 
@@ -130,13 +131,13 @@ export function NotificationCard() {
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem', flexWrap: 'wrap' }}>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--cx-text, #ffffff)' }}>{n.title}</strong>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--cx-text, #ffffff)' }}>{tMaybe(n.title)}</strong>
                   <span className={`cx-chip ${badge.className}`} style={{ fontSize: '0.65rem', padding: '0.05rem 0.35rem' }}>
-                    {badge.label}
+                    {tMaybe(badge.label)}
                   </span>
                 </div>
                 <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.785rem', color: 'var(--cx-text-muted, #9ca3af)', lineHeight: 1.35 }}>
-                  {n.message}
+                  {tMaybe(n.message)}
                 </p>
                 <span style={{ fontSize: '0.7rem', color: 'var(--cx-text-subtle, #6b7280)' }}>
                   {timeAgo(n.createdAt)}
@@ -147,7 +148,7 @@ export function NotificationCard() {
                 <button
                   type="button"
                   className="cx-btn cx-btn--sm cx-btn--ghost"
-                  title="Mark as read"
+                  title={t('Mark as read')}
                   onClick={() => markRead.mutate(n.id)}
                   style={{ padding: '0.25rem', height: 'auto', flexShrink: 0 }}
                 >

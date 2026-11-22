@@ -14,8 +14,9 @@ import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CashDrawerDTO, CashTopUpDTO } from '@/types/cashDrawer.dto'
 import type { ManagedLot } from '@/types/lot-management.dto'
+import { t, tMaybe, localDateFormat } from '@/i18n'
 
-const dayClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const dayClock = localDateFormat({ hour: '2-digit', minute: '2-digit' })
 
 /** One Staff drawer handed in, waiting for the Manager: the cash total and the confirmation. */
 function CashCloseCard({ close }: { close: CashDrawerDTO }) {
@@ -31,37 +32,37 @@ function CashCloseCard({ close }: { close: CashDrawerDTO }) {
     <Card className={cn('p-4', off && 'ring-amber-300')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-semibold text-slate-950">{close.staffName ?? 'Staff'} • drawer {close.closeNo}</p>
+          <p className="font-semibold text-slate-950">{t('{v} • drawer {closeNo}', { v: close.staffName ?? 'Staff', closeNo: close.closeNo })}</p>
           <p className="text-xs text-slate-600">
-            {close.businessDate}
-            {close.closedAt ? ` • closed at ${dayClock.format(Date.parse(close.closedAt))}` : ''}
+            {tMaybe(close.businessDate)}
+            {close.closedAt ? t(' • closed at {v}', { v: dayClock.format(Date.parse(close.closedAt)) }) : ''}
           </p>
         </div>
-        <span className="font-mono text-lg font-bold text-amber-500">{formatNumber(close.cashTotal)} VND</span>
+        <span className="font-mono text-lg font-bold text-amber-500">{t('{cashTotal} VND', { cashTotal: formatNumber(close.cashTotal) })}</span>
       </div>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
-        <div><dt className="text-xs text-slate-600">Float</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.floatTotal)}</dd></div>
-        <div><dt className="text-xs text-slate-600">Cash taken ({close.cashPayments})</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.cashCollected)}</dd></div>
-        <div><dt className="text-xs text-slate-600">Added by you</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.topUpTotal)}</dd></div>
+        <div><dt className="text-xs text-slate-600">{t('Float')}</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.floatTotal)}</dd></div>
+        <div><dt className="text-xs text-slate-600">{t('Cash taken ({cashPayments})', { cashPayments: close.cashPayments })}</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.cashCollected)}</dd></div>
+        <div><dt className="text-xs text-slate-600">{t('Added by you')}</dt><dd className="font-mono font-bold text-slate-950">{formatNumber(close.topUpTotal)}</dd></div>
       </dl>
       {counted && (
         <p className={cn('mt-2 text-sm', off ? 'text-rose-700' : 'text-slate-700')}>
-          Counted {formatNumber(close.countedTotal ?? 0)} VND: {difference > 0 ? '+' : ''}
-          {formatNumber(difference)} VND off.
+          {t('Counted {v} VND:', { v: formatNumber(close.countedTotal ?? 0) })}{' '}{difference > 0 ? '+' : ''}
+          {t('{difference} VND off.', { difference: formatNumber(difference) })}
         </p>
       )}
-      {close.differenceReason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">Staff reason:</strong> {close.differenceReason}</p>}
+      {close.differenceReason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">{t('Staff reason:')}</strong> {tMaybe(close.differenceReason)}</p>}
       {off && (
-        <Input className="mt-3" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="What you checked (required for a difference)" aria-label="Confirmation note" />
+        <Input className="mt-3" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder={t('What you checked (required for a difference)')} aria-label={t('Confirmation note')} />
       )}
       <div className="mt-3 flex justify-end">
         <Button
           size="sm"
           disabled={own || confirm.isPending || (off && !note.trim())}
-          title={own ? 'You closed this drawer: another Manager confirms it' : undefined}
+          title={own ? t('You closed this drawer: another Manager confirms it') : undefined}
           onClick={() => confirm.mutate({ id: close.id!, note: note.trim() || undefined })}
         >
-          <CircleCheck /> Confirm handover
+          <CircleCheck />{' '}{t('Confirm handover')}
         </Button>
       </div>
     </Card>
@@ -74,16 +75,16 @@ function CashCloses({ lot }: { lot: ManagedLot }) {
   return (
     <section className="space-y-3" aria-labelledby="cash-closes-title">
       <h2 id="cash-closes-title" className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-        <Banknote className="size-5 text-amber-500" aria-hidden /> Cash drawers to confirm
+        <Banknote className="size-5 text-amber-500" aria-hidden />{' '}{t('Cash drawers to confirm')}
       </h2>
       {closes.isPending && <Skeleton className="h-28 rounded-xl" />}
       {closes.isError && (
         <Card>
-          <ErrorState message={getErrorMessage(closes.error)} onRetry={() => closes.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(closes.error))} onRetry={() => closes.refetch()} />
         </Card>
       )}
       {closes.isSuccess && closes.data.length === 0 && (
-        <Card className="p-6 text-center text-sm text-slate-600">No Staff cash drawer is waiting for you.</Card>
+        <Card className="p-6 text-center text-sm text-slate-600">{t('No Staff cash drawer is waiting for you.')}</Card>
       )}
       <div className="grid gap-3 lg:grid-cols-2">
         {(closes.data ?? []).map((close) => (
@@ -105,35 +106,35 @@ function CashTopUpCard({ request }: { request: CashTopUpDTO }) {
     <Card className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-semibold text-slate-950">{request.staffName ?? 'Staff'} • drawer {request.closeNo}</p>
-          <p className="text-xs text-slate-600">Asked at {dayClock.format(Date.parse(request.createdAt))}</p>
+          <p className="font-semibold text-slate-950">{t('{v} • drawer {closeNo}', { v: request.staffName ?? 'Staff', closeNo: request.closeNo })}</p>
+          <p className="text-xs text-slate-600">{t('Asked at {v}', { v: dayClock.format(Date.parse(request.createdAt)) })}</p>
         </div>
-        <span className="font-mono text-lg font-bold text-amber-500">{formatNumber(request.total)} VND</span>
+        <span className="font-mono text-lg font-bold text-amber-500">{t('{total} VND', { total: formatNumber(request.total) })}</span>
       </div>
-      {request.reason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">Staff reason:</strong> {request.reason}</p>}
-      {!request.drawerOpen && <p className="mt-2 text-sm text-rose-700">The Staff already closed this drawer: reject it and let them ask again.</p>}
+      {request.reason && <p className="mt-2 text-sm text-slate-700"><strong className="text-slate-950">{t('Staff reason:')}</strong> {tMaybe(request.reason)}</p>}
+      {!request.drawerOpen && <p className="mt-2 text-sm text-rose-700">{t('The Staff already closed this drawer: reject it and let them ask again.')}</p>}
       {rejecting ? (
         <div className="mt-3 space-y-2">
-          <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Reason for the Staff (required)" aria-label="Rejection reason" />
+          <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder={t('Reason for the Staff (required)')} aria-label={t('Rejection reason')} />
           <div className="flex flex-wrap justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={() => setRejecting(false)}>Back</Button>
+            <Button size="sm" variant="outline" onClick={() => setRejecting(false)}>{t('Back')}</Button>
             <Button size="sm" variant="destructive" disabled={!note.trim() || decide.isPending} onClick={() => decide.mutate({ id: request.id, approve: false, note: note.trim() })}>
-              <Ban /> Reject request
+              <Ban />{' '}{t('Reject request')}
             </Button>
           </div>
         </div>
       ) : (
         <div className="mt-3 flex justify-end gap-2">
           <Button size="sm" variant="outline" disabled={own || decide.isPending} onClick={() => setRejecting(true)}>
-            <Ban /> Reject
+            <Ban />{' '}{t('Reject')}
           </Button>
           <Button
             size="sm"
             disabled={own || !request.drawerOpen || decide.isPending}
-            title={own ? 'You made this request: another Manager decides on it' : undefined}
+            title={own ? t('You made this request: another Manager decides on it') : undefined}
             onClick={() => decide.mutate({ id: request.id, approve: true })}
           >
-            <CircleCheck /> Approve & hand over
+            <CircleCheck />{' '}{t('Approve & hand over')}
           </Button>
         </div>
       )}
@@ -148,12 +149,12 @@ function CashTopUps({ lot }: { lot: ManagedLot }) {
   return (
     <section className="space-y-3" aria-labelledby="cash-top-ups-title">
       <h2 id="cash-top-ups-title" className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-        <HandCoins className="size-5 text-amber-500" aria-hidden /> Cash requests from Staff
+        <HandCoins className="size-5 text-amber-500" aria-hidden />{' '}{t('Cash requests from Staff')}
       </h2>
       {requests.isPending && <Skeleton className="h-28 rounded-xl" />}
       {requests.isError && (
         <Card>
-          <ErrorState message={getErrorMessage(requests.error)} onRetry={() => requests.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(requests.error))} onRetry={() => requests.refetch()} />
         </Card>
       )}
       <div className="grid gap-3 lg:grid-cols-2">
@@ -172,12 +173,12 @@ function Approvals({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Approval Queue"
+        title={t('Approval Queue')}
        
         actions={
           <span className="rounded-xl bg-slate-50 px-4 py-3 text-right ring-1 ring-slate-200">
-            <span className="block text-xs font-bold tracking-wider text-slate-700 uppercase">Waiting</span>
-            <span className="font-display text-2xl font-bold text-amber-500">{(cashCloses.data?.length ?? 0) + (cashTopUps.data?.length ?? 0)} requests</span>
+            <span className="block text-xs font-bold tracking-wider text-slate-700 uppercase">{t('Waiting')}</span>
+            <span className="font-display text-2xl font-bold text-amber-500">{t('{v} requests', { v: (cashCloses.data?.length ?? 0) + (cashTopUps.data?.length ?? 0) })}</span>
           </span>
         }
       />

@@ -30,6 +30,7 @@ import { checkBookingTimes, describeWindow, toLocalInput, type BookingTimes } fr
 import { formatNumber } from '@/lib/format'
 import type { PaymentProvider, ReservationDTO, ReservationStatus } from '@/types/operations.dto'
 import { VnpayButton } from '@/components/payment/VnpayButton'
+import { t as tr, tMaybe, localDateFormat } from '@/i18n'
 
 type Filter = 'ALL' | 'CONFIRMED' | 'PENDING_DEPOSIT' | 'COMPLETED' | 'CANCELLED'
 
@@ -47,7 +48,7 @@ const GROUP: Record<ReservationStatus, Exclude<Filter, 'ALL'>> = {
 
 const STATUS_LABEL: Record<ReservationStatus, string> = {
   PendingDeposit: 'Pending deposit',
-  Confirmed: 'Confirmed & guaranteed',
+  Confirmed: 'Confirmed',
   CheckedIn: 'Checked in',
   Completed: 'Completed',
   Cancelled: 'Cancelled',
@@ -64,11 +65,11 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'CANCELLED', label: 'Cancelled / Expired' },
 ]
 
-const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const time = localDateFormat({ hour: '2-digit', minute: '2-digit' })
 
 /** Rows per page of the Booking History table. */
 const HISTORY_PAGE_SIZE = 10
-const day = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+const day = localDateFormat({ day: '2-digit', month: 'short', year: 'numeric' })
 const vnd = (value: number) => `${formatNumber(value)} VND`
 
 function relativeDay(ts: number, now: number) {
@@ -115,44 +116,44 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
     <section className="cx-card cx-booking" aria-labelledby="featured-title">
       <div className="cx-booking__main">
         <div className="cx-booking__chips">
-          <span className="cx-chip cx-chip--gold"><span className="cx-dot cx-dot--gold" aria-hidden="true" /> {STATUS_LABEL[booking.status]}</span>
+          <span className="cx-chip cx-chip--gold"><span className="cx-dot cx-dot--gold" aria-hidden="true" /> {tMaybe(STATUS_LABEL[booking.status])}</span>
           {booking.status === 'Confirmed' && (
             <span className="cx-chip cx-chip--teal">
-              <Clock aria-hidden /> {windowOpen ? `Check-in window closes in ${countdown(msLeft)}` : `Check-in opens in ${countdown(msLeft)}`}
+              <Clock aria-hidden /> {windowOpen ? tr('Check-in window closes in {v}', { v: countdown(msLeft) }) : tr('Check-in opens in {v}', { v: countdown(msLeft) })}
             </span>
           )}
           <span className="cx-chip cx-chip--muted cx-mono">#{booking.code}</span>
         </div>
-        <h2 className="cx-booking__title" id="featured-title">{booking.parkingLotName}</h2>
+        <h2 className="cx-booking__title" id="featured-title">{tMaybe(booking.parkingLotName)}</h2>
         <p className="cx-booking__addr">
-          <MapPin aria-hidden /> {booking.zoneName ?? 'Car deck'}
+          <MapPin aria-hidden /> {tMaybe(booking.zoneName) ?? tr('Car deck')}
         </p>
 
         <div className="cx-tiles">
           <div className="cx-tile">
-            <span className="cx-label">Bay assigned</span>
-            <strong className="cx-tile__value is-gold">{booking.slotCode}</strong>
-            <span className="cx-tile__sub">Reserved bay</span>
+            <span className="cx-label">{tr('Bay assigned')}</span>
+            <strong className="cx-tile__value is-gold">{tMaybe(booking.slotCode)}</strong>
+            <span className="cx-tile__sub">{tr('Reserved bay')}</span>
           </div>
           <div className="cx-tile">
-            <span className="cx-label">Vehicle</span>
-            <strong className="cx-tile__value cx-mono">{booking.plateNumber ?? '—'}</strong>
-            <span className="cx-tile__sub">QR or verified plate at the gate</span>
+            <span className="cx-label">{tr('Vehicle')}</span>
+            <strong className="cx-tile__value cx-mono">{tMaybe(booking.plateNumber) ?? '—'}</strong>
+            <span className="cx-tile__sub">{tr('QR or verified plate at the gate')}</span>
           </div>
           <div className="cx-tile">
-            <span className="cx-label">Arrival time</span>
+            <span className="cx-label">{tr('Arrival time')}</span>
             <strong className="cx-tile__value is-teal">{time.format(Date.parse(booking.arrivalTime))}</strong>
             <span className="cx-tile__sub">
               {describeWindow(booking.arrivalTime, booking.departureTime, now)}
-              {booking.bookingMode === 'PayAsYouGo' ? ' (pay as you go)' : ''}
+              {booking.bookingMode === 'PayAsYouGo' ? tr(' (pay as you go)') : ''}
             </span>
           </div>
           {/* Without a deposit there is nothing to deduct, but the bay is held for a shorter time */}
           <div className="cx-tile">
-            <span className="cx-label">{booking.hasDeposit ? 'Deposit paid' : 'Deposit'}</span>
-            <strong className="cx-tile__value">{booking.hasDeposit ? vnd(booking.depositAmount) : 'No deposit'}</strong>
+            <span className="cx-label">{booking.hasDeposit ? tr('Deposit paid') : tr('Deposit')}</span>
+            <strong className="cx-tile__value">{booking.hasDeposit ? vnd(booking.depositAmount) : tr('No deposit')}</strong>
             <span className="cx-tile__sub" style={{ color: 'var(--cx-gold)' }}>
-              {booking.hasDeposit ? 'Deductible at exit' : 'Nothing to pay now'} • bay held {booking.holdMinutes} min after arrival
+              {booking.hasDeposit ? tr('Deductible at exit') : tr('Nothing to pay now')}{' '}{tr('• bay held {holdMinutes} min after arrival', { holdMinutes: booking.holdMinutes })}
             </span>
           </div>
         </div>
@@ -172,16 +173,16 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
             }}
           >
             <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`edit-${booking.id}`} disabled={update.isPending} holdMinutes={booking.holdMinutes} />
-            {timeError && <p className="cx-error" role="alert">{timeError}</p>}
+            {timeError && <p className="cx-error" role="alert">{tMaybe(timeError)}</p>}
             <div className="cx-booking__actions">
-              <button type="submit" className="cx-btn cx-btn--teal" disabled={update.isPending}>Save</button>
-              <button type="button" className="cx-btn" onClick={() => setEditing(false)}>Keep</button>
+              <button type="submit" className="cx-btn cx-btn--teal" disabled={update.isPending}>{tr('Save')}</button>
+              <button type="button" className="cx-btn" onClick={() => setEditing(false)}>{tr('Keep')}</button>
             </div>
           </form>
         ) : (
           <div className="cx-booking__actions">
             <Link to="/me#map" className="cx-btn cx-btn--teal">
-              <Car aria-hidden /> View on the 3D map
+              <Car aria-hidden />{' '}{tr('View on the 3D map')}
             </Link>
             <button
               type="button"
@@ -192,57 +193,57 @@ function FeaturedBooking({ booking, now }: { booking: ReservationDTO; now: numbe
                 setEditing(true)
               }}
             >
-              <SlidersHorizontal aria-hidden /> Change date &amp; time
+              <SlidersHorizontal aria-hidden />{' '}{tr('Change date & time')}
             </button>
             <button type="button" className="cx-btn cx-btn--danger cx-booking__cancel" disabled={!booking.canCancel || cancel.isPending} onClick={confirmCancel}>
-              <CircleX aria-hidden /> Cancel reservation
+              <CircleX aria-hidden />{' '}{tr('Cancel reservation')}
             </button>
           </div>
         )}
         <p className="cx-booking__note">
           {booking.hasDeposit
-            ? `* Full deposit refund when cancelled at least 30 minutes before arrival; none after that. Not checked in by ${time.format(Date.parse(booking.checkInUntil))}: the booking becomes a no-show and the deposit is kept.`
-            : `* Booked without a deposit: cancel any time for free. Not checked in by ${time.format(Date.parse(booking.checkInUntil))}: the bay is released for other drivers.`}
+            ? tr('* Full deposit refund when cancelled at least 30 minutes before arrival; none after that. Not checked in by {v}: the booking becomes a no-show and the deposit is kept.', { v: time.format(Date.parse(booking.checkInUntil)) })
+            : tr('* Booked without a deposit: cancel any time for free. Not checked in by {v}: the bay is released for other drivers.', { v: time.format(Date.parse(booking.checkInUntil)) })}
         </p>
       </div>
 
       {parked ? (
-        <aside className="cx-pass" aria-label="Exit gate pass">
+        <aside className="cx-pass" aria-label={tr('Exit gate pass')}>
           <div className="cx-pass__head">
-            <span className="cx-eyebrow"><QrIcon size={14} aria-hidden /> Exit gate pass</span>
-            <span className="cx-label">{parked.exitPass.prepaid ? 'Paid' : 'Signed QR'}</span>
+            <span className="cx-eyebrow"><QrIcon size={14} aria-hidden />{' '}{tr('Exit gate pass')}</span>
+            <span className="cx-label">{parked.exitPass.prepaid ? tr('Paid') : tr('Signed QR')}</span>
           </div>
           <div className="cx-pass__frame">
-            <QrCode value={parked.exitPass.token} label={`Exit pass ${parked.exitPass.sessionCode}`} className="cx-pass__qr" />
+            <QrCode value={parked.exitPass.token} label={tr('Exit pass {sessionCode}', { sessionCode: parked.exitPass.sessionCode })} className="cx-pass__qr" />
           </div>
-          <span className="cx-label" style={{ textAlign: 'center' }}>Exit pass code</span>
-          <span className="cx-pass__token cx-mono">{parked.exitPass.sessionCode}</span>
+          <span className="cx-label" style={{ textAlign: 'center' }}>{tr('Exit pass code')}</span>
+          <span className="cx-pass__token cx-mono">{tMaybe(parked.exitPass.sessionCode)}</span>
           <p className="cx-pass__hint">
             {parked.exitPass.prepaid
-              ? 'Paid. Show this pass at the exit lane before your exit window ends.'
-              : 'Your vehicle is parked. Show this pass at the exit lane and pay there, or prepay on Active Sessions to drive straight out.'}
+              ? tr('Paid. Show this pass at the exit lane before your exit window ends.')
+              : tr('Your vehicle is parked. Show this pass at the exit lane and pay there, or prepay on Active Sessions to drive straight out.')}
           </p>
         </aside>
       ) : (
-        <aside className="cx-pass" aria-label="Check-in QR">
+        <aside className="cx-pass" aria-label={tr('Check-in QR')}>
           <div className="cx-pass__head">
-            <span className="cx-eyebrow"><ScanLine size={14} aria-hidden /> Check-in pass</span>
-            <span className="cx-label">Signed QR</span>
+            <span className="cx-eyebrow"><ScanLine size={14} aria-hidden />{' '}{tr('Check-in pass')}</span>
+            <span className="cx-label">{tr('Signed QR')}</span>
           </div>
           <div className="cx-pass__frame">
             {qr.data ? (
-              <QrCode value={qr.data.qrPayload} label={`Reservation QR ${booking.code}`} className="cx-pass__qr" />
+              <QrCode value={qr.data.qrPayload} label={tr('Reservation QR {code}', { code: booking.code })} className="cx-pass__qr" />
             ) : booking.status === 'Confirmed' && !qr.isError ? (
               <div className="cx-skeleton cx-pass__qr" style={{ aspectRatio: '1' }} />
             ) : (
               <p className="cx-pass__empty">
-                {booking.status === 'CheckedIn' ? 'Checked in. The entry QR has been used.' : 'The QR code could not be loaded.'}
+                {booking.status === 'CheckedIn' ? tr('Checked in. The entry QR has been used.') : tr('The QR code could not be loaded.')}
               </p>
             )}
           </div>
-          <span className="cx-label" style={{ textAlign: 'center' }}>Reservation code</span>
+          <span className="cx-label" style={{ textAlign: 'center' }}>{tr('Reservation code')}</span>
           <span className="cx-pass__token cx-mono">{booking.code}</span>
-          <p className="cx-pass__hint">Hold this code under the entry lane scanner during the check-in window, or arrive in a verified vehicle to check in by plate.</p>
+          <p className="cx-pass__hint">{tr('Hold this code under the entry lane scanner during the check-in window, or arrive in a verified vehicle to check in by plate.')}</p>
         </aside>
       )}
     </section>
@@ -263,36 +264,36 @@ function PendingDeposit({ booking, now }: { booking: ReservationDTO; now: number
       <span className="cx-upcoming__icon"><Car aria-hidden /></span>
       <div className="cx-upcoming__text">
         <p className="cx-upcoming__title">
-          {booking.parkingLotName} <span className="cx-chip cx-chip--gold">Pending deposit</span>
+          {tMaybe(booking.parkingLotName)} <span className="cx-chip cx-chip--gold">{tr('Pending deposit')}</span>
           <span className="cx-mono cx-label">#{booking.code}</span>
         </p>
         <p className="cx-upcoming__meta">
-          <MapPin aria-hidden /> <strong>Bay {booking.slotCode}</strong> • <span className="cx-mono">{booking.plateNumber ?? '—'}</span>
+          <MapPin aria-hidden /> <strong>{tr('Bay {slotCode}', { slotCode: booking.slotCode })}</strong> • <span className="cx-mono">{tMaybe(booking.plateNumber) ?? '—'}</span>
         </p>
         <p className="cx-upcoming__when">
           {relativeDay(Date.parse(booking.arrivalTime), now)}, {time.format(Date.parse(booking.arrivalTime))}
         </p>
       </div>
       <div className="cx-upcoming__deposit">
-        <span className="cx-label">Deposit amount</span>
+        <span className="cx-label">{tr('Deposit amount')}</span>
         <strong>{vnd(booking.depositAmount)}</strong>
-        <span className="cx-upcoming__due"><Timer aria-hidden /> {left > 0 ? `Pay within ${countdown(left)}` : 'Expired'}</span>
+        <span className="cx-upcoming__due"><Timer aria-hidden /> {left > 0 ? tr('Pay within {v}', { v: countdown(left) }) : tr('Expired')}</span>
       </div>
       <div className="cx-reserve__pay" style={{ minWidth: '16rem' }}>
         <button type="button" className="cx-btn cx-btn--wallet" disabled={pay.isPending || left === 0} onClick={() => payWith('Wallet')}>
-          <CreditCard aria-hidden /> Pay with XXIV Wallet
+          <CreditCard aria-hidden />{' '}{tr('Pay with XXIV Wallet')}
         </button>
         <VnpayButton className="cx-btn" disabled={pay.isPending || left === 0} onClick={() => payWith('VNPay')} />
         <button type="button" className="cx-btn cx-btn--momo" disabled={pay.isPending || left === 0} onClick={() => payWith('MoMo')}>
-          <Wallet aria-hidden /> MoMo
+          <Wallet aria-hidden />{' '}{tr('MoMo')}
         </button>
         {canSimulate && (
           <button type="button" className="cx-btn cx-btn--simulate" disabled={simulate.isPending || left === 0} onClick={() => simulate.mutate(booking.id)}>
-            <FlaskConical aria-hidden /> {simulate.isPending ? 'Simulating…' : 'Simulate successful payment'}
+            <FlaskConical aria-hidden /> {simulate.isPending ? tr('Simulating…') : tr('Simulate successful payment')}
           </button>
         )}
         <button type="button" className="cx-link" style={{ width: '100%', textAlign: 'center' }} disabled={cancel.isPending} onClick={() => cancel.mutate({ id: booking.id, reason: 'Given up before paying' })}>
-          Give up this booking
+          {tr('Give up this booking')}
         </button>
       </div>
     </article>
@@ -330,15 +331,15 @@ export default function CustomerBookingsPage() {
     <>
       <header className="cx-page-head">
         <div>
-          <h1 className="cx-page-title">My Bookings &amp; Reservations</h1>
+          <h1 className="cx-page-title">{tr('My Bookings & Reservations')}</h1>
         </div>
         <Link to="/me#map" className="cx-btn cx-btn--teal" style={{ padding: '0.9rem 1.4rem' }}>
-          <SquarePlus aria-hidden /> New reservation
+          <SquarePlus aria-hidden />{' '}{tr('New reservation')}
         </Link>
       </header>
 
       <div className="cx-card cx-filterbar">
-        <div className="cx-filterbar__tabs" role="tablist" aria-label="Filter bookings">
+        <div className="cx-filterbar__tabs" role="tablist" aria-label={tr('Filter bookings')}>
           {FILTERS.map((f) => (
             <button
               key={f.value}
@@ -351,7 +352,7 @@ export default function CustomerBookingsPage() {
                 setHistoryPage(1)
               }}
             >
-              {f.label} <span className="cx-count">{count(f.value)}</span>
+              {tMaybe(f.label)} <span className="cx-count">{count(f.value)}</span>
             </button>
           ))}
         </div>
@@ -360,15 +361,15 @@ export default function CustomerBookingsPage() {
           <input value={query} onChange={(e) => {
             setQuery(e.target.value)
             setHistoryPage(1)
-          }} placeholder="Search by plate or code..." aria-label="Search bookings" />
+          }} placeholder={tr('Search by plate or code...')} aria-label={tr('Search bookings')} />
         </label>
       </div>
 
       {reservations.isPending && <div className="cx-skeleton" style={{ height: '18rem' }} />}
-      {reservations.isError && <p className="cx-empty">Could not load your reservations. Try again later.</p>}
+      {reservations.isError && <p className="cx-empty">{tr('Could not load your reservations. Try again later.')}</p>}
       {!reservations.isPending && all.length === 0 && (
         <p className="cx-empty">
-          No reservations yet. <Link to="/me#map" className="cx-link">Pick a bay on the 3D map</Link> to start.
+          {tr('No reservations yet.')}{' '}<Link to="/me#map" className="cx-link">{tr('Pick a bay on the 3D map')}</Link>{' '}{tr('to start.')}
         </p>
       )}
 
@@ -380,9 +381,9 @@ export default function CustomerBookingsPage() {
         <section className="cx-section" aria-labelledby="upcoming-title">
           <div className="cx-section__head">
             <h2 className="cx-section__title" id="upcoming-title">
-              <CalendarClock aria-hidden /> Waiting for the deposit
+              <CalendarClock aria-hidden />{' '}{tr('Waiting for the deposit')}
             </h2>
-            <span className="cx-label cx-mono">{upcoming.length} action required</span>
+            <span className="cx-label cx-mono">{tr('{length} action required', { length: upcoming.length })}</span>
           </div>
           {upcoming.map((b) => (
             <PendingDeposit key={b.id} booking={b} now={now} />
@@ -394,8 +395,8 @@ export default function CustomerBookingsPage() {
         <section className="cx-section" id="history" aria-labelledby="history-title">
           <div className="cx-section__head">
             <div>
-              <h2 className="cx-section__title" id="history-title">Booking History</h2>
-              <p className="cx-card__subtitle">Completed, cancelled, expired and no-show bookings with their refunds.</p>
+              <h2 className="cx-section__title" id="history-title">{tr('Booking History')}</h2>
+              <p className="cx-card__subtitle">{tr('Completed, cancelled, expired and no-show bookings with their refunds.')}</p>
             </div>
           </div>
 
@@ -404,13 +405,13 @@ export default function CustomerBookingsPage() {
               <table className="cx-table">
                 <thead>
                   <tr>
-                    <th scope="col">Booking</th>
-                    <th scope="col">Facility</th>
-                    <th scope="col">Vehicle</th>
-                    <th scope="col">Bay</th>
-                    <th scope="col">Arrival</th>
-                    <th scope="col">Deposit / refund</th>
-                    <th scope="col">Status</th>
+                    <th scope="col">{tr('Booking')}</th>
+                    <th scope="col">{tr('Parking lot')}</th>
+                    <th scope="col">{tr('Vehicle')}</th>
+                    <th scope="col">{tr('Bay')}</th>
+                    <th scope="col">{tr('Arrival')}</th>
+                    <th scope="col">{tr('Deposit / refund')}</th>
+                    <th scope="col">{tr('Status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -420,23 +421,23 @@ export default function CustomerBookingsPage() {
                       <tr key={b.id}>
                         <td className="cx-mono" style={{ color: ended ? 'var(--cx-muted)' : 'var(--cx-primary)', fontWeight: 700 }}>#{b.code}</td>
                         <td>
-                          <strong>{b.parkingLotName}</strong>
-                          <span className="cx-table__sub">{b.zoneName}</span>
+                          <strong>{tMaybe(b.parkingLotName)}</strong>
+                          <span className="cx-table__sub">{tMaybe(b.zoneName)}</span>
                         </td>
-                        <td><strong className="cx-mono">{b.plateNumber ?? '—'}</strong></td>
-                        <td><span className="cx-plate" style={{ fontSize: '0.75rem' }}>Bay {b.slotCode}</span></td>
+                        <td><strong className="cx-mono">{tMaybe(b.plateNumber) ?? '—'}</strong></td>
+                        <td><span className="cx-plate" style={{ fontSize: '0.75rem' }}>{tr('Bay {slotCode}', { slotCode: b.slotCode })}</span></td>
                         <td>
                           {relativeDay(Date.parse(b.arrivalTime), now)}
                           <span className="cx-table__sub">{time.format(Date.parse(b.arrivalTime))}</span>
                         </td>
                         <td>
-                          <strong className="cx-table__num">{b.hasDeposit ? vnd(b.depositAmount) : 'No deposit'}</strong>
+                          <strong className="cx-table__num">{b.hasDeposit ? vnd(b.depositAmount) : tr('No deposit')}</strong>
                           <span className="cx-table__sub">
-                            {!b.hasDeposit ? `Held ${b.holdMinutes} min` : b.refundAmount > 0 ? `Refunded ${vnd(b.refundAmount)}` : b.status === 'Completed' ? 'Deducted from the fee' : 'Not refunded'}
+                            {!b.hasDeposit ? tr('Held {holdMinutes} min', { holdMinutes: b.holdMinutes }) : b.refundAmount > 0 ? tr('Refunded {v}', { v: vnd(b.refundAmount) }) : b.status === 'Completed' ? tr('Deducted from the fee') : tr('Not refunded')}
                           </span>
                         </td>
                         <td>
-                          <span className={`cx-chip ${ended ? 'cx-chip--muted' : ''}`} title={b.cancelReason ?? undefined}>{STATUS_LABEL[b.status]}</span>
+                          <span className={`cx-chip ${ended ? 'cx-chip--muted' : ''}`} title={tMaybe(b.cancelReason) ?? undefined}>{tMaybe(STATUS_LABEL[b.status])}</span>
                         </td>
                       </tr>
                     )
@@ -447,17 +448,17 @@ export default function CustomerBookingsPage() {
           </div>
 
           {historyPages > 1 && (
-            <nav className="cx-pager" aria-label="Booking history pages">
+            <nav className="cx-pager" aria-label={tr('Booking history pages')}>
               <button
                 type="button"
                 className="cx-btn cx-btn--sm"
                 disabled={currentHistoryPage <= 1}
                 onClick={() => setHistoryPage(currentHistoryPage - 1)}
               >
-                <ChevronLeft aria-hidden /> Newer
+                <ChevronLeft aria-hidden />{' '}{tr('Newer')}
               </button>
               <span>
-                Page {currentHistoryPage} of {historyPages} • {history.length} bookings
+                {tr('Page {currentHistoryPage} of {historyPages} • {length} bookings', { currentHistoryPage, historyPages, length: history.length })}
               </span>
               <button
                 type="button"
@@ -465,7 +466,7 @@ export default function CustomerBookingsPage() {
                 disabled={currentHistoryPage >= historyPages}
                 onClick={() => setHistoryPage(currentHistoryPage + 1)}
               >
-                Older <ChevronRight aria-hidden />
+                {tr('Older')}{' '}<ChevronRight aria-hidden />
               </button>
             </nav>
           )}
@@ -474,15 +475,15 @@ export default function CustomerBookingsPage() {
 
       <div className="cx-info-cards">
         {[
-          { icon: ScanLine, title: 'QR or plate check-in', text: 'Scan the signed QR at the entry lane, or arrive in a vehicle whose papers are verified.' },
-          { icon: Zap, title: 'Deposits are deducted', text: 'The deposit is taken off your parking fee at the exit; any remainder is refunded automatically.' },
-          { icon: Headset, title: 'Lot cancellations refund 100%', text: 'If the lot closes or the bay needs maintenance, the lot cancels the booking and returns the whole deposit.' },
+          { icon: ScanLine, title: tr('QR or plate check-in'), text: tr('Scan the signed QR at the entry lane, or arrive in a vehicle whose papers are verified.') },
+          { icon: Zap, title: tr('Deposits are deducted'), text: tr('The deposit is taken off your parking fee at the exit; any remainder is refunded automatically.') },
+          { icon: Headset, title: tr('Lot cancellations refund 100%'), text: tr('If the lot closes or the bay needs maintenance, the lot cancels the booking and returns the whole deposit.') },
         ].map(({ icon: Icon, title, text }) => (
           <div key={title} className="cx-card cx-info-card">
             <span className="cx-card__icon cx-card__icon--gold"><Icon aria-hidden /></span>
             <div>
-              <strong>{title}</strong>
-              <p>{text}</p>
+              <strong>{tMaybe(title)}</strong>
+              <p>{tMaybe(text)}</p>
             </div>
           </div>
         ))}

@@ -1,37 +1,38 @@
 import { ArrowRight, Box, Nfc, ShieldHalf, WalletCards } from 'lucide-react'
 import { useReveal } from './useHomeEffects'
+import { t, tMaybe } from '@/i18n'
 
 const CAPABILITIES = [
   {
     icon: Box,
     gold: false,
-    title: '3D digital twin mapping',
-    text: 'Interactive multi-level guidance showing real-time bay occupancy from ultrasonic and LiDAR sensors.',
+    title: 'Live 3D parking map',
+    text: 'See free and taken bays on every floor, then pick your bay right on the map.',
     link: 'Explore the 3D map',
     href: '#terminals',
   },
   {
     icon: Nfc,
     gold: true,
-    title: 'Zero-contact ANPR clearance',
-    text: 'Vehicles clear the gate through multi-angle plate recognition. No paper tickets, no card tapping, no roll-back.',
-    link: 'Frictionless access',
+    title: 'Plate recognition at the gate',
+    text: 'Cameras read the plate at the lane, and staff confirm it before opening the barrier.',
+    link: 'See the gates',
     href: '#facilities',
   },
   {
     icon: WalletCards,
     gold: false,
-    title: 'Real-time dwell billing',
-    text: 'Transparent minute-by-minute billing with pre-booking credit, corporate fleet accounts and instant digital VAT invoices.',
-    link: 'Automated ledger',
+    title: 'Clear block pricing',
+    text: 'Fees are charged per time block, and any deposit is deducted at check-out.',
+    link: 'View parking lots',
     href: '#terminals',
   },
   {
     icon: ShieldHalf,
     gold: true,
-    title: 'Sovereign vault security',
-    text: 'Continuous surveillance, perimeter sensors and climate-controlled bays that protect collector vehicles.',
-    link: 'Tier-4 vault shield',
+    title: 'Secure vehicle check',
+    text: 'Every entry and exit is recorded, and vehicle papers are checked before a registration is approved.',
+    link: 'See the bays',
     href: '#facilities',
   },
 ]
@@ -43,10 +44,10 @@ export function Capabilities() {
     <section className="home-section home-section--deep" id="capabilities">
       <div ref={ref} className="home-container home-reveal">
         <div className="home-section__head home-section__head--center">
-          <span className="home-eyebrow home-eyebrow--gold">Mission capabilities</span>
-          <h2 className="home-heading">Instrument-grade control</h2>
+          <span className="home-eyebrow home-eyebrow--gold">{t('Features')}</span>
+          <h2 className="home-heading">{t('Everything you need to park')}</h2>
           <p className="home-section__intro">
-            Every terminal runs on the same mesh infrastructure, built for zero friction and continuous monitoring.
+            {t('Find a bay, book it and pay in one app.')}
           </p>
         </div>
 
@@ -57,11 +58,11 @@ export function Capabilities() {
                 <span className="home-capability__icon">
                   <Icon size={24} aria-hidden />
                 </span>
-                <h3 className="home-capability__title">{item.title}</h3>
-                <p className="home-capability__text">{item.text}</p>
+                <h3 className="home-capability__title">{tMaybe(item.title)}</h3>
+                <p className="home-capability__text">{tMaybe(item.text)}</p>
               </div>
               <a href={item.href} className="home-capability__link">
-                {item.link} <ArrowRight aria-hidden />
+                {tMaybe(item.link)} <ArrowRight aria-hidden />
               </a>
             </article>
           ))}

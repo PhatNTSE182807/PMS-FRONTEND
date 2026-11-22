@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react'
 import { Bike, Car, Layers, LayoutGrid } from 'lucide-react'
 import type { Garage3DProps } from './Garage3D'
 import { standardBays, type Bay, type GarageFloor } from './garageModel'
+import { t, tMaybe } from '@/i18n'
 
 /** Above this many bays on screen, the whole-building view starts at level summaries (Level of Detail). */
 const DETAIL_LIMIT = 240
@@ -51,23 +52,23 @@ export function LotPlan2D({ floors, focusFloor, selectedBayId, myBayId, onSelect
   const showBays = (detail ?? (bayCount > DETAIL_LIMIT ? 'levels' : 'bays')) === 'bays'
 
   return (
-    <div className={`garage3d ${className ?? ''}`} style={styles.root} role="region" aria-label="Parking plan (2D)">
+    <div className={`garage3d ${className ?? ''}`} style={styles.root} role="region" aria-label={t('Parking plan (2D)')}>
       <div style={styles.bar}>
         <button type="button" style={styles.toggle(showBays)} aria-pressed={showBays} onClick={() => setDetail('bays')}>
-          <LayoutGrid size={13} aria-hidden /> Bays
+          <LayoutGrid size={13} aria-hidden />{' '}{t('Bays')}
         </button>
         <button type="button" style={styles.toggle(!showBays)} aria-pressed={!showBays} onClick={() => setDetail('levels')}>
-          <Layers size={13} aria-hidden /> Levels
+          <Layers size={13} aria-hidden />{' '}{t('Levels')}
         </button>
         <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.75rem' }}>
           {Object.values(STATUS_STYLE).map((s) => (
             <span key={s.label} style={styles.legend}>
-              <span style={styles.swatch(s.fill)} aria-hidden /> {s.label}
+              <span style={styles.swatch(s.fill)} aria-hidden /> {tMaybe(s.label)}
             </span>
           ))}
           {floors.some((f) => f.bays.some((b) => b.penalty)) && (
             <span style={styles.legend}>
-              <span style={styles.swatch(PENALTY_FILL)} aria-hidden /> penalty
+              <span style={styles.swatch(PENALTY_FILL)} aria-hidden />{' '}{t('penalty')}
             </span>
           )}
         </span>
@@ -92,12 +93,12 @@ function FloorTitle({ floor }: { floor: GarageFloor }) {
     <div style={styles.floorHead}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
         {floor.kind === 'car' ? <Car size={14} aria-hidden /> : <Bike size={14} aria-hidden />}
-        {floor.level}
-        {floor.zoneLabel && <span style={{ fontWeight: 400, color: 'var(--map-muted)' }}>· {floor.zoneLabel}</span>}
+        {tMaybe(floor.level)}
+        {floor.zoneLabel && <span style={{ fontWeight: 400, color: 'var(--map-muted)' }}>· {tMaybe(floor.zoneLabel)}</span>}
       </span>
       <span style={{ color: free ? 'var(--map-good)' : 'var(--map-bad)' }}>
-        {free}/{bays.length} free
-        {penalty > 0 && <span style={{ fontWeight: 400, color: 'var(--map-muted)' }}> · {penalty} penalty</span>}
+        {t('{free}/{length} free', { free, length: bays.length })}
+        {penalty > 0 && <span style={{ fontWeight: 400, color: 'var(--map-muted)' }}>{' '}{t('· {penalty} penalty', { penalty })}</span>}
       </span>
     </div>
   )
@@ -108,7 +109,7 @@ function FloorSummary({ floor, onOpen }: { floor: GarageFloor; onOpen: () => voi
   const counts = (status: Bay['status']) => bays.filter((b) => b.status === status).length
   const total = Math.max(1, bays.length)
   return (
-    <button type="button" onClick={onOpen} style={{ ...styles.floor, textAlign: 'left', cursor: 'pointer', color: 'inherit' }} aria-label={`Show the bays of ${floor.level}`}>
+    <button type="button" onClick={onOpen} style={{ ...styles.floor, textAlign: 'left', cursor: 'pointer', color: 'inherit' }} aria-label={t('Show the bays of {level}', { level: floor.level })}>
       <FloorTitle floor={floor} />
       <div style={{ display: 'flex', height: '0.6rem', borderRadius: '0.3rem', overflow: 'hidden' }} aria-hidden>
         {(Object.keys(STATUS_STYLE) as Bay['status'][]).map((status) => (
@@ -135,7 +136,7 @@ function FloorBays({
   // Two rows of bays face each other across one driving lane
   const rows = Array.from({ length: floor.rows }, (_, row) => floor.bays.filter((b) => b.row === row).sort((a, b) => a.col - b.col))
   return (
-    <section style={styles.floor} aria-label={floor.level}>
+    <section style={styles.floor} aria-label={tMaybe(floor.level)}>
       <FloorTitle floor={floor} />
       {rows.map((bays, row) => (
         <div key={row}>
@@ -150,7 +151,7 @@ function FloorBays({
                   key={bay.id}
                   type="button"
                   title={`${bay.code} · ${label}`}
-                  aria-label={`Bay ${bay.code}, ${label}`}
+                  aria-label={t('Bay {code}, {label}', { code: bay.code, label })}
                   aria-pressed={selected}
                   onClick={() => selectable && onSelectBay(bay)}
                   aria-disabled={!selectable || undefined}

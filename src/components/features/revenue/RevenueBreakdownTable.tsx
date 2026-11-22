@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatNumber, formatVnd } from '@/lib/format'
 import { formatPeriod, type RevenueGranularity } from '@/lib/revenuePeriods'
 import type { RevenuePeriodLotRow } from './revenueRows'
+import { t, tMaybe } from '@/i18n'
 
 const NUMERIC = 'text-right tabular-nums'
 const STEP_NAMES: Record<RevenueGranularity, string> = { DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year' }
@@ -30,24 +31,24 @@ export function RevenueBreakdownTable({ rows, granularity, isLoading, pageNumber
     <Card>
       <CardHeader className="pb-4">
         <div>
-          <CardTitle>Revenue by {STEP_NAMES[granularity]} and lot</CardTitle>
-          <CardDescription>Newest first; lots without settled sessions are left out. Today is counted up to now.</CardDescription>
+          <CardTitle>{t('Revenue by {v} and lot', { v: STEP_NAMES[granularity] })}</CardTitle>
+          <CardDescription>{t('Newest first; lots without settled sessions are left out. Today is counted up to now.')}</CardDescription>
         </div>
       </CardHeader>
 
       {!isLoading && rows?.length === 0 ? (
-        <EmptyState title="No data" description="No settled parking sessions match the filters." />
+        <EmptyState title={t('No data')} description={t('No settled parking sessions match the filters.')} />
       ) : (
         <>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Period</TableHead>
-                <TableHead>Parking lot</TableHead>
-                <TableHead className={NUMERIC}>Car sessions</TableHead>
-                <TableHead className={NUMERIC}>Motorbike sessions</TableHead>
-                <TableHead className={NUMERIC}>Average per session</TableHead>
-                <TableHead className={NUMERIC}>Revenue</TableHead>
+                <TableHead>{t('Period')}</TableHead>
+                <TableHead>{t('Parking lot')}</TableHead>
+                <TableHead className={NUMERIC}>{t('Car sessions')}</TableHead>
+                <TableHead className={NUMERIC}>{t('Motorbike sessions')}</TableHead>
+                <TableHead className={NUMERIC}>{t('Average per session')}</TableHead>
+                <TableHead className={NUMERIC}>{t('Revenue')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -64,7 +65,7 @@ export function RevenueBreakdownTable({ rows, granularity, isLoading, pageNumber
                 : items.map((row) => (
                     <TableRow key={`${row.startDate}-${row.parkingLotId}`}>
                       <TableCell className="whitespace-nowrap">{formatPeriod(row)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-slate-900">{row.parkingLotName}</TableCell>
+                      <TableCell className="whitespace-nowrap text-slate-900">{tMaybe(row.parkingLotName)}</TableCell>
                       <TableCell className={NUMERIC}>{formatNumber(row.carSessions)}</TableCell>
                       <TableCell className={NUMERIC}>{formatNumber(row.motorbikeSessions)}</TableCell>
                       <TableCell className={NUMERIC}>

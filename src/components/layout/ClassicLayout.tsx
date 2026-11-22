@@ -5,6 +5,7 @@ import { LOGO_SRC } from '@/components/ParkingLogo'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { homePathFor, useAuth, useSignOut } from '@/hooks/useAuth'
 import { DEMO_DRIVER } from '@/mocks/auth.mock'
+import { t, tMaybe } from '@/i18n'
 
 /** Context handed to the login/register/driver pages rendered inside this shell. */
 export interface ClassicOutletContext {
@@ -58,7 +59,7 @@ export function ClassicLayout() {
           <div className="global-header__left">
             <div className="brand-pill" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
               <img src={LOGO_SRC} alt="" className="brand-logo" />
-              <span className="brand-text"><span className="brand-gold">XXIV</span> PARKING</span>
+              <span className="brand-text"><span className="brand-gold">XXIV</span>{' '}PARKING</span>
             </div>
 
             {/* Quick Screen Switcher Tabs */}
@@ -68,21 +69,21 @@ export function ClassicLayout() {
                 className={`nav-btn ${pathname === '/login' ? 'nav-btn--active' : ''}`}
                 onClick={() => navigate('/login')}
               >
-                Login
+                {t('Login')}
               </button>
               <button
                 type="button"
                 className={`nav-btn ${pathname === '/register' ? 'nav-btn--active' : ''}`}
                 onClick={() => navigate('/register')}
               >
-                Register
+                {t('Register')}
               </button>
               <button
                 type="button"
                 className={`nav-btn ${isDriverView ? 'nav-btn--active' : ''}`}
                 onClick={openDriverDashboard}
               >
-                User Dashboard
+                {t('User Dashboard')}
               </button>
             </div>
           </div>
@@ -97,7 +98,7 @@ export function ClassicLayout() {
                 className="btn btn-outline-cyan btn-sm"
                 onClick={() => navigate(homePathFor(user.role))}
               >
-                Dashboard ({user.username})
+                {t('Dashboard ({username})', { username: user.username })}
               </button>
             )}
 
@@ -106,9 +107,9 @@ export function ClassicLayout() {
                 type="button"
                 className="btn btn-danger-sm"
                 onClick={handleLogout}
-                title="Logout current session"
+                title={t('Logout current session')}
               >
-                Logout
+                {t('Logout')}
               </button>
             )}
           </div>
@@ -119,7 +120,7 @@ export function ClassicLayout() {
       {toastMessage && (
         <div className="pms-toast" role="status">
           <span className="pms-toast__icon">✓</span>
-          <span className="pms-toast__text">{toastMessage}</span>
+          <span className="pms-toast__text">{tMaybe(toastMessage)}</span>
           <button type="button" className="pms-toast__close" onClick={() => setToastMessage('')}>✕</button>
         </div>
       )}

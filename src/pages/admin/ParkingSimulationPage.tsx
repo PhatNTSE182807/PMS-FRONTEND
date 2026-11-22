@@ -18,6 +18,7 @@ import {
   type ParkingSimulationNormalDTO,
   type ParkingSimulationTimes,
 } from '@/types/simulation.dto'
+import { t, tMaybe } from '@/i18n'
 
 type TimeKey = keyof ParkingSimulationTimes
 /** Typed values, kept as text so a field can be cleared while editing. */
@@ -89,9 +90,9 @@ function SecondsField({ id, value, onChange }: { id: string; value: string; onCh
           aria-invalid={invalid}
           onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ''))}
         />
-        <span className="text-sm text-slate-500">seconds</span>
+        <span className="text-sm text-slate-500">{t('seconds')}</span>
       </div>
-      {invalid && <FieldError message={RANGE_ERROR} />}
+      {invalid && <FieldError message={tMaybe(RANGE_ERROR)} />}
     </div>
   )
 }
@@ -124,37 +125,37 @@ function SimulationForm({ current }: { current: ParkingSimulationDTO }) {
         <CardHeader>
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Power className="size-4" aria-hidden /> Simulation status
+              <Power className="size-4" aria-hidden />{' '}{t('Simulation status')}
             </CardTitle>
-            <CardDescription>Applies to every parking lot as soon as it is saved.</CardDescription>
+            <CardDescription>{t('Applies to every parking lot as soon as it is saved.')}</CardDescription>
           </div>
-          <Badge tone={current.enabled ? 'amber' : 'neutral'}>{current.enabled ? 'Simulation on' : 'Normal rules'}</Badge>
+          <Badge tone={current.enabled ? 'amber' : 'neutral'}>{current.enabled ? t('Simulation on') : t('Normal rules')}</Badge>
         </CardHeader>
         <CardContent className="space-y-4">
           {current.enabled && (
             <p className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-              Every lot now charges and times bookings in seconds, for every customer. Turn it off after the demo.
+              {t('Every lot now charges and times bookings in seconds, for every customer. Turn it off after the demo.')}
             </p>
           )}
           <div className="flex flex-wrap gap-2">
             {current.enabled ? (
               <Button variant="outline" disabled={save.isPending || !valid} onClick={() => submit(false)}>
-                <Power aria-hidden /> Turn off
+                <Power aria-hidden />{' '}{t('Turn off')}
               </Button>
             ) : (
               <Button variant="gold" disabled={save.isPending || !valid} onClick={() => submit(true)}>
-                <FlaskConical aria-hidden /> Turn on with these values
+                <FlaskConical aria-hidden />{' '}{t('Turn on with these values')}
               </Button>
             )}
             <Button type="submit" variant="secondary" disabled={save.isPending || !valid}>
-              <Save aria-hidden /> {save.isPending ? 'Saving…' : 'Save values'}
+              <Save aria-hidden /> {save.isPending ? t('Saving…') : t('Save values')}
             </Button>
             <Button variant="ghost" disabled={save.isPending} onClick={() => setDraft(toDraft(DEMO_VALUES))}>
-              <RotateCcw aria-hidden /> Demo values
+              <RotateCcw aria-hidden />{' '}{t('Demo values')}
             </Button>
           </div>
-          {save.isError && <FieldError message={getErrorMessage(save.error)} />}
+          {save.isError && <FieldError message={tMaybe(getErrorMessage(save.error))} />}
         </CardContent>
       </Card>
 
@@ -162,16 +163,16 @@ function SimulationForm({ current }: { current: ParkingSimulationDTO }) {
         <CardHeader>
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Coins className="size-4" aria-hidden /> Parking fee
+              <Coins className="size-4" aria-hidden />{' '}{t('Parking fee')}
             </CardTitle>
             <CardDescription>
-              Every pricing rule keeps its block price, but one block lasts this many seconds instead of its minutes or hours.
+              {t('Every pricing rule keeps its block price, but one block lasts this many seconds instead of its minutes or hours.')}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="sim-blockSeconds">Block length</Label>
+            <Label htmlFor="sim-blockSeconds">{t('Block length')}</Label>
             <SecondsField id="sim-blockSeconds" value={draft.blockSeconds} onChange={set('blockSeconds')} />
             <div className="flex flex-wrap gap-1.5">
               {BLOCK_PRESETS.map((preset) => (
@@ -181,16 +182,14 @@ function SimulationForm({ current }: { current: ParkingSimulationDTO }) {
                   variant={block === preset ? 'default' : 'outline'}
                   onClick={() => set('blockSeconds')(String(preset))}
                 >
-                  {preset}s
+                  {tMaybe(preset)}s
                 </Button>
               ))}
             </div>
           </div>
           {block !== null && (
             <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-              Example: a rule of <strong>30,000 VND per hour</strong> charges <strong>30,000 VND every {plural(block, 'second')}</strong>.
-              A car that stays {block * 3} seconds pays 3 blocks = 90,000 VND. The daily cap is not applied while the simulation is on;
-              turned off, the Manager&apos;s pricing rules apply again exactly as set.
+              {t('Example: a rule of')}{' '}<strong>{t('30,000 VND per hour')}</strong>{' '}{t('charges')}{' '}<strong>{t('30,000 VND every {block}', { block: plural(block, 'second') })}</strong>{t('. A car that stays {v} seconds pays 3 blocks = 90,000 VND. The daily cap is not applied while the simulation is on; turned off, the Manager\'s pricing rules apply again exactly as set.', { v: block * 3 })}
             </p>
           )}
         </CardContent>
@@ -200,10 +199,10 @@ function SimulationForm({ current }: { current: ParkingSimulationDTO }) {
         <CardHeader>
           <div>
             <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="size-4" aria-hidden /> Booking and exit times
+              <CalendarClock className="size-4" aria-hidden />{' '}{t('Booking and exit times')}
             </CardTitle>
             <CardDescription>
-              Bookings and payments made while the simulation is on use these times. Expired bookings and no-shows are checked every second.
+              {t('Bookings and payments made while the simulation is on use these times. Expired bookings and no-shows are checked every second.')}
             </CardDescription>
           </div>
         </CardHeader>
@@ -212,9 +211,9 @@ function SimulationForm({ current }: { current: ParkingSimulationDTO }) {
             {BOOKING_FIELDS.map((field) => (
               <li key={field.key} className="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:items-start">
                 <div>
-                  <Label htmlFor={`sim-${field.key}`}>{field.label}</Label>
-                  <p className="mt-0.5 text-sm text-slate-500">{field.help}</p>
-                  <p className="mt-1 text-xs text-slate-400">Normally {plural(field.normal(current.normal), 'minute')}</p>
+                  <Label htmlFor={`sim-${field.key}`}>{tMaybe(field.label)}</Label>
+                  <p className="mt-0.5 text-sm text-slate-500">{tMaybe(field.help)}</p>
+                  <p className="mt-1 text-xs text-slate-400">{t('Normally {v}', { v: plural(field.normal(current.normal), 'minute') })}</p>
                 </div>
                 <SecondsField id={`sim-${field.key}`} value={draft[field.key]} onChange={set(field.key)} />
               </li>
@@ -233,12 +232,12 @@ export default function ParkingSimulationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Parking Simulation"
+        title={t('Parking Simulation')}
        
       />
       {simulation.isPending && <Skeleton className="h-96 rounded-xl" />}
       {simulation.isError && (
-        <ErrorState message={getErrorMessage(simulation.error, 'Could not load the parking simulation.')} onRetry={() => void simulation.refetch()} />
+        <ErrorState message={tMaybe(getErrorMessage(simulation.error, 'Could not load the parking simulation.'))} onRetry={() => void simulation.refetch()} />
       )}
       {simulation.data && (
         // Re-mount when the saved values change so the form shows what the server stored

@@ -2,6 +2,7 @@ import { useId, type ComponentProps, type SVGProps } from 'react'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import '@/styles/vnpay.css'
+import { t, tMaybe } from '@/i18n'
 
 /** VNPAY brand colors, taken from the official logo. */
 const VNPAY_RED = '#E31E25'
@@ -44,8 +45,8 @@ export function VnpayMark({ className, ...props }: SVGProps<SVGSVGElement>) {
 export function VnpayWordmark({ className }: { className?: string }) {
   return (
     <span className={cn('vnpay-wordmark', className)}>
-      <span style={{ color: VNPAY_RED }}>VN</span>
-      <span style={{ color: VNPAY_BLUE }}>PAY</span>
+      <span style={{ color: VNPAY_RED }}>{t('VN')}</span>
+      <span style={{ color: VNPAY_BLUE }}>{t('PAY')}</span>
     </span>
   )
 }
@@ -77,12 +78,12 @@ export function VnpayButton({
       className={cn('vnpay-btn', className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      aria-label={ariaLabel ?? `Pay with VNPAY${suffix ? ` ${suffix}` : ''}`}
+      aria-label={tMaybe(ariaLabel) ?? t('Pay with VNPAY{v}', { v: suffix ? ` ${suffix}` : '' })}
       {...props}
     >
       {loading ? <Loader2 className="vnpay-btn__spinner" aria-hidden /> : <VnpayMark className="vnpay-btn__mark" />}
       <VnpayWordmark />
-      {suffix && <span className="vnpay-btn__suffix">{suffix}</span>}
+      {suffix && <span className="vnpay-btn__suffix">{tMaybe(suffix)}</span>}
     </button>
   )
 }

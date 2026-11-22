@@ -2,6 +2,7 @@ import { LiveLotModel } from '@/components/features/lots/LiveLotModel'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useParkingLots } from '@/hooks/useParking'
 import type { HubPerformanceDTO } from '@/types/dashboard.dto'
+import { tMaybe } from '@/i18n'
 
 interface HubModelDialogProps {
   hub: HubPerformanceDTO | null
@@ -24,8 +25,8 @@ export function HubModelDialog({ hub, onOpenChange }: HubModelDialogProps) {
         {hub && (
           <>
             <DialogHeader>
-              <DialogTitle>{hub.lotName}</DialogTitle>
-              <DialogDescription>{hub.location}</DialogDescription>
+              <DialogTitle>{tMaybe(hub.lotName)}</DialogTitle>
+              <DialogDescription>{tMaybe(hub.location)}</DialogDescription>
             </DialogHeader>
             <LiveLotModel
               className="p-0 ring-0"

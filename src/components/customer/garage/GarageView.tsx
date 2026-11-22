@@ -3,6 +3,7 @@ import { Box, LayoutGrid } from 'lucide-react'
 import { isLowEndDevice, supportsWebGL2 } from '@/lib/webgl'
 import type { Garage3DProps } from './Garage3D'
 import { LotPlan2D } from './LotPlan2D'
+import { t } from '@/i18n'
 
 // three.js is large: load it only when the 3D model is on screen.
 const Garage3D = lazy(() => import('./Garage3D'))
@@ -18,7 +19,7 @@ export function GarageView(props: Garage3DProps) {
   return (
     <div style={{ position: 'relative' }}>
       {mode === '3d' ? (
-        <Suspense fallback={<div className={`garage3d garage3d--loading ${props.className ?? ''}`}>Loading 3D model…</div>}>
+        <Suspense fallback={<div className={`garage3d garage3d--loading ${props.className ?? ''}`}>{t('Loading 3D model…')}</div>}>
           <Garage3D {...props} />
         </Suspense>
       ) : (
@@ -28,7 +29,7 @@ export function GarageView(props: Garage3DProps) {
         type="button"
         onClick={() => setMode(mode === '3d' ? '2d' : '3d')}
         disabled={!can3D}
-        title={can3D ? undefined : '3D needs WebGL 2, which this browser does not support'}
+        title={can3D ? undefined : t('3D needs WebGL 2, which this browser does not support')}
         style={{
           position: 'absolute',
           right: '0.6rem',
@@ -47,7 +48,7 @@ export function GarageView(props: Garage3DProps) {
         }}
       >
         {mode === '3d' ? <LayoutGrid size={13} aria-hidden /> : <Box size={13} aria-hidden />}
-        {mode === '3d' ? '2D plan' : can3D ? '3D view' : '2D plan (no WebGL 2)'}
+        {mode === '3d' ? t('2D plan') : can3D ? t('3D view') : t('2D plan (no WebGL 2)')}
       </button>
     </div>
   )

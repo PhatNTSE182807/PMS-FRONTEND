@@ -7,10 +7,11 @@ import { useParkingHistory } from '@/hooks/useParkingHistory'
 import { formatNumber } from '@/lib/format'
 import { formatDuration, showReceipt } from '@/lib/parkingReceipt'
 import type { ParkingHistoryItemDTO } from '@/types/parkingHistory.dto'
+import { t, tMaybe, localDateFormat } from '@/i18n'
 
 const PAGE_SIZE = 5
 
-const dateTime = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+const dateTime = localDateFormat({ day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 const STATUS: Record<ParkingHistoryItemDTO['status'], { label: string; className: string }> = {
   Completed: { label: 'Completed', className: '' },
@@ -25,7 +26,7 @@ function ReceiptButton({ item }: { item: ParkingHistoryItemDTO }) {
   const open = async () => {
     // Opened right away so pop-up blockers treat it as the click's own window
     const target = window.open('', '_blank')
-    if (!target) return toast.error('Allow pop-ups for this site to open the receipt.')
+    if (!target) return toast.error(t('Allow pop-ups for this site to open the receipt.'))
     target.document.title = 'Loading receipt…'
     setLoading(true)
     try {
@@ -39,8 +40,8 @@ function ReceiptButton({ item }: { item: ParkingHistoryItemDTO }) {
   }
 
   return (
-    <button type="button" className="cx-btn cx-btn--sm" disabled={loading} onClick={() => void open()} aria-label={`PDF receipt ${item.receiptNumber}`}>
-      {loading ? <Loader2 className="cx-spin" aria-hidden /> : <Download aria-hidden />} PDF receipt
+    <button type="button" className="cx-btn cx-btn--sm" disabled={loading} onClick={() => void open()} aria-label={t('PDF receipt {receiptNumber}', { receiptNumber: item.receiptNumber })}>
+      {loading ? <Loader2 className="cx-spin" aria-hidden /> : <Download aria-hidden />}{' '}{t('PDF receipt')}
     </button>
   )
 }
@@ -56,11 +57,11 @@ export function RecentSessions() {
     <section className="cx-card" id="history" aria-labelledby="history-title">
       <div className="cx-card__head">
         <div>
-          <h2 className="cx-card__title" id="history-title">Recent Parking Sessions &amp; Receipts</h2>
+          <h2 className="cx-card__title" id="history-title">{t('Recent Parking Sessions & Receipts')}</h2>
           <p className="cx-card__subtitle">
             {data?.totalCount
-              ? `${data.totalCount} finished ${data.totalCount === 1 ? 'session' : 'sessions'} • ${formatNumber(data.totalSpent)} VND in total`
-              : 'Your finished parking sessions and e-receipts'}
+              ? t('{totalCount} finished {v} • {v2} VND in total', { totalCount: data.totalCount, v: data.totalCount === 1 ? 'session' : 'sessions', v2: formatNumber(data.totalSpent) })
+              : t('Your finished parking sessions and e-receipts')}
           </p>
         </div>
       </div>
@@ -69,24 +70,24 @@ export function RecentSessions() {
         <div className="cx-skeleton" style={{ height: '12rem' }} />
       ) : isError ? (
         <div className="cx-empty">
-          <p className="cx-error" role="alert">{getErrorMessage(error, 'Could not load your parking history.')}</p>
-          <button type="button" className="cx-btn cx-btn--sm" onClick={() => void refetch()}>Try again</button>
+          <p className="cx-error" role="alert">{tMaybe(getErrorMessage(error, 'Could not load your parking history.'))}</p>
+          <button type="button" className="cx-btn cx-btn--sm" onClick={() => void refetch()}>{t('Try again')}</button>
         </div>
       ) : items.length === 0 ? (
-        <p className="cx-empty">No finished sessions yet. They appear here once your vehicle leaves a lot.</p>
+        <p className="cx-empty">{t('No finished sessions yet. They appear here once your vehicle leaves a lot.')}</p>
       ) : (
         <>
           <div className="cx-table-wrap" style={{ opacity: isPlaceholderData ? 0.6 : 1 }} aria-busy={isPlaceholderData}>
             <table className="cx-table">
               <thead>
                 <tr>
-                  <th scope="col">Timeline</th>
-                  <th scope="col">Terminal &amp; stall</th>
-                  <th scope="col">Vehicle</th>
-                  <th scope="col">Duration</th>
-                  <th scope="col">Amount</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" className="cx-table__right">E-receipt</th>
+                  <th scope="col">{t('Timeline')}</th>
+                  <th scope="col">{t('Lot & bay')}</th>
+                  <th scope="col">{t('Vehicle')}</th>
+                  <th scope="col">{t('Duration')}</th>
+                  <th scope="col">{t('Amount')}</th>
+                  <th scope="col">{t('Status')}</th>
+                  <th scope="col" className="cx-table__right">{t('E-receipt')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -96,21 +97,21 @@ export function RecentSessions() {
                     <tr key={s.sessionId}>
                       <td>
                         {dateTime.format(new Date(s.exitTime ?? s.entryTime))}
-                        <span className="cx-table__sub">In {dateTime.format(new Date(s.entryTime))}</span>
+                        <span className="cx-table__sub">{t('In {v}', { v: dateTime.format(new Date(s.entryTime)) })}</span>
                       </td>
                       <td>
-                        <strong>{s.lotName ?? 'Parking lot'}</strong>
+                        <strong>{tMaybe(s.lotName) ?? t('Parking lot')}</strong>
                         <span className="cx-table__sub">
                           {[s.lotDistrict, s.slotCode ? `Stall ${s.slotCode}` : s.zoneName].filter(Boolean).join(' • ') || '—'}
                         </span>
                       </td>
-                      <td className="cx-mono" style={{ color: 'var(--cx-primary)' }}>{s.plateNumber ?? '—'}</td>
+                      <td className="cx-mono" style={{ color: 'var(--cx-primary)' }}>{tMaybe(s.plateNumber) ?? '—'}</td>
                       <td>{formatDuration(s.durationMinutes)}</td>
                       <td className="cx-table__num">
-                        {formatNumber(s.finalFee)} VND
-                        {s.depositApplied > 0 && <span className="cx-table__sub">incl. {formatNumber(s.depositApplied)} deposit</span>}
+                        {t('{finalFee} VND', { finalFee: formatNumber(s.finalFee) })}
+                        {s.depositApplied > 0 && <span className="cx-table__sub">{t('incl. {depositApplied} deposit', { depositApplied: formatNumber(s.depositApplied) })}</span>}
                       </td>
-                      <td><span className={`cx-chip ${status.className}`}>{status.label}</span></td>
+                      <td><span className={`cx-chip ${status.className}`}>{tMaybe(status.label)}</span></td>
                       <td className="cx-table__right"><ReceiptButton item={s} /></td>
                     </tr>
                   )
@@ -120,13 +121,13 @@ export function RecentSessions() {
           </div>
 
           {pages > 1 && (
-            <nav className="cx-pager" aria-label="History pages">
+            <nav className="cx-pager" aria-label={t('History pages')}>
               <button type="button" className="cx-btn cx-btn--sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                <ChevronLeft aria-hidden /> Newer
+                <ChevronLeft aria-hidden />{' '}{t('Newer')}
               </button>
-              <span>Page {page} of {pages}</span>
+              <span>{t('Page {page} of {pages}', { page, pages })}</span>
               <button type="button" className="cx-btn cx-btn--sm" disabled={page >= pages || isPlaceholderData} onClick={() => setPage((p) => p + 1)}>
-                Older <ChevronRight aria-hidden />
+                {t('Older')}{' '}<ChevronRight aria-hidden />
               </button>
             </nav>
           )}

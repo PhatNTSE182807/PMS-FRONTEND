@@ -13,6 +13,7 @@ import { useCapacitySimulation, useParkingCapacity } from '@/hooks/useParking'
 import { useProfile, useVehicles } from '@/hooks/useProfile'
 import { usePublicLots } from '@/hooks/usePublicLots'
 import type { PublicLotDTO } from '@/types/publicLot.dto'
+import { t, tMaybe } from '@/i18n'
 
 /** Customer home at /me: the parked vehicle, the next booking, live terminals, the fleet and the history. */
 export default function CustomerDashboardPage() {
@@ -41,29 +42,29 @@ export default function CustomerDashboardPage() {
       <section className="cx-welcome">
         <div className="cx-welcome__intro">
           <h1 className="cx-welcome__title">
-            Welcome back, <span className="cx-welcome__name">{name}</span>
+            {t('Welcome back,')}{' '}<span className="cx-welcome__name">{tMaybe(name)}</span>
           </h1>
           {/* Only a status line while the lot list is loading or unreachable */}
           {(publicLots.isPending || (publicLots.isError && lots.length === 0)) && (
             <p className="cx-welcome__lead">
-              {publicLots.isPending ? 'Connecting to the parking network...' : 'The parking network cannot be reached right now.'}
+              {publicLots.isPending ? t('Connecting to the parking network...') : t('The parking network cannot be reached right now.')}
             </p>
           )}
         </div>
 
         {lots.length > 0 && (
           // One compact row under the greeting, so the customer's name keeps the full width
-          <div className="cx-tabs cx-tabs--lots" aria-label="Parking lots">
+          <div className="cx-tabs cx-tabs--lots" aria-label={t('Parking lots')}>
             <span className="cx-tabs__label">
-              <Navigation aria-hidden /> Lots
+              <Navigation aria-hidden />{' '}{t('Lots')}
             </span>
             {lots.map((lot) => (
               <span key={lot.id} className="cx-tab-group">
                 <button
                   type="button"
                   className={`cx-tab ${String(lot.id) === selectedLotId ? 'cx-tab--active' : ''}`}
-                  title={lot.isBookable ? `${lot.freeBays} of ${lot.totalBays} bays free` : (lot.maintenanceNotice ?? 'Under maintenance')}
-                  aria-label={lot.isBookable ? `${lot.name}, open` : `${lot.name}, under maintenance`}
+                  title={lot.isBookable ? t('{freeBays} of {totalBays} bays free', { freeBays: lot.freeBays, totalBays: lot.totalBays }) : (tMaybe(lot.maintenanceNotice) ?? t('Under maintenance'))}
+                  aria-label={lot.isBookable ? t('{name}, open', { name: lot.name }) : t('{name}, under maintenance', { name: lot.name })}
                   onClick={() => {
                     setLotId(String(lot.id))
                     document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -71,13 +72,13 @@ export default function CustomerDashboardPage() {
                 >
                   {/* Green: open for bookings; amber: under maintenance (the reason is in the tooltip) */}
                   <span className={`cx-tab__dot ${lot.isBookable ? 'cx-tab__dot--open' : 'cx-tab__dot--warn'}`} aria-hidden />
-                  {lot.name}
+                  {tMaybe(lot.name)}
                 </button>
                 <button
                   type="button"
                   className="cx-tab cx-tab--icon"
-                  title={`Directions to ${lot.name}`}
-                  aria-label={`Directions to ${lot.name}`}
+                  title={t('Directions to {name}', { name: lot.name })}
+                  aria-label={t('Directions to {name}', { name: lot.name })}
                   onClick={() => setDirectionsLot(lot)}
                 >
                   <Route aria-hidden />

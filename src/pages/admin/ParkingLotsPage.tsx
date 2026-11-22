@@ -48,6 +48,7 @@ import { toSearchable } from '@/lib/text'
 import { formatPhone, initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { LotState } from '@/types/lot-management.dto'
+import { t as tr, tMaybe, numberLocale } from '@/i18n'
 
 const PAGE_SIZE = 8
 
@@ -115,18 +116,18 @@ function LotLayoutCard({ lot, onEdit }: { lot: ManagedLot; onEdit?: () => void }
         <div>
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
             <Box className="size-5 text-amber-500" aria-hidden />
-            3D building layout
+            {tr('3D building layout')}
           </h2>
           <p className="text-sm text-slate-500">
             {template
-              ? `${template.name} · ${template.summary}. Levels follow the zones by floor number.`
-              : 'No 3D layout chosen for this lot yet.'}
+              ? tr('{name} · {summary}. Levels follow the zones by floor number.', { name: template.name, summary: template.summary })
+              : tr('No 3D layout chosen for this lot yet.')}
           </p>
         </div>
         {onEdit && (
           <Button variant="outline" size="sm" onClick={onEdit}>
             <Pencil />
-            {template ? 'Change layout' : 'Choose layout'}
+            {template ? tr('Change layout') : tr('Choose layout')}
           </Button>
         )}
       </div>
@@ -196,19 +197,19 @@ export default function ParkingLotsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={selected ? title : admin ? 'Parking Lots & Facilities Management' : 'Facility Zones & Bays'}
+        title={selected ? tMaybe(title) : admin ? tr('Parking Lot Management') : tr('Zones & Bays')}
        
         actions={
           !selected ? (
             <>
               <Button variant="outline" onClick={() => exportLots(filtered, managerName)} disabled={!filtered.length}>
                 <Download />
-                Export fleet metrics
+                {tr('Export lots (CSV)')}
               </Button>
               {admin && (
                 <Button variant="gold" size="lg" onClick={() => setEditing({ kind: 'lot' })}>
                   <CirclePlus />
-                  Register new facility
+                  {tr('Add parking lot')}
                 </Button>
               )}
             </>
@@ -217,11 +218,11 @@ export default function ParkingLotsPage() {
       />
       {lots.isPending ? (
         <Card className="p-8 text-sm text-slate-500" aria-busy="true">
-          Loading parking lots…
+          {tr('Loading parking lots…')}
         </Card>
       ) : lots.isError ? (
         <ErrorState
-          message={getErrorMessage(lots.error)}
+          message={tMaybe(getErrorMessage(lots.error))}
           onRetry={() => lots.refetch()}
         />
       ) : (
@@ -232,8 +233,8 @@ export default function ParkingLotsPage() {
                 <div className="relative lg:w-72">
                   <Search className="absolute top-2.5 left-3 size-4 text-slate-400" />
                   <Input
-                    aria-label="Search parking lots"
-                    placeholder="Search by name, code or address…"
+                    aria-label={tr('Search parking lots')}
+                    placeholder={tr('Search by name, code or address…')}
                     className="pl-9"
                     value={search}
                     onChange={(e) => {
@@ -242,8 +243,8 @@ export default function ParkingLotsPage() {
                     }}
                   />
                 </div>
-                <div role="tablist" aria-label="Filter by lifecycle state" className="flex flex-wrap gap-1">
-                  {[['', 'All facilities'] as const, ...Object.entries(LOT_STATES)].map(([key, label]) => {
+                <div role="tablist" aria-label={tr('Filter by status')} className="flex flex-wrap gap-1">
+                  {[['', 'All parking lots'] as const, ...Object.entries(LOT_STATES)].map(([key, label]) => {
                     const count = key ? lots.data.filter((l) => shownState(l) === key).length : lots.data.length
                     const active = status === key
                     return (
@@ -261,7 +262,7 @@ export default function ParkingLotsPage() {
                           active ? 'bg-selected text-indigo-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
                         )}
                       >
-                        {label} ({count})
+                        {tMaybe(label)} ({count})
                       </button>
                     )
                   })}
@@ -272,36 +273,36 @@ export default function ParkingLotsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
                   <h2 className="flex items-center gap-2.5 font-display text-xl font-semibold text-slate-950">
                     <Layers className="size-5 text-amber-500" aria-hidden />
-                    Registered Facilities &amp; Hub Fleet
+                    {tr('Parking lots')}
                     <span className="rounded bg-indigo-100 px-2 py-0.5 font-sans text-xs font-semibold text-indigo-700">
-                      {lots.data.length} hubs
+                      {tr('{length} lots', { length: lots.data.length })}
                     </span>
                   </h2>
                   <p className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-800">
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-600" />Active</span>
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-500" />Maintenance</span>
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />Temporarily closed</span>
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-slate-800" />Closed</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-600" />{tr('Active')}</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-500" />{tr('Maintenance')}</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />{tr('Temporarily closed')}</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-slate-800" />{tr('Closed')}</span>
                   </p>
                 </div>
 
                 {!filtered.length ? (
                   <EmptyState
                     icon={Building2}
-                    title="No matching parking lots"
+                    title={tr('No matching parking lots')}
                     description={
                       admin
-                        ? 'Try clearing the filters or register a new facility.'
-                        : 'You have no assigned lots or the filters returned nothing. Ask an Admin to check your assignments.'
+                        ? tr('Try clearing the filters or add a parking lot.')
+                        : tr('You have no assigned lots or the filters returned nothing. Ask an Admin to check your assignments.')
                     }
                   />
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        {['Facility & identifier', 'Location', 'Capacity breakdown', 'Assigned manager', 'Lifecycle state', 'Actions'].map((h) => (
+                        {['Parking lot & code', 'Location', 'Capacity breakdown', 'Assigned manager', 'Status', 'Actions'].map((h) => (
                           <TableHead key={h} className={h === 'Actions' ? 'text-right' : undefined}>
-                            {h}
+                            {tMaybe(h)}
                           </TableHead>
                         ))}
                       </TableRow>
@@ -319,11 +320,11 @@ export default function ParkingLotsPage() {
                                   P
                                 </span>
                                 <div className="min-w-0">
-                                  <p className="font-semibold text-slate-950">{l.name}</p>
+                                  <p className="font-semibold text-slate-950">{tMaybe(l.name)}</p>
                                   <p className="font-mono text-xs font-bold text-indigo-700">#{l.code}</p>
                                   <p className="flex items-center gap-1 text-xs text-slate-600">
                                     <Clock className="size-3 text-amber-500" aria-hidden />
-                                    {l.is24Hours ? '24/7 continuous' : `${l.openTime} – ${l.closeTime} daily`}
+                                    {l.is24Hours ? tr('24/7 continuous') : tr('{openTime} – {closeTime} daily', { openTime: l.openTime, closeTime: l.closeTime })}
                                   </p>
                                 </div>
                               </div>
@@ -331,21 +332,21 @@ export default function ParkingLotsPage() {
                             <TableCell className="max-w-56">
                               <p className="flex items-start gap-1.5 text-sm text-slate-800">
                                 <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-500" aria-hidden />
-                                {l.address}
+                                {tMaybe(l.address)}
                               </p>
                             </TableCell>
                             <TableCell className="min-w-56">
                               <div className="flex items-center justify-between text-sm">
-                                <strong className="text-slate-950">{l.capacity.toLocaleString('en-US')} bays total</strong>
-                                <span className="font-mono text-xs font-bold text-amber-500">{l.zones.length} zones</span>
+                                <strong className="text-slate-950">{tr('{v} bays total', { v: l.capacity.toLocaleString(numberLocale()) })}</strong>
+                                <span className="font-mono text-xs font-bold text-amber-500">{tr('{length} zones', { length: l.zones.length })}</span>
                               </div>
                               <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-slate-200" aria-hidden>
                                 <span className="bg-indigo-700" style={{ width: `${mix.carShare}%` }} />
                                 <span className="bg-amber-500" style={{ width: `${mix.bikeShare}%` }} />
                               </div>
                               <p className="mt-1.5 flex gap-3 text-xs text-slate-700">
-                                <span><strong className="text-slate-900">{mix.cars.toLocaleString('en-US')}</strong> Cars</span>
-                                <span><strong className="text-slate-900">{mix.bikes.toLocaleString('en-US')}</strong> Motorbikes</span>
+                                <span><strong className="text-slate-900">{mix.cars.toLocaleString(numberLocale())}</strong>{' '}{tr('Cars')}</span>
+                                <span><strong className="text-slate-900">{mix.bikes.toLocaleString(numberLocale())}</strong>{' '}{tr('Motorbikes')}</span>
                               </p>
                             </TableCell>
                             <TableCell>
@@ -360,15 +361,15 @@ export default function ParkingLotsPage() {
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-sm text-slate-500">{l.managerUserId ? 'Assigned' : 'Unassigned'}</span>
+                                <span className="text-sm text-slate-500">{l.managerUserId ? tr('Assigned') : tr('Unassigned')}</span>
                               )}
                             </TableCell>
                             <TableCell>
                               <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold tracking-wide uppercase', state.chip)}>
                                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
-                                {LOT_STATES[shownState(l)]}
+                                {tMaybe(LOT_STATES[shownState(l)])}
                               </span>
-                              {isUnstaffed(l) && <p className="mt-1 max-w-48 text-xs text-amber-700">{UNSTAFFED_HINT}</p>}
+                              {isUnstaffed(l) && <p className="mt-1 max-w-48 text-xs text-amber-700">{tMaybe(UNSTAFFED_HINT)}</p>}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
@@ -380,29 +381,29 @@ export default function ParkingLotsPage() {
                                     setZoneId(null)
                                   }}
                                 >
-                                  Details
+                                  {tr('Details')}
                                   <ChevronRight />
                                 </Button>
                                 {admin && (
                                   <>
-                                    <Button variant="ghost" size="icon" aria-label={`Edit ${l.name}`} onClick={() => setEditing({ kind: 'lot', lot: l })}>
+                                    <Button variant="ghost" size="icon" aria-label={tr('Edit {name}', { name: l.name })} onClick={() => setEditing({ kind: 'lot', lot: l })}>
                                       <Pencil />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      aria-label={`Change status of ${l.name}`}
-                                      title="Change status: Active, Maintenance or Temporarily closed"
+                                      aria-label={tr('Change status of {name}', { name: l.name })}
+                                      title={tr('Change status: Active, Maintenance or Temporarily closed')}
                                       onClick={() => setEditing({ kind: 'operation', lot: l })}
                                     >
                                       <Settings2 />
                                     </Button>
                                     {/* A disabled button gets no hover, so the reason sits on the wrapper. */}
-                                    <span title={deleteBlocker(l) ?? `Delete ${l.name}`}>
+                                    <span title={deleteBlocker(l) ?? tr('Delete {name}', { name: l.name })}>
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        aria-label={`Delete ${l.name}`}
+                                        aria-label={tr('Delete {name}', { name: l.name })}
                                         disabled={deleteBlocker(l) !== null}
                                         onClick={() => setRemoving({ name: l.name, run: () => service.deleteLot(l.id) })}
                                       >
@@ -422,18 +423,18 @@ export default function ParkingLotsPage() {
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-5 py-3 text-sm text-slate-700">
                   <span>
-                    Displaying <strong className="text-slate-950">{Math.min(filtered.length, PAGE_SIZE)}</strong> of{' '}
-                    <strong className="text-slate-950">{filtered.length}</strong> Saigon infrastructure hubs
+                    {tr('Displaying')}{' '}<strong className="text-slate-950">{Math.min(filtered.length, PAGE_SIZE)}</strong>{' '}{tr('of')}
+                    <strong className="text-slate-950">{filtered.length}</strong>{' '}{tr('parking lots')}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
-                      Previous
+                      {tr('Previous')}
                     </Button>
                     <span className="font-mono text-xs">
-                      {currentPage} / {pageCount}
+                      {tMaybe(currentPage)} / {tMaybe(pageCount)}
                     </span>
                     <Button variant="outline" size="sm" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>
-                      Next
+                      {tr('Next')}
                     </Button>
                   </div>
                 </div>
@@ -450,7 +451,7 @@ export default function ParkingLotsPage() {
                   }}
                 >
                   <ArrowLeft />
-                  Back
+                  {tr('Back')}
                 </Button>
                 <span className="text-slate-400">/</span>
                 <span>{selected.code}</span>
@@ -471,17 +472,16 @@ export default function ParkingLotsPage() {
                             shownState(selected) === 'Active' ? 'emerald' : 'amber'
                           }
                         >
-                          {LOT_STATES[shownState(selected)]}
+                          {tMaybe(LOT_STATES[shownState(selected)])}
                         </Badge>
-                        {isUnstaffed(selected) && <p className="text-amber-700">{UNSTAFFED_HINT}</p>}
-                        <p>{selected.address}</p>
+                        {isUnstaffed(selected) && <p className="text-amber-700">{tMaybe(UNSTAFFED_HINT)}</p>}
+                        <p>{tMaybe(selected.address)}</p>
                         <p>
                           {selected.is24Hours
                             ? '24 hours'
-                            : `${selected.openTime} – ${selected.closeTime}`}{' '}
-                          · Capacity {selected.capacity} slots
+                            : `${selected.openTime} – ${selected.closeTime}`}{tr('· Capacity {capacity} slots', { capacity: selected.capacity })}
                         </p>
-                        {selected.description && <p>{selected.description}</p>}
+                        {selected.description && <p>{tMaybe(selected.description)}</p>}
                         {selected.imageUrl && (
                           <a
                             className="text-indigo-600 underline"
@@ -489,21 +489,20 @@ export default function ParkingLotsPage() {
                             target="_blank"
                             rel="noreferrer"
                           >
-                            View lot photo
+                            {tr('View lot photo')}
                           </a>
                         )}
                         {selected.closureReason && (
-                          <p>Reason: {selected.closureReason}</p>
+                          <p>{tr('Reason: {closureReason}', { closureReason: selected.closureReason })}</p>
                         )}
                         {selected.closedFrom &&
                           selected.status === 'TemporarilyClosed' && (
                             <p>
-                              Closed from {selected.closedFrom.replace('T', ' ')}{' '}
-                              to {selected.closedUntil.replace('T', ' ')}
+                              {tr('Closed from')}{' '}{selected.closedFrom.replace('T', ' ')}{tr('to')}{' '}{selected.closedUntil.replace('T', ' ')}
                             </p>
                           )}
                         {selected.maintenanceNotice && (
-                          <p>Notice: {selected.maintenanceNotice}</p>
+                          <p>{tr('Notice: {maintenanceNotice}', { maintenanceNotice: selected.maintenanceNotice })}</p>
                         )}
                       </div>
                       <div className="flex gap-2">
@@ -515,7 +514,7 @@ export default function ParkingLotsPage() {
                             }
                           >
                             <Pencil />
-                            Edit details
+                            {tr('Edit details')}
                           </Button>
                         )}
                         {selected && canSetStatus(selected) && (
@@ -526,7 +525,7 @@ export default function ParkingLotsPage() {
                             }
                           >
                             <Settings2 />
-                            Lot status
+                            {tr('Lot status')}
                           </Button>
                         )}
                       </div>
@@ -534,22 +533,20 @@ export default function ParkingLotsPage() {
                   </Card>
                   <LotLayoutCard lot={selected} onEdit={admin ? () => setEditing({ kind: 'lot', lot: selected }) : undefined} />
                   <h2 className="text-lg font-semibold text-slate-900">
-                    Zones · {selected.zones.length}
+                    {tr('Zones · {length}', { length: selected.zones.length })}
                   </h2>
                   <p className="text-sm text-slate-500">
-                    {selected.zones.reduce((n, z) => n + z.capacity, 0)} bays across{' '}
-                    {selected.zones.length} levels, built from the lot&apos;s model. Zones and bays are not added or
-                    removed by hand.
+                    {selected.zones.reduce((n, z) => n + z.capacity, 0)}{' '}{tr('bays across {length} levels, built from the lot\'s model. Zones and bays are not added or removed by hand.', { length: selected.zones.length })}
                   </p>
                   {!selected.zones.length ? (
                     <Card>
                       <EmptyState
                         icon={Layers}
-                        title="No model applied yet"
+                        title={tr('No model applied yet')}
                         description={
                           admin
-                            ? 'Edit the lot and pick a parking lot model: its levels, zones and bays are created from it.'
-                            : 'An Admin picks the parking lot model; its levels, zones and bays are created from it.'
+                            ? tr('Edit the lot and pick a parking lot model: its levels, zones and bays are created from it.')
+                            : tr('An Admin picks the parking lot model; its levels, zones and bays are created from it.')
                         }
                       />
                     </Card>
@@ -558,12 +555,12 @@ export default function ParkingLotsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Zone code / name</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Capacity</TableHead>
-                            <TableHead>Reserved / Walk-in</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
+                            <TableHead>{tr('Zone code / name')}</TableHead>
+                            <TableHead>{tr('Type')}</TableHead>
+                            <TableHead>{tr('Capacity')}</TableHead>
+                            <TableHead>{tr('Reserved / Walk-in')}</TableHead>
+                            <TableHead>{tr('Status')}</TableHead>
+                            <TableHead>{tr('Actions')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -574,29 +571,29 @@ export default function ParkingLotsPage() {
                                   className="text-left font-medium text-indigo-600 hover:underline"
                                   onClick={() => setZoneId(z.id)}
                                 >
-                                  {z.code} · {z.name}
+                                  {z.code} · {tMaybe(z.name)}
                                 </button>
                               </TableCell>
                               <TableCell>
                                 {
-                                  {
+                                  tMaybe({
                                     Floor: 'Floor',
                                     Row: 'Row',
                                     Area: 'Area',
-                                  }[z.zoneType]
+                                  }[z.zoneType])
                                 }
                                 {z.floorNo !== null ? ` (${z.floorNo})` : ''}
                               </TableCell>
-                              <TableCell>{z.capacity}</TableCell>
+                              <TableCell>{tMaybe(z.capacity)}</TableCell>
                               <TableCell>
-                                {z.reservationLimit} /{' '}
+                                {tMaybe(z.reservationLimit)} /{' '}
                                 {z.capacity - z.reservationLimit}
                               </TableCell>
                               <TableCell>
                                 <Badge
                                   tone={z.isActive ? 'emerald' : 'neutral'}
                                 >
-                                  {z.isActive ? 'Active' : 'Disabled'}
+                                  {z.isActive ? tr('Active') : tr('Disabled')}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -605,7 +602,7 @@ export default function ParkingLotsPage() {
                                   variant="ghost"
                                   onClick={() => setZoneId(z.id)}
                                 >
-                                  View bays
+                                  {tr('View bays')}
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -619,23 +616,21 @@ export default function ParkingLotsPage() {
                 <>
                   <Card className="p-5">
                     <p className="font-semibold text-slate-900">
-                      {zone.slots.length} bays · {zone.reservationLimit} reservable
+                      {tr('{length} bays · {reservationLimit} reservable', { length: zone.slots.length, reservationLimit: zone.reservationLimit })}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      Zone capacity: {zone.capacity} · Walk-in share:{' '}
-                      {zone.capacity - zone.reservationLimit} spaces
+                      {tr('Zone capacity: {capacity} · Walk-in share: {v} spaces', { capacity: zone.capacity, v: zone.capacity - zone.reservationLimit })}
                     </p>
                   </Card>
                   <p className="text-sm text-slate-500">
-                    Bays come from the lot&apos;s model. Reserved / Occupied change through bookings and
-                    vehicle check-in/out.
+                    {tr('Bays come from the lot\'s model. Reserved / Occupied change through bookings and vehicle check-in/out.')}
                   </p>
                   {!zone.slots.length ? (
                     <Card>
                       <EmptyState
                         icon={Layers}
-                        title="No bays in this zone"
-                        description="Bays are created from the lot's model."
+                        title={tr('No bays in this zone')}
+                        description={tr('Bays are created from the lot\'s model.')}
                       />
                     </Card>
                   ) : (
@@ -643,9 +638,9 @@ export default function ParkingLotsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Slot code</TableHead>
-                            <TableHead>Vehicle type</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead>{tr('Slot code')}</TableHead>
+                            <TableHead>{tr('Vehicle type')}</TableHead>
+                            <TableHead>{tr('Status')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -655,9 +650,9 @@ export default function ParkingLotsPage() {
                                 {s.code}
                               </TableCell>
                               <TableCell>
-                                {VEHICLE_TYPES.find(
+                                {tMaybe(VEHICLE_TYPES.find(
                                   (t) => t.id === s.vehicleTypeId,
-                                )?.name ?? s.vehicleTypeId}
+                                )?.name) ?? tMaybe(s.vehicleTypeId)}
                               </TableCell>
                               <TableCell>
                                 <Badge
@@ -669,7 +664,7 @@ export default function ParkingLotsPage() {
                                         : 'indigo'
                                   }
                                 >
-                                  {SLOT_STATES[s.status]}
+                                  {tMaybe(SLOT_STATES[s.status])}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -686,9 +681,9 @@ export default function ParkingLotsPage() {
       )}
       {managers.isError && admin && (
         <p role="alert" className="text-sm text-rose-600">
-          Could not load the manager list.{' '}
+          {tr('Could not load the manager list.')}
           <button className="underline" onClick={() => managers.refetch()}>
-            Retry
+            {tr('Retry')}
           </button>
         </p>
       )}
@@ -710,9 +705,9 @@ export default function ParkingLotsPage() {
       {removing && (
         <ConfirmDialog
           open
-          title="Delete this configuration?"
-          description={`Delete ${removing.name}? Only do this for data that has never been in operation. Deleted data cannot be restored from this screen.`}
-          confirmLabel="Delete"
+          title={tr('Delete this configuration?')}
+          description={tr('Delete {name}? Only do this for data that has never been in operation. Deleted data cannot be restored from this screen.', { name: removing.name })}
+          confirmLabel={tr('Delete')}
           tone="destructive"
           pending={deleting}
           onOpenChange={(o) => {

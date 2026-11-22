@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input, Label } from '@/components/ui/form-controls'
 import { randomPlate } from '@/lib/vnPlate'
+import { t, tMaybe } from '@/i18n'
 
 /**
  * Development tool: renders the 3D gate lanes with random vehicles, plates, camera poses and light,
@@ -165,21 +166,21 @@ export default function AnprDatasetPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Plate reader training images"
+        title={t('Plate reader training images')}
        
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card>
           <CardHeader>
-            <CardTitle>Labels preview</CardTitle>
-            <CardDescription>Plate box in green, character boxes in amber. Saved images are 1280 × 720.</CardDescription>
+            <CardTitle>{t('Labels preview')}</CardTitle>
+            <CardDescription>{t('Plate box in green, character boxes in amber. Saved images are 1280 × 720.')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <canvas ref={preview} className="aspect-video w-full rounded-lg bg-slate-50 ring-1 ring-slate-200" />
             {last && (
               <p className="font-mono text-sm text-slate-700">
-                {last.plate} • {last.chars} characters labelled
+                {t('{plate} • {chars} characters labelled', { plate: last.plate, chars: last.chars })}
               </p>
             )}
           </CardContent>
@@ -187,44 +188,44 @@ export default function AnprDatasetPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Generate</CardTitle>
-            <CardDescription>Choose an empty folder: the images go to images/ and one label file per image to labels/.</CardDescription>
+            <CardTitle>{t('Generate')}</CardTitle>
+            <CardDescription>{t('Choose an empty folder: the images go to images/ and one label file per image to labels/.')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="anpr-count">Number of images</Label>
+              <Label htmlFor="anpr-count">{t('Number of images')}</Label>
               <Input id="anpr-count" type="number" min={10} max={20000} value={count} disabled={running} onChange={(e) => setCount(Math.max(10, Math.min(20000, Number(e.target.value) || 10)))} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="anpr-bikes">Motorbikes (%)</Label>
+              <Label htmlFor="anpr-bikes">{t('Motorbikes (%)')}</Label>
               <Input id="anpr-bikes" type="number" min={0} max={100} value={bikeShare} disabled={running} onChange={(e) => setBikeShare(Math.max(0, Math.min(100, Number(e.target.value) || 0)))} />
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" disabled={running} onClick={() => void previewOne()}>
-                <Eye /> Preview a sample
+                <Eye />{' '}{t('Preview a sample')}
               </Button>
               {running ? (
                 <Button variant="outline" onClick={() => (stop.current = true)}>
-                  <Square /> Stop
+                  <Square />{' '}{t('Stop')}
                 </Button>
               ) : (
                 <Button disabled={!canSave} onClick={() => void generate()}>
-                  <FolderOpen /> Choose folder and generate
+                  <FolderOpen />{' '}{t('Choose folder and generate')}
                 </Button>
               )}
             </div>
-            {!canSave && <p className="text-sm text-amber-500">Saving to a folder needs Chrome or Edge on a computer.</p>}
+            {!canSave && <p className="text-sm text-amber-500">{t('Saving to a folder needs Chrome or Edge on a computer.')}</p>}
             {(running || done > 0) && (
               <div className="space-y-1.5" aria-live="polite">
                 <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                   <div className="h-full bg-indigo-500 transition-[width]" style={{ width: `${(done / count) * 100}%` }} />
                 </div>
                 <p className="text-sm text-slate-700">
-                  {done} / {count} images
+                  {t('{done} / {count} images', { done, count })}
                 </p>
               </div>
             )}
-            {message && <p className="text-sm text-slate-900">{message}</p>}
+            {message && <p className="text-sm text-slate-900">{tMaybe(message)}</p>}
           </CardContent>
         </Card>
       </div>

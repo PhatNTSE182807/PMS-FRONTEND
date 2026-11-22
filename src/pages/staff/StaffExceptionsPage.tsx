@@ -13,6 +13,7 @@ import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/fea
 import { LostTicketReviews } from '@/components/features/staff/LostTicketReviews'
 import { BookedBayCases } from '@/components/features/staff/BookedBayCases'
 import { useMyStaffLots } from '@/hooks/useParking'
+import { t, tMaybe } from '@/i18n'
 
 /**
  * Lost ticket desk: find a walk-in still inside by its plate, then upload the driver's papers (the same popup as
@@ -48,14 +49,13 @@ function LostTicketDesk() {
 
   return (
     <Panel>
-      <SectionTitle icon={<FileWarning className="size-5 text-amber-500" aria-hidden />}>Lost ticket desk</SectionTitle>
+      <SectionTitle icon={<FileWarning className="size-5 text-amber-500" aria-hidden />}>{t('Lost ticket desk')}</SectionTitle>
       <p className="mt-1 text-sm text-slate-700">
-        Walk-in vehicles only: find the vehicle still inside by its plate, photograph the driver&apos;s Citizen ID and registration certificate,
-        then check them. A booked vehicle has no paper ticket and is refused.
+        {t('Walk-in vehicles only: find the vehicle still inside by its plate, photograph the driver\'s Citizen ID and registration certificate, then check them. A booked vehicle has no paper ticket and is refused.')}
       </p>
       <form noValidate onSubmit={find} className="mt-4 flex flex-wrap items-start gap-3">
         <div className="w-60 space-y-1.5">
-          <Label htmlFor="lost-plate">Licence plate</Label>
+          <Label htmlFor="lost-plate">{t('Licence plate')}</Label>
           <Input
             id="lost-plate"
             value={plate}
@@ -70,13 +70,13 @@ function LostTicketDesk() {
           />
         </div>
         <Button type="submit" variant="gold" className="h-9 sm:mt-6" disabled={searching || !lotId}>
-          <IdCard /> {searching ? 'Finding…' : 'Find vehicle and upload papers'}
+          <IdCard /> {searching ? t('Finding…') : t('Find vehicle and upload papers')}
         </Button>
         <div id="lost-plate-error" className="basis-full">
-          <FieldError message={error} />
+          <FieldError message={tMaybe(error)} />
         </div>
       </form>
-      {noLot && <p className="mt-3 text-sm font-medium text-rose-600">You are not assigned to a parking lot yet.</p>}
+      {noLot && <p className="mt-3 text-sm font-medium text-rose-600">{t('You are not assigned to a parking lot yet.')}</p>}
       <LostTicketPapersDialog vehicle={vehicle} onClose={() => setVehicle(null)} />
     </Panel>
   )

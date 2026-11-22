@@ -1,4 +1,5 @@
 import { LOGO_SRC } from './ParkingLogo';
+import { t, tMaybe } from '@/i18n'
 
 /**
  * Full-window two-column shell shared by Login, Email-code Login, Register and Activate:
@@ -13,7 +14,7 @@ export default function AuthSplitLayout({ title, subtitle, children }) {
 
         <div className="auth-split__brand-content">
           <div className="auth-split__brand-row">
-            <img src={LOGO_SRC} alt="XXIV Parking logo" className="auth-split__logo" />
+            <img src={LOGO_SRC} alt={t('XXIV Parking logo')} className="auth-split__logo" />
 
             <h1 className="auth-split__title">
               <span className="brand-gold">XXIV</span>
@@ -22,13 +23,13 @@ export default function AuthSplitLayout({ title, subtitle, children }) {
           </div>
 
           <p className="auth-split__tagline">
-            Find a slot, reserve it and manage your vehicles in one place.
+            {t('Find a slot, reserve it and manage your vehicles in one place.')}
           </p>
 
           <ul className="auth-split__features">
-            <li>Real-time slot availability</li>
-            <li>Reservations &amp; digital tickets</li>
-            <li>Vehicle &amp; account management</li>
+            <li>{t('Real-time slot availability')}</li>
+            <li>{t('Reservations & digital tickets')}</li>
+            <li>{t('Vehicle & account management')}</li>
           </ul>
         </div>
       </aside>
@@ -37,8 +38,8 @@ export default function AuthSplitLayout({ title, subtitle, children }) {
         <div className="auth-split__panel-inner">
           {(title || subtitle) && (
             <header className="auth-split__heading">
-              {title && <h2 className="auth-split__heading-title">{title}</h2>}
-              {subtitle && <p className="auth-split__heading-subtitle">{subtitle}</p>}
+              {title && <h2 className="auth-split__heading-title">{tMaybe(title)}</h2>}
+              {subtitle && <p className="auth-split__heading-subtitle">{tMaybe(subtitle)}</p>}
             </header>
           )}
           {children}

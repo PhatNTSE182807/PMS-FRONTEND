@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { t } from '@/i18n'
 
 /**
  * Background videos of the hero carousel, shown one at a time. `start` (seconds) skips each intro so
@@ -137,7 +138,7 @@ export function HeroSection() {
         <h1 className="home-hero__title">XXIV Parking</h1>
 
         <button type="button" className="home-hero__discover" onClick={discover}>
-          Discover
+          {t('Discover')}
           <ChevronDown aria-hidden />
         </button>
       </div>

@@ -9,7 +9,7 @@ import { useLotRealtime } from '@/hooks/useLotRealtime'
 import { usePublicPrices } from '@/hooks/usePricing'
 import { useBayForecast, useBookableLots, useMyReservations } from '@/hooks/useReservations'
 import { useNow } from '@/hooks/useNow'
-import { checkBookingTimes, defaultBookingTimes, describeWindow } from '@/lib/bookingTime'
+import { checkBookingTimes, defaultBookingTimes } from '@/lib/bookingTime'
 import { BookingTimeFields } from '@/components/customer/BookingTimeFields'
 import type { BayForecastDTO } from '@/types/operations.dto'
 import { formatNumber } from '@/lib/format'
@@ -26,6 +26,7 @@ import { GarageView } from '../garage/GarageView'
 import { buildGarage, standardBays, type Bay, type BayStatus, type GarageFloor } from '../garage/garageModel'
 import { ParkMotorbikePanel } from './ParkMotorbikePanel'
 import { ReserveBayPanel } from './ReserveBayPanel'
+import { t, tMaybe, localDateFormat } from '@/i18n'
 
 /** What the map needs of a lot, from either the live lot list or the demo capacity data. */
 type MapLot = Pick<ParkingLotCapacityDTO, 'id' | 'code' | 'name' | 'address'> & {
@@ -42,7 +43,7 @@ const STATUS_LABEL: Record<BayStatus, string> = {
   OCCUPIED: 'Occupied',
 }
 
-const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const clock = localDateFormat({ hour: '2-digit', minute: '2-digit' })
 
 /** The selected car bay's state during the picked window. */
 function forecastLabel(f: BayForecastDTO): string {
@@ -80,30 +81,30 @@ function MyVehicleCard({ current, bayCode, onClose }: { current: CurrentSessionD
   return (
     <BayVehicleCard
       bayCode={bayCode}
-      title="Your vehicle"
+      title={t('Your vehicle')}
       badge={{ text: current.vehicleLabel || session.vehicleTypeName || 'Parked', tone: 'mine' }}
       rows={[
-        { label: 'Plate', value: session.hasPlate ? session.plateNumber : 'No plate' },
-        { label: 'Entered', value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
-        { label: 'Parked for', value: formatStay(stay ?? current.elapsedMinutes) },
+        { label: t('Plate'), value: session.hasPlate ? session.plateNumber : 'No plate' },
+        { label: t('Entered'), value: `${formatTime(session.entryTime)} · ${formatDate(session.entryTime)}` },
+        { label: t('Parked for'), value: formatStay(stay ?? current.elapsedMinutes) },
         // A lost-ticket case waiting for the Staff decision has no fee yet
         ...(current.lostTicketPending
-          ? [{ label: 'Fee', value: 'Lost ticket • Staff checking the papers', emphasis: true }]
+          ? [{ label: t('Fee'), value: 'Lost ticket • Staff checking the papers', emphasis: true }]
           : [
-              { label: 'Fee so far', value: vndOrDash(current.feeSoFar), emphasis: true },
-              ...(current.depositApplied > 0 ? [{ label: 'Deposit', value: `− ${vndOrDash(current.depositApplied)}` }] : []),
-              ...(current.alreadyPaid > 0 ? [{ label: 'Already paid', value: `− ${vndOrDash(current.alreadyPaid)}` }] : []),
-              { label: 'Due now', value: vndOrDash(current.amountDue) },
+              { label: t('Fee so far'), value: vndOrDash(current.feeSoFar), emphasis: true },
+              ...(current.depositApplied > 0 ? [{ label: t('Deposit'), value: `− ${vndOrDash(current.depositApplied)}` }] : []),
+              ...(current.alreadyPaid > 0 ? [{ label: t('Already paid'), value: `− ${vndOrDash(current.alreadyPaid)}` }] : []),
+              { label: t('Due now'), value: vndOrDash(current.amountDue) },
             ]),
       ]}
       footer={
         current.lostTicketPending ? (
           <>
-            The fee and fine are settled at the exit lane once the case is decided. <Link to="/me" className="cx-link">See the details</Link>
+            {t('The fee and fine are settled at the exit lane once the case is decided.')}{' '}<Link to="/me" className="cx-link">{t('See the details')}</Link>
           </>
         ) : (
           <>
-            The fee refreshes every minute. <Link to="/me" className="cx-link">Pay or show the exit pass</Link>
+            {t('The fee refreshes every minute.')}{' '}<Link to="/me" className="cx-link">{t('Pay or show the exit pass')}</Link>
           </>
         )
       }
@@ -203,11 +204,6 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow, realtime.connected)
   const forecastBySlot = useMemo(() => new Map((forecast.data ?? []).map((f) => [String(f.slotId), f])), [forecast.data])
   const floors = useMemo(() => projectFloors(liveFloors, forecastBySlot), [liveFloors, forecastBySlot])
-  const forecastOn = forecastBySlot.size > 0
-  // Car bays only: motorbikes claim a bay on arrival and are not part of the picked window
-  const projectedFree = floors
-    .filter((f) => f.kind === 'car')
-    .reduce((sum, f) => sum + standardBays(f).filter((b) => forecastBySlot.get(b.id)?.bookable).length, 0)
   const [focusFloor, setFocusFloor] = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -271,9 +267,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
     <section className="cx-card cx-map" id="map" aria-labelledby="map-title">
       <div className="cx-map__head">
         <div>
-          <h2 className="cx-map__title" id="map-title">Interactive 3D Parking Map &amp; Slot Booking</h2>
+          <h2 className="cx-map__title" id="map-title">{t('Interactive 3D Parking Map & Slot Booking')}</h2>
         </div>
-        <div className="cx-tabs" role="tablist" aria-label="Parking terminal">
+        <div className="cx-tabs" role="tablist" aria-label={t('Parking lot')}>
           {lots.map((l) => (
             <button
               key={l.id}
@@ -283,9 +279,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               className={`cx-tab ${l.id === lot?.id ? 'cx-tab--active' : ''}`}
               onClick={() => changeLot(l.id)}
             >
-              {l.name}
+              {tMaybe(l.name)}
               {l.isBookable === false
-                ? ' • Maintenance'
+                ? t(' • Maintenance')
                 : FILL_LABEL[fillOfLot(l.id) ?? 'Available'] && ` • ${FILL_LABEL[fillOfLot(l.id) ?? 'Available']}`}
             </button>
           ))}
@@ -293,21 +289,21 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
       </div>
 
       {isLoadingLots && <div className="cx-skeleton" style={{ height: '30rem' }} />}
-      {!isLoadingLots && !lot && <p className="cx-empty">No parking terminals are available right now.</p>}
+      {!isLoadingLots && !lot && <p className="cx-empty">{t('No parking lots are available right now.')}</p>}
 
       {lot && (
         <div className="cx-map__body">
           <div className="cx-map__board cx-map__board--3d">
             <div className="cx-map__legend">
               <span className="cx-map__legend-items">
-                <span><span className="cx-dot" aria-hidden="true" /> Available</span>
-                <span><span className="cx-dot cx-dot--gold" aria-hidden="true" /> Booked</span>
-                <span><span className="cx-dot cx-dot--red" aria-hidden="true" /> Occupied</span>
-                <span><span className="cx-dot cx-dot--teal" aria-hidden="true" /> Selected</span>
+                <span><span className="cx-dot" aria-hidden="true" />{' '}{t('Available')}</span>
+                <span><span className="cx-dot cx-dot--gold" aria-hidden="true" />{' '}{t('Booked')}</span>
+                <span><span className="cx-dot cx-dot--red" aria-hidden="true" />{' '}{t('Occupied')}</span>
+                <span><span className="cx-dot cx-dot--teal" aria-hidden="true" />{' '}{t('Selected')}</span>
               </span>
-              <div className="cx-floor-tabs" role="tablist" aria-label="Floor">
+              <div className="cx-floor-tabs" role="tablist" aria-label={t('Floor')}>
                 <button type="button" role="tab" aria-selected={focusFloor === null} className={`cx-tab ${focusFloor === null ? 'cx-tab--active' : ''}`} onClick={() => setFocusFloor(null)}>
-                  All floors
+                  {t('All floors')}
                 </button>
                 {floors.map((f) => (
                   <button
@@ -318,7 +314,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                     className={`cx-tab ${focusFloor === f.index ? 'cx-tab--active' : ''}`}
                     onClick={() => setFocusFloor(f.index)}
                   >
-                    {f.level} {f.kind === 'car' ? <Car size={13} aria-hidden /> : <Bike size={13} aria-hidden />}
+                    {tMaybe(f.level)} {f.kind === 'car' ? <Car size={13} aria-hidden /> : <Bike size={13} aria-hidden />}
                   </button>
                 ))}
               </div>
@@ -345,55 +341,52 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
             </div>
 
             <div className="cx-map__footer">
-              <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {lot.address}</span>
+              <span><MapPin size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> {tMaybe(lot.address)}</span>
               {lot.address && (
                 <button type="button" className="cx-btn cx-map__view-map" onClick={() => setShowDirections(true)}>
-                  <Navigation size={14} aria-hidden /> View map
+                  <Navigation size={14} aria-hidden />{' '}{t('View map')}
                 </button>
               )}
-              <span><Rotate3d size={13} aria-hidden style={{ verticalAlign: '-2px' }} /> Drag to rotate • scroll to zoom</span>
+              <span><Rotate3d size={13} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}{t('Drag to rotate • scroll to zoom')}</span>
             </div>
           </div>
 
           <aside className="cx-map__detail" aria-live="polite">
             <div className="cx-card__head" style={{ marginBottom: 0 }}>
               <span className="cx-eyebrow cx-eyebrow--teal">
-                <Info size={14} aria-hidden /> Selected slot
+                <Info size={14} aria-hidden />{' '}{t('Selected slot')}
               </span>
               <span className="cx-chip cx-chip--teal">{lot.code}</span>
             </div>
 
             {underMaintenance && (
               <p className="cx-map__mine" role="status">
-                <Wrench size={15} aria-hidden /> {lot.maintenanceNotice || DEFAULT_MAINTENANCE_NOTICE}
+                <Wrench size={15} aria-hidden /> {tMaybe(lot.maintenanceNotice) || tMaybe(DEFAULT_MAINTENANCE_NOTICE)}
               </p>
             )}
 
             {!underMaintenance && lotFill === 'Full' && (
               <p className="cx-map__mine cx-map__full" role="status">
-                <CircleAlert size={15} aria-hidden /> This lot is full right now. Pick your time: bays whose vehicle leaves
-                before you arrive turn green, or pick another lot.
+                <CircleAlert size={15} aria-hidden />{' '}{t('This lot is full right now. Pick your time: bays whose vehicle leaves before you arrive turn green, or pick another lot.')}
               </p>
             )}
             {!underMaintenance && lotFill === 'AlmostFull' && (
               <p className="cx-map__mine" role="status">
-                <CircleAlert size={15} aria-hidden /> This lot is almost full: book soon to keep a bay.
+                <CircleAlert size={15} aria-hidden />{' '}{t('This lot is almost full: book soon to keep a bay.')}
               </p>
             )}
 
             {bookableBays && hasCarFloor && !underMaintenance && (
               <div className="cx-map__when">
                 <span className="cx-label">
-                  <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} /> When will you park your car?
+                  <CalendarClock size={14} aria-hidden style={{ verticalAlign: '-2px' }} />{' '}{t('When will you park your car?')}
                 </span>
                 <BookingTimeFields value={times} onChange={setTimes} now={now} idPrefix={`map-${lot.id}`} />
-                <p className="cx-field__hint" role="status">
-                  {!checkedTimes.ok
-                    ? checkedTimes.error
-                    : forecastOn
-                      ? `${describeWindow(checkedTimes.arrivalTime, checkedTimes.departureTime, now)}: ${projectedFree} car bays free. A bay whose vehicle leaves before you arrive shows as free.`
-                      : 'Loading the bays for your time…'}
-                </p>
+                {!checkedTimes.ok && (
+                  <p className="cx-field__hint" role="status">
+                    {tMaybe(checkedTimes.error)}
+                  </p>
+                )}
               </div>
             )}
 
@@ -401,41 +394,41 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               <>
                 <div className="cx-map__stall">
                   <div>
-                    <span className="cx-label">Stall ID</span>
-                    <span className="cx-map__stall-name">Bay {selected.code}</span>
+                    <span className="cx-label">{t('Bay code')}</span>
+                    <span className="cx-map__stall-name">{t('Bay {code}', { code: selected.code })}</span>
                     <span className="cx-metric__sub">
-                      Floor {selectedFloor.level} • {selectedFloor.kind === 'car' ? 'Car deck' : 'Motorbike deck'}
+                      {t('Floor {level} •', { level: selectedFloor.level })}{' '}{selectedFloor.kind === 'car' ? t('Car deck') : t('Motorbike deck')}
                     </span>
                   </div>
-                  <button type="button" className="cx-icon-btn" aria-label="Clear selection" onClick={() => setSelectedId(null)}>
+                  <button type="button" className="cx-icon-btn" aria-label={t('Clear selection')} onClick={() => setSelectedId(null)}>
                     <X aria-hidden />
                   </button>
                 </div>
                 <div className="cx-map__cells">
                   <div className="cx-map__cell">
-                    <span className="cx-label">Status</span>
+                    <span className="cx-label">{t('Status')}</span>
                     <strong className={selectedBookable ? 'is-gold' : undefined}>
                       {myBayIds.has(selected.id)
-                        ? 'Your booking'
+                        ? t('Your booking')
                         : myParkedByBay.has(selected.id)
-                          ? 'Your vehicle is parked here'
+                          ? t('Your vehicle is parked here')
                           : selected.penalty
-                            ? selected.status === 'OCCUPIED' ? 'Penalty bay • towed vehicle' : 'Penalty bay'
+                            ? selected.status === 'OCCUPIED' ? t('Penalty bay • towed vehicle') : t('Penalty bay')
                             : selectedForecast
-                              ? forecastLabel(selectedForecast)
-                              : STATUS_LABEL[selected.status]}
+                              ? tMaybe(forecastLabel(selectedForecast))
+                              : tMaybe(STATUS_LABEL[selected.status])}
                     </strong>
                   </div>
                   <div className="cx-map__cell">
-                    <span className="cx-label">Vehicle type</span>
-                    <strong>{selectedFloor.kind === 'car' ? '4-seat & 7-seat cars' : 'Motorbikes'}</strong>
+                    <span className="cx-label">{t('Vehicle type')}</span>
+                    <strong>{selectedFloor.kind === 'car' ? t('4-seat & 7-seat cars') : t('Motorbikes')}</strong>
                   </div>
                   <div className="cx-map__cell">
-                    <span className="cx-label">Rate</span>
-                    <strong>{price ? priceLabel(price) : '—'}</strong>
+                    <span className="cx-label">{t('Rate')}</span>
+                    <strong>{price ? tMaybe(priceLabel(price)) : '—'}</strong>
                   </div>
                   <div className="cx-map__cell">
-                    <span className="cx-label">Floor free now</span>
+                    <span className="cx-label">{t('Floor free now')}</span>
                     <strong className="is-gold">{formatNumber(selectedFloor.liveFree)} / {formatNumber(selectedFloor.liveTotal)}</strong>
                   </div>
                 </div>
@@ -443,10 +436,10 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                   <Link to="/me/bookings" className="cx-btn cx-btn--light cx-btn--block">
                     <CircleCheck aria-hidden />
                     {myActive.find((r) => String(r.slotId) === selected.id)?.status === 'PendingDeposit'
-                      ? 'Booked for you • pay the deposit'
+                      ? t('Booked for you • pay the deposit')
                       : selectedFloor.kind === 'car'
-                        ? 'Booked for you • show my QR'
-                        : 'Held for you • Staff checks you in at the gate'}
+                        ? t('Booked for you • show my QR')
+                        : t('Held for you • Staff checks you in at the gate')}
                   </Link>
                 ) : selectedBookable && !selected.penalty && bookableBays && !underMaintenance && !(selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)) ? (
                   // Cars book ahead with a time and an optional deposit; motorbikes claim the bay now
@@ -465,16 +458,16 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                   <button type="button" className="cx-btn cx-btn--light cx-btn--block" disabled>
                     <CircleCheck aria-hidden />
                     {myBayIds.has(selected.id)
-                      ? 'Booked for you'
+                      ? t('Booked for you')
                       : selected.penalty
-                        ? 'Penalty bay • only for towed vehicles'
+                        ? t('Penalty bay • only for towed vehicles')
                         : underMaintenance
-                        ? 'Under maintenance • view only'
+                        ? t('Under maintenance • view only')
                         : !selectedBookable
-                        ? selectedForecast ? 'Not available at your time • pick another time or bay' : 'Not available'
+                        ? selectedForecast ? t('Not available at your time • pick another time or bay') : t('Not available')
                         : selectedFloor.kind === 'motorbike' && floorFull(selectedFloor)
-                        ? 'The motorbike floor is full • try again soon'
-                        : 'This lot has no published layout yet'}
+                        ? t('The motorbike floor is full • try again soon')
+                        : t('This lot has no published layout yet')}
                   </button>
                 )}
               </>
@@ -483,8 +476,8 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                 <MousePointerClick aria-hidden />
                 <p>
                   {underMaintenance
-                    ? 'Click a bay in the 3D model to see its details. This lot is not taking bookings right now.'
-                    : 'Click a green bay in the 3D model to see its details and book it.'}
+                    ? t('Click a bay in the 3D model to see its details. This lot is not taking bookings right now.')
+                    : t('Click a green bay in the 3D model to see its details and book it.')}
                 </p>
               </div>
             )}
@@ -497,15 +490,15 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                 return (
                   <button key={f.level} type="button" className="cx-map__floor" onClick={() => setFocusFloor(f.index)}>
                     <span className="cx-map__floor-name">
-                      {f.level} • {f.kind === 'car' ? 'Cars' : 'Motorbikes'}
-                      {FILL_LABEL[fill] && <strong className={fill === 'Full' ? 'cx-map__fill cx-map__fill--full' : 'cx-map__fill'}> • {FILL_LABEL[fill]}</strong>}
+                      {tMaybe(f.level)} • {f.kind === 'car' ? t('Cars') : t('Motorbikes')}
+                      {FILL_LABEL[fill] && <strong className={fill === 'Full' ? 'cx-map__fill cx-map__fill--full' : 'cx-map__fill'}> • {tMaybe(FILL_LABEL[fill])}</strong>}
                     </span>
-                    <span className="cx-map__floor-meta">{f.zoneLabel}</span>
+                    <span className="cx-map__floor-meta">{tMaybe(f.zoneLabel)}</span>
                     <span className={`cx-meter ${fill === 'Full' ? 'cx-meter--full' : fill === 'AlmostFull' ? 'cx-meter--busy' : ''}`}>
                       <span style={{ width: `${Math.min(100, percent)}%` }} />
                     </span>
                     <span className="cx-map__floor-meta">
-                      {formatNumber(f.liveFree)} free of {formatNumber(f.liveTotal)} • {free} bookable bays shown
+                      {t('{liveFree} free of {liveTotal} • {free} bookable bays shown', { liveFree: formatNumber(f.liveFree), liveTotal: formatNumber(f.liveTotal), free })}
                     </span>
                   </button>
                 )
@@ -514,9 +507,9 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
 
             {myActive.map((r) => (
               <p key={r.id} className="cx-map__mine">
-                <CircleCheck size={15} aria-hidden /> Your booking: bay <strong>{r.slotCode}</strong>
-                {r.status === 'PendingDeposit' ? ' • deposit pending' : ' • confirmed'}
-                <Link to="/me/bookings" className="cx-link">Manage</Link>
+                <CircleCheck size={15} aria-hidden />{' '}{t('Your booking: bay')}{' '}<strong>{tMaybe(r.slotCode)}</strong>
+                {r.status === 'PendingDeposit' ? t(' • deposit pending') : t(' • confirmed')}
+                <Link to="/me/bookings" className="cx-link">{t('Manage')}</Link>
               </p>
             ))}
           </aside>

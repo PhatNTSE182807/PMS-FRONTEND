@@ -31,6 +31,7 @@ import { useAddVehicle, useCheckPlateAvailability, useDeleteVehicle, useProfile,
 import { useRejectedVehicles, useVehicleDocumentDraft } from '@/hooks/useVehicleDocuments'
 import type { VehicleDTO, VehicleTypeDTO } from '@/types/profile.dto'
 import { DOCUMENT_SLOTS } from '@/types/vehicleDocument.dto'
+import { t as tr, tMaybe, localDateFormat } from '@/i18n'
 
 /** Used while the vehicle-type list loads, or if it cannot be fetched (same ids as the backend seed). */
 const FALLBACK_TYPES: VehicleTypeDTO[] = [
@@ -69,12 +70,12 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
     <div className="cx-mini-vehicle">
       <Icon aria-hidden />
       <div className="cx-mini-vehicle__text">
-        <strong>{vehicleTitle(vehicle)}</strong>
+        <strong>{tMaybe(vehicleTitle(vehicle))}</strong>
         <span className="cx-mono">{vehicle.licensePlate}</span>
-        <span className={`cx-chip ${chip.className}`} title={vehicle.verificationNote ?? undefined}>{chip.label}</span>
+        <span className={`cx-chip ${chip.className}`} title={tMaybe(vehicle.verificationNote) ?? undefined}>{tMaybe(chip.label)}</span>
       </div>
       {vehicle.isDefault ? (
-        <span className="cx-chip cx-chip--gold"><Star aria-hidden /> Primary</span>
+        <span className="cx-chip cx-chip--gold"><Star aria-hidden />{' '}{tr('Primary')}</span>
       ) : (
         <button
           type="button"
@@ -82,19 +83,19 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
           disabled={setDefault.isPending}
           onClick={() =>
             setDefault.mutate(vehicle.vehicleId, {
-              onSuccess: () => toast.success(`${vehicle.licensePlate} is now your primary vehicle.`),
+              onSuccess: () => toast.success(tr('{licensePlate} is now your primary vehicle.', { licensePlate: vehicle.licensePlate })),
               onError: (error) => toast.error(getErrorMessage(error, 'Could not change the primary vehicle.')),
             })
           }
         >
-          Set primary
+          {tr('Set primary')}
         </button>
       )}
       <button
         type="button"
         className="cx-icon-btn"
-        aria-label={`Papers of ${vehicle.licensePlate}`}
-        title="Papers and review status"
+        aria-label={tr('Papers of {licensePlate}', { licensePlate: vehicle.licensePlate })}
+        title={tr('Papers and review status')}
         onClick={onPapers}
       >
         <FileCheck2 aria-hidden />
@@ -102,12 +103,12 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
       <button
         type="button"
         className="cx-icon-btn"
-        aria-label={`Remove ${vehicle.licensePlate}`}
+        aria-label={tr('Remove {licensePlate}', { licensePlate: vehicle.licensePlate })}
         disabled={remove.isPending}
         onClick={() => {
           if (!window.confirm(`Remove ${vehicle.licensePlate} from your fleet?`)) return
           remove.mutate(vehicle.vehicleId, {
-            onSuccess: () => toast.success(`${vehicle.licensePlate} removed.`),
+            onSuccess: () => toast.success(tr('{licensePlate} removed.', { licensePlate: vehicle.licensePlate })),
             onError: (error) => toast.error(getErrorMessage(error, 'Could not remove the vehicle.')),
           })
         }}
@@ -119,7 +120,7 @@ function MiniVehicle({ vehicle, onPapers }: { vehicle: VehicleDTO; onPapers: () 
 }
 
 const decidedOn = (iso: string | null | undefined) =>
-  iso ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : ''
+  iso ? localDateFormat({ day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : ''
 
 /**
  * Registrations Staff rejected: those vehicles were removed from the fleet, so they are listed apart
@@ -130,16 +131,16 @@ function RejectedRegistrations() {
   if (rejected.length === 0) return null
   return (
     <div className="vd-rejected" role="status">
-      <p className="vd-rejected__title">Rejected registrations</p>
+      <p className="vd-rejected__title">{tr('Rejected registrations')}</p>
       {rejected.map((r) => (
         <div key={r.verificationId} className="vd-rejected__item">
           <div className="vd-rejected__head">
             <strong className="vd-mono">{r.licensePlate}</strong>
             {(r.brand || r.model) && <span>{[r.brand, r.model].filter(Boolean).join(' ')}</span>}
-            <span className="cx-chip cx-chip--red">Rejected {decidedOn(r.decidedAt)}</span>
+            <span className="cx-chip cx-chip--red">{tr('Rejected')}{' '}{decidedOn(r.decidedAt)}</span>
           </div>
-          {r.reviewNote && <p>Staff note: {r.reviewNote}</p>}
-          <p className="vd-rejected__hint">This vehicle was removed from your fleet. Register it again with new photos.</p>
+          {r.reviewNote && <p>{tr('Staff note: {reviewNote}', { reviewNote: r.reviewNote })}</p>}
+          <p className="vd-rejected__hint">{tr('This vehicle was removed from your account. Register it again with new photos.')}</p>
         </div>
       ))}
     </div>
@@ -251,11 +252,8 @@ export default function RegisterVehiclePage() {
     <form onSubmit={submit} noValidate>
       <header className="cx-page-head">
         <div>
-          <h1 className="cx-page-title">Register Vehicle &amp; Upload Documents</h1>
+          <h1 className="cx-page-title">{tr('Register Vehicle & Upload Documents')}</h1>
         </div>
-        <span className="cx-pill">
-          <span className="cx-dot cx-dot--gold" aria-hidden="true" /> Plate gateway ready
-        </span>
       </header>
 
       <div className="cx-split">
@@ -264,9 +262,9 @@ export default function RegisterVehiclePage() {
             <div className="cx-card__head">
               <div className="cx-card__title-row">
                 <span className="cx-card__icon"><IdCard aria-hidden /></span>
-                <h2 className="cx-card__title" id="identification-title">Vehicle Identification</h2>
+                <h2 className="cx-card__title" id="identification-title">{tr('Vehicle Identification')}</h2>
               </div>
-              <span className="cx-label">Step 1 of 2</span>
+              <span className="cx-label">{tr('Step 1 of 2')}</span>
             </div>
 
             <div className="cx-form">
@@ -274,18 +272,18 @@ export default function RegisterVehiclePage() {
                 <div role="alert" className="cx-note cx-note--warn">
                   <AlertTriangle aria-hidden />
                   <span className="cx-note__text">
-                    <strong>Citizen ID required:</strong> You must save your Citizen ID in your profile before registering a vehicle.
+                    <strong>{tr('Citizen ID required:')}</strong>{' '}{tr('You must save your Citizen ID in your profile before registering a vehicle.')}
                   </span>
                   <Link to="/me/profile" className="cx-btn cx-btn--sm">
-                    Update Profile
+                    {tr('Update Profile')}
                   </Link>
                 </div>
               )}
               <div className="cx-field">
-                <label className="cx-field__label" htmlFor="vehicle-plate">Official license plate number</label>
+                <label className="cx-field__label" htmlFor="vehicle-plate">{tr('Official license plate number')}</label>
                 <div className={`cx-plate-input ${isPlateTaken ? 'is-invalid' : ''}`}>
                   <span className="cx-plate-input__country">
-                    <span className="cx-plate-input__flag" aria-hidden="true" /> VN
+                    <span className="cx-plate-input__flag" aria-hidden="true" />{' '}{tr('VN')}
                   </span>
                   <input
                     id="vehicle-plate"
@@ -313,17 +311,17 @@ export default function RegisterVehiclePage() {
                 {isPlateTaken ? (
                   <p className="cx-field__error" style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <AlertCircle style={{ width: '0.9rem', height: '0.9rem', flexShrink: 0 }} />
-                    {plateErrorMsg}
+                    {tMaybe(plateErrorMsg)}
                   </p>
                 ) : (
                   <p className="cx-field__hint" id="vehicle-plate-hint">
-                    Vietnamese format: XXA-XXX.XX or XXA-XXXX. Spaces and separators are accepted.
+                    {tr('Vietnamese format: XXA-XXX.XX or XXA-XXXX. Spaces and separators are accepted.')}
                   </p>
                 )}
               </div>
 
               <div className="cx-field">
-                <span className="cx-field__label" id="vehicle-category-label">Vehicle category</span>
+                <span className="cx-field__label" id="vehicle-category-label">{tr('Vehicle category')}</span>
                 <div className="cx-categories" role="radiogroup" aria-labelledby="vehicle-category-label">
                   {types.map((t) => {
                     const kind = vehicleKind(t)
@@ -340,8 +338,8 @@ export default function RegisterVehiclePage() {
                       >
                         <Icon aria-hidden />
                         <span className="cx-category__text">
-                          <span className="cx-category__name">{t.name}</span>
-                          <span className="cx-category__desc">{t.description || KIND_DESCRIPTION[kind]}</span>
+                          <span className="cx-category__name">{tMaybe(t.name)}</span>
+                          <span className="cx-category__desc">{tMaybe(t.description) || tMaybe(KIND_DESCRIPTION[kind])}</span>
                         </span>
                         {active && <CircleCheck className="cx-category__check" aria-hidden />}
                       </button>
@@ -356,49 +354,49 @@ export default function RegisterVehiclePage() {
             <div className="cx-card__head">
               <div className="cx-card__title-row">
                 <span className="cx-card__icon"><SlidersHorizontal aria-hidden /></span>
-                <h2 className="cx-card__title" id="make-title">Make, Model &amp; Ownership</h2>
+                <h2 className="cx-card__title" id="make-title">{tr('Make, Model & Ownership')}</h2>
               </div>
-              <span className="cx-label">Step 2 of 2</span>
+              <span className="cx-label">{tr('Step 2 of 2')}</span>
             </div>
 
             <div className="cx-form">
               <div className="cx-grid-2">
                 <div className="cx-field">
-                  <label className="cx-field__label" htmlFor="vehicle-brand">Manufacturer / brand</label>
+                  <label className="cx-field__label" htmlFor="vehicle-brand">{tr('Manufacturer / brand')}</label>
                   <div className="cx-control">
                     <span className="cx-control__icon"><Tag aria-hidden /></span>
-                    <input id="vehicle-brand" className="cx-input cx-input--with-icon" placeholder="Porsche" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
+                    <input id="vehicle-brand" className="cx-input cx-input--with-icon" placeholder={tr('Porsche')} value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
                   </div>
                 </div>
                 <div className="cx-field">
-                  <label className="cx-field__label" htmlFor="vehicle-model">Model variant</label>
+                  <label className="cx-field__label" htmlFor="vehicle-model">{tr('Model variant')}</label>
                   <div className="cx-control">
                     <span className="cx-control__icon"><Gauge aria-hidden /></span>
-                    <input id="vehicle-model" className="cx-input cx-input--with-icon" placeholder="Taycan 4S" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+                    <input id="vehicle-model" className="cx-input cx-input--with-icon" placeholder={tr('Taycan 4S')} value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
                   </div>
                 </div>
               </div>
 
               <div className="cx-field">
-                <label className="cx-field__label" htmlFor="vehicle-color">Exterior colour</label>
+                <label className="cx-field__label" htmlFor="vehicle-color">{tr('Exterior colour')}</label>
                 <div className="cx-control">
                   <span className="cx-control__icon">
                     <span className="cx-swatch" style={{ background: vehiclePaintCss(form.color) ?? '#41484c' }} aria-hidden="true" />
                   </span>
-                  <input id="vehicle-color" className="cx-input cx-input--with-icon" list="vehicle-color-names" placeholder="Gentian Blue Metallic" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+                  <input id="vehicle-color" className="cx-input cx-input--with-icon" list="vehicle-color-names" placeholder={tr('Gentian Blue Metallic')} value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
                   <datalist id="vehicle-color-names">
                     {VEHICLE_COLOR_NAMES.map((name) => <option key={name} value={name} />)}
                   </datalist>
                 </div>
                 {form.color.trim() && vehiclePaint(form.color) === null && (
-                  <p className="cx-field__hint">We do not recognise this colour, so the 3D map will not show your vehicle in it. Try a basic name such as Red or Silver.</p>
+                  <p className="cx-field__hint">{tr('We do not recognise this colour, so the 3D map will not show your vehicle in it. Try a basic name such as Red or Silver.')}</p>
                 )}
               </div>
 
               <div className="cx-field">
                 <div className="cx-field__label-row">
-                  <label className="cx-field__label" htmlFor="vehicle-citizen-id">Owner Citizen ID</label>
-                  <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem' }}>From user profile</span>
+                  <label className="cx-field__label" htmlFor="vehicle-citizen-id">{tr('Owner Citizen ID')}</label>
+                  <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem' }}>{tr('From user profile')}</span>
                 </div>
                 <div className="cx-control">
                   <span className="cx-control__icon"><IdCard aria-hidden /></span>
@@ -408,14 +406,14 @@ export default function RegisterVehiclePage() {
                     readOnly
                     disabled
                     value={citizenId}
-                    placeholder={hasProfileCitizenId ? undefined : 'No Citizen ID saved in profile'}
+                    placeholder={hasProfileCitizenId ? undefined : tr('No Citizen ID saved in profile')}
                     aria-describedby="vehicle-citizen-id-hint"
                   />
                 </div>
                 <p className="cx-field__hint" id="vehicle-citizen-id-hint">
                   {hasProfileCitizenId
-                    ? 'Automatically retrieved from your profile. Vehicles must be registered under your verified Citizen ID.'
-                    : 'No Citizen ID found in your profile. Please save it in your user profile first.'}
+                    ? tr('Automatically retrieved from your profile. Vehicles must be registered under your verified Citizen ID.')
+                    : tr('No Citizen ID found in your profile. Please save it in your user profile first.')}
                 </p>
               </div>
 
@@ -427,11 +425,11 @@ export default function RegisterVehiclePage() {
                   onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
                 />
                 <span>
-                  <span className="cx-check__title">Set as primary active vehicle</span>
+                  <span className="cx-check__title">{tr('Set as primary active vehicle')}</span>
                   <span className="cx-check__text">
                     {vehicles.length === 0
-                      ? 'Your first vehicle is always the primary one.'
-                      : 'Prioritise this vehicle for reserved bays and quick-lane entry.'}
+                      ? tr('Your first vehicle is always the primary one.')
+                      : tr('Prioritise this vehicle for reserved bays and quick-lane entry.')}
                   </span>
                 </span>
               </label>
@@ -439,9 +437,9 @@ export default function RegisterVehiclePage() {
               <label className="cx-check">
                 <input type="checkbox" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} />
                 <span>
-                  <span className="cx-check__title">Ownership &amp; plate recognition consent</span>
+                  <span className="cx-check__title">{tr('Ownership & plate recognition consent')}</span>
                   <span className="cx-check__text">
-                    I own or am authorised to drive this vehicle, and allow XXIV PARKING to recognise its plate at the gates.
+                    {tr('I own or am authorised to drive this vehicle, and allow XXIV PARKING to recognise its plate at the gates.')}
                   </span>
                 </span>
               </label>
@@ -454,17 +452,15 @@ export default function RegisterVehiclePage() {
             <div className="cx-card__head">
               <div className="cx-card__title-row">
                 <span className="cx-card__icon cx-card__icon--gold"><ClipboardCheck aria-hidden /></span>
-                <h2 className="cx-card__title" id="certificate-title">Registration Certificate</h2>
+                <h2 className="cx-card__title" id="certificate-title">{tr('Registration Certificate')}</h2>
               </div>
-              <span className="cx-label">Vehicle papers</span>
+              <span className="cx-label">{tr('Vehicle papers')}</span>
             </div>
 
             <div className="cx-form">
               <p className="cx-note">
                 <Info aria-hidden />
-                Required: one photo of the registration certificate and one of your Citizen ID card.
-                Our Staff compare them with this form and your profile, then approve the vehicle. You can book
-                with it once it is approved.
+                {tr('Required: one photo of the registration certificate and one of your Citizen ID card. Our Staff compare them with this form and your profile, then approve the vehicle. You can book with it once it is approved.')}
               </p>
 
               <VehicleDocumentsPanel
@@ -476,54 +472,54 @@ export default function RegisterVehiclePage() {
 
               <div className="cx-summary" aria-live="polite">
                 <div className="cx-summary__head">
-                  <span className="cx-label">Registration summary</span>
-                  <span className="cx-label" style={{ color: 'var(--cx-gold)' }}>Complete: {progress}%</span>
+                  <span className="cx-label">{tr('Registration summary')}</span>
+                  <span className="cx-label" style={{ color: 'var(--cx-gold)' }}>{tr('Complete: {progress}%', { progress })}</span>
                 </div>
                 <div className="cx-summary__row">
-                  Owner <strong>{(profile?.fullName || user?.fullName || '—').toUpperCase()}</strong>
+                  {tr('Owner')}{' '}<strong>{(profile?.fullName || user?.fullName || '—').toUpperCase()}</strong>
                 </div>
                 <div className="cx-summary__row">
-                  Plate <strong className={plateValid ? 'is-teal' : undefined}>{plate || '—'}</strong>
+                  {tr('Plate')}{' '}<strong className={plateValid ? 'is-teal' : undefined}>{plate || '—'}</strong>
                 </div>
                 <div className="cx-summary__row">
-                  Category <strong>{type?.name ?? '—'}</strong>
+                  {tr('Category')}{' '}<strong>{tMaybe(type?.name) ?? '—'}</strong>
                 </div>
                 <div className="cx-summary__row">
-                  Vehicle <strong>{[form.brand, form.model].map((s) => s.trim()).filter(Boolean).join(' ') || '—'}</strong>
+                  {tr('Vehicle')}{' '}<strong>{[form.brand, form.model].map((s) => s.trim()).filter(Boolean).join(' ') || '—'}</strong>
                 </div>
                 <div className="cx-summary__row">
-                  Papers <strong className={newPapersComplete ? 'is-teal' : undefined}>{papersVehicle ? '—' : `${papers.chosen}/${DOCUMENT_SLOTS.length} files`}</strong>
+                  {tr('Papers')}{' '}<strong className={newPapersComplete ? 'is-teal' : undefined}>{papersVehicle ? '—' : tr('{chosen}/{length} files', { chosen: papers.chosen, length: DOCUMENT_SLOTS.length })}</strong>
                 </div>
                 <div className="cx-summary__progress">
                   <span style={{ width: `${progress}%` }} />
                 </div>
               </div>
 
-              {error && <p className="cx-error" role="alert">{error}</p>}
+              {error && <p className="cx-error" role="alert">{tMaybe(error)}</p>}
 
               <div className="cx-submit-row">
                 <button type="submit" className="cx-btn cx-btn--light" disabled={addVehicle.isPending || papers.busy || !hasProfileCitizenId}>
                   <ScanLine aria-hidden />{' '}
-                  {addVehicle.isPending ? 'Registering...' : papers.busy ? 'Uploading papers...' : 'Submit registration'}
+                  {addVehicle.isPending ? tr('Registering...') : papers.busy ? tr('Uploading papers...') : tr('Submit registration')}
                 </button>
                 <button type="button" className="cx-btn" onClick={() => navigate('/me')}>
-                  Cancel
+                  {tr('Cancel')}
                 </button>
               </div>
 
               <p className="cx-fine">
-                <ShieldCheck aria-hidden /> Once Staff approve the vehicle, barrier gates recognise your plate automatically.
+                <ShieldCheck aria-hidden />{' '}{tr('Once Staff approve the vehicle, barrier gates recognise your plate automatically.')}
               </p>
             </div>
           </section>
 
           <section className="cx-card" aria-labelledby="fleet-list-title">
             <div className="cx-card__head" style={{ marginBottom: '1rem' }}>
-              <h2 className="cx-card__title" id="fleet-list-title">Your fleet</h2>
-              <span className="cx-label">{vehicles.length} registered</span>
+              <h2 className="cx-card__title" id="fleet-list-title">{tr('Your vehicles')}</h2>
+              <span className="cx-label">{tr('{length} registered', { length: vehicles.length })}</span>
             </div>
             {vehiclesQuery.isPending && <div className="cx-skeleton" style={{ height: '4rem' }} />}
-            {!vehiclesQuery.isPending && vehicles.length === 0 && <p className="cx-empty">No vehicles registered yet.</p>}
+            {!vehiclesQuery.isPending && vehicles.length === 0 && <p className="cx-empty">{tr('No vehicles registered yet.')}</p>}
             <div className="cx-mini-list">
               {vehicles.map((v) => (
                 <MiniVehicle key={v.vehicleId} vehicle={v} onPapers={() => openPapers(v)} />

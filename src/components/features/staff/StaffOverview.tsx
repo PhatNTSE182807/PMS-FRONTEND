@@ -4,13 +4,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useParkingLots } from '@/hooks/useParking'
 import { useStaffList } from '@/hooks/useStaff'
 import { formatNumber } from '@/lib/format'
+import { t, tMaybe } from '@/i18n'
 
 function Kpi({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) {
   return (
     <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{label}</p>
-        <span className="grid size-9 place-items-center rounded-lg bg-slate-100 text-amber-500 [&_svg]:size-4.5">{icon}</span>
+        <p className="text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{tMaybe(label)}</p>
+        <span className="grid size-9 place-items-center rounded-lg bg-slate-100 text-amber-500 [&_svg]:size-4.5">{tMaybe(icon)}</span>
       </div>
       {children}
     </section>
@@ -49,44 +50,44 @@ export function StaffOverview() {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Total station leads" icon={<IdCard />}>
+        <Kpi label={t('Total managers')} icon={<IdCard />}>
           <p className="mt-3 font-display text-4xl font-bold text-slate-950">
-            {list.length} <span className="text-base font-medium text-slate-700">Managers</span>
+            {list.length} <span className="text-base font-medium text-slate-700">{t('Managers')}</span>
           </p>
           <p className="mt-2 flex gap-4 text-xs text-slate-700">
-            <span><strong className="block text-sm text-emerald-700">{active}</strong>Active</span>
-            <span><strong className="block text-sm text-slate-900">{inactive}</strong>Inactive</span>
-            <span><strong className="block text-sm text-amber-500">{suspended}</strong>Suspended</span>
+            <span><strong className="block text-sm text-emerald-700">{tMaybe(active)}</strong>{t('Active')}</span>
+            <span><strong className="block text-sm text-slate-900">{tMaybe(inactive)}</strong>{t('Inactive')}</span>
+            <span><strong className="block text-sm text-amber-500">{tMaybe(suspended)}</strong>{t('Suspended')}</span>
           </p>
           <div className="mt-3 h-1.5 rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-indigo-700" style={{ width: `${list.length ? (active / list.length) * 100 : 0}%` }} />
           </div>
         </Kpi>
 
-        <Kpi label="Covered hubs" icon={<SquareParking />}>
+        <Kpi label={t('Lots with a manager')} icon={<SquareParking />}>
           <p className="mt-3 font-display text-4xl font-bold text-slate-950">
-            {coveredIds.size} <span className="text-base font-medium text-amber-500">of {totalLots} hubs</span>
+            {tMaybe(coveredIds.size)} <span className="text-base font-medium text-amber-500">{t('of {totalLots} lots', { totalLots })}</span>
           </p>
           <p className="mt-2 truncate text-sm text-slate-700">
-            {uncovered.length ? `Uncovered: ${uncovered.map((l) => l.name).join(', ')}` : 'Every hub has an active manager.'}
+            {uncovered.length ? t('Uncovered: {v}', { v: uncovered.map((l) => l.name).join(', ') }) : t('Every parking lot has an active manager.')}
           </p>
           <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-indigo-700">
-            <ShieldCheck className="size-3.5" aria-hidden /> {coverage}% supervisory coverage
+            <ShieldCheck className="size-3.5" aria-hidden />{' '}{t('{coverage}% supervisory coverage', { coverage })}
           </p>
         </Kpi>
 
-        <Kpi label="Gate staff" icon={<UserCog />}>
+        <Kpi label={t('Gate staff')} icon={<UserCog />}>
           <p className="mt-3 font-display text-4xl font-bold text-slate-950">
-            {formatNumber(gateStaff.data?.totalCount ?? 0)} <span className="text-base font-medium text-slate-700">Operators</span>
+            {formatNumber(gateStaff.data?.totalCount ?? 0)} <span className="text-base font-medium text-slate-700">{t('Operators')}</span>
           </p>
-          <p className="mt-2 text-sm text-slate-700">Gate and lane staff rostered across all hubs.</p>
+          <p className="mt-2 text-sm text-slate-700">{t('Gate and lane staff across all parking lots.')}</p>
         </Kpi>
 
-        <Kpi label="Access lockouts" icon={<Gavel />}>
+        <Kpi label={t('Access lockouts')} icon={<Gavel />}>
           <p className="mt-3 font-display text-4xl font-bold text-emerald-700">
-            {suspended + (lockedStaff.data?.totalCount ?? 0)} <span className="text-base font-medium text-slate-950">Suspended</span>
+            {suspended + (lockedStaff.data?.totalCount ?? 0)} <span className="text-base font-medium text-slate-950">{t('Suspended')}</span>
           </p>
-          <p className="mt-2 text-sm text-slate-700">Managers and staff who currently cannot sign in.</p>
+          <p className="mt-2 text-sm text-slate-700">{t('Managers and staff who currently cannot sign in.')}</p>
         </Kpi>
       </div>
 
@@ -96,12 +97,11 @@ export function StaffOverview() {
         </span>
         <div className="flex-1">
           <p className="flex flex-wrap items-center gap-2 font-semibold text-slate-950">
-            Account retention policy
-            <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-(--color-on-gold) uppercase">Active rule</span>
+            {t('Account retention policy')}
+            <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-(--color-on-gold) uppercase">{t('Active rule')}</span>
           </p>
           <p className="mt-1 text-sm text-slate-700">
-            Manager and staff accounts are deactivated, never deleted, so gate logs and cash handovers stay traceable to a person.
-            Reactivate an account to restore access.
+            {t('Manager and staff accounts are deactivated, never deleted, so gate logs and cash handovers stay traceable to a person. Reactivate an account to restore access.')}
           </p>
         </div>
       </section>

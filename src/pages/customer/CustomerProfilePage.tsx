@@ -40,6 +40,7 @@ import { useChangePassword, useCheckProfileUniqueness, useProfile, useUpdateProf
 import { isValidPassword, PASSWORD_RULE_HINT, PASSWORD_RULE_MESSAGE, PASSWORD_RULES } from '@/lib/password'
 import { USER_TOAST } from '@/lib/userToasts'
 import type { UserProfileDTO } from '@/types/profile.dto'
+import { t, tMaybe } from '@/i18n'
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   id: string
@@ -54,8 +55,8 @@ function Field({ id, label, icon: Icon, aside, error, loading, className = '', .
   return (
     <div className="cx-field">
       <div className="cx-field__label-row">
-        <label className="cx-field__label" htmlFor={id}>{label}</label>
-        {aside}
+        <label className="cx-field__label" htmlFor={id}>{tMaybe(label)}</label>
+        {tMaybe(aside)}
       </div>
       <div className="cx-control">
         {Icon && <span className="cx-control__icon"><Icon aria-hidden /></span>}
@@ -74,7 +75,7 @@ function Field({ id, label, icon: Icon, aside, error, loading, className = '', .
       {error && (
         <p className="cx-field__error" style={{ color: 'var(--cx-error, #ef4444)', fontSize: '0.8125rem', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <AlertCircle style={{ width: '0.9rem', height: '0.9rem', flexShrink: 0 }} aria-hidden />
-          {error}
+          {tMaybe(error)}
         </p>
       )}
     </div>
@@ -92,7 +93,7 @@ function PasswordField({ id, label, value, onChange, autoComplete, placeholder }
   const [visible, setVisible] = useState(false)
   return (
     <div className="cx-field">
-      <label className="cx-field__label" htmlFor={id}>{label}</label>
+      <label className="cx-field__label" htmlFor={id}>{tMaybe(label)}</label>
       <div className="cx-control">
         <span className="cx-control__icon"><Lock aria-hidden /></span>
         <input
@@ -102,10 +103,10 @@ function PasswordField({ id, label, value, onChange, autoComplete, placeholder }
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
-          placeholder={placeholder}
+          placeholder={tMaybe(placeholder)}
         />
         <span className="cx-control__end">
-          <button type="button" className="cx-icon-btn" onClick={() => setVisible(!visible)} aria-label={visible ? 'Hide password' : 'Show password'}>
+          <button type="button" className="cx-icon-btn" onClick={() => setVisible(!visible)} aria-label={visible ? t('Hide password') : t('Show password')}>
             {visible ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
           </button>
         </span>
@@ -149,19 +150,19 @@ export default function CustomerProfilePage() {
     e.target.value = ''
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Avatar image must be smaller than 10 MB.')
+      toast.error(t('Avatar image must be smaller than 10 MB.'))
       return
     }
 
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowed.includes(file.type)) {
-      toast.error('Only JPEG, PNG, GIF and WebP images are allowed.')
+      toast.error(t('Only JPEG, PNG, GIF and WebP images are allowed.'))
       return
     }
 
     try {
       await uploadAvatar.mutateAsync(await shrinkAvatarImage(file))
-      toast.success('Avatar updated successfully!')
+      toast.success(t('Avatar updated successfully!'))
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to upload avatar.'))
     }
@@ -272,13 +273,13 @@ export default function CustomerProfilePage() {
     <>
       <header className="cx-page-head">
         <div>
-          <h1 className="cx-page-title">User Profile &amp; Security</h1>
+          <h1 className="cx-page-title">{t('User Profile & Security')}</h1>
         </div>
       </header>
 
       <div className="cx-split cx-split--sidebar">
         <aside className="cx-stack">
-          <section className="cx-card cx-profile-card" aria-label="Account summary">
+          <section className="cx-card cx-profile-card" aria-label={t('Account summary')}>
             <div className="cx-profile-card__who">
               <div style={{ position: 'relative' }}>
                 <button
@@ -286,11 +287,11 @@ export default function CustomerProfilePage() {
                   className={`cx-avatar cx-avatar--lg cx-avatar--clickable ${uploadAvatar.isPending ? 'cx-avatar--loading' : ''}`}
                   onClick={handleAvatarClick}
                   disabled={uploadAvatar.isPending}
-                  title="Click to upload profile picture (Max 10 MB)"
-                  aria-label="Upload profile picture"
+                  title={t('Click to upload profile picture (Max 10 MB)')}
+                  aria-label={t('Upload profile picture')}
                 >
                   {resolveMediaUrl(profile?.avatarUrl) ? (
-                    <img src={resolveMediaUrl(profile?.avatarUrl)} alt={name} />
+                    <img src={resolveMediaUrl(profile?.avatarUrl)} alt={tMaybe(name)} />
                   ) : (
                     initials(name)
                   )}
@@ -300,7 +301,7 @@ export default function CustomerProfilePage() {
                     ) : (
                       <>
                         <Camera className="cx-avatar-overlay__icon" aria-hidden />
-                        <span className="cx-avatar-overlay__text">Photo</span>
+                        <span className="cx-avatar-overlay__text">{t('Photo')}</span>
                       </>
                     )}
                   </span>
@@ -314,16 +315,16 @@ export default function CustomerProfilePage() {
                 />
               </div>
               <div>
-                <p className="cx-profile-card__name">{name}</p>
+                <p className="cx-profile-card__name">{tMaybe(name)}</p>
                 <p className="cx-profile-card__id">{memberCode(profile?.userId ?? user?.userId)}</p>
-                <p className="cx-profile-card__joined">Joined {formatMonthYear(profile?.createdAt)}</p>
+                <p className="cx-profile-card__joined">{t('Joined {createdAt}', { createdAt: formatMonthYear(profile?.createdAt) })}</p>
               </div>
             </div>
 
             <div className="cx-status-row">
               <span>
                 <span className={`cx-dot ${profile?.isActive === false ? 'cx-dot--red' : ''}`} aria-hidden="true" />
-                {profile?.isActive === false ? 'Account inactive' : 'Account active'}
+                {profile?.isActive === false ? t('Account inactive') : t('Account active')}
               </span>
               <ShieldCheck aria-hidden />
             </div>
@@ -331,22 +332,22 @@ export default function CustomerProfilePage() {
             <div className="cx-stats">
               <div>
                 <strong>{vehicles.length}</strong>
-                <span>Registered vehicles</span>
+                <span>{t('Registered vehicles')}</span>
               </div>
               <div>
-                <strong style={{ color: 'var(--cx-primary)' }}>{daysMember}</strong>
-                <span>Days as member</span>
+                <strong style={{ color: 'var(--cx-primary)' }}>{tMaybe(daysMember)}</strong>
+                <span>{t('Days as member')}</span>
               </div>
               <div>
-                <strong style={{ color: 'var(--cx-gold)' }}>{roleLabel(profile?.role ?? user?.role)}</strong>
-                <span>Account type</span>
+                <strong style={{ color: 'var(--cx-gold)' }}>{tMaybe(roleLabel(profile?.role ?? user?.role))}</strong>
+                <span>{t('Account type')}</span>
               </div>
             </div>
 
-            <nav className="cx-sidenav" aria-label="Profile sections">
+            <nav className="cx-sidenav" aria-label={t('Profile sections')}>
               {SECTIONS.map(({ icon: Icon, ...s }, i) => (
                 <a key={s.href} href={s.href} className={i === 0 ? 'is-active' : undefined}>
-                  <Icon aria-hidden /> {s.label} <ChevronRight className="cx-sidenav__arrow" aria-hidden />
+                  <Icon aria-hidden /> {tMaybe(s.label)} <ChevronRight className="cx-sidenav__arrow" aria-hidden />
                 </a>
               ))}
             </nav>
@@ -359,8 +360,8 @@ export default function CustomerProfilePage() {
               <div className="cx-card__title-row">
                 <span className="cx-card__icon"><User aria-hidden /></span>
                 <div>
-                  <h2 className="cx-card__title" id="personal-title">Personal Information</h2>
-                  <p className="cx-card__subtitle">Update your contact details and default gate credentials.</p>
+                  <h2 className="cx-card__title" id="personal-title">{t('Personal Information')}</h2>
+                  <p className="cx-card__subtitle">{t('Update your contact details.')}</p>
                 </div>
               </div>
             </div>
@@ -371,7 +372,7 @@ export default function CustomerProfilePage() {
               <form className="cx-form" onSubmit={saveProfile} noValidate>
                 <Field
                   id="profile-name"
-                  label="Full legal name"
+                  label={t('Full legal name')}
                   icon={User}
                   value={form.fullName ?? ''}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })}
@@ -379,43 +380,43 @@ export default function CustomerProfilePage() {
                 />
                 <Field
                   id="profile-email"
-                  label="Primary email address"
+                  label={t('Primary email address')}
                   icon={Mail}
                   type="email"
                   value={form.email ?? ''}
                   disabled
                   readOnly
                   autoComplete="email"
-                  aside={<span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem' }}>Cannot be changed</span>}
+                  aside={<span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem' }}>{t('Cannot be changed')}</span>}
                 />
                 <Field
                   id="profile-phone"
-                  label="Contact phone (gate alerts)"
+                  label={t('Contact phone (gate alerts)')}
                   icon={Phone}
                   type="tel"
                   className="cx-mono"
                   value={form.phoneNumber ?? ''}
                   onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
                   autoComplete="tel"
-                  error={phoneErrorMsg}
+                  error={tMaybe(phoneErrorMsg)}
                   loading={isPhoneChecking}
                 />
                 <Field
                   id="profile-citizen-id"
-                  label="Citizen ID *"
+                  label={t('Citizen ID *')}
                   icon={IdCard}
                   inputMode="numeric"
                   maxLength={12}
-                  placeholder="12 digits"
+                  placeholder={t('12 digits')}
                   className="cx-mono"
                   value={form.citizenId ?? ''}
                   onChange={(e) => setForm({ ...form, citizenId: e.target.value.replace(/\D/g, '') })}
                   autoComplete="off"
-                  error={citizenIdErrorMsg}
+                  error={tMaybe(citizenIdErrorMsg)}
                   loading={isCitizenIdChecking}
-                  aside={!profile?.citizenId ? <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cx-gold, #f59e0b)' }}>Required to register vehicles</span> : undefined}
+                  aside={!profile?.citizenId ? <span className="cx-field__hint" style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cx-gold, #f59e0b)' }}>{t('Required to register vehicles')}</span> : undefined}
                 />
-                {formError && <p className="cx-error" role="alert">{formError}</p>}
+                {formError && <p className="cx-error" role="alert">{tMaybe(formError)}</p>}
                 <div className="cx-actions">
                   <button
                     type="button"
@@ -423,7 +424,7 @@ export default function CustomerProfilePage() {
                     disabled={!isDirty}
                     onClick={() => profile && resetForm(profile)}
                   >
-                    Discard
+                    {t('Discard')}
                   </button>
                   <button
                     type="submit"
@@ -437,7 +438,7 @@ export default function CustomerProfilePage() {
                       isCitizenIdChecking
                     }
                   >
-                    {updateProfile.isPending ? 'Saving...' : 'Save profile changes'}
+                    {updateProfile.isPending ? t('Saving...') : t('Save profile changes')}
                   </button>
                 </div>
               </form>
@@ -449,7 +450,7 @@ export default function CustomerProfilePage() {
               <div className="cx-card__title-row">
                 <span className="cx-card__icon cx-card__icon--gold"><ShieldCheck aria-hidden /></span>
                 <div>
-                  <h2 className="cx-card__title" id="security-title">Security &amp; Password Management</h2>
+                  <h2 className="cx-card__title" id="security-title">{t('Security & Password Management')}</h2>
                 </div>
               </div>
             </div>
@@ -459,80 +460,80 @@ export default function CustomerProfilePage() {
                 <Info aria-hidden />
                 {/* Google-only accounts set a first password without the current one (backend AddPasswordAsync). */}
                 {hasPassword
-                  ? PASSWORD_RULE_HINT
-                  : `You signed up with Google, so there is no password yet. Set one to also sign in with your email address. ${PASSWORD_RULE_MESSAGE}`}
+                  ? tMaybe(PASSWORD_RULE_HINT)
+                  : t('You signed up with Google, so there is no password yet. Set one to also sign in with your email address. {PASSWORD_RULE_MESSAGE}', { PASSWORD_RULE_MESSAGE })}
               </p>
 
               {hasPassword && (
                 <PasswordField
                   id="pw-current"
-                  label="Current password"
+                  label={t('Current password')}
                   value={passwords.currentPassword}
                   onChange={(v) => setPasswords({ ...passwords, currentPassword: v })}
                   autoComplete="current-password"
-                  placeholder="Enter your current password"
+                  placeholder={t('Enter your current password')}
                 />
               )}
               <div className="cx-grid-2">
                 <PasswordField
                   id="pw-new"
-                  label="New password"
+                  label={t('New password')}
                   value={passwords.newPassword}
                   onChange={(v) => setPasswords({ ...passwords, newPassword: v })}
                   autoComplete="new-password"
-                  placeholder="6+ characters, A–Z and a symbol"
+                  placeholder={t('6+ characters, A–Z and a symbol')}
                 />
                 <PasswordField
                   id="pw-confirm"
-                  label="Confirm new password"
+                  label={t('Confirm new password')}
                   value={passwords.confirmPassword}
                   onChange={(v) => setPasswords({ ...passwords, confirmPassword: v })}
                   autoComplete="new-password"
-                  placeholder="Re-enter the new password"
+                  placeholder={t('Re-enter the new password')}
                 />
               </div>
 
               <div className="cx-strength" data-score={score}>
                 <div className="cx-strength__row">
-                  <span>Security strength rating</span>
+                  <span>{t('Security strength rating')}</span>
                   <span className="cx-strength__verdict">
-                    {score === 0 ? 'Not set' : `${STRENGTH_LABEL[score]} (${passwords.newPassword.length} chars)`}
+                    {score === 0 ? t('Not set') : t('{v} ({length} chars)', { v: STRENGTH_LABEL[score], length: passwords.newPassword.length })}
                   </span>
                 </div>
                 <div className="cx-strength__bars" aria-hidden="true">
                   <span /><span /><span /><span />
                 </div>
                 {/* The API rule, ticked off live so the user sees what is still missing before submitting. */}
-                <ul className="cx-strength__rules" aria-label="Password requirements">
+                <ul className="cx-strength__rules" aria-label={t('Password requirements')}>
                   {PASSWORD_RULES.map((rule) => {
                     const met = rule.test(passwords.newPassword)
                     return (
                       <li key={rule.id} data-met={met}>
                         {met ? <Check aria-hidden /> : <X aria-hidden />}
-                        {rule.label}
-                        <span className="sr-only">{met ? ' (met)' : ' (missing)'}</span>
+                        {tMaybe(rule.label)}
+                        <span className="sr-only">{met ? t(' (met)') : t(' (missing)')}</span>
                       </li>
                     )
                   })}
                 </ul>
               </div>
 
-              {passwordError && <p className="cx-error" role="alert">{passwordError}</p>}
+              {passwordError && <p className="cx-error" role="alert">{tMaybe(passwordError)}</p>}
               <div className="cx-actions">
                 <button type="submit" className="cx-btn" disabled={changePassword.isPending}>
-                  {changePassword.isPending ? 'Updating...' : hasPassword ? 'Update password' : 'Set password'}
+                  {changePassword.isPending ? t('Updating...') : hasPassword ? t('Update password') : t('Set password')}
                 </button>
               </div>
             </form>
 
             <div style={{ marginTop: '1.75rem' }}>
-              <p className="cx-field__label" style={{ marginBottom: '0.6rem' }}>Sign-in method</p>
+              <p className="cx-field__label" style={{ marginBottom: '0.6rem' }}>{t('Sign-in method')}</p>
               <div className="cx-device">
                 <span className="cx-device__icon">{hasPassword ? <KeyRound aria-hidden /> : <Mail aria-hidden />}</span>
                 <div className="cx-device__text">
                   <p className="cx-device__name">
-                    {hasPassword ? 'Email & password' : 'Google account'}
-                    <span className="cx-chip">Connected</span>
+                    {hasPassword ? t('Email & password') : t('Google account')}
+                    <span className="cx-chip">{t('Connected')}</span>
                   </p>
                   <p className="cx-device__meta cx-mono">{profile?.email ?? user?.email}</p>
                 </div>
@@ -545,12 +546,12 @@ export default function CustomerProfilePage() {
               <div className="cx-card__title-row">
                 <span className="cx-card__icon"><MonitorSmartphone aria-hidden /></span>
                 <div>
-                  <h2 className="cx-card__title" id="sessions-title">Active Login Sessions</h2>
-                  <p className="cx-card__subtitle">Devices signed in to your account.</p>
+                  <h2 className="cx-card__title" id="sessions-title">{t('Active Login Sessions')}</h2>
+                  <p className="cx-card__subtitle">{t('Devices signed in to your account.')}</p>
                 </div>
               </div>
               <button type="button" className="cx-btn cx-btn--danger" onClick={handleLogout}>
-                <LogOut aria-hidden /> Log out
+                <LogOut aria-hidden />{' '}{t('Log out')}
               </button>
             </div>
 
@@ -559,11 +560,11 @@ export default function CustomerProfilePage() {
               <div className="cx-device__text">
                 <p className="cx-device__name">
                   {thisDevice()}
-                  <span className="cx-chip"><span className="cx-dot" aria-hidden="true" /> Active now</span>
+                  <span className="cx-chip"><span className="cx-dot" aria-hidden="true" />{' '}{t('Active now')}</span>
                 </p>
-                <p className="cx-device__meta">Signed in as {user?.username || user?.email}</p>
+                <p className="cx-device__meta">{t('Signed in as')}{' '}{user?.username || user?.email}</p>
               </div>
-              <span className="cx-chip cx-chip--teal">Current device</span>
+              <span className="cx-chip cx-chip--teal">{t('Current device')}</span>
             </div>
           </section>
 

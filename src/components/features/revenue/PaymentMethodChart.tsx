@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/states'
 import { formatVnd, formatVndCompact } from '@/lib/format'
 import type { PaymentMethod, PaymentMethodBreakdownDTO } from '@/types/report.dto'
 import { PAYMENT_METHOD_LABELS } from './revenueFilters'
+import { t, tMaybe } from '@/i18n'
 
 /** Fixed colour per method (entity), so filtering never repaints a slice. */
 const METHOD_COLORS: Record<PaymentMethod, string> = {
@@ -28,8 +29,8 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
     <Card className="flex flex-col">
       <CardHeader>
         <div>
-          <CardTitle>Payment methods</CardTitle>
-          <CardDescription>Revenue share by channel</CardDescription>
+          <CardTitle>{t('Payment methods')}</CardTitle>
+          <CardDescription>{t('Revenue share by channel')}</CardDescription>
         </div>
       </CardHeader>
 
@@ -41,7 +42,7 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
           <Skeleton className="h-4 w-full" />
         </div>
       ) : total === 0 ? (
-        <EmptyState title="No revenue" description="No payments in this period." />
+        <EmptyState title={t('No revenue')} description={t('No payments in this period.')} />
       ) : (
         <div className="flex flex-1 flex-col justify-center gap-4 p-5">
           <div className="relative mx-auto h-48 w-full max-w-60">
@@ -76,7 +77,7 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
               <div>
-                <p className="text-xs text-slate-500">Total</p>
+                <p className="text-xs text-slate-500">{t('Total')}</p>
                 <p className="text-lg font-semibold text-slate-900">{formatVndCompact(total)}</p>
               </div>
             </div>
@@ -87,7 +88,7 @@ export function PaymentMethodChart({ data, isLoading }: { data?: PaymentMethodBr
             {rows.map((row) => (
               <li key={row.method} className="flex items-center gap-2 text-sm">
                 <span aria-hidden className="size-2.5 rounded-full" style={{ backgroundColor: METHOD_COLORS[row.method] }} />
-                <span className="text-slate-600">{PAYMENT_METHOD_LABELS[row.method]}</span>
+                <span className="text-slate-600">{tMaybe(PAYMENT_METHOD_LABELS[row.method])}</span>
                 <span className="ml-auto font-medium text-slate-900 tabular-nums">{row.percentage.toFixed(1).replace('.', ',')}%</span>
                 <span className="w-20 text-right text-xs text-slate-500 tabular-nums">{formatVndCompact(row.amount)}</span>
               </li>

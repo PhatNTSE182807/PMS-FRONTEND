@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/states'
 import { useParkingLots } from '@/hooks/useParking'
 import { usePricingRules } from '@/hooks/usePricing'
+import { t, tMaybe } from '@/i18n'
 
 /** The rules of the chosen lot, for the history's rule filter. */
 function LotHistory({ lotId }: { lotId: string }) {
@@ -26,14 +27,14 @@ export default function PricingHistoryPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Pricing History"
+        title={t('Pricing History')}
        
         actions={
           lots.data && lots.data.length > 0 ? (
-            <NativeSelect aria-label="Parking lot" className="w-auto" value={lotId ?? ''} onChange={(e) => setChosen(e.target.value)}>
+            <NativeSelect aria-label={t('Parking lot')} className="w-auto" value={lotId ?? ''} onChange={(e) => setChosen(e.target.value)}>
               {lots.data.map((lot) => (
                 <option key={lot.id} value={lot.id}>
-                  {lot.name}
+                  {tMaybe(lot.name)}
                 </option>
               ))}
             </NativeSelect>
@@ -43,7 +44,7 @@ export default function PricingHistoryPage() {
       {lots.isPending && <Skeleton className="h-64 rounded-2xl" />}
       {lots.isError && (
         <Card>
-          <ErrorState message={getErrorMessage(lots.error)} onRetry={() => lots.refetch()} />
+          <ErrorState message={tMaybe(getErrorMessage(lots.error))} onRetry={() => lots.refetch()} />
         </Card>
       )}
       {lotId && <LotHistory lotId={lotId} />}

@@ -12,6 +12,7 @@ import { useParkingCapacity } from '@/hooks/useParking'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { AssignedParkingLotDTO } from '@/types/parking.dto'
+import { t, tMaybe } from '@/i18n'
 
 /** Only these roles see who is parked in a bay (plate, customer, fee); everyone else gets the bay code on hover. */
 const INSPECTING_ROLES: AccountRole[] = ['STAFF', 'MANAGER', 'ADMIN']
@@ -20,7 +21,7 @@ const INSPECTING_ROLES: AccountRole[] = ['STAFF', 'MANAGER', 'ADMIN']
 const hasVehicle = (bay: Bay) => bay.status === 'OCCUPIED'
 
 const SOURCE_TEXT = {
-  layout: 'live bay statuses from the gate and sensor feed',
+  layout: 'live bay statuses from gate activity',
   pushed: 'bay statuses pushed live (SignalR)',
   capacity: 'live zone occupancy (this lot has no bay layout yet)',
   model: 'no live bay data yet, showing the default model until an Admin picks one',
@@ -85,15 +86,15 @@ export function LiveLotModel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="lot-3d-title" className="flex items-center gap-2 font-display text-xl font-semibold text-slate-950">
-            <Rotate3d className="size-5 text-indigo-700" aria-hidden /> Live 3D lot model
+            <Rotate3d className="size-5 text-indigo-700" aria-hidden />{' '}{t('Live 3D lot model')}
           </h2>
           <p className="mt-0.5 text-sm text-slate-700">
-            {lot ? lot.name : 'Your assigned parking lot'}
-            {view && !loading && ` — monitoring only, ${SOURCE_TEXT[view.source]}.`}
+            {lot ? tMaybe(lot.name) : t('Your assigned parking lot')}
+            {view && !loading && t(' — monitoring only, {v}.', { v: SOURCE_TEXT[view.source] })}
           </p>
         </div>
         {lots.length > 1 && onLotChange && (
-          <div role="tablist" aria-label="Assigned parking lot" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+          <div role="tablist" aria-label={t('Assigned parking lot')} className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
             {lots.map((l) => (
               <button
                 key={l.id}
@@ -115,23 +116,23 @@ export function LiveLotModel({
 
       {!lot && (
         <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600">
-          No parking lot assigned yet. Ask your Manager to assign you to a lot.
+          {t('No parking lot assigned yet. Ask your Manager to assign you to a lot.')}
         </p>
       )}
       {lot && loading && <Skeleton className="mt-4 h-[24rem] rounded-xl" />}
       {lot && !loading && view && (
         <>
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Free bays per level">
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label={t('Free bays per level')}>
             {view.floors.map((f) => {
               const Icon = f.kind === 'car' ? Car : Bike
               return (
                 <li key={f.index} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs ring-1 ring-slate-200">
                   <Icon className="size-4 shrink-0 text-indigo-700" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <strong className="text-slate-950">{f.level}</strong> <span className="text-slate-600">{f.zoneLabel || (f.kind === 'car' ? 'Cars' : 'Motorbikes')}</span>
+                    <strong className="text-slate-950">{tMaybe(f.level)}</strong> <span className="text-slate-600">{tMaybe(f.zoneLabel) || (f.kind === 'car' ? t('Cars') : t('Motorbikes'))}</span>
                   </span>
                   <span className="font-mono font-bold text-slate-950 tabular-nums">
-                    {f.liveTotal ? `${formatNumber(f.liveFree)}/${formatNumber(f.liveTotal)}` : `${standardBays(f).length} bays`}
+                    {f.liveTotal ? `${formatNumber(f.liveFree)}/${formatNumber(f.liveTotal)}` : t('{length} bays', { length: standardBays(f).length })}
                   </span>
                 </li>
               )

@@ -26,7 +26,7 @@
   --cx-error: #ffb4ab;
   --cx-success: #6fdba8;
   --cx-body-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --cx-headline-font: 'Plus Jakarta Sans', var(--cx-body-font);
+  --cx-headline-font: 'Be Vietnam Pro', var(--cx-body-font);
   --cx-mono-font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   display: flex;
@@ -112,18 +112,14 @@
   line-height: 1;
 }
 
+/* "XXIV PARKING" on one line, like the brand of the admin, manager and staff consoles */
 .cx-nav__brand-name {
   font-family: var(--cx-headline-font);
   font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: 0.03em;
-}
-
-.cx-nav__brand-sub {
-  margin-top: 0.15rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  white-space: nowrap;
+  color: var(--cx-on-surface);
 }
 
 .cx-nav__links {

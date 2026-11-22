@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/dialog'
 import { formatDate, formatRelativeTime, formatTime } from '@/lib/format'
 import type { PricingChargeModel, PricingRuleDraftDTO, PricingRuleDTO, PricingRuleInput } from '@/types/pricing.dto'
+import { t, tMaybe } from '@/i18n'
 
 const MODEL_LABEL: Record<PricingChargeModel, string> = {
   Block: 'Same price all day',
@@ -85,7 +86,7 @@ export function PricingDraftList({
   return (
     <div className="mt-4 space-y-2 rounded-xl bg-amber-50/60 p-4 ring-1 ring-amber-200">
       <p className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-800 uppercase">
-        <FileClock className="size-4" aria-hidden /> Saved drafts ({drafts.length}) • not applied
+        <FileClock className="size-4" aria-hidden />{' '}{t('Saved drafts ({length}) • not applied', { length: drafts.length })}
       </p>
       <ul className="space-y-2">
         {drafts.map((draft) => {
@@ -95,17 +96,17 @@ export function PricingDraftList({
             <li key={draft.id} className="rounded-lg bg-white p-3 ring-1 ring-slate-200">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold break-words text-slate-950">{draft.note || 'Price draft'}</p>
-                  <p className="text-xs text-slate-600">{savedText(draft)}</p>
+                  <p className="font-semibold break-words text-slate-950">{tMaybe(draft.note) || t('Price draft')}</p>
+                  <p className="text-xs text-slate-600">{tMaybe(savedText(draft))}</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Button variant="outline" size="sm" onClick={() => onEdit(draft)}>
-                    <Pencil /> Edit
+                    <Pencil />{' '}{t('Edit')}
                   </Button>
                   <Button variant="gold" size="sm" disabled={applying} onClick={() => setConfirm({ kind: 'apply', draft })}>
-                    <Rocket /> Apply
+                    <Rocket />{' '}{t('Apply')}
                   </Button>
-                  <Button variant="outline" size="sm" disabled={discarding} aria-label="Discard draft" onClick={() => setConfirm({ kind: 'discard', draft })}>
+                  <Button variant="outline" size="sm" disabled={discarding} aria-label={t('Discard draft')} onClick={() => setConfirm({ kind: 'discard', draft })}>
                     <Trash2 />
                   </Button>
                 </div>
@@ -113,19 +114,19 @@ export function PricingDraftList({
               {outdated && (
                 <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-800">
                   <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                  The live prices changed after this draft was saved. Check the changes below before applying it.
+                  {t('The live prices changed after this draft was saved. Check the changes below before applying it.')}
                 </p>
               )}
               {changes.length ? (
                 <ul className="mt-2 space-y-0.5 text-sm text-slate-700">
                   {changes.map((line) => (
                     <li key={line} className="font-mono text-xs">
-                      {line}
+                      {tMaybe(line)}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-xs text-slate-600">Same as the live prices.</p>
+                <p className="mt-2 text-xs text-slate-600">{t('Same as the live prices.')}</p>
               )}
             </li>
           )
@@ -135,32 +136,31 @@ export function PricingDraftList({
       <ConfirmDialog
         open={confirm?.kind === 'apply'}
         onOpenChange={(open) => !open && close()}
-        title="Apply this draft now?"
+        title={t('Apply this draft now?')}
         description={
           <div className="space-y-2">
             <p>
-              The new prices go live at once for every vehicle entering from now on, and customers are told. Vehicles already inside keep their
-              price.
+              {t('The new prices go live at once for every vehicle entering from now on, and customers are told. Vehicles already inside keep their price.')}
             </p>
             {confirmChanges.length > 0 && (
               <ul className="space-y-0.5 font-mono text-xs">
                 {confirmChanges.map((line) => (
-                  <li key={line}>{line}</li>
+                  <li key={line}>{tMaybe(line)}</li>
                 ))}
               </ul>
             )}
           </div>
         }
-        confirmLabel="Apply prices"
+        confirmLabel={t('Apply prices')}
         pending={applying}
         onConfirm={() => confirm && onApply(confirm.draft, close)}
       />
       <ConfirmDialog
         open={confirm?.kind === 'discard'}
         onOpenChange={(open) => !open && close()}
-        title="Discard this draft?"
-        description="The draft disappears from this page. The live prices do not change."
-        confirmLabel="Discard"
+        title={t('Discard this draft?')}
+        description={t('The draft disappears from this page. The live prices do not change.')}
+        confirmLabel={t('Discard')}
         tone="destructive"
         pending={discarding}
         onConfirm={() => confirm && onDiscard(confirm.draft, close)}

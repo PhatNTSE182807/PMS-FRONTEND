@@ -38,6 +38,7 @@ const ManagerWorkSchedulingPage = lazy(() => import('@/pages/management/ManagerW
 const StaffWorkSchedulePage = lazy(() => import('@/pages/staff/StaffWorkSchedulePage'))
 const PayrollPage = lazy(() => import('@/pages/PayrollPage'))
 const PaymentReturnPage = lazy(() => import('@/pages/PaymentReturnPage'))
+const LegalPage = lazy(() => import('@/pages/legal/LegalPage'))
 const StaffGatePage = lazy(() => import('@/pages/staff/StaffGatePage'))
 const StaffCheckoutPage = lazy(() => import('@/pages/staff/StaffCheckoutPage'))
 const StaffExceptionsPage = lazy(() => import('@/pages/staff/StaffExceptionsPage'))
@@ -47,6 +48,8 @@ const StaffVehicleVerificationPage = lazy(() => import('@/pages/staff/StaffVehic
 export const router = createBrowserRouter([
   // Public landing page, outside ClassicLayout: it has its own navigation bar.
   { path: '/', element: <HomePage /> },
+  { path: '/terms', element: <Suspense fallback={null}><LegalPage doc="terms" /></Suspense> },
+  { path: '/privacy', element: <Suspense fallback={null}><LegalPage doc="privacy" /></Suspense> },
   {
     element: <ClassicLayout />,
     children: [

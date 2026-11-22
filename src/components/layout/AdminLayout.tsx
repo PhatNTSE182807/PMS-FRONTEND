@@ -1,9 +1,9 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ChevronRight, LogOut, Menu } from 'lucide-react'
+import { ChevronRight, Menu } from 'lucide-react'
 import { LOGO_SRC } from '@/components/ParkingLogo'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { UserMenu } from '@/components/UserMenu'
 import { ConsoleNotificationBell } from '@/components/features/notifications/ConsoleNotificationBell'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
@@ -14,10 +14,11 @@ import { roleLabel, useAuth, useSignOut } from '@/hooks/useAuth'
 import { useManagerLot } from '@/hooks/useManagerLot'
 import { useCashAlerts } from '@/hooks/useCashAlerts'
 import { useProfile } from '@/hooks/useProfile'
-import { resolveMediaUrl } from '@/lib/format'
+import { initials, resolveMediaUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { ADMIN_NAV, MANAGER_NAV } from './adminNav'
+import { t, tMaybe } from '@/i18n'
 
 /**
  * Manager console: cash drawer alerts of the chosen lot on every page. A closed drawer is not shown here: it arrives
@@ -37,8 +38,8 @@ function ManagerLotSelect() {
   if (!lots.data?.length) {
     return (
       <div className="flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
-        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">Facility</span>
-        <span className="truncate text-sm font-semibold text-slate-500 italic">No facility assigned</span>
+        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">{t('Parking lot')}</span>
+        <span className="truncate text-sm font-semibold text-slate-500 italic">{t('No parking lot assigned yet')}</span>
       </div>
     )
   }
@@ -47,7 +48,7 @@ function ManagerLotSelect() {
     // On a phone the chip shrinks to the lot name (truncated) so the sign-out button stays on screen
     <div className="flex min-w-0 items-center gap-2.5">
       <div className="flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-200">
-        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">Facility</span>
+        <span className="hidden text-xs font-semibold text-slate-700 uppercase sm:inline">{t('Parking lot')}</span>
         {lots.data.length > 1 ? (
           <select
             value={lot?.id}
@@ -56,7 +57,7 @@ function ManagerLotSelect() {
           >
             {lots.data.map((l) => (
               <option key={l.id} value={l.id} className="bg-white">
-                {l.name} (#{l.code})
+                {tMaybe(l.name)} (#{l.code})
               </option>
             ))}
           </select>
@@ -80,15 +81,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <img src={LOGO_SRC} alt="" className="h-11 w-auto shrink-0 drop-shadow" />
         <div className="leading-tight">
           <p className="font-display text-lg font-bold tracking-wide text-slate-950">
-            <span className="brand-gold">XXIV</span> PARKING
+            <span className="brand-gold">XXIV</span>{' '}PARKING
           </p>
           <p className="text-xs font-bold tracking-[0.14em] uppercase brand-gold">
-            {user?.role === 'MANAGER' ? 'Manager console' : 'Admin command'}
+            {user?.role === 'MANAGER' ? t('Manager') : t('Admin')}
           </p>
         </div>
       </div>
 
-      <nav aria-label="Admin navigation" className="flex-1 space-y-1 px-3 py-4">
+      <nav aria-label={t('Admin navigation')} className="flex-1 space-y-1 px-3 py-4">
         {navigation.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -107,7 +108,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   className={cn('size-5', isActive ? 'text-indigo-800' : 'text-slate-500 group-hover:text-amber-500')}
                   aria-hidden
                 />
-                {label}
+                {tMaybe(label)}
               </>
             )}
           </NavLink>
@@ -119,7 +120,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 function PageSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading page">
+    <div className="space-y-6" aria-busy="true" aria-label={t('Loading page')}>
       <div className="space-y-2">
         <Skeleton className="h-7 w-56" />
         <Skeleton className="h-4 w-80" />
@@ -163,6 +164,7 @@ export function AdminLayout() {
   const current = [...ADMIN_NAV, ...MANAGER_NAV].find((item) => pathname.startsWith(item.to))
 
   const handleLogout = useSignOut()
+  const displayName = profile?.fullName || user?.fullName || user?.username || 'Admin'
 
   return (
     <div className="admin-root min-h-dvh bg-page">
@@ -174,14 +176,14 @@ export function AdminLayout() {
       {/* Mobile navigation drawer */}
       <Dialog open={isNavOpen} onOpenChange={setIsNavOpen}>
         <NavDrawerContent aria-describedby={undefined}>
-          <DialogTitle className="sr-only">Admin menu</DialogTitle>
+          <DialogTitle className="sr-only">{t('Admin menu')}</DialogTitle>
           <SidebarContent onNavigate={() => setIsNavOpen(false)} />
         </NavDrawerContent>
       </Dialog>
 
       <div className="lg:pl-72">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-page/90 px-4 backdrop-blur sm:px-6 lg:px-8">
-          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu" onClick={() => setIsNavOpen(true)}>
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t('Open menu')} onClick={() => setIsNavOpen(true)}>
             <Menu />
           </Button>
 
@@ -190,37 +192,25 @@ export function AdminLayout() {
 
           {/* A Manager's phone header has room for the lot chip only; the page title is on the page */}
           <nav
-            aria-label="Breadcrumb"
+            aria-label={t('Breadcrumb')}
             className={cn('min-w-0 items-center gap-1.5 text-sm', user?.role === 'MANAGER' ? 'hidden md:flex' : 'flex')}
           >
-            <span className="hidden text-slate-500 sm:inline">Administration</span>
+            <span className="hidden text-slate-500 sm:inline">{t('Administration')}</span>
             <ChevronRight className="hidden size-4 text-slate-400 sm:inline" aria-hidden />
-            <span className="truncate font-medium text-slate-900">{current?.label ?? 'Overview'}</span>
+            <span className="truncate font-medium text-slate-900">{tMaybe(current?.label) ?? t('Overview')}</span>
           </nav>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <Button asChild variant="ghost" size="icon">
-              <ThemeToggle />
-            </Button>
             {/* Managers: their lots' cash drawers and booked bays. Admins: account deletion requests and price changes */}
             <ConsoleNotificationBell />
-            <div className="flex items-center gap-2.5 sm:border-l sm:border-slate-200 sm:pl-3">
-              <img
-                src={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
-                alt=""
-                className="hidden size-9 rounded-full bg-slate-50 object-cover p-0.5 ring-1 ring-amber-300 sm:block"
+            <div className="sm:border-l sm:border-slate-200 sm:pl-3">
+              <UserMenu
+                name={displayName}
+                subtitle={[profile?.employeeCode || user?.employeeCode, tMaybe(roleLabel(user?.role))].filter(Boolean).join(' • ')}
+                avatarUrl={resolveMediaUrl(profile?.avatarUrl || user?.avatarUrl) || LOGO_SRC}
+                initials={initials(displayName)}
+                onSignOut={handleLogout}
               />
-              <div className="hidden leading-tight whitespace-nowrap md:block">
-                <p className="text-sm font-semibold text-slate-950">
-                  {profile?.fullName || user?.fullName || user?.username}
-                </p>
-                <p className="text-xs font-bold tracking-wide text-amber-500 uppercase">
-                  {profile?.employeeCode ? `${profile.employeeCode} • ` : user?.employeeCode ? `${user.employeeCode} • ` : ''}{roleLabel(user?.role)}
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={handleLogout}>
-                <LogOut />
-              </Button>
             </div>
           </div>
         </header>
@@ -230,7 +220,7 @@ export function AdminLayout() {
             <ErrorBoundary
               fallback={(error, reset) => (
                 <div className="rounded-xl bg-white ring-1 ring-slate-200">
-                  <ErrorState message={error.message} onRetry={reset} />
+                  <ErrorState message={tMaybe(error.message)} onRetry={reset} />
                 </div>
               )}
             >

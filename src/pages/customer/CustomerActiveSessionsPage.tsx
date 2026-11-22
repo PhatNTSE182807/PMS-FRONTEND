@@ -6,13 +6,14 @@ import { useMyReservations } from '@/hooks/useReservations'
 import { bookingAllowance, isUpcomingBooking } from '@/lib/bookingLimits'
 import { getErrorMessage } from '@/api/apiError'
 import { formatNumber } from '@/lib/format'
+import { t, tMaybe } from '@/i18n'
 
 /** A list that could not be loaded, with a retry. */
 function ErrorNotice({ error, fallback, onRetry }: { error: unknown; fallback: string; onRetry: () => void }) {
   return (
     <div className="cx-card cx-empty-card" role="alert">
-      <p className="cx-error">{getErrorMessage(error, fallback)}</p>
-      <button type="button" className="cx-btn" onClick={onRetry}>Try again</button>
+      <p className="cx-error">{tMaybe(getErrorMessage(error, fallback))}</p>
+      <button type="button" className="cx-btn" onClick={onRetry}>{t('Try again')}</button>
     </div>
   )
 }
@@ -36,58 +37,58 @@ export default function CustomerActiveSessionsPage() {
     <>
       <header className="cx-page-head">
         <div>
-          <h1 className="cx-page-title">Active Sessions</h1>
+          <h1 className="cx-page-title">{t('Active Sessions')}</h1>
         </div>
         {allowance.atLimit ? (
-          <span className="cx-btn" aria-disabled="true" title="Use or cancel a booking before making a new one">
-            <SquarePlus aria-hidden /> Booking limit reached
+          <span className="cx-btn" aria-disabled="true" title={t('Use or cancel a booking before making a new one')}>
+            <SquarePlus aria-hidden />{' '}{t('Booking limit reached')}
           </span>
         ) : (
           <Link to="/me#map" className="cx-btn cx-btn--teal" style={{ padding: '0.9rem 1.4rem' }}>
-            <SquarePlus aria-hidden /> Book a bay
+            <SquarePlus aria-hidden />{' '}{t('Book a bay')}
           </Link>
         )}
       </header>
 
       <div className="cx-tiles" style={{ marginTop: 0, marginBottom: '1.5rem' }}>
         <div className="cx-tile">
-          <span className="cx-label">Parked now</span>
+          <span className="cx-label">{t('Parked now')}</span>
           <strong className="cx-tile__value is-gold">{sessionsQuery.isPending ? '…' : sessions.length}</strong>
           <span className="cx-tile__sub">{sessions.length === 1 ? 'vehicle inside a lot' : 'vehicles inside a lot'}</span>
         </div>
         <div className="cx-tile">
-          <span className="cx-label">Active bookings</span>
+          <span className="cx-label">{t('Active bookings')}</span>
           <strong className="cx-tile__value is-teal">
             {reservationsQuery.isPending ? '…' : `${allowance.activeCount} / ${allowance.limit}`}
           </strong>
-          <span className="cx-tile__sub">{allowance.atLimit ? 'Limit reached' : `${allowance.limit - allowance.activeCount} more allowed`}</span>
+          <span className="cx-tile__sub">{allowance.atLimit ? t('Limit reached') : t('{v} more allowed', { v: allowance.limit - allowance.activeCount })}</span>
         </div>
         <div className="cx-tile">
-          <span className="cx-label">Fees so far</span>
-          <strong className="cx-tile__value">{formatNumber(amountDue)} VND</strong>
-          <span className="cx-tile__sub">Not paid yet, across parked vehicles</span>
+          <span className="cx-label">{t('Fees so far')}</span>
+          <strong className="cx-tile__value">{t('{amountDue} VND', { amountDue: formatNumber(amountDue) })}</strong>
+          <span className="cx-tile__sub">{t('Not paid yet, across parked vehicles')}</span>
         </div>
         <div className="cx-tile">
-          <span className="cx-label">Deposits due</span>
-          <strong className="cx-tile__value">{depositsDue}</strong>
-          <span className="cx-tile__sub">{depositsDue ? 'Pay before the deadline or the bay is released' : 'Nothing waiting'}</span>
+          <span className="cx-label">{t('Deposits due')}</span>
+          <strong className="cx-tile__value">{tMaybe(depositsDue)}</strong>
+          <span className="cx-tile__sub">{depositsDue ? t('Pay before the deadline or the bay is released') : t('Nothing waiting')}</span>
         </div>
       </div>
 
       <section className="cx-section" aria-labelledby="parked-title" id="parked">
         <div className="cx-section__head">
           <h2 className="cx-section__title" id="parked-title">
-            <Car aria-hidden /> Parked now
+            <Car aria-hidden />{' '}{t('Parked now')}
           </h2>
         </div>
         {sessionsQuery.isPending ? (
           <div className="cx-card"><div className="cx-skeleton" style={{ height: '16rem' }} /></div>
         ) : sessionsQuery.isError && sessions.length === 0 ? (
-          <ErrorNotice error={sessionsQuery.error} fallback="Could not load your parked vehicles." onRetry={() => void sessionsQuery.refetch()} />
+          <ErrorNotice error={tMaybe(sessionsQuery.error)} fallback="Could not load your parked vehicles." onRetry={() => void sessionsQuery.refetch()} />
         ) : sessions.length === 0 ? (
           <div className="cx-card cx-empty-card">
-            <h3 className="cx-session__name" style={{ margin: 0 }}>No vehicle parked right now</h3>
-            <p>The running fee, prepayment and exit gate pass of each parked vehicle appear here after check-in.</p>
+            <h3 className="cx-session__name" style={{ margin: 0 }}>{t('No vehicle parked right now')}</h3>
+            <p>{t('The running fee, prepayment and exit gate pass of each parked vehicle appear here after check-in.')}</p>
           </div>
         ) : (
           <div className="cx-stack">
@@ -101,18 +102,18 @@ export default function CustomerActiveSessionsPage() {
       <section className="cx-section" aria-labelledby="bookings-title" id="bookings">
         <div className="cx-section__head">
           <h2 className="cx-section__title" id="bookings-title">
-            <CalendarClock aria-hidden /> Upcoming bookings
+            <CalendarClock aria-hidden />{' '}{t('Upcoming bookings')}
           </h2>
-          <Link to="/me/bookings#history" className="cx-link">Booking history</Link>
+          <Link to="/me/bookings#history" className="cx-link">{t('Booking history')}</Link>
         </div>
         {reservationsQuery.isPending ? (
           <div className="cx-card"><div className="cx-skeleton" style={{ height: '16rem' }} /></div>
         ) : reservationsQuery.isError && reservations.length === 0 ? (
-          <ErrorNotice error={reservationsQuery.error} fallback="Could not load your bookings." onRetry={() => void reservationsQuery.refetch()} />
+          <ErrorNotice error={tMaybe(reservationsQuery.error)} fallback="Could not load your bookings." onRetry={() => void reservationsQuery.refetch()} />
         ) : upcoming.length === 0 ? (
           <div className="cx-card cx-empty-card">
-            <h3 className="cx-session__name" style={{ margin: 0 }}>No upcoming booking</h3>
-            <p>Pick a bay on the 3D map, then choose a scheduled window or pay as you go.</p>
+            <h3 className="cx-session__name" style={{ margin: 0 }}>{t('No upcoming booking')}</h3>
+            <p>{t('Pick a bay on the 3D map, then choose a scheduled window or pay as you go.')}</p>
           </div>
         ) : (
           <div className="cx-sessions-grid">

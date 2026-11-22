@@ -29,18 +29,19 @@ import { LostTicketPapersDialog, type LostTicketVehicle } from '@/components/fea
 import { demoGateStats } from '@/mocks/staffOps.mock'
 import type { CashDrawerDTO } from '@/types/cashDrawer.dto'
 import type { ParkingSessionDTO, ZoneCounterDTO } from '@/types/operations.dto'
+import { t, localDateFormat, tMaybe } from '@/i18n'
 
-const clockWithSeconds = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+const clockWithSeconds = localDateFormat({ hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
 function CapacityRing({ percent }: { percent: number }) {
   const r = 18
   const c = 2 * Math.PI * r
   return (
-    <svg viewBox="0 0 44 44" className="size-14 -rotate-90" role="img" aria-label={`${percent}% of bays occupied`}>
+    <svg viewBox="0 0 44 44" className="size-14 -rotate-90" role="img" aria-label={t('{percent}% of bays occupied', { percent })}>
       <circle cx="22" cy="22" r={r} fill="none" strokeWidth="4" className="stroke-slate-200" />
       <circle cx="22" cy="22" r={r} fill="none" strokeWidth="4" strokeLinecap="round" className="stroke-amber-500" strokeDasharray={`${(c * percent) / 100} ${c}`} />
       <text x="22" y="22" dy="0.35em" textAnchor="middle" className="rotate-90 fill-slate-950 font-mono text-[10px] font-bold" style={{ transformOrigin: 'center' }}>
-        {percent}%
+        {tMaybe(percent)}%
       </text>
     </svg>
   )
@@ -79,30 +80,30 @@ function KpiRow({
         : 'Drawer handed in for the tally'
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatTile label="Facility capacity" className="ring-amber-300/40">
+      <StatTile label={t('Lot capacity')} className="ring-amber-300/40">
         <div className="mt-2 flex items-center justify-between gap-3">
           <div>
             <Metric value={active} unit={`/ ${total}`} className="mt-0" />
-            <p className="mt-1 text-sm text-amber-500">Spaces taken or held</p>
+            <p className="mt-1 text-sm text-amber-500">{t('Spaces taken or held')}</p>
           </div>
           <CapacityRing percent={occupancy} />
         </div>
       </StatTile>
-      <StatTile label="General open" icon={<DoorOpen />}>
-        <Metric value={free} unit="free" className="text-indigo-700" />
+      <StatTile label={t('General open')} icon={<DoorOpen />}>
+        <Metric value={free} unit={t('free')} className="text-indigo-700" />
         <p className="mt-1 text-sm text-slate-700">
-          {counters?.length ? counters.map((c) => `${c.zoneCode} ${c.availableSpaces}`).join(' • ') : 'Levels B1, B2, B3 active'}
+          {counters?.length ? counters.map((c) => `${c.zoneCode} ${c.availableSpaces}`).join(' • ') : t('No zone data yet')}
         </p>
       </StatTile>
-      <StatTile label="Pre-booked inside" icon={<ShieldCheck />}>
-        <Metric value={reserved} unit="reserved" className="text-amber-500" />
-        <p className="mt-1 text-sm text-slate-700">Checked in on a reservation</p>
+      <StatTile label={t('Pre-booked inside')} icon={<ShieldCheck />}>
+        <Metric value={reserved} unit={t('reserved')} className="text-amber-500" />
+        <p className="mt-1 text-sm text-slate-700">{t('Checked in on a reservation')}</p>
       </StatTile>
-      <StatTile label="Cash in drawer" icon={<Wallet />}>
-        <Metric value={drawerOpen ? formatNumber(drawer.cashTotal) : '—'} unit={drawerOpen ? 'VND' : undefined} />
+      <StatTile label={t('Cash in drawer')} icon={<Wallet />}>
+        <Metric value={drawerOpen ? formatNumber(drawer.cashTotal) : '—'} unit={drawerOpen ? t('VND') : undefined} />
         <p className="mt-1 text-sm text-slate-700">
-          {drawerNote} ·{' '}
-          <Link to="/staff/cash-tally" className="font-semibold underline">Cash tally</Link>
+          {tMaybe(drawerNote)} ·{' '}
+          <Link to="/staff/cash-tally" className="font-semibold underline">{t('Cash tally')}</Link>
         </p>
       </StatTile>
     </div>
@@ -122,7 +123,7 @@ function AnprCameras({
       <SectionTitle
         icon={<Video />}
       >
-        Live ANPR cameras
+        {t('Live ANPR cameras')}
       </SectionTitle>
       <GateLaneCameras sessions={sessions} history={exits} />
     </Panel>
@@ -151,51 +152,51 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
       <SectionTitle
         aside={
           <label className="relative">
-            <span className="sr-only">Lookup plate</span>
+            <span className="sr-only">{t('Lookup plate')}</span>
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-slate-500" aria-hidden />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Lookup plate…" className="w-52 pl-8 font-mono uppercase" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Lookup plate…')} className="w-52 pl-8 font-mono uppercase" />
           </label>
         }
       >
-        Vehicles in the lot
+        {t('Vehicles in the lot')}
       </SectionTitle>
-      <p className="-mt-3 mb-4 text-sm text-slate-700">Open parking sessions: entering, parked, paying or paid and on the way out.</p>
+      <p className="-mt-3 mb-4 text-sm text-slate-700">{t('Open parking sessions: entering, parked, paying or paid and on the way out.')}</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="bg-slate-50 text-left text-xs font-bold tracking-wider text-slate-700 uppercase">
-              <th className="rounded-l-lg px-4 py-3">Entered</th>
-              <th className="px-4 py-3">Vehicle plate</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Access</th>
-              <th className="px-4 py-3">Bay / zone</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="rounded-r-lg px-4 py-3 text-right">Action</th>
+              <th className="rounded-l-lg px-4 py-3">{t('Entered')}</th>
+              <th className="px-4 py-3">{t('Vehicle plate')}</th>
+              <th className="px-4 py-3">{t('Type')}</th>
+              <th className="px-4 py-3">{t('Access')}</th>
+              <th className="px-4 py-3">{t('Bay / zone')}</th>
+              <th className="px-4 py-3">{t('Status')}</th>
+              <th className="rounded-r-lg px-4 py-3 text-right">{t('Action')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
             {rows.map((e) => (
               <tr key={e.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-mono text-xs font-bold text-slate-900">{clockWithSeconds.format(Date.parse(e.entryTime))}</td>
-                <td className="px-4 py-3"><Plate>{e.plateNumber || 'NO PLATE'}</Plate></td>
-                <td className="px-4 py-3 text-slate-950">{e.vehicleTypeName ?? '—'}</td>
+                <td className="px-4 py-3"><Plate>{tMaybe(e.plateNumber) || t('NO PLATE')}</Plate></td>
+                <td className="px-4 py-3 text-slate-950">{tMaybe(e.vehicleTypeName) ?? '—'}</td>
                 <td className={cn('px-4 py-3 text-xs font-semibold', e.sessionType === 'Reservation' ? 'text-amber-500' : 'text-slate-900')}>
-                  {e.sessionType === 'Reservation' ? `Reservation ${e.reservationCode ?? ''}` : e.sessionType === 'Whitelist' ? 'Whitelist (free)' : 'Walk-in'}
-                  {e.isOverdue && <span className="ml-2 rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">Overdue</span>}
+                  {e.sessionType === 'Reservation' ? t('Reservation {v}', { v: e.reservationCode ?? '' }) : e.sessionType === 'Whitelist' ? t('Whitelist (free)') : t('Walk-in')}
+                  {e.isOverdue && <span className="ml-2 rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">{t('Overdue')}</span>}
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-900">
                   {e.slotCode ? (
                     <>
-                      <span className="font-mono text-sm font-bold text-slate-950">Bay {e.slotCode}</span>
-                      {e.zoneName && <span className="block text-slate-600">{e.zoneName}</span>}
+                      <span className="font-mono text-sm font-bold text-slate-950">{t('Bay {slotCode}', { slotCode: e.slotCode })}</span>
+                      {e.zoneName && <span className="block text-slate-600">{tMaybe(e.zoneName)}</span>}
                     </>
                   ) : (
                     // A walk-in the lane did not give a bay: only its zone counter knows it
-                    <span className="font-mono">{e.zoneName ?? '—'}</span>
+                    <span className="font-mono">{tMaybe(e.zoneName) ?? '—'}</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={cn('rounded px-2 py-0.5 text-xs font-bold tracking-wide uppercase', SESSION_TONE[e.status] ?? 'bg-slate-100 text-slate-800')}>{e.status}</span>
+                  <span className={cn('rounded px-2 py-0.5 text-xs font-bold tracking-wide uppercase', SESSION_TONE[e.status] ?? 'bg-slate-100 text-slate-800')}>{tMaybe(e.status)}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-1">
@@ -203,15 +204,15 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
                     <Button
                       variant="ghost"
                       size="sm"
-                      title="The driver lost the paper ticket: upload the Citizen ID and registration certificate"
+                      title={t('The driver lost the paper ticket: upload the Citizen ID and registration certificate')}
                       onClick={() => setLostVehicle({ sessionId: e.id, plate: e.hasPlate ? e.plateNumber : '', vehicleTypeName: e.vehicleTypeName, code: e.code })}
                     >
-                      <TicketX /> Lost ticket
+                      <TicketX />{' '}{t('Lost ticket')}
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" asChild title="Ask for the fee now and open this vehicle on the checkout screen">
+                  <Button variant="ghost" size="sm" asChild title={t('Ask for the fee now and open this vehicle on the checkout screen')}>
                     <Link to={`/staff/checkout?session=${e.id}`} state={{ plate: e.hasPlate ? e.plateNumber : '' }}>
-                      <LogOut /> Force check-out
+                      <LogOut />{' '}{t('Force check-out')}
                     </Link>
                   </Button>
                   </div>
@@ -221,7 +222,7 @@ function ActivityStream({ sessions, isLoading, query, setQuery }: { sessions: Pa
             {!isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-10 text-center text-slate-700">
-                  {query ? `No vehicle matches “${query}”.` : 'No vehicle is in the lot.'}
+                  {query ? t('No vehicle matches “{query}”.', { query }) : t('No vehicle is in the lot.')}
                 </td>
               </tr>
             )}
@@ -263,12 +264,12 @@ export default function StaffGatePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">Gate operations dashboard</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">{t('Gate operations dashboard')}</h1>
         </div>
         {incidentCount > 0 && (
           <Button variant="outline" asChild>
             <Link to="/staff/exceptions">
-              <TriangleAlert className="text-amber-500" /> {incidentCount} incident{incidentCount > 1 ? 's' : ''} need manual review
+              <TriangleAlert className="text-amber-500" />{' '}{t('{incidentCount} incident', { incidentCount })}{incidentCount > 1 ? 's' : ''}{' '}{t('need manual review')}
             </Link>
           </Button>
         )}
@@ -283,8 +284,8 @@ export default function StaffGatePage() {
           <GateLanesPanel lotId={lotKey} initialTab={lane === 'checkout' ? 'CheckOut' : 'CheckIn'} />
         ) : (
           <Panel>
-            <SectionTitle icon={<LogIn />}>Entry lane</SectionTitle>
-            <p className="text-sm text-slate-700">{myLots.isPending ? 'Loading your lot…' : 'No parking lot is assigned to you yet. Ask your Manager.'}</p>
+            <SectionTitle icon={<LogIn />}>{t('Entry lane')}</SectionTitle>
+            <p className="text-sm text-slate-700">{myLots.isPending ? t('Loading your lot…') : t('No parking lot is assigned to you yet. Ask your Manager.')}</p>
           </Panel>
         )}
       </div>
