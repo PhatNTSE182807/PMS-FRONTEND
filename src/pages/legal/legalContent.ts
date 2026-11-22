@@ -32,7 +32,8 @@ export const legalValues = () => ({
   deposit: formatNumber(30_000),
   depositDeadline: 10,
   cancelMinutes: 30,
-  towMinutes: 15,
+  towStaffMinutes: 15,
+  towMinutes: 30,
   exitWindow: 15,
   lateFee: formatNumber(10_000),
   roundTo: formatNumber(1_000),
@@ -84,7 +85,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
           'You can check in from {earlyMinutes} minutes before your arrival time until your hold ends.',
           'A deposit is optional: {deposit} VND per car, paid within {depositDeadline} minutes of booking. It is deducted from your fee at check-out.',
           'If you do not check in before your hold ends, the booking becomes a no-show and the bay is released.',
-          'If you chose a departure time and stay more than {towMinutes} minutes past it, your vehicle may be towed to a penalty bay and a towing penalty is added at check-out.',
+          'If you chose a departure time and stay past it, your vehicle may be towed to a penalty bay after {towStaffMinutes} minutes when another booking is waiting for the bay, and is towed automatically after {towMinutes} minutes. A towing penalty is added at check-out.',
         ],
       },
       {

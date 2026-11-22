@@ -76,6 +76,8 @@ export function useNotifications(take = 30) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all })
         if (notification.type === 'DepositRefunded' || notification.type === 'CompensationPaid')
           window.dispatchEvent(new Event('xxiv-wallet-updated'))
+        // The towed vehicle is in another bay and owes a penalty: the map and the fee follow at once
+        if (notification.type === 'VehicleTowed') void queryClient.invalidateQueries({ queryKey: queryKeys.parkingSessions.all })
       }
 
       // A closed cash drawer waits in the Manager's Approval Queue
