@@ -228,13 +228,13 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
             <div className="auth-shell__dialog-body">
               <p>{t('Welcome to')}{' '}<strong>XXIV Parking</strong>.</p>
               <p>
-                1. <strong>{t('Parking Access:')}</strong>{' '}{t('Real-time reservation guarantees a reserved parking slot for your vehicle for up to 30 minutes after scheduled arrival.')}
+                1. <strong>{t('Parking Access:')}</strong>{' '}{t('Your bay is held for 15 minutes after your arrival time, or 30 minutes with a deposit.')}
               </p>
               <p>
-                2. <strong>{t('Automated Billing:')}</strong>{' '}{t('Rates are calculated dynamically per parking zone and level. QR check-in & check-out logs timestamps automatically.')}
+                2. <strong>{t('Automated Billing:')}</strong>{' '}{t('Fees are charged in time blocks from each lot\'s price list. Entry and exit times are recorded automatically.')}
               </p>
               <p>
-                3. <strong>{t('Data Privacy:')}</strong>{' '}{t('Your license plate and payment credentials are encrypted using industry-standard TLS encryption.')}
+                3. <strong>{t('Data Privacy:')}</strong>{' '}{t('Your license plate and payment details are sent over an encrypted connection (TLS).')}
               </p>
             </div>
             <div className="auth-shell__dialog-footer">

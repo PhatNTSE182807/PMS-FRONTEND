@@ -336,7 +336,7 @@ export default function StaffCheckoutPage() {
                   <dd className="font-mono font-bold text-slate-950">{formatClock(now)}</dd>
                 </div>
                 <div className="rounded-lg bg-amber-50 py-2">
-                  <dt className="text-xs font-bold text-amber-500 uppercase">{t('Dwell')}</dt>
+                  <dt className="text-xs font-bold text-amber-500 uppercase">{t('Parking time')}</dt>
                   <dd className="font-mono font-bold text-amber-500">{formatMinutes(quote.durationMinutes)}</dd>
                 </div>
               </dl>

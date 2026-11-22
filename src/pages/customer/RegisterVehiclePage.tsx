@@ -140,7 +140,7 @@ function RejectedRegistrations() {
             <span className="cx-chip cx-chip--red">{tr('Rejected')}{' '}{decidedOn(r.decidedAt)}</span>
           </div>
           {r.reviewNote && <p>{tr('Staff note: {reviewNote}', { reviewNote: r.reviewNote })}</p>}
-          <p className="vd-rejected__hint">{tr('This vehicle was removed from your fleet. Register it again with new photos.')}</p>
+          <p className="vd-rejected__hint">{tr('This vehicle was removed from your account. Register it again with new photos.')}</p>
         </div>
       ))}
     </div>
@@ -254,9 +254,6 @@ export default function RegisterVehiclePage() {
         <div>
           <h1 className="cx-page-title">{tr('Register Vehicle & Upload Documents')}</h1>
         </div>
-        <span className="cx-pill">
-          <span className="cx-dot cx-dot--gold" aria-hidden="true" />{' '}{tr('Plate gateway ready')}
-        </span>
       </header>
 
       <div className="cx-split">
@@ -518,7 +515,7 @@ export default function RegisterVehiclePage() {
 
           <section className="cx-card" aria-labelledby="fleet-list-title">
             <div className="cx-card__head" style={{ marginBottom: '1rem' }}>
-              <h2 className="cx-card__title" id="fleet-list-title">{tr('Your fleet')}</h2>
+              <h2 className="cx-card__title" id="fleet-list-title">{tr('Your vehicles')}</h2>
               <span className="cx-label">{tr('{length} registered', { length: vehicles.length })}</span>
             </div>
             {vehiclesQuery.isPending && <div className="cx-skeleton" style={{ height: '4rem' }} />}

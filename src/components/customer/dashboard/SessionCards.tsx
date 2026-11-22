@@ -183,7 +183,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
           <span className="cx-session__p" aria-hidden="true">P</span>
           <div>
             <span className="cx-eyebrow">
-              <span className="cx-dot cx-dot--live" aria-hidden="true" />{' '}{t('Live active dwell')}
+              <span className="cx-dot cx-dot--live" aria-hidden="true" />{' '}{t('Currently parked')}
               {parkedCount > 1 && (
                 <Link to="/me/sessions" className="cx-link">{t('• {parkedCount} vehicles parked, see all', { parkedCount })}</Link>
               )}
@@ -193,7 +193,7 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
           </div>
         </div>
         <div className="cx-session__slot">
-          <span className="cx-label">{t('Slot assign')}</span>
+          <span className="cx-label">{t('Your bay')}</span>
           <span className="cx-session__slot-value">{s.slotCode ? t('Bay {slotCode}', { slotCode: s.slotCode }) : (tMaybe(s.zoneName) ?? '—')}</span>
         </div>
       </div>
@@ -210,16 +210,16 @@ export function SessionCard({ current, parkedCount = 1, id }: SessionCardProps) 
           <span className="cx-metric__sub">{relativeDay(entry, now)}</span>
         </div>
         <div>
-          <span className="cx-label">{t('Elapsed duration')}</span>
+          <span className="cx-label">{t('Parked for')}</span>
           <span className="cx-metric__value" style={{ color: 'var(--cx-gold)' }}>
             {Math.floor(minutes / 60)}h {minutes % 60}m
           </span>
           <span className="cx-metric__sub">
-            {current.plannedDeparture ? t('Planned until {v}', { v: timeFormat.format(Date.parse(current.plannedDeparture)) }) : t('Real-time meter')}
+            {current.plannedDeparture ? t('Planned until {v}', { v: timeFormat.format(Date.parse(current.plannedDeparture)) }) : t('Updating live')}
           </span>
         </div>
         <div>
-          <span className="cx-label">{t('Accrued total')}</span>
+          <span className="cx-label">{t('Fee so far')}</span>
           <span className="cx-metric__big">{lostTicket ? '—' : formatNumber(current.feeSoFar)}</span>
           <span className="cx-metric__sub">
             {lostTicket ? t('Set once the lost-ticket case is decided') : tariffText(current) ? t('VND ({v})', { v: tariffText(current) }) : t('VND so far')}
@@ -409,7 +409,7 @@ export function BookingCard({ booking, showAllLink = false }: { booking: Reserva
         {pending ? (
           <span className="cx-chip cx-chip--gold">{t('Deposit due')}{' '}{depositDue ? timeFormat.format(depositDue) : ''}</span>
         ) : (
-          <span className="cx-chip cx-chip--teal">{t('Guaranteed slot')}</span>
+          <span className="cx-chip cx-chip--teal">{t('Bay held')}</span>
         )}
       </div>
       <h2 className="cx-session__name" style={{ marginTop: 0 }}>{tMaybe(booking.parkingLotName) ?? t('Parking lot')}</h2>
@@ -427,10 +427,10 @@ export function BookingCard({ booking, showAllLink = false }: { booking: Reserva
             <strong>{describeWindow(booking.arrivalTime, booking.departureTime, now)}</strong>
           </div>
           <div className="cx-kv__row">
-            {t('Allocated stall area')}{' '}<strong className="is-gold">{[booking.zoneName, booking.slotCode && `Bay ${booking.slotCode}`].filter(Boolean).join(' • ') || '—'}</strong>
+            {t('Your bay')}{' '}<strong className="is-gold">{[booking.zoneName, booking.slotCode && `Bay ${booking.slotCode}`].filter(Boolean).join(' • ') || '—'}</strong>
           </div>
           <div className="cx-kv__row">
-            {t('Designated vehicle')}{' '}<strong>{booking.vehicleLabel ? `${booking.vehicleLabel} (${booking.plateNumber ?? '—'})` : (tMaybe(booking.plateNumber) ?? '—')}</strong>
+            {t('Vehicle')}{' '}<strong>{booking.vehicleLabel ? `${booking.vehicleLabel} (${booking.plateNumber ?? '—'})` : (tMaybe(booking.plateNumber) ?? '—')}</strong>
           </div>
         </div>
       )}
@@ -484,7 +484,7 @@ export function BookingCard({ booking, showAllLink = false }: { booking: Reserva
                 setEditing(true)
               }}
             >
-              {t('Modify window')}
+              {t('Change time')}
             </button>
             <button type="button" className="cx-btn cx-btn--danger" disabled={!booking.canCancel || cancel.isPending} onClick={confirmCancel}>
               {t('Cancel')}

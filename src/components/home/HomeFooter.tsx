@@ -1,8 +1,8 @@
 import { SocialLinks } from '@/components/customer/SocialLinks'
 import { t, tMaybe } from '@/i18n'
 
-const ARCHITECTURE = ['LiDAR space mesh', 'Sub-second ANPR array', 'Ultra-fast DC charging', 'Sovereign vault docks']
-const OPERATIONS = ['Autonomous valet transit', 'Terminal gate dispatch', '24/7 operations desk', 'Fleet telematics API']
+const FEATURES = ['3D parking map', 'Plate recognition', 'Online booking', 'XXIV Wallet']
+const SERVICES = ['Vehicle check-in', 'Vehicle check-out', 'Online payment', 'Customer support']
 
 export function HomeFooter() {
   return (
@@ -14,36 +14,32 @@ export function HomeFooter() {
               <span className="brand-gold">XXIV</span>PARKING
             </p>
             <p className="home-footer__about">
-              {t('Real-time occupancy, automated bay allocation and secure vehicle management for high-density city estates.')}
-            </p>
-            <p className="home-footer__status">
-              <span className="home-dot home-dot--gold" aria-hidden="true" />
-              {t('Core gateways active')}
+              {t('See free bays live, book ahead and manage your vehicles and payments in one place.')}
             </p>
           </div>
 
           <div>
-            <h2 className="home-footer__title">{t('Architecture')}</h2>
+            <h2 className="home-footer__title">{t('Features')}</h2>
             <ul className="home-footer__list">
-              {ARCHITECTURE.map((item) => (
+              {FEATURES.map((item) => (
                 <li key={item}>{tMaybe(item)}</li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h2 className="home-footer__title">{t('Operations')}</h2>
+            <h2 className="home-footer__title">{t('Services')}</h2>
             <ul className="home-footer__list">
-              {OPERATIONS.map((item) => (
+              {SERVICES.map((item) => (
                 <li key={item}>{tMaybe(item)}</li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h2 className="home-footer__title">{t('Concierge & support')}</h2>
+            <h2 className="home-footer__title">{t('Support')}</h2>
             <div className="home-footer__contact">
-              <p>{t('24/7 priority dispatch and assistance across all metropolitan terminals.')}</p>
+              <p>{t('Contact us if you need help with parking, bookings or payments.')}</p>
               <a href="mailto:support@xxivparking.vn" className="home-footer__mail">
                 {t('support@xxivparking.vn')}
               </a>
@@ -56,9 +52,8 @@ export function HomeFooter() {
         <div className="home-footer__bottom">
           <span>© {new Date().getFullYear()}{' '}{t('XXIV Parking Systems. All rights reserved.')}</span>
           <span className="home-footer__legal">
-            <span>{t('System protocol')}</span>
-            <span>{t('Security attestation')}</span>
-            <span>{t('Terminal SLA')}</span>
+            <span>{t('Terms of Service')}</span>
+            <span>{t('Privacy Policy')}</span>
           </span>
         </div>
       </div>

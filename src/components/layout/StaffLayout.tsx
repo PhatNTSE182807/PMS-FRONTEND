@@ -77,11 +77,11 @@ export function StaffLayout() {
             <p className="font-display text-lg font-bold tracking-wide text-slate-950 uppercase">
               <span className="brand-gold">XXIV</span>{' '}Parking
             </p>
-            <p className="text-[11px] font-bold tracking-[0.14em] uppercase brand-gold">{t('POS terminal console')}</p>
+            <p className="text-[11px] font-bold tracking-[0.14em] uppercase brand-gold">{t('Staff POS')}</p>
           </div>
 
           <div className="ml-4 hidden min-w-0 items-center gap-2 rounded-lg bg-white px-3 py-1.5 whitespace-nowrap 2xl:flex ring-1 ring-slate-200">
-            <span className="text-xs font-semibold text-slate-700 uppercase">{t('Facility')}</span>
+            <span className="text-xs font-semibold text-slate-700 uppercase">{t('Parking lot')}</span>
             {lots.isLoading ? (
               <span className="text-sm font-semibold text-slate-400">{t('Loading...')}</span>
             ) : lots.data && lots.data.length > 1 ? (
@@ -158,7 +158,7 @@ export function StaffLayout() {
       </main>
 
       <footer className="flex flex-col gap-1 border-t border-slate-200 px-4 py-4 text-[11px] font-semibold tracking-wider text-slate-600 uppercase sm:flex-row sm:justify-between sm:px-6">
-        <span>{t('XXIV Parking • Gate console')}</span>
+        <span>{t('XXIV Parking • Staff POS')}</span>
         <span>{t('All gate operations are logged')}</span>
       </footer>
 

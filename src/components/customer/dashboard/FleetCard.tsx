@@ -43,7 +43,7 @@ export function FleetCard({ vehicles, isLoading }: FleetCardProps) {
         <div className="cx-card__title-row">
           <span className="cx-card__icon"><IdCard aria-hidden /></span>
           <div>
-            <h2 className="cx-card__title" id="fleet-title">{t('Registered Fleet')}</h2>
+            <h2 className="cx-card__title" id="fleet-title">{t('My vehicles')}</h2>
             <p className="cx-card__subtitle">{t('Active vehicles for automatic barrier clearance and ticketing')}</p>
           </div>
         </div>

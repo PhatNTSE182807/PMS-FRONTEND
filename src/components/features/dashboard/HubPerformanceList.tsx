@@ -25,8 +25,8 @@ export function HubPerformanceList({ hubs = [], isLoading = false, error = null,
     <Card aria-busy={isLoading} className="p-0">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-6 py-5">
         <div>
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-950">{t('Hub performance')}</h2>
-          <p className="mt-1 text-sm text-slate-700">{t('Live occupancy with today\'s and month-to-date revenue for every hub.')}</p>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-950">{t('Parking lot performance')}</h2>
+          <p className="mt-1 text-sm text-slate-700">{t('Live occupancy with today\'s and month-to-date revenue for every parking lot.')}</p>
         </div>
         {!isLoading && !error && (
           <span className="rounded-md bg-indigo-100 px-3 py-1 text-xs font-bold tracking-wider text-indigo-700 uppercase">
@@ -44,7 +44,7 @@ export function HubPerformanceList({ hubs = [], isLoading = false, error = null,
           ))}
         </ul>
       ) : hubs.length === 0 ? (
-        <EmptyState icon={Building2} title={t('No hubs yet')} description={t('Hubs appear here once a parking lot has been created.')} />
+        <EmptyState icon={Building2} title={t('No parking lots yet')} description={t('Parking lots appear here once one has been created.')} />
       ) : (
         <>
           <ul className="space-y-3 p-4 sm:p-6">

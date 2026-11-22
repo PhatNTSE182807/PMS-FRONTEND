@@ -269,7 +269,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
         <div>
           <h2 className="cx-map__title" id="map-title">{t('Interactive 3D Parking Map & Slot Booking')}</h2>
         </div>
-        <div className="cx-tabs" role="tablist" aria-label={t('Parking terminal')}>
+        <div className="cx-tabs" role="tablist" aria-label={t('Parking lot')}>
           {lots.map((l) => (
             <button
               key={l.id}
@@ -289,7 +289,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
       </div>
 
       {isLoadingLots && <div className="cx-skeleton" style={{ height: '30rem' }} />}
-      {!isLoadingLots && !lot && <p className="cx-empty">{t('No parking terminals are available right now.')}</p>}
+      {!isLoadingLots && !lot && <p className="cx-empty">{t('No parking lots are available right now.')}</p>}
 
       {lot && (
         <div className="cx-map__body">
@@ -394,7 +394,7 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
               <>
                 <div className="cx-map__stall">
                   <div>
-                    <span className="cx-label">{t('Stall ID')}</span>
+                    <span className="cx-label">{t('Bay code')}</span>
                     <span className="cx-map__stall-name">{t('Bay {code}', { code: selected.code })}</span>
                     <span className="cx-metric__sub">
                       {t('Floor {level} •', { level: selectedFloor.level })}{' '}{selectedFloor.kind === 'car' ? t('Car deck') : t('Motorbike deck')}

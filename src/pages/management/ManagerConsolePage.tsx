@@ -185,7 +185,7 @@ function Console({ lot }: { lot: ManagedLot }) {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="font-display text-xl font-semibold text-slate-950">{t('Live Bay & Zone Capacity')}</h2>
-              <p className="mt-0.5 text-sm text-slate-700">{t('Real-time occupancy per zone from the gate and sensor feed.')}</p>
+              <p className="mt-0.5 text-sm text-slate-700">{t('Live occupancy per zone from gate activity.')}</p>
             </div>
           </div>
 

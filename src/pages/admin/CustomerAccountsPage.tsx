@@ -119,7 +119,7 @@ function AccountDetails({ customer }: { customer: CustomerAccountDTO | undefined
           <h3 className="mt-6 text-xs font-bold tracking-[0.1em] text-slate-700 uppercase">{t('Account overview')}</h3>
           <dl className="mt-2 divide-y divide-slate-200 rounded-xl bg-slate-50 px-4 text-sm">
             {[
-              ['Membership type', <span key="m" className="font-semibold text-amber-500">{t('Driver')}</span>],
+              ['Account type', <span key="m" className="font-semibold text-amber-500">{t('Driver')}</span>],
               ['Username', <span key="u" className="font-mono text-slate-900">{customer.userName}</span>],
               ['Email', <span key="e" className="truncate text-slate-900">{customer.email}</span>],
               ['Sign-in access', <span key="s" className={active ? 'text-indigo-700' : 'text-rose-700'}>{active ? t('Allowed') : t('Blocked')}</span>],

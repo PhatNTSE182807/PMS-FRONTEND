@@ -124,11 +124,11 @@ function Reservations({ lot }: { lot: ManagedLot }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('Facility Reservations & Slot Allocations')}
+        title={t('Reservations & Bays')}
        
         actions={
           <Button variant="outline" size="lg" onClick={exportCsv} disabled={!visible.length}>
-            <Download />{' '}{t('Export booking manifest (CSV)')}
+            <Download />{' '}{t('Export bookings (CSV)')}
           </Button>
         }
       />

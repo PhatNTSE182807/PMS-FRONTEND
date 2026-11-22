@@ -10,8 +10,8 @@ import { t, tMaybe } from '@/i18n'
 const LINKS = [
   { href: '#top', label: 'Home' },
   { href: '#capabilities', label: 'Features' },
-  { href: '#facilities', label: 'Facilities' },
-  { href: '#terminals', label: 'Terminals' },
+  { href: '#facilities', label: 'Inside the lot' },
+  { href: '#terminals', label: 'Parking lots' },
 ]
 
 export function HomeNav() {

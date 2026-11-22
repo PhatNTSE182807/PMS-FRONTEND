@@ -48,7 +48,7 @@ const GROUP: Record<ReservationStatus, Exclude<Filter, 'ALL'>> = {
 
 const STATUS_LABEL: Record<ReservationStatus, string> = {
   PendingDeposit: 'Pending deposit',
-  Confirmed: 'Confirmed & guaranteed',
+  Confirmed: 'Confirmed',
   CheckedIn: 'Checked in',
   Completed: 'Completed',
   Cancelled: 'Cancelled',
@@ -406,7 +406,7 @@ export default function CustomerBookingsPage() {
                 <thead>
                   <tr>
                     <th scope="col">{tr('Booking')}</th>
-                    <th scope="col">{tr('Facility')}</th>
+                    <th scope="col">{tr('Parking lot')}</th>
                     <th scope="col">{tr('Vehicle')}</th>
                     <th scope="col">{tr('Bay')}</th>
                     <th scope="col">{tr('Arrival')}</th>

@@ -22,7 +22,7 @@ export default function HomePage() {
   return (
     <div className="home">
       <a href="#terminals" className="home-skip">
-        {t('Skip to live terminals')}
+        {t('Skip to parking lots')}
       </a>
       <HomeNav />
       <main>

@@ -361,7 +361,7 @@ export default function CustomerProfilePage() {
                 <span className="cx-card__icon"><User aria-hidden /></span>
                 <div>
                   <h2 className="cx-card__title" id="personal-title">{t('Personal Information')}</h2>
-                  <p className="cx-card__subtitle">{t('Update your contact details and default gate credentials.')}</p>
+                  <p className="cx-card__subtitle">{t('Update your contact details.')}</p>
                 </div>
               </div>
             </div>

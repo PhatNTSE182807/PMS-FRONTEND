@@ -5,13 +5,13 @@ import { t, tMaybe } from '@/i18n'
 
 export function UtilitiesCard() {
   const navigate = useNavigate()
-  const soon = (what: string) => toast.info(t('{what} is coming soon.', { what }))
+  const soon = (what: string) => toast.info(t('{what} is coming soon.', { what: t(what) }))
 
   const items = [
     { icon: Map, title: t('Parking Map'), text: t('Live zone availability'), onClick: () => navigate('/me#map') },
-    { icon: Receipt, title: t('Payment History'), text: t('Invoices & e-tax receipts'), onClick: () => navigate('/me#history') },
-    { icon: CreditCard, title: t('Auto-Deduct (VNPAY)'), text: t('Manage payment gateways'), onClick: () => soon('Automatic payment') },
-    { icon: Headset, title: t('Terminal Assistance'), text: t('Station control intercom'), onClick: () => soon('Terminal intercom') },
+    { icon: Receipt, title: t('Payment History'), text: t('Payments and receipts'), onClick: () => navigate('/me#history') },
+    { icon: CreditCard, title: t('Auto-Deduct (VNPAY)'), text: t('Pay automatically'), onClick: () => soon('Automatic payment') },
+    { icon: Headset, title: t('Help'), text: t('Contact the parking lot'), onClick: () => soon('Contact the parking lot') },
   ]
 
   return (
@@ -19,7 +19,7 @@ export function UtilitiesCard() {
       <section className="cx-card" aria-labelledby="utilities-title">
         <div className="cx-card__head" style={{ marginBottom: '1rem' }}>
           <h2 className="cx-label" id="utilities-title" style={{ color: 'var(--cx-on-surface)', fontSize: '0.8rem' }}>
-            {t('Operational utilities')}
+            {t('Utilities')}
           </h2>
           <span className="cx-label">{t('Quick actions')}</span>
         </div>
@@ -34,10 +34,10 @@ export function UtilitiesCard() {
         </div>
       </section>
 
-      <section className="cx-card cx-hotline" aria-label={t('Terminal control hotline')}>
+      <section className="cx-card cx-hotline" aria-label={t('Support hotline')}>
         <span className="cx-hotline__icon"><Phone aria-hidden /></span>
         <div className="cx-hotline__text">
-          <span className="cx-label">{t('Terminal control hotline')}</span>
+          <span className="cx-label">{t('Support hotline')}</span>
           <strong>+84 (28) 7300-2424</strong>
         </div>
         <a href="tel:+842873002424" className="cx-btn cx-btn--sm">{t('Direct call')}</a>
