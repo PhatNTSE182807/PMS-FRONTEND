@@ -6,6 +6,8 @@ import { lotRealtime } from '@/api/realtime'
 
 /** Fallback refresh of free bays when no push arrives (the endpoint allows 120 calls a minute per client). */
 export const PUBLIC_LOTS_REFRESH_MS = 30_000
+/** Refresh of the branch list in the footer: lots are added, edited or removed far less often than bays change. */
+const LOT_DIRECTORY_REFRESH_MS = 60_000
 /** Pushes that arrive close together (a busy gate) trigger one reload. */
 const PUSH_DEBOUNCE_MS = 1_000
 
@@ -48,4 +50,17 @@ export function usePublicLots() {
   }, [lotIdsKey, queryClient])
 
   return query
+}
+
+/**
+ * The same public lot list for places that only show names and addresses, such as the footer. It shares the cache
+ * of usePublicLots but opens no real-time channels.
+ */
+export function usePublicLotDirectory() {
+  return useQuery({
+    queryKey: queryKeys.parking.publicLots(),
+    queryFn: publicLotService.list,
+    refetchInterval: LOT_DIRECTORY_REFRESH_MS,
+    refetchIntervalInBackground: false,
+  })
 }

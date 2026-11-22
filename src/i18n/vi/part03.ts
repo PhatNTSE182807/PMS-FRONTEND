@@ -20,7 +20,7 @@ export const part03: Record<string, string> = {
   "Held for you • Staff checks you in at the gate": "Đang giữ cho bạn • Nhân viên sẽ cho bạn vào tại cổng",
   "Held {holdMinutes} min": "Giữ {holdMinutes} phút",
   "Help search mode": "Chế độ tìm trong trợ giúp",
-  "Hi, I'm {ASSISTANT_NAME}! Ask me about booking a bay, deposits, fees, paying, the wallet or vehicle verification.": "Xin chào, mình là {ASSISTANT_NAME}! Hãy hỏi mình về đặt ô đỗ, tiền cọc, phí, thanh toán, ví hoặc xác minh xe.",
+  "Hi, I'm {ASSISTANT_NAME}! Ask me about booking a bay, deposits, fees, paying, the wallet or vehicle verification.": "Xin chào, mình là {ASSISTANT_NAME}! Hãy hỏi mình về đặt chỗ, tiền cọc, phí, thanh toán, ví hoặc xác minh xe.",
   "Hide password": "Ẩn mật khẩu",
   "History pages": "Các trang lịch sử",
   "Hold ends": "Hết giữ chỗ",
