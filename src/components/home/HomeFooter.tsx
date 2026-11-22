@@ -14,7 +14,7 @@ function FooterBranches() {
 
   return (
     <section className="home-footer__branches" aria-labelledby="footer-branches-title">
-      <h2 className="home-footer__title" id="footer-branches-title">{t('Branches')}</h2>
+      <h2 className="home-footer__title" id="footer-branches-title">{t('Parking Sites')}</h2>
       <ul className="home-footer__branch-list">
         {lots.map((lot) => (
           <li key={lot.id} className="home-footer__branch">
