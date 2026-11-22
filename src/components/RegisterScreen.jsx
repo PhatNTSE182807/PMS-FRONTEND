@@ -186,11 +186,11 @@ export default function RegisterScreen({ onNavigateToLogin, onRegisterSuccess })
         </div>
 
         <AuthCheckbox checked={agreeTerms} onChange={setAgreeTerms}>
-          {t('I agree to the')}
+          {t('I agree to the')}{' '}
           {/* New tab: the form keeps what was typed */}
           <a href="/terms" target="_blank" rel="noopener" className="auth-shell__link auth-shell__link--muted">
             {t('Terms of Service')}
-          </a>{t('and')}
+          </a>{' '}{t('and')}{' '}
           <a href="/privacy" target="_blank" rel="noopener" className="auth-shell__link auth-shell__link--muted">
             {t('Privacy Policy')}
           </a>
