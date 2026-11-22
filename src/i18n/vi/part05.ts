@@ -309,8 +309,6 @@ export const part05: Record<string, string> = {
   "Write a note for the customer before rejecting": "Viết ghi chú cho khách trước khi từ chối",
   "XXIV E-Wallet": "Ví điện tử XXIV",
   "XXIV E-Wallet (Click to view balance, deposit & withdraw)": "Ví điện tử XXIV (bấm để xem số dư, nạp & rút tiền)",
-  "XXIV PARKING. All rights reserved.": "XXIV PARKING. Bảo lưu mọi quyền.",
-  "XXIV Parking Systems. All rights reserved.": "XXIV Parking Systems. Bảo lưu mọi quyền.",
   "XXIV Parking home": "Trang chủ XXIV Parking",
   "XXIV Parking logo": "Logo XXIV Parking",
   "XXIV Parking on social media": "XXIV Parking trên mạng xã hội",

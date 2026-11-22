@@ -50,7 +50,7 @@ export function HomeFooter() {
         </div>
 
         <div className="home-footer__bottom">
-          <span>© {new Date().getFullYear()}{' '}{t('XXIV Parking Systems. All rights reserved.')}</span>
+          <span>© {new Date().getFullYear()} XXIV Parking Systems. All rights reserved.</span>
           <span className="home-footer__legal">
             <span>{t('Terms of Service')}</span>
             <span>{t('Privacy Policy')}</span>

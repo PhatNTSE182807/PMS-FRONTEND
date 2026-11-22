@@ -139,7 +139,7 @@ export function CustomerShell() {
             </div>
           </div>
           <div className="cx-footer__bottom">
-            <span>© {new Date().getFullYear()}{' '}{t('XXIV PARKING. All rights reserved.')}</span>
+            <span>© {new Date().getFullYear()} XXIV PARKING. All rights reserved.</span>
           </div>
         </div>
       </footer>
