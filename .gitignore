@@ -12,3 +12,11 @@ backend/
 AGENTS.md
 CLAUDE.md
 .I love you
+
+# Project documents and AI assistant notes: kept locally, never pushed
+/docs/
+/document/
+.github/copilot-instructions.md
+
+# Office lock files
+~$*
