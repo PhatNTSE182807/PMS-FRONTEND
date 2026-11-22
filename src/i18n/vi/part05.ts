@@ -315,7 +315,7 @@ export const part05: Record<string, string> = {
   "Year": "Năm",
   "Yes": "Có",
   "You": "Bạn",
-  "You already have {activeCount} active bookings, the most an account can hold. Use or cancel one to book this bay.": "Bạn đã có {activeCount} đặt chỗ đang hiệu lực, mức tối đa của một tài khoản. Hãy dùng hoặc hủy một đặt chỗ để đặt ô này.",
+  "You already have {activeCount} active bookings, the most an account can hold. Use or cancel one to book this bay.": "Bạn đã có {activeCount} đặt chỗ đang hiệu lực, mức tối đa của một tài khoản. Hãy dùng hoặc hủy một đặt chỗ để đặt chỗ mới.",
   "You are not assigned to a parking lot yet.": "Bạn chưa được phân công bãi xe nào.",
   "You asked for your account to be deleted on {requestedAt}": "Bạn đã yêu cầu xóa tài khoản vào {requestedAt}",
   "You closed this drawer: another Manager confirms it": "Bạn đã chốt két này: một Quản lý khác sẽ xác nhận",

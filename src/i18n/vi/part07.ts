@@ -71,7 +71,7 @@ export const part07: Record<string, string> = {
   "Brown": "Nâu",
   "Browser": "Trình duyệt",
   "Camera offline: the plate reader is not answering. Type the plate on the vehicle.": "Camera mất kết nối: đầu đọc biển số không phản hồi. Hãy nhập biển số trên xe.",
-  "Can I book a motorbike bay?": "Tôi có thể đặt ô xe máy không?",
+  "Can I book a motorbike bay?": "Tôi có thể đặt chỗ cho xe máy không?",
   "Cancel this booking? No deposit has been paid yet.": "Hủy đặt chỗ này? Chưa có tiền cọc nào được trả.",
   "Cancel with a full refund, or change the booking, until this long before arrival.": "Được hủy và hoàn toàn bộ tiền, hoặc đổi đặt chỗ, cho đến trước giờ đến khoảng thời gian này.",
   "Cancelled / Expired": "Đã hủy / Hết hạn",
