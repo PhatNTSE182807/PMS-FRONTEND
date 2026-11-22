@@ -2,6 +2,7 @@
 export const part10: Record<string, string> = {
   // Page
   "Legal": "Pháp lý",
+  "By continuing with Google, you agree to the": "Khi tiếp tục với Google, bạn đồng ý với",
   "Last updated: {date}": "Cập nhật lần cuối: {date}",
   "Version {version}": "Phiên bản {version}",
   "In short": "Tóm tắt nhanh",

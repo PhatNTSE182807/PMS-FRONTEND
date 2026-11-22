@@ -51,6 +51,13 @@ export default function GoogleSignInButton({ rememberMe = false, text = 'continu
           {leaving ? t('Opening Google...') : tMaybe(LABELS[text])}
         </span>
       </button>
+      {/* The first Google sign-in creates an account without the form's checkbox, so consent is stated here */}
+      <p className="google-signin__notice">
+        {t('By continuing with Google, you agree to the')}{' '}
+        <a href="/terms" target="_blank" rel="noopener">{t('Terms of Service')}</a>{' '}
+        {t('and')}{' '}
+        <a href="/privacy" target="_blank" rel="noopener">{t('Privacy Policy')}</a>.
+      </p>
     </div>
   );
 }
