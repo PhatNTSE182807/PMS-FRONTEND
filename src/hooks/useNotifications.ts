@@ -8,7 +8,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { USER_TOAST } from '@/lib/userToasts'
 import { DUTY_NOTIFICATION_TYPES, dutyKeys } from './useDuty'
 import { payrollKeys } from './usePayroll'
-import { currentLocale } from '@/i18n'
+import { currentLocale, t } from '@/i18n'
+import { tNotification } from '@/i18n/notifications'
 
 const BOOKED_BAY_TYPES = new Set<string>([
   'BookedBayTaken',
@@ -92,10 +93,10 @@ export function useNotifications(take = 30) {
       if (FILL_TYPES.has(notification.type)) void queryClient.invalidateQueries({ queryKey: queryKeys.parking.all })
 
       const id = `notification-${notification.id}`
-      if (notification.type === 'LotFull') toast.warning(notification.title, { id, description: notification.message, duration: 8000 })
-      else if (notification.type === 'CheckIn') toast.success(USER_TOAST.checkedIn, { id })
-      else if (notification.type === 'CheckOut' && !notification.data?.note) toast.success(USER_TOAST.checkedOut, { id })
-      else toast.info(notification.title, { id, description: notification.message, duration: 5000 })
+      if (notification.type === 'LotFull') toast.warning(tNotification(notification.title), { id, description: tNotification(notification.message), duration: 8000 })
+      else if (notification.type === 'CheckIn') toast.success(t(USER_TOAST.checkedIn), { id })
+      else if (notification.type === 'CheckOut' && !notification.data?.note) toast.success(t(USER_TOAST.checkedOut), { id })
+      else toast.info(tNotification(notification.title), { id, description: tNotification(notification.message), duration: 5000 })
     })
 
     return unsubscribe
@@ -166,13 +167,13 @@ export function useDeleteNotification() {
 export function useTimeAgo() {
   return useCallback((iso: string) => {
     const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
-    if (seconds < 60) return 'just now'
+    if (seconds < 60) return t('just now')
     const minutes = Math.floor(seconds / 60)
-    if (minutes < 60) return `${minutes} min ago`
+    if (minutes < 60) return t('{minutes} min ago', { minutes })
     const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours} h ago`
+    if (hours < 24) return t('{hours} h ago', { hours })
     const days = Math.floor(hours / 24)
-    if (days < 30) return `${days} d ago`
+    if (days < 30) return t('{days} d ago', { days })
     return new Date(iso).toLocaleDateString(currentLocale())
   }, [])
 }

@@ -6,6 +6,7 @@ import { useDeleteNotification, useMarkAllRead, useMarkRead, useNotifications, u
 import { cn } from '@/lib/utils'
 import type { NotificationModel } from '@/api/notification.service'
 import { t, tMaybe } from '@/i18n'
+import { tNotification } from '@/i18n/notifications'
 
 /** Dot colour per notification type: a taken bay needs action, the rest are done. */
 const TONE: Record<string, string> = {
@@ -135,8 +136,8 @@ export function ConsoleNotificationBell() {
               <li key={n.id} className={cn('group flex gap-3 px-4 py-3', !n.isRead && 'bg-slate-50')}>
                 <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', toneOf(n), n.isRead && 'opacity-40')} aria-hidden />
                 <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openItem(n)}>
-                  <p className={cn('text-sm text-slate-950', !n.isRead && 'font-semibold')}>{tMaybe(n.title)}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{tMaybe(n.message)}</p>
+                  <p className={cn('text-sm text-slate-950', !n.isRead && 'font-semibold')}>{tNotification(n.title)}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{tNotification(n.message)}</p>
                   <p className="mt-1 text-[11px] text-slate-500">{timeAgo(n.createdAt)}</p>
                 </button>
                 <button

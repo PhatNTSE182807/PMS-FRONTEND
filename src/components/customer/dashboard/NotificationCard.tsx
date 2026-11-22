@@ -2,6 +2,7 @@ import { ArrowLeftRight, Bell, CalendarX, Check, CheckCheck, CircleCheck, HandCo
 import { useNotifications, useMarkRead, useMarkAllRead, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
 import { t, tMaybe } from '@/i18n'
+import { tNotification } from '@/i18n/notifications'
 
 const ICON_MAP: Record<string, typeof Bell> = {
   VehicleApproved: ShieldCheck,
@@ -131,13 +132,13 @@ export function NotificationCard() {
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem', flexWrap: 'wrap' }}>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--cx-text, #ffffff)' }}>{tMaybe(n.title)}</strong>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--cx-text, #ffffff)' }}>{tNotification(n.title)}</strong>
                   <span className={`cx-chip ${badge.className}`} style={{ fontSize: '0.65rem', padding: '0.05rem 0.35rem' }}>
                     {tMaybe(badge.label)}
                   </span>
                 </div>
                 <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.785rem', color: 'var(--cx-text-muted, #9ca3af)', lineHeight: 1.35 }}>
-                  {tMaybe(n.message)}
+                  {tNotification(n.message)}
                 </p>
                 <span style={{ fontSize: '0.7rem', color: 'var(--cx-text-subtle, #6b7280)' }}>
                   {timeAgo(n.createdAt)}
