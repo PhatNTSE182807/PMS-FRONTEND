@@ -2,6 +2,7 @@
 export const part09: Record<string, string> = {
   "Online payment": "Thanh toán trực tuyến",
   "Services": "Dịch vụ",
+  "Branches": "Chi nhánh",
   "30,000 VND, deducted at exit (kept by the lot if you leave after your departure time) • bay held 30 min after arrival": "30.000 VND, trừ khi ra bãi (bãi giữ lại nếu bạn rời bãi sau giờ đã đặt) • giữ ô 30 phút sau giờ đến",
   "Live 3D parking map": "Bản đồ 3D trực tiếp",
   "3D lane view": "Góc nhìn làn 3D",
