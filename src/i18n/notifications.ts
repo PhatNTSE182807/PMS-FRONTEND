@@ -238,6 +238,8 @@ const SENTENCES: readonly Template[] = [
   ['Lock the account from User Accounts once it can be closed.', 'Hãy khóa tài khoản trong Danh bạ & tài khoản người dùng khi có thể đóng.'],
 
   // Duty and payroll
+  ['You are no longer on the same shift as {when} in the weeks after it.', 'Bạn không còn làm ca giống {when} ở các tuần sau.'],
+  ['You are on the same shift as {when} in the weeks after it.', 'Bạn được xếp ca giống {when} ở các tuần sau.'],
   ['You are no longer on the {when} shift and the same shift every week after.', 'Bạn không còn làm ca {when} và cùng ca này ở các tuần sau.'],
   ['You are no longer on the {when} shift.', 'Bạn không còn làm ca {when}.'],
   ['You are on the {when} shift and the same shift every week after.', 'Bạn được xếp ca {when} và cùng ca này ở các tuần sau.'],

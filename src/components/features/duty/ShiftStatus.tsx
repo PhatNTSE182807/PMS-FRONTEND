@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { CalendarDays, Clock, LockKeyhole, LogIn, Wallet } from 'lucide-react'
 import { dutyApi } from '@/api/duty.service'
@@ -30,6 +30,22 @@ function NextShift({ shift }: { shift: DutyShift | null }) {
   )
 }
 
+/** The shift's fixed break. Display only: the POS keeps working during it. */
+function BreakNote({ shift }: { shift: DutyShift }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+  if (!shift.breakStartsAt || !shift.breakEndsAt) return null
+  const starts = new Date(shift.breakStartsAt).getTime()
+  const ends = new Date(shift.breakEndsAt).getTime()
+  if (now >= ends) return null
+  if (now >= starts)
+    return <span className="font-semibold text-sky-700">{' '}{t('· On break until {v}', { v: clock(shift.breakEndsAt) })}</span>
+  return <span className="text-slate-500">{' '}{t('· break {v}–{v2}', { v: clock(shift.breakStartsAt), v2: clock(shift.breakEndsAt) })}</span>
+}
+
 /**
  * Staff console banner: start the shift when its window is open, or end it while on shift.
  * Nothing is shown when the Staff has no shift around now.
@@ -44,7 +60,7 @@ export function ShiftBanner() {
       <div role="status" className="mx-auto mb-4 flex max-w-[1400px] flex-wrap items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
         <Clock className="size-5 text-emerald-700" />
         <p className="min-w-0 flex-1 text-sm font-semibold text-emerald-900">
-          {t('Your shift')}{' '}{slotHours(s.current.slot)} {new Date(s.current.startsAt).getTime() <= Date.now() ? 'has started: you will be marked late' : t('starts {v}', { v: startsIn(s.current.startsAt) })}.
+          {t('Your shift')}{' '}{slotHours(s.current.date, s.current.slot)} {new Date(s.current.startsAt).getTime() <= Date.now() ? 'has started: you will be marked late' : t('starts {v}', { v: startsIn(s.current.startsAt) })}.
           {s.requireShiftForPos && t(' Start it to use the POS.')}
         </p>
         <StartButton size="sm" />
@@ -55,9 +71,10 @@ export function ShiftBanner() {
       <div className="mx-auto mb-4 flex max-w-[1400px] flex-wrap items-center gap-3 rounded-xl bg-white px-4 py-2.5 ring-1 ring-slate-200">
         <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
         <p className="min-w-0 flex-1 text-sm text-slate-700">
-          {t('On shift')}{' '}<strong className="text-slate-950">{slotHours(s.current.slot)}</strong>{' '}{t('since')}{' '}{clock(s.current.checkInAt)}
+          {t('On shift')}{' '}<strong className="text-slate-950">{slotHours(s.current.date, s.current.slot)}</strong>{' '}{t('since')}{' '}{clock(s.current.checkInAt)}
           {s.current.isLate && <span className="text-amber-700">{' '}{t('· late')}</span>}
           <span className="text-slate-500">{' '}{t('· ends by itself at')}{' '}{clock(s.current.endsAt)}</span>
+          <BreakNote shift={s.current} />
         </p>
       </div>
     )
