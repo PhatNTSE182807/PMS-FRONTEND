@@ -16,8 +16,18 @@ export { LANGUAGES, localeOf, readLanguage, setLanguage, subscribeLanguage, type
  * Changing the language re-mounts the app below <LanguageRoot>, so every screen renders again in the new one.
  */
 export function t(text: string, vars?: Record<string, string | number | null | undefined>): string {
-  const translated = readLanguage() === 'vi' ? (vi[text] ?? text) : text
+  const translated = readLanguage() === 'vi' ? (vi[text] ?? zoneNameVi(text)) : text
   return vars ? interpolate(translated, vars) : translated
+}
+
+/** Zone names built by the backend (LotTemplates): "Level 2 · Cars", or several joined for one 3D deck. */
+const ZONE_NAMES = /^Level \d+ · (?:Cars|Motorbikes)(?: \+ Level \d+ · (?:Cars|Motorbikes))*(?: \(deck \d+\))?$/
+
+function zoneNameVi(text: string): string {
+  if (!ZONE_NAMES.test(text)) return text
+  return text
+    .replace(/Level (\d+) · (Cars|Motorbikes)/g, (_, level: string, kind: string) => `Tầng ${level} · ${kind === 'Cars' ? 'Ô tô' : 'Xe máy'}`)
+    .replace(/\(deck (\d+)\)/, '(khu $1)')
 }
 
 function interpolate(text: string, vars: Record<string, string | number | null | undefined>): string {

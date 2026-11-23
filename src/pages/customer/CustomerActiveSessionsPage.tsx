@@ -54,7 +54,7 @@ export default function CustomerActiveSessionsPage() {
         <div className="cx-tile">
           <span className="cx-label">{t('Parked now')}</span>
           <strong className="cx-tile__value is-gold">{sessionsQuery.isPending ? '…' : sessions.length}</strong>
-          <span className="cx-tile__sub">{sessions.length === 1 ? 'vehicle inside a lot' : 'vehicles inside a lot'}</span>
+          <span className="cx-tile__sub">{sessions.length === 1 ? t('vehicle inside a lot') : t('vehicles inside a lot')}</span>
         </div>
         <div className="cx-tile">
           <span className="cx-label">{t('Active bookings')}</span>

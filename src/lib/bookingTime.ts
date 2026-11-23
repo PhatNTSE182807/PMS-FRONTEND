@@ -1,5 +1,5 @@
 import type { BookingMode } from '@/types/operations.dto'
-import { localDateFormat } from '@/i18n'
+import { localDateFormat, t } from '@/i18n'
 
 /** Same limits as the API (Parking:Reservations): book up to 30 days ahead; a scheduled stay lasts 30 min to 24 h. */
 export const BOOKING_RULES = {
@@ -66,11 +66,11 @@ const dayFormat = localDateFormat({ weekday: 'short', day: '2-digit', month: 'sh
 
 /** "Today", "Tomorrow" or "Fri 24 Oct". */
 export function relativeDay(ts: number, now: number) {
-  const startOf = (t: number) => new Date(t).setHours(0, 0, 0, 0)
+  const startOf = (time: number) => new Date(time).setHours(0, 0, 0, 0)
   const diff = Math.round((startOf(ts) - startOf(now)) / 86_400_000)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Tomorrow'
-  if (diff === -1) return 'Yesterday'
+  if (diff === 0) return t('Today')
+  if (diff === 1) return t('Tomorrow')
+  if (diff === -1) return t('Yesterday')
   return dayFormat.format(ts)
 }
 
@@ -78,7 +78,7 @@ export function relativeDay(ts: number, now: number) {
 export function describeWindow(arrivalIso: string, departureIso: string | null | undefined, now: number) {
   const arrival = Date.parse(arrivalIso)
   const start = `${relativeDay(arrival, now)}, ${timeFormat.format(arrival)}`
-  if (!departureIso) return `${start} · leave anytime`
+  if (!departureIso) return `${start} · ${t('leave anytime')}`
   const departure = Date.parse(departureIso)
   const sameDay = new Date(arrival).toDateString() === new Date(departure).toDateString()
   return `${start} - ${sameDay ? '' : `${relativeDay(departure, now)}, `}${timeFormat.format(departure)}`

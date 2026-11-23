@@ -103,7 +103,8 @@ const CONVERT: Record<string, (value: string) => string> = {
     return m ? `${lowerFirst(t(m[2]))} tại ${m[1]}` : value
   },
   // "Zone A at Cong Hoa Parking Lot"
-  where: (value) => value.replace(/^(.+?) at (.+)$/, '$1 tại $2'),
+  where: (value) => value.replace(/^(.+?) at (.+)$/, (_, zone: string, lot: string) => `${t(zone)} tại ${lot}`),
+  zone: t,
 }
 
 const TITLES: readonly Template[] = [
