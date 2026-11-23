@@ -220,6 +220,8 @@ const SENTENCES: readonly Template[] = [
   ['Because you stayed past it, your {deposit} is kept by the lot and you pay the whole parking fee.', 'Vì ở quá giờ, bãi sẽ giữ {deposit} của bạn và bạn phải trả toàn bộ phí gửi xe.'],
   ["The fee keeps running by the lot's price list.", 'Phí vẫn tiếp tục tính theo bảng giá của bãi.'],
   ['Please drive out as soon as you can.', 'Vui lòng lái xe ra sớm nhất có thể.'],
+  ['If it is still inside {minutes} minutes after {time}, it is towed to a penalty bay and a {money} penalty is added at check-out.', 'Nếu xe vẫn trong bãi {minutes} phút sau {time}, xe sẽ bị kéo đến ô phạt và khoản phạt {money} sẽ được cộng khi ra bãi.'],
+  ['If it is still inside {minutes} minutes after {time}, it is towed to a penalty bay.', 'Nếu xe vẫn trong bãi {minutes} phút sau {time}, xe sẽ bị kéo đến ô phạt.'],
   ['Bay {bay} at {lot} is out of service, so your booking {code} for {time} now has bay {bay2} of the same type. Nothing else changes.', 'Ô {bay} tại {lot} đang ngừng sử dụng, nên đặt chỗ {code} lúc {time} của bạn đã chuyển sang ô {bay2} cùng loại. Các thông tin khác không đổi.'],
   ['The vehicle of booking {code} is still in bay {bay} at {lot}; its booked time ended at {time}. If the next booking of this bay arrives while it is still there, a booked bay case opens in Exceptions & Alerts to move that booking or compensate the customer.', 'Xe của đặt chỗ {code} vẫn đang ở ô {bay} tại {lot}, thời gian đặt đã hết lúc {time}. Nếu đặt chỗ tiếp theo của ô này đến khi xe vẫn còn đó, một trường hợp ô đã đặt sẽ được mở trong Ngoại lệ & Cảnh báo để chuyển đặt chỗ hoặc bồi thường cho khách.'],
 
