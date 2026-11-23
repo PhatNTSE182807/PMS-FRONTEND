@@ -4,7 +4,7 @@ export type EmploymentType = 'FullTime' | 'Backup'
 export type AttendanceStatus = 'Working' | 'Completed' | 'Absent'
 export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'
 
-/** 0 = 00–06, 1 = 06–12, 2 = 12–18, 3 = 18–24. */
+/** From 2026-11-24: 0 = 00–08, 1 = 08–16, 2 = 16–24. Earlier dates: 0 = 00–06, 1 = 06–12, 2 = 12–18, 3 = 18–24. */
 export type DutySlot = 0 | 1 | 2 | 3
 
 export interface DutyStaff {
@@ -34,6 +34,9 @@ export interface DutyCell {
   checkOutAt: string | null
   isPast: boolean
   isMine: boolean
+  /** The break of the viewer's own shift; null on other people's shifts. */
+  breakStartsAt: string | null
+  breakEndsAt: string | null
 }
 
 export interface DutyWeek {
@@ -80,6 +83,9 @@ export interface DutyShift {
   isLate: boolean
   checkInAt: string | null
   checkOutAt: string | null
+  /** Display only: the POS stays usable during the break. */
+  breakStartsAt: string | null
+  breakEndsAt: string | null
 }
 
 export interface DutyStatus {

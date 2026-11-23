@@ -1,6 +1,14 @@
 // Vietnamese text for labels, status names and messages declared outside components (label maps,
 // validation and error messages), shown through t() / tMaybe().
 export const part07: Record<string, string> = {
+  "Break {v}–{v2}": "Nghỉ {v}–{v2}",
+  "· break {v}–{v2}": "· nghỉ {v}–{v2}",
+  "· On break until {v}": "· Đang nghỉ đến {v}",
+  "This shift does not exist on this date.": "Ngày này không có ca đó.",
+  "Already works a shift on this day.": "Đã có một ca trong ngày này.",
+  "Would work two shifts in a row.": "Sẽ phải làm hai ca liên tiếp.",
+  "The weekly pattern would give this person more than one shift on a day.": "Lịch tuần sẽ xếp người này hơn một ca trong một ngày.",
+  "The weekly pattern would give this person two shifts in a row.": "Lịch tuần sẽ xếp người này hai ca liên tiếp.",
   " A case for that booking was already open.": " Đặt chỗ đó đã có một ca đang mở.",
   " A walk-in without a bay of its own: the model draws it in a free bay of its zone.": " Xe vãng lai chưa có ô riêng: mô hình vẽ xe vào một ô trống trong khu vực của nó.",
   " The lot's Staff got the case in Exceptions & Alerts and the customer was told their bay is taken.": " Nhân viên của bãi đã nhận ca ở mục Ngoại lệ & Cảnh báo và khách đã được báo ô của họ bị chiếm.",
