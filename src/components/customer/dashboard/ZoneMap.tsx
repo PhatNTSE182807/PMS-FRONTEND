@@ -124,8 +124,9 @@ const FORECAST_STATUS: Partial<Record<BayForecastDTO['state'], BayStatus>> = {
 /**
  * The car floors as they are expected to be during the picked window: a bay whose vehicle leaves in time is drawn
  * empty, a bay booked then is drawn booked. Motorbike floors, penalty bays and bays without a forecast stay live.
+ * The customer's own parked vehicles are always drawn: they are in the lot now, whatever the picked time.
  */
-function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastDTO>): GarageFloor[] {
+function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastDTO>, myParkedBayIds: ReadonlySet<string>): GarageFloor[] {
   if (forecast.size === 0) return floors
   return floors.map((floor) =>
     floor.kind !== 'car'
@@ -137,8 +138,12 @@ function projectFloors(floors: GarageFloor[], forecast: Map<string, BayForecastD
             const status = f ? FORECAST_STATUS[f.state] : undefined
             if (!f || !status) return bay
             // A vehicle parked now that is still there at the picked time keeps the car the model draws for it (its
-            // colour and 4- or 7-seat body), even when a booking also covers that time
-            if (bay.status === 'OCCUPIED' && status !== 'AVAILABLE' && f.parkedThen !== false) return bay
+            // colour and 4- or 7-seat body), even when a booking also covers that time. A bay forecast as free keeps
+            // its car only when the API says the vehicle is still there (overdue past its planned exit)
+            const staysParked = status === 'AVAILABLE' ? f.parkedThen === true : f.parkedThen !== false
+            // A counted walk-in has no bay on record, so the forecast sees this bay as free; it is still in the lot
+            const walkInStays = bay.countedWalkIn === true && status === 'AVAILABLE'
+            if (bay.status === 'OCCUPIED' && (staysParked || walkInStays || myParkedBayIds.has(bay.id))) return bay
             if (status === bay.status) return bay
             // A vehicle expected to be gone is not drawn; a bay expected to fill gets the model's own car
             return { ...bay, status, vehicleColor: null, vehicleKind: null, countedWalkIn: false, walkInSessionId: null }
@@ -203,7 +208,18 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   const hasCarFloor = liveFloors.some((f) => f.kind === 'car')
   const forecast = useBayForecast(bookableBays && hasCarFloor ? lot?.id : undefined, bookingWindow, realtime.connected)
   const forecastBySlot = useMemo(() => new Map((forecast.data ?? []).map((f) => [String(f.slotId), f])), [forecast.data])
-  const floors = useMemo(() => projectFloors(liveFloors, forecastBySlot), [liveFloors, forecastBySlot])
+
+  // The customer's own vehicles parked in this lot (GET /parking-sessions/current, scoped to the signed-in account)
+  const currentSessions = useCurrentSessions()
+  const myParked = (currentSessions.data ?? []).filter(
+    (c) => c.session.slotId != null && lot && (String(c.session.parkingLotId) === lot.id || c.lotName === lot.name),
+  )
+  const myParkedByBay = new Map(myParked.map((c) => [String(c.session.slotId), c]))
+  const myParkedBayKey = [...myParkedByBay.keys()].join(',')
+  const floors = useMemo(
+    () => projectFloors(liveFloors, forecastBySlot, new Set(myParkedBayKey.split(','))),
+    [liveFloors, forecastBySlot, myParkedBayKey],
+  )
   const [focusFloor, setFocusFloor] = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -213,12 +229,6 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
   )
   const myBayIds = new Set(myActive.map((r) => String(r.slotId)))
 
-  // The customer's own vehicles parked in this lot (GET /parking-sessions/current, scoped to the signed-in account)
-  const currentSessions = useCurrentSessions()
-  const myParked = (currentSessions.data ?? []).filter(
-    (c) => c.session.slotId != null && lot && (String(c.session.parkingLotId) === lot.id || c.lotName === lot.name),
-  )
-  const myParkedByBay = new Map(myParked.map((c) => [String(c.session.slotId), c]))
   const [myVehicleBayId, setMyVehicleBayId] = useState<string | null>(null)
   const myVehicleOpen = myVehicleBayId ? myParkedByBay.get(myVehicleBayId) : undefined
 
@@ -414,9 +424,11 @@ export function ZoneMap({ lots: capacityLots, isLoading, lotId, onLotChange }: Z
                           ? t('Your vehicle is parked here')
                           : selected.penalty
                             ? selected.status === 'OCCUPIED' ? t('Penalty bay • towed vehicle') : t('Penalty bay')
-                            : selectedForecast
-                              ? tMaybe(forecastLabel(selectedForecast))
-                              : tMaybe(STATUS_LABEL[selected.status])}
+                            : selected.countedWalkIn && selectedForecast?.state === 'Free'
+                              ? tMaybe('Occupied now • may be free by your time')
+                              : selectedForecast
+                                ? tMaybe(forecastLabel(selectedForecast))
+                                : tMaybe(STATUS_LABEL[selected.status])}
                     </strong>
                   </div>
                   <div className="cx-map__cell">

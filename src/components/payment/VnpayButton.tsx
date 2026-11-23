@@ -41,12 +41,12 @@ export function VnpayMark({ className, ...props }: SVGProps<SVGSVGElement>) {
   )
 }
 
-/** The "VNPAY" wordmark: "VN" in red, "PAY" in blue. */
+/** The "VNPAY" wordmark: "VN" in red, "PAY" in blue. A brand name, so it is never translated. */
 export function VnpayWordmark({ className }: { className?: string }) {
   return (
     <span className={cn('vnpay-wordmark', className)}>
-      <span style={{ color: VNPAY_RED }}>{t('VN')}</span>
-      <span style={{ color: VNPAY_BLUE }}>{t('PAY')}</span>
+      <span style={{ color: VNPAY_RED }}>VN</span>
+      <span style={{ color: VNPAY_BLUE }}>PAY</span>
     </span>
   )
 }

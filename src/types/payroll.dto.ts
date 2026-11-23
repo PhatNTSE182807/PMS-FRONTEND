@@ -4,7 +4,7 @@ export type PayKind = 'FullTime' | 'Backup' | 'Manager'
 export type PayStatus = 'Unpaid' | 'Paid' | 'Estimate'
 
 export interface PayLine {
-  kind: 'Base' | 'Absence' | 'UnpaidLeave' | 'ExtraHours' | 'Hours' | 'Adjustment' | 'Simulated'
+  kind: 'Base' | 'Absence' | 'Late' | 'UnpaidLeave' | 'ExtraHours' | 'Hours' | 'Adjustment' | 'NetFloor' | 'Simulated'
   label: string
   quantity: number
   unitAmount: number
@@ -39,6 +39,10 @@ export interface PayrollReport {
   unpaidTotal: number
   paidTotal: number
   simulatedTotal: number
+  /** Leave requests of the month still waiting: it cannot be paid until they are decided. */
+  pendingLeaveRequests: number
+  /** Shifts of the month not closed yet: it cannot be paid until they are. */
+  openShifts: number
   slips: PaySlip[]
 }
 

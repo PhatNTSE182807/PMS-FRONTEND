@@ -73,11 +73,11 @@ const day = localDateFormat({ day: '2-digit', month: 'short', year: 'numeric' })
 const vnd = (value: number) => `${formatNumber(value)} VND`
 
 function relativeDay(ts: number, now: number) {
-  const startOf = (t: number) => new Date(t).setHours(0, 0, 0, 0)
+  const startOf = (time: number) => new Date(time).setHours(0, 0, 0, 0)
   const diff = Math.round((startOf(ts) - startOf(now)) / 86_400_000)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Tomorrow'
-  if (diff === -1) return 'Yesterday'
+  if (diff === 0) return tr('Today')
+  if (diff === 1) return tr('Tomorrow')
+  if (diff === -1) return tr('Yesterday')
   return day.format(ts)
 }
 

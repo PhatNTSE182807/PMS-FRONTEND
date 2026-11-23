@@ -12,7 +12,7 @@ import { useNow } from '@/hooks/useNow'
 import { formatNumber } from '@/lib/format'
 import { gateLaneSignals, laneVehicleKind } from '@/lib/gateLaneSignals'
 import { cn } from '@/lib/utils'
-import type { ApproveGateRequestRequest, GateRequestDTO, GateRequestKind } from '@/types/gateRequest.dto'
+import type { ApproveGateRequestRequest, GateRequestDecisionDTO, GateRequestDTO, GateRequestKind } from '@/types/gateRequest.dto'
 import type { GateAlertDTO } from '@/types/operations.dto'
 import { AlertRow, EntryLaneConsole } from './EntryLaneConsole'
 import { LanePlateArea } from './LanePlateArea'
@@ -250,63 +250,63 @@ function RequestView({
   const usesOverride = overridable.some((a) => options[OVERRIDES[a.code]!.flag])
   const minutesInside = request.entryTime ? Math.floor((now - Date.parse(request.entryTime)) / 60_000) : null
 
-  const open = () =>
-    approve.mutate(
-      {
+  // mutateAsync, not mutate with callbacks: the queue refresh a decision pushes can remove this view before the answer
+  // arrives, and mutate's callbacks do not run once the view is gone
+  const open = async () => {
+    let decision: GateRequestDecisionDTO
+    try {
+      decision = await approve.mutateAsync({
         requestId: request.id,
         // A matching Staff plate means the Staff checked the plate on the vehicle
         request: { ...options, plateConfirmed: options.plateConfirmed || (Boolean(request.plateNumber) && plateMatches) || undefined, overrideReason: options.overrideReason?.trim() || undefined },
-      },
-      {
-        onSuccess: (decision) => {
-          if (!decision.barrierOpen) {
-            // The alerts show below; only those the spec has a popup for are toasted
-            setAlerts(decision.alerts)
-            if (checkIn) toastEntryAlerts(decision.alerts, { status: request.reservationStatus, checkInUntil: request.checkInUntil })
-            return
-          }
-          // The barrier lifts in the lane's 3D camera and the vehicle drives through
-          gateLaneSignals.open(laneOf(request.kind), laneVehicleOf(request))
-          if (checkIn) {
-            const session = decision.checkIn?.session ?? null
-            toast.success(STAFF_TOAST.checkedIn)
-            // Opening the barrier is the last step: the entry is confirmed at once, no "vehicle passed" press
-            if (session?.status === 'PendingEntry') {
-              confirmEntry.mutate(session.id, {
-                onSuccess: (s) => onHandled({ request: decision.request, phase: 'done', sessionId: s.id, message: t('Checked in to {v}.', { v: s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot') }) }),
-                onError: (e) => onHandled({ request: decision.request, phase: 'done', sessionId: session.id, message: t('Barrier opened, but the entry was not recorded: {v}', { v: getErrorMessage(e) }) }),
-              })
-            } else {
-              onHandled({ request: decision.request, phase: 'done', sessionId: session?.id ?? null, message: session?.slotCode ? t('Checked in to bay {slotCode}.', { slotCode: session.slotCode }) : t('Checked in.') })
-            }
-          } else {
-            const refund = decision.checkOut?.depositRefund ?? 0
-            const message = refund > 0 ? `Exit barrier opened. ${formatNumber(refund)} VND of the deposit goes back to the customer.` : 'Exit barrier opened. Session completed.'
-            toast.success(STAFF_TOAST.checkedOut)
-            onHandled({ request: decision.request, phase: 'done', sessionId: request.sessionId, message })
-          }
-        },
-        onError: (e) => {
-          // A check-out request is refused by the server while the fee is not settled
-          if (!checkIn && e instanceof ApiError && e.status === 400 && request.sessionStatus !== 'Paid') toastUnsettled(request.exitWindowEndsAt)
-          else toast.error(getErrorMessage(e, 'Could not open the barrier.'))
-        },
-      },
-    )
+      })
+    } catch (e) {
+      // A check-out request is refused by the server while the fee is not settled
+      if (!checkIn && e instanceof ApiError && e.status === 400 && request.sessionStatus !== 'Paid') toastUnsettled(request.exitWindowEndsAt)
+      else toast.error(getErrorMessage(e, 'Could not open the barrier.'))
+      return
+    }
+    if (!decision.barrierOpen) {
+      // The alerts show below; only those the spec has a popup for are toasted
+      setAlerts(decision.alerts)
+      if (checkIn) toastEntryAlerts(decision.alerts, { status: request.reservationStatus, checkInUntil: request.checkInUntil })
+      return
+    }
+    // The barrier lifts in the lane's 3D camera and the vehicle drives through
+    gateLaneSignals.open(laneOf(request.kind), laneVehicleOf(request))
+    if (!checkIn) {
+      const refund = decision.checkOut?.depositRefund ?? 0
+      const message = refund > 0 ? `Exit barrier opened. ${formatNumber(refund)} VND of the deposit goes back to the customer.` : 'Exit barrier opened. Session completed.'
+      toast.success(STAFF_TOAST.checkedOut)
+      onHandled({ request: decision.request, phase: 'done', sessionId: request.sessionId, message })
+      return
+    }
+    const session = decision.checkIn?.session ?? null
+    toast.success(STAFF_TOAST.checkedIn)
+    // The API confirms the entry itself; only demo data still answers with a vehicle at the barrier
+    if (session?.status !== 'PendingEntry') {
+      onHandled({ request: decision.request, phase: 'done', sessionId: session?.id ?? null, message: session?.slotCode ? t('Checked in to bay {slotCode}.', { slotCode: session.slotCode }) : t('Checked in.') })
+      return
+    }
+    try {
+      const s = await confirmEntry.mutateAsync(session.id)
+      onHandled({ request: decision.request, phase: 'done', sessionId: s.id, message: t('Checked in to {v}.', { v: s.slotCode ? `bay ${s.slotCode}` : (s.zoneName ?? 'the lot') }) })
+    } catch (e) {
+      onHandled({ request: decision.request, phase: 'done', sessionId: session.id, message: t('Barrier opened, but the entry was not recorded: {v}', { v: getErrorMessage(e) }) })
+    }
+  }
 
-  const sendRefusal = (text: string) =>
-    refuse.mutate(
-      { requestId: request.id, reason: text },
-      {
-        onSuccess: (r) => {
-          toast.info(t('{v} refused', { v: request.plateNumber ?? 'Request' }), {
-            description: request.customerName ? t('The customer sees your reason in the app.') : t('Walk-in: tell the driver the reason at the lane.'),
-          })
-          onHandled({ request: r, phase: 'done', sessionId: null, message: t('Refused: {text}', { text }) })
-        },
-        onError: (e) => toast.error(getErrorMessage(e, 'Could not refuse the request.')),
-      },
-    )
+  const sendRefusal = async (text: string) => {
+    try {
+      const r = await refuse.mutateAsync({ requestId: request.id, reason: text })
+      toast.info(t('{v} refused', { v: request.plateNumber ?? 'Request' }), {
+        description: request.customerName ? t('The customer sees your reason in the app.') : t('Walk-in: tell the driver the reason at the lane.'),
+      })
+      onHandled({ request: r, phase: 'done', sessionId: null, message: t('Refused: {text}', { text }) })
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Could not refuse the request.'))
+    }
+  }
 
   return (
     <div className="space-y-4">

@@ -5,6 +5,7 @@ import { lotRealtime, type LotEvent } from '@/api/realtime'
 import { applyLiveChanges, applySlotStatus, applyZoneCounter } from '@/lib/lotPlanPatch'
 import { invalidateFromPush } from '@/lib/realtimeInvalidate'
 import type { LotPlan2DDTO, SlotStatus } from '@/types/layout.dto'
+import type { BayForecastDTO } from '@/types/operations.dto'
 
 export interface LotRealtimeState {
   /** The push channel is live: the plan only needs a rare safety-net reload. */
@@ -18,6 +19,34 @@ export interface LotRealtimeState {
 /** Reloads the lot's cached plans, coalesced with other pushes. */
 function reloadPlans(queryClient: QueryClient, lotId: string) {
   invalidateFromPush(queryClient, queryKeys.layout.all, { scope: lotId, predicate: (key) => key.includes(lotId) })
+}
+
+/** The bays a push changed; null when it says nothing about what a bay holds (a zone counter alone). */
+function changedBays(event: LotEvent): number[] | null {
+  switch (event.type) {
+    case 'LotLiveChanged':
+      return event.cells.map((cell) => cell.slotId)
+    case 'SlotStatusChanged':
+      return [event.slotId]
+    case 'ZoneCounterChanged':
+      return null
+    default:
+      return []
+  }
+}
+
+/**
+ * Drops the forecast of the bays that just changed, so the map draws their live state at once instead of a forecast
+ * read before the change, then re-reads it. A read already running started before the change, so it is cancelled.
+ */
+async function refreshForecast(queryClient: QueryClient, lotId: string, slotIds: number[]) {
+  const queryKey = [...queryKeys.reservations.all, 'forecast', lotId]
+  await queryClient.cancelQueries({ queryKey })
+  if (slotIds.length > 0) {
+    const changed = new Set(slotIds)
+    queryClient.setQueriesData<BayForecastDTO[]>({ queryKey }, (forecast) => forecast?.filter((f) => !changed.has(f.slotId)))
+  }
+  invalidateFromPush(queryClient, queryKey)
 }
 
 /**
@@ -63,12 +92,17 @@ export function useLotRealtime(lotId: string | undefined): LotRealtimeState {
     const stop = lotRealtime.watch(lotId, {
       onConnectionChange: (now) => {
         // Joined (again): anything pushed while away is missed, so read the plan once
-        if (now && !connected) reloadPlans(queryClient, lotId)
+        if (now && !connected) {
+          reloadPlans(queryClient, lotId)
+          void refreshForecast(queryClient, lotId, [])
+        }
         if (now !== connected) setState({ connected: now, downSince: Date.now() })
         connected = now
       },
       onEvent: (event) => {
         if (!patchPlan(queryClient, lotId, event)) reloadPlans(queryClient, lotId)
+        const bays = changedBays(event)
+        if (bays) void refreshForecast(queryClient, lotId, bays)
         if (event.type === 'LotStatusChanged') invalidateFromPush(queryClient, ['lot-management'])
       },
     })

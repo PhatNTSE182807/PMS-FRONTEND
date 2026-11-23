@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { DUTY_SLOTS, addDays, cellKey, clock, dayMonth, mondayOf, weekDates, weekdayOf } from '@/lib/duty'
+import { addDays, cellKey, clock, dayMonth, dutyRows, mondayOf, slotHours, weekDates, weekdayOf } from '@/lib/duty'
 import { cn } from '@/lib/utils'
 import type { DutyCell, DutyWeek } from '@/types/duty.dto'
 import { t, tMaybe } from '@/i18n'
@@ -55,7 +55,8 @@ function AttendanceBadge({ cell }: { cell: DutyCell }) {
   return null
 }
 
-function CellBody({ cell, hidden }: { cell: DutyCell; hidden: boolean }) {
+function CellBody({ cell, hidden, rowHours }: { cell: DutyCell; hidden: boolean; rowHours: string }) {
+  const hours = slotHours(cell.date, cell.slot)
   if (hidden) return <span className="text-xs text-slate-400">—</span>
   return (
     <span className="flex min-w-0 flex-col items-start gap-1">
@@ -64,8 +65,10 @@ function CellBody({ cell, hidden }: { cell: DutyCell; hidden: boolean }) {
       ) : (
         <span className="text-sm font-semibold text-rose-700">{cell.isPast ? t('Nobody') : t('No staff')}</span>
       )}
+      {hours !== rowHours && <span className="text-xs text-slate-500">{hours}</span>}
       <span className="flex flex-wrap gap-1">
         {cell.isMine && <Badge tone="indigo">{t('You')}</Badge>}
+        {cell.breakStartsAt && <Badge tone="sky">{t('Break {v}–{v2}', { v: clock(cell.breakStartsAt), v2: clock(cell.breakEndsAt) })}</Badge>}
         {cell.employmentType === 'Backup' && <Badge tone="violet">{t('Backup')}</Badge>}
         {cell.onLeaveName && <Badge tone="amber">{t('{onLeaveName} on leave', { onLeaveName: cell.onLeaveName })}</Badge>}
         {cell.leavePending && <Badge tone="amber">{t('Leave pending')}</Badge>}
@@ -77,7 +80,7 @@ function CellBody({ cell, hidden }: { cell: DutyCell; hidden: boolean }) {
 }
 
 /**
- * The lot's week: 4 shifts (rows) × 7 days (columns). Scrolls sideways on a phone inside its card.
+ * The lot's week: the day's shifts (rows) × 7 days (columns). Scrolls sideways on a phone inside its card.
  * Empty upcoming shifts are red; today's column is highlighted; past shifts are dimmed.
  */
 export function DutyBoard({ week, onCell, onlyMine = false }: DutyBoardProps) {
@@ -100,7 +103,7 @@ export function DutyBoard({ week, onCell, onlyMine = false }: DutyBoardProps) {
           </tr>
         </thead>
         <tbody>
-          {DUTY_SLOTS.map(({ slot, label, hours }) => (
+          {dutyRows(dates).map(({ slot, label, hours }) => (
             <tr key={slot}>
               <th scope="row" className="border-b border-slate-200 bg-slate-50 px-3 py-3 align-top">
                 <span className="block text-sm font-semibold text-slate-800">{tMaybe(label)}</span>
@@ -123,16 +126,16 @@ export function DutyBoard({ week, onCell, onlyMine = false }: DutyBoardProps) {
                     {onCell && !cell.isPast ? (
                       <button type="button" onClick={() => onCell(cell)}
                         className={cn(className, 'block transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-600')}
-                        aria-label={t('{v} {v2} {hours}: {v3}. Change', { v: weekdayOf(date), v2: dayMonth(date), hours, v3: cell.employeeName ?? 'no staff' })}>
-                        <CellBody cell={cell} hidden={hidden} />
+                        aria-label={t('{v} {v2} {hours}: {v3}. Change', { v: weekdayOf(date), v2: dayMonth(date), hours: slotHours(date, slot), v3: cell.employeeName ?? 'no staff' })}>
+                        <CellBody cell={cell} hidden={hidden} rowHours={hours} />
                       </button>
                     ) : onCell ? (
                       <button type="button" onClick={() => onCell(cell)} className={cn(className, 'block hover:bg-slate-100')}
-                        aria-label={t('{v} {v2} {hours}: {v3}. Attendance', { v: weekdayOf(date), v2: dayMonth(date), hours, v3: cell.employeeName ?? 'nobody' })}>
-                        <CellBody cell={cell} hidden={hidden} />
+                        aria-label={t('{v} {v2} {hours}: {v3}. Attendance', { v: weekdayOf(date), v2: dayMonth(date), hours: slotHours(date, slot), v3: cell.employeeName ?? 'nobody' })}>
+                        <CellBody cell={cell} hidden={hidden} rowHours={hours} />
                       </button>
                     ) : (
-                      <div className={className}><CellBody cell={cell} hidden={hidden} /></div>
+                      <div className={className}><CellBody cell={cell} hidden={hidden} rowHours={hours} /></div>
                     )}
                   </td>
                 )

@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { EMPLOYMENT_LABEL, monthLabel } from '@/lib/duty'
 import { formatDate, formatVnd } from '@/lib/format'
+import { payLineLabel } from '@/lib/payrollLabels'
 import { cn } from '@/lib/utils'
 import type { PaySlip } from '@/types/payroll.dto'
 import type { ReactNode } from 'react'
@@ -33,12 +34,12 @@ export function PayslipDetail({ slip, onClose, children }: { slip: PaySlip; onCl
           {slip.lines.map((line, i) => (
             <li key={i} className="px-3 py-2.5">
               <div className="flex items-start justify-between gap-3">
-                <span className="text-sm text-slate-800">{tMaybe(line.label)}</span>
+                <span className="text-sm text-slate-800">{payLineLabel(line.label)}</span>
                 <span className={cn('text-sm font-semibold whitespace-nowrap tabular-nums', line.amount < 0 ? 'text-rose-700' : 'text-slate-950')}>
-                  {line.amount > 0 && line.kind !== 'Base' ? '+' : ''}{formatVnd(line.amount)}
+                  {line.amount > 0 && line.kind !== 'Base' && line.kind !== 'NetFloor' ? '+' : ''}{formatVnd(line.amount)}
                 </span>
               </div>
-              {line.details.length > 0 && <p className="mt-1 text-xs text-slate-500">{line.details.join(' · ')}</p>}
+              {line.details.length > 0 && <p className="mt-1 text-xs text-slate-500">{line.details.map(payLineLabel).join(' · ')}</p>}
             </li>
           ))}
           {slip.lines.length === 0 && <li className="px-3 py-2.5 text-sm text-slate-600">{t('Nothing earned this month.')}</li>}

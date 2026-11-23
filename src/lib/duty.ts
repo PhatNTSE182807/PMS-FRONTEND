@@ -1,15 +1,40 @@
 import type { DutyCell, DutySlot } from '@/types/duty.dto'
 import { currentLocale } from '@/i18n'
 
-/** The four fixed shifts of a day. */
-export const DUTY_SLOTS: { slot: DutySlot; label: string; hours: string }[] = [
+export interface DutySlotInfo {
+  slot: DutySlot
+  label: string
+  hours: string
+}
+
+/** First date with three 8-hour shifts (the backend's DutySlots.ThreeShiftsFrom). */
+export const THREE_SHIFTS_FROM = '2026-11-24'
+
+const FOUR_SHIFTS: DutySlotInfo[] = [
   { slot: 0, label: 'Night', hours: '00:00–06:00' },
   { slot: 1, label: 'Morning', hours: '06:00–12:00' },
   { slot: 2, label: 'Afternoon', hours: '12:00–18:00' },
   { slot: 3, label: 'Evening', hours: '18:00–24:00' },
 ]
 
-export const slotHours = (slot: DutySlot) => DUTY_SLOTS[slot].hours
+const THREE_SHIFTS: DutySlotInfo[] = [
+  { slot: 0, label: 'Night', hours: '00:00–08:00' },
+  { slot: 1, label: 'Morning', hours: '08:00–16:00' },
+  { slot: 2, label: 'Evening', hours: '16:00–24:00' },
+]
+
+/** The fixed shifts of a yyyy-MM-dd date. */
+export const dutySlotsOn = (date: string) => (date >= THREE_SHIFTS_FROM ? THREE_SHIFTS : FOUR_SHIFTS)
+
+export const slotHours = (date: string, slot: DutySlot) => dutySlotsOn(date)[slot]?.hours ?? ''
+
+/** Board rows of a week: the shifts of its last day, then any extra shift an earlier day still has. */
+export function dutyRows(dates: string[]): DutySlotInfo[] {
+  const rows = [...dutySlotsOn(dates[dates.length - 1])]
+  for (const date of dates)
+    for (const info of dutySlotsOn(date)) if (!rows.some((row) => row.slot === info.slot)) rows.push(info)
+  return rows
+}
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -40,7 +65,7 @@ export const dayMonth = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}
 export const fullDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`
 
 /** "Tue 25/11 · 06:00–12:00" */
-export const shiftLabel = (date: string, slot: DutySlot) => `${weekdayOf(date)} ${dayMonth(date)} · ${slotHours(slot)}`
+export const shiftLabel = (date: string, slot: DutySlot) => `${weekdayOf(date)} ${dayMonth(date)} · ${slotHours(date, slot)}`
 
 export const weekDates = (weekStart: string) => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 

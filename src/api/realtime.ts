@@ -77,8 +77,12 @@ function hub(): HubConnection {
 }
 
 let starting: Promise<void> | null = null
+let stopping: Promise<void> | null = null
 async function ensureStarted(): Promise<HubConnection> {
   const c = hub()
+  // Changing lot leaves the old one and joins the new one in the same tick: a closing connection cannot start yet
+  if (stopping) await stopping
+  if (watchers.size === 0) return c
   if (c.state === HubConnectionState.Disconnected) starting ??= c.start().finally(() => (starting = null))
   if (starting) await starting
   return c
@@ -99,7 +103,7 @@ export const lotRealtime = {
 
     ensureStarted()
       .then(async (c) => {
-        if (first && c.state === HubConnectionState.Connected) await c.invoke('JoinLot', Number(lotId))
+        if (first && watchers.has(lotId) && c.state === HubConnectionState.Connected) await c.invoke('JoinLot', Number(lotId))
       })
       .catch(() => {
         // Hub unreachable: the caller keeps polling; automatic reconnect only runs after a first connection.
@@ -111,8 +115,14 @@ export const lotRealtime = {
       if (set.size > 0) return
       watchers.delete(lotId)
       if (connection?.state !== HubConnectionState.Connected) return
-      if (watchers.size === 0) void connection.stop()
-      else void connection.invoke('LeaveLot', Number(lotId)).catch(() => undefined)
+      if (watchers.size === 0) {
+        stopping = connection
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            stopping = null
+          })
+      } else void connection.invoke('LeaveLot', Number(lotId)).catch(() => undefined)
     }
   },
 }

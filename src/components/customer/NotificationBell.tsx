@@ -23,6 +23,7 @@ import {
 import { useNotifications, useMarkRead, useMarkAllRead, useDeleteNotification, useTimeAgo } from '@/hooks/useNotifications'
 import type { NotificationModel } from '@/api/notification.service'
 import { t, tMaybe } from '@/i18n'
+import { tNotification } from '@/i18n/notifications'
 
 const ICON_MAP: Record<string, typeof Bell> = {
   VehicleApproved: ShieldCheck,
@@ -155,8 +156,8 @@ export function NotificationBell() {
                     <Icon size={18} />
                   </div>
                   <div className="cx-notif__content">
-                    <p className="cx-notif__item-title">{tMaybe(n.title)}</p>
-                    <p className="cx-notif__item-msg">{tMaybe(n.message)}</p>
+                    <p className="cx-notif__item-title">{tNotification(n.title)}</p>
+                    <p className="cx-notif__item-msg">{tNotification(n.message)}</p>
                     <span className="cx-notif__time">{timeAgo(n.createdAt)}</span>
                   </div>
                   <div className="cx-notif__actions">
