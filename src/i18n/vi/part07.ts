@@ -1,6 +1,13 @@
 // Vietnamese text for labels, status names and messages declared outside components (label maps,
 // validation and error messages), shown through t() / tMaybe().
 export const part07: Record<string, string> = {
+  "{count} leave request(s) must be decided first.": "Cần xử lý {count} đơn nghỉ phép trước.",
+  "{count} shift(s) have not closed yet.": "Còn {count} ca chưa đóng.",
+  "Some leave requests of this month are still waiting. Decide them before paying.": "Một số đơn nghỉ phép của tháng này vẫn đang chờ. Hãy xử lý trước khi trả lương.",
+  "Some shifts of this month are still open. Try again once they have closed.": "Một số ca của tháng này vẫn chưa đóng. Hãy thử lại khi các ca đã đóng.",
+  "One of your shifts in these days has already ended.": "Một ca của bạn trong những ngày này đã kết thúc.",
+  "This shift is over: nobody can replace it now.": "Ca này đã kết thúc nên không thể xếp người thay.",
+  "This person is on shift now. Deactivate the account after the shift ends.": "Người này đang trong ca. Hãy vô hiệu hóa tài khoản sau khi ca kết thúc.",
   "Break {v}–{v2}": "Nghỉ {v}–{v2}",
   "· break {v}–{v2}": "· nghỉ {v}–{v2}",
   "· On break until {v}": "· Đang nghỉ đến {v}",
