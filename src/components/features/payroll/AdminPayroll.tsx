@@ -104,7 +104,14 @@ export function AdminPayroll() {
           <p className="min-w-0 flex-1 text-sm font-semibold text-amber-900">
             {tMaybe(monthLabel(data.month))}{' '}{t('payroll is ready · {unpaidCount} people · {unpaidTotal}', { unpaidCount: data.unpaidCount, unpaidTotal: formatVnd(data.unpaidTotal) })}
           </p>
-          <Button variant="success" disabled={payAll.isPending} onClick={() => payAll.mutate(`${month}-01`)}>{payAll.isPending && <Spinner />}{t('Pay all')}</Button>
+          {(data.pendingLeaveRequests > 0 || data.openShifts > 0) && (
+            <p className="w-full text-sm text-amber-900 sm:order-last">
+              {data.pendingLeaveRequests > 0 && t('{count} leave request(s) must be decided first.', { count: data.pendingLeaveRequests })}
+              {data.pendingLeaveRequests > 0 && data.openShifts > 0 && ' '}
+              {data.openShifts > 0 && t('{count} shift(s) have not closed yet.', { count: data.openShifts })}
+            </p>
+          )}
+          <Button variant="success" disabled={payAll.isPending || data.pendingLeaveRequests > 0 || data.openShifts > 0} onClick={() => payAll.mutate(`${month}-01`)}>{payAll.isPending && <Spinner />}{t('Pay all')}</Button>
         </div>
       )}
       {data && !data.monthEnded && (
