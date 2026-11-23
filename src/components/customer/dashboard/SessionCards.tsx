@@ -81,7 +81,7 @@ function useLatestRequest(match: (r: GateRequestDTO) => boolean, now: number) {
 /** "Waiting for Staff at the entry lane…" with Cancel, or Staff's refusal. */
 function GateRequestNotice({ request }: { request: GateRequestDTO }) {
   const cancel = useCancelGateRequest()
-  const lane = request.kind === 'CheckIn' ? 'entry' : 'exit'
+  const lane = request.kind === 'CheckIn' ? t('entry') : t('exit')
   // The API's "problem" is written for the Staff; an unpaid exit gets the customer's own wording
   const hint =
     request.kind === 'CheckOut' && request.sessionStatus && request.sessionStatus !== 'Paid'
@@ -102,7 +102,7 @@ function GateRequestNotice({ request }: { request: GateRequestDTO }) {
       <Hourglass aria-hidden />
       <span>
         {t('Waiting for Staff at the {lane} lane to check your vehicle and open the barrier', { lane })}
-        {hint ? `. ${hint}` : '…'}
+        {hint ? `. ${tMaybe(hint)}` : '…'}
       </span>
       <button
         type="button"
@@ -393,10 +393,10 @@ export function BookingCard({ booking, showAllLink = false }: { booking: Reserva
 
   const confirmCancel = () => {
     const message = pending
-      ? 'Cancel this booking? No deposit has been paid yet.'
+      ? t('Cancel this booking? No deposit has been paid yet.')
       : booking.refundIfCancelledNow > 0
-        ? `Cancel this booking and refund ${vnd(booking.refundIfCancelledNow)}?`
-        : 'It is less than 30 minutes before arrival, so the deposit is not refunded. Cancel anyway?'
+        ? t('Cancel this booking and refund {v}?', { v: vnd(booking.refundIfCancelledNow) })
+        : t('It is less than 30 minutes before arrival, so the deposit is not refunded. Cancel anyway?')
     if (window.confirm(message)) cancel.mutate({ id: booking.id })
   }
 
@@ -427,7 +427,7 @@ export function BookingCard({ booking, showAllLink = false }: { booking: Reserva
             <strong>{describeWindow(booking.arrivalTime, booking.departureTime, now)}</strong>
           </div>
           <div className="cx-kv__row">
-            {t('Your bay')}{' '}<strong className="is-gold">{[booking.zoneName, booking.slotCode && `Bay ${booking.slotCode}`].filter(Boolean).join(' • ') || '—'}</strong>
+            {t('Your bay')}{' '}<strong className="is-gold">{[tMaybe(booking.zoneName), booking.slotCode && t('Bay {slotCode}', { slotCode: booking.slotCode })].filter(Boolean).join(' • ') || '—'}</strong>
           </div>
           <div className="cx-kv__row">
             {t('Vehicle')}{' '}<strong>{booking.vehicleLabel ? `${booking.vehicleLabel} (${booking.plateNumber ?? '—'})` : (tMaybe(booking.plateNumber) ?? '—')}</strong>
@@ -437,8 +437,8 @@ export function BookingCard({ booking, showAllLink = false }: { booking: Reserva
 
       {!editing && (
         <p className="cx-footnote">
-          <Clock aria-hidden />{' '}{t('Check-in {v} - {v2} •', { v: timeFormat.format(Date.parse(booking.checkInFrom)), v2: timeFormat.format(Date.parse(booking.checkInUntil)) })}
-          {booking.bookingMode === 'Scheduled' ? 'you pay for the time you actually park' : t('leave anytime, you pay for the time you park')}
+          <Clock aria-hidden />{' '}{t('Check-in {v} - {v2} •', { v: timeFormat.format(Date.parse(booking.checkInFrom)), v2: timeFormat.format(Date.parse(booking.checkInUntil)) })}{' '}
+          {booking.bookingMode === 'Scheduled' ? t('you pay for the time you actually park') : t('leave anytime, you pay for the time you park')}
         </p>
       )}
 
